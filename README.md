@@ -4,6 +4,8 @@ A modern, open-source 3D floor planner built with **Three.js** and **TypeScript*
 
 **[Live Demo →](https://blueprint3d-modern.vercel.app/)**
 
+**[Buy me a coffee](https://buymeacoffee.com/linncharm)**
+
 ## Screenshots
 
 ![3D Floor Planner](./docs/screenshot-1.png)
