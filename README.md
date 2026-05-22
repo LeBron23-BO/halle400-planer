@@ -4,7 +4,7 @@ A modern, open-source 3D floor planner built with **Three.js** and **TypeScript*
 
 **[Live Demo →](https://blueprint3d-modern.vercel.app/)**
 
-**[Buy me a coffee](https://buymeacoffee.com/linncharm)**
+<a href="https://buymeacoffee.com/linncharm"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="217" height="60"></a>
 
 ## Screenshots
 
