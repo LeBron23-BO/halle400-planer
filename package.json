@@ -23,7 +23,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/blueprint3d-modern.git"
+    "url": "https://github.com/LeBron23-BO/halle400-planer.git"
   },
-  "author": ""
+  "author": "",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "sharp"
+    ]
+  }
 }
