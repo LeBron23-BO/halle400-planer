@@ -141,3 +141,5 @@ vite.config.ts.timestamp-*
 # Halle400-Toolkit
 shots/
 out/
+semantic_cache.sqlite
+*.sqlite
