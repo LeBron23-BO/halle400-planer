@@ -3,6 +3,21 @@ import createNextIntlPlugin from 'next-intl/plugin'
 import path from 'path'
 
 const nextConfig: NextConfig = {
+  // Halle-400-Toolkit: statischer Export.
+  // Das Nutzungsmodell ist eine Datei/ein Ordner ohne laufenden Node-Server
+  // (lokale Vorschau + Handy via tailscale), NICHT `next start`.
+  // Bedingt: keine Middleware, keine Server-Actions, keine dynamischen Routen
+  // ohne generateStaticParams.
+  output: 'export',
+
+  // KEIN relatives assetPrefix möglich: `next/font` bricht den Build ab
+  // ("assetPrefix must start with a leading slash or be an absolute URL").
+  // Der Export braucht deshalb HTTP — Auslieferung via statischem Server
+  // (lokale Vorschau + tailscale fürs Handy), nicht per Doppelklick.
+
+  // Mehrere Lockfiles unter ~/.gemini — Root explizit setzen, sonst rät Next falsch.
+  outputFileTracingRoot: path.resolve(__dirname, '..'),
+
   eslint: {
     ignoreDuringBuilds: true
   },
