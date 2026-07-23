@@ -50,6 +50,8 @@ def main() -> int:
     p.add_argument("--json", type=Path, default=STANDARD_JSON)
     p.add_argument("--aus", type=Path, default=STANDARD_AUS)
     p.add_argument("--zoom", type=float, default=2.0)
+    p.add_argument("--waende", type=Path, nargs="?", const=Path("data/walls.json"),
+                   help="Wandliste aus tools/build_walls.py mitzeichnen")
     args = p.parse_args()
 
     if not args.json.exists():
@@ -93,6 +95,19 @@ def main() -> int:
         a, b = px(0, m), px(LAENGE_M, m)
         zeichne.line([a, b], fill=FARBE_RASTER, width=1)
         zeichne.text((o[0] - 16 * z, a[1] - 6 * z), f"{m}", font=klein, fill=FARBE_RASTER)
+
+    # Wandliste — der eigentliche Sicht-Test von T2c: deckt sich jede
+    # gezeichnete Wand mit einer im Plan, und fehlt keine offensichtliche?
+    if args.waende and args.waende.exists():
+        wandliste = json.loads(args.waende.read_text(encoding="utf-8"))
+        farben = {"aussen": (0, 120, 220), "flur": (255, 140, 0),
+                  "trennwand": (200, 0, 200)}
+        for w in wandliste["waende"]:
+            a, b = px(*w["von"]), px(*w["bis"])
+            zeichne.line([a, b], fill=farben.get(w["art"], (0, 0, 0)),
+                         width=max(2, int(1.5 * z)))
+        print(f"Wandliste: {len(wandliste['waende'])} Waende aus {args.waende} "
+              f"(magenta = Trennwand, orange = Flur, blau = Aussenkante)")
 
     # Raum-Anker
     gross = schrift(int(10 * z))

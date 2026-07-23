@@ -1,0 +1,980 @@
+{
+ "floorplan": {
+  "corners": {
+   "3eac1f3c-2ef5-215e-b9bd-13e28ae0975a": {
+    "x": 0.0,
+    "y": 0.0
+   },
+   "261aed9d-9fee-d584-0187-84e6e9aed82d": {
+    "x": 524.0,
+    "y": 0.0
+   },
+   "aec028ae-55b9-38c2-f776-0b93fd1b03ce": {
+    "x": 767.0,
+    "y": 0.0
+   },
+   "b046dc67-6b3c-500b-59e3-faba6c3e2931": {
+    "x": 1002.0,
+    "y": 0.0
+   },
+   "fe9a3e92-c699-9638-f3b7-83c344d6ff7f": {
+    "x": 1099.0,
+    "y": 0.0
+   },
+   "47419bfa-1d67-798f-1fc9-28546a797386": {
+    "x": 1270.0,
+    "y": 0.0
+   },
+   "d8402bf9-0dea-1320-6fa4-09b3a490d70b": {
+    "x": 2376.0,
+    "y": 0.0
+   },
+   "14a64471-6415-f976-2bdf-2c3f93d99e0f": {
+    "x": 2576.0,
+    "y": 0.0
+   },
+   "ed41419c-caea-9716-b9ba-dab999fd4386": {
+    "x": 3245.0,
+    "y": 0.0
+   },
+   "53bd2193-fa0c-782f-1bf2-249d4857ff22": {
+    "x": 3530.0,
+    "y": 0.0
+   },
+   "09f4b409-8ce5-95c6-c90b-1d3145a2ddc3": {
+    "x": 3874.0,
+    "y": 0.0
+   },
+   "5101dfe1-2097-f879-08a9-783a84281993": {
+    "x": 4150.0,
+    "y": 0.0
+   },
+   "cf35ec30-b41e-5be0-debe-32b4b3165e3f": {
+    "x": 4289.0,
+    "y": 0.0
+   },
+   "f09a4ae8-ecaa-7532-85e5-6ef58bc7724e": {
+    "x": 4560.0,
+    "y": 0.0
+   },
+   "16db8d61-5556-f30d-128c-11fc4f176ea1": {
+    "x": 5186.0,
+    "y": 0.0
+   },
+   "e1d76590-1b54-1e33-6df2-31339ad6c1e9": {
+    "x": 5937.0,
+    "y": 0.0
+   },
+   "df4f6e18-302c-31a8-e765-39c9d5a54eaf": {
+    "x": 6456.0,
+    "y": 0.0
+   },
+   "f6219242-c72f-e256-9895-d15247a2eb89": {
+    "x": 6947.0,
+    "y": 0.0
+   },
+   "d965186f-e58e-8fda-30e7-206ae9773687": {
+    "x": 7253.0,
+    "y": 0.0
+   },
+   "715b3263-a218-20a3-eead-764b5d65171c": {
+    "x": 7800.0,
+    "y": 0.0
+   },
+   "4aaa07e1-8d71-dc10-882f-11bf9f3bd805": {
+    "x": 7800.0,
+    "y": 1531.0
+   },
+   "3f51b6ef-2f5e-4ede-b058-301805505d37": {
+    "x": 0.0,
+    "y": 1531.0
+   },
+   "9d5993e2-27c0-1ed8-f0b8-a7d3c0880570": {
+    "x": 129.0,
+    "y": 1531.0
+   },
+   "d8f9d976-d8c3-7e95-6526-f8182f8d15e5": {
+    "x": 810.0,
+    "y": 1531.0
+   },
+   "5e33cd16-1b9e-88f4-a5a5-058a84d3a90e": {
+    "x": 1215.0,
+    "y": 1531.0
+   },
+   "d2a811ec-fe79-7bf3-3b9f-179e011bcbfb": {
+    "x": 1864.0,
+    "y": 1531.0
+   },
+   "ea7f7f7e-02a9-5f58-4aa5-7070d7c27351": {
+    "x": 3192.0,
+    "y": 1531.0
+   },
+   "62c9e197-31f1-a1ab-397e-05a1ef92b801": {
+    "x": 3894.0,
+    "y": 1531.0
+   },
+   "22d8d748-29a3-7322-e757-bfa08620e612": {
+    "x": 4229.0,
+    "y": 1531.0
+   },
+   "af66e22e-08b4-e54f-94f0-a5d64f8c8011": {
+    "x": 4592.0,
+    "y": 1531.0
+   },
+   "29a7db33-e3b6-fe07-0283-0f229496103a": {
+    "x": 4894.0,
+    "y": 1531.0
+   },
+   "2ceb0849-3503-8c0a-ef77-0c5bcc4a72fb": {
+    "x": 5245.0,
+    "y": 1531.0
+   },
+   "957cd27f-a65e-ec40-4eb0-9f244877fe54": {
+    "x": 5445.0,
+    "y": 1531.0
+   },
+   "87ae2baf-8ad8-8f83-a01e-8f4bdef5aa98": {
+    "x": 5644.0,
+    "y": 1531.0
+   },
+   "c881c56a-d236-1599-1932-d333c013cc64": {
+    "x": 6515.0,
+    "y": 1531.0
+   },
+   "4800d666-ca66-68e4-8821-354a8fe85764": {
+    "x": 6836.0,
+    "y": 1531.0
+   },
+   "fed934d8-db28-1cfe-2ab6-721b0074b9d5": {
+    "x": 7200.0,
+    "y": 1531.0
+   },
+   "31efc30d-3a08-42f4-8c43-314fb1c2ebba": {
+    "x": 0.0,
+    "y": 579.0
+   },
+   "8593f0fb-0ad6-0253-b903-8f5553d7b780": {
+    "x": 200.0,
+    "y": 579.0
+   },
+   "29e52462-b0b6-5463-d506-b44a37ea7d0c": {
+    "x": 500.0,
+    "y": 579.0
+   },
+   "c1ca752e-466e-fe49-c8f3-52d430c5a8f3": {
+    "x": 524.0,
+    "y": 579.0
+   },
+   "f9882ca0-2fef-6e02-6af9-f66fdd348786": {
+    "x": 767.0,
+    "y": 579.0
+   },
+   "e06a9f55-86a1-1c25-eeab-1ab49f4c946c": {
+    "x": 1002.0,
+    "y": 579.0
+   },
+   "aa48f713-254c-86ef-2c92-f8f8af9bafdd": {
+    "x": 1099.0,
+    "y": 579.0
+   },
+   "e61b1f9b-899c-4966-1654-00c7606dfb71": {
+    "x": 1100.0,
+    "y": 579.0
+   },
+   "394c2159-8179-29fe-465e-ca10814a0f0f": {
+    "x": 2300.0,
+    "y": 579.0
+   },
+   "2c3766f6-fd01-5905-110a-c9dd2be27122": {
+    "x": 2376.0,
+    "y": 579.0
+   },
+   "66c8cbb0-3b55-e11d-7f57-668cf8d46487": {
+    "x": 2576.0,
+    "y": 579.0
+   },
+   "2ea1cd12-2170-a0d4-3996-78ce38ede2da": {
+    "x": 3245.0,
+    "y": 579.0
+   },
+   "7eaf4591-1d1e-7e3f-bdae-264eec5a8fd5": {
+    "x": 3530.0,
+    "y": 579.0
+   },
+   "676cf373-5eab-bb8e-b91b-17e7d7e582c5": {
+    "x": 3874.0,
+    "y": 579.0
+   },
+   "55c07716-d365-6a98-4727-fe94de75a4a7": {
+    "x": 4150.0,
+    "y": 579.0
+   },
+   "00c8c4ed-5f9b-ec3c-720e-e9ac6737645d": {
+    "x": 4289.0,
+    "y": 579.0
+   },
+   "4dc2182e-0992-cd02-fa53-e880c037728e": {
+    "x": 4560.0,
+    "y": 579.0
+   },
+   "4de4b706-3671-3fa8-d30f-ecd4e22b7f57": {
+    "x": 5186.0,
+    "y": 579.0
+   },
+   "a03ba43b-6bef-fe00-7b78-70002efe01fb": {
+    "x": 5937.0,
+    "y": 579.0
+   },
+   "2490a21e-8ae8-4c18-4b8b-c2c7c5ae93c6": {
+    "x": 6456.0,
+    "y": 579.0
+   },
+   "df17edf0-a9a6-2f79-4ed4-3b15def22a02": {
+    "x": 6947.0,
+    "y": 579.0
+   },
+   "4cb92bb8-4564-efa8-33bf-8a0b97752ab6": {
+    "x": 7253.0,
+    "y": 579.0
+   },
+   "d0f1ec17-d1c6-ad5d-7708-64e806383911": {
+    "x": 7700.0,
+    "y": 579.0
+   },
+   "c03d735a-e7b7-2c33-c989-bb3e18134b87": {
+    "x": 100.0,
+    "y": 814.0
+   },
+   "bf061d0b-a55e-6119-6628-4dc9c28815ad": {
+    "x": 129.0,
+    "y": 814.0
+   },
+   "8d0b5b56-5a4b-0131-d03d-7897bd97e606": {
+    "x": 810.0,
+    "y": 814.0
+   },
+   "a50ff17d-a5a9-04a1-16d0-7d3f3c9b64ef": {
+    "x": 1215.0,
+    "y": 814.0
+   },
+   "600ca7cd-a025-1396-2f77-519b80a39e57": {
+    "x": 1864.0,
+    "y": 814.0
+   },
+   "be076dfc-de5f-b5a5-3d6a-e08d7520ce45": {
+    "x": 2400.0,
+    "y": 814.0
+   },
+   "3f11da75-7e94-0fd0-8c41-f7530471333f": {
+    "x": 2700.0,
+    "y": 814.0
+   },
+   "a844d8a1-434e-5ac8-7349-71fb1ee7f451": {
+    "x": 3192.0,
+    "y": 814.0
+   },
+   "47353fa6-01aa-69a4-76f1-85a1ea8e654c": {
+    "x": 3894.0,
+    "y": 814.0
+   },
+   "d5a7fbf6-717f-55b4-c657-a8a3be26f216": {
+    "x": 4229.0,
+    "y": 814.0
+   },
+   "581a80ce-02c9-9e9d-331a-c277eb31ffdf": {
+    "x": 4592.0,
+    "y": 814.0
+   },
+   "3d716b44-c59f-122a-4932-480946e620ec": {
+    "x": 4894.0,
+    "y": 814.0
+   },
+   "658f5bfb-abec-a81d-75cf-90c17afdfeed": {
+    "x": 5245.0,
+    "y": 814.0
+   },
+   "44c4cdb5-51af-2a9e-9696-82a6280154fc": {
+    "x": 5445.0,
+    "y": 814.0
+   },
+   "433414c6-01a0-65a5-8897-0db4de237b5d": {
+    "x": 5644.0,
+    "y": 814.0
+   },
+   "b669d3c2-f7b2-e4de-6707-7edda81c6a77": {
+    "x": 6515.0,
+    "y": 814.0
+   },
+   "728b9adf-3fe7-f2b4-466e-cb75e4ae3165": {
+    "x": 6836.0,
+    "y": 814.0
+   },
+   "590a2cdf-c87c-97fe-886c-1bccf82b3ea1": {
+    "x": 7200.0,
+    "y": 814.0
+   },
+   "42e52d22-4eb0-a8f4-205c-f27521b2fb11": {
+    "x": 7700.0,
+    "y": 814.0
+   },
+   "ac1c7f2f-81dc-ba0a-c30d-e5331721aa5c": {
+    "x": 1270.0,
+    "y": 579.0
+   }
+  },
+  "walls": [
+   {
+    "corner1": "3eac1f3c-2ef5-215e-b9bd-13e28ae0975a",
+    "corner2": "261aed9d-9fee-d584-0187-84e6e9aed82d",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "261aed9d-9fee-d584-0187-84e6e9aed82d",
+    "corner2": "aec028ae-55b9-38c2-f776-0b93fd1b03ce",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "aec028ae-55b9-38c2-f776-0b93fd1b03ce",
+    "corner2": "b046dc67-6b3c-500b-59e3-faba6c3e2931",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "b046dc67-6b3c-500b-59e3-faba6c3e2931",
+    "corner2": "fe9a3e92-c699-9638-f3b7-83c344d6ff7f",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "fe9a3e92-c699-9638-f3b7-83c344d6ff7f",
+    "corner2": "47419bfa-1d67-798f-1fc9-28546a797386",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "47419bfa-1d67-798f-1fc9-28546a797386",
+    "corner2": "d8402bf9-0dea-1320-6fa4-09b3a490d70b",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "d8402bf9-0dea-1320-6fa4-09b3a490d70b",
+    "corner2": "14a64471-6415-f976-2bdf-2c3f93d99e0f",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "14a64471-6415-f976-2bdf-2c3f93d99e0f",
+    "corner2": "ed41419c-caea-9716-b9ba-dab999fd4386",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "ed41419c-caea-9716-b9ba-dab999fd4386",
+    "corner2": "53bd2193-fa0c-782f-1bf2-249d4857ff22",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "53bd2193-fa0c-782f-1bf2-249d4857ff22",
+    "corner2": "09f4b409-8ce5-95c6-c90b-1d3145a2ddc3",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "09f4b409-8ce5-95c6-c90b-1d3145a2ddc3",
+    "corner2": "5101dfe1-2097-f879-08a9-783a84281993",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "5101dfe1-2097-f879-08a9-783a84281993",
+    "corner2": "cf35ec30-b41e-5be0-debe-32b4b3165e3f",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "cf35ec30-b41e-5be0-debe-32b4b3165e3f",
+    "corner2": "f09a4ae8-ecaa-7532-85e5-6ef58bc7724e",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "f09a4ae8-ecaa-7532-85e5-6ef58bc7724e",
+    "corner2": "16db8d61-5556-f30d-128c-11fc4f176ea1",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "16db8d61-5556-f30d-128c-11fc4f176ea1",
+    "corner2": "e1d76590-1b54-1e33-6df2-31339ad6c1e9",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "e1d76590-1b54-1e33-6df2-31339ad6c1e9",
+    "corner2": "df4f6e18-302c-31a8-e765-39c9d5a54eaf",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "df4f6e18-302c-31a8-e765-39c9d5a54eaf",
+    "corner2": "f6219242-c72f-e256-9895-d15247a2eb89",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "f6219242-c72f-e256-9895-d15247a2eb89",
+    "corner2": "d965186f-e58e-8fda-30e7-206ae9773687",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "d965186f-e58e-8fda-30e7-206ae9773687",
+    "corner2": "715b3263-a218-20a3-eead-764b5d65171c",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "715b3263-a218-20a3-eead-764b5d65171c",
+    "corner2": "4aaa07e1-8d71-dc10-882f-11bf9f3bd805",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "3f51b6ef-2f5e-4ede-b058-301805505d37",
+    "corner2": "9d5993e2-27c0-1ed8-f0b8-a7d3c0880570",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "9d5993e2-27c0-1ed8-f0b8-a7d3c0880570",
+    "corner2": "d8f9d976-d8c3-7e95-6526-f8182f8d15e5",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "d8f9d976-d8c3-7e95-6526-f8182f8d15e5",
+    "corner2": "5e33cd16-1b9e-88f4-a5a5-058a84d3a90e",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "5e33cd16-1b9e-88f4-a5a5-058a84d3a90e",
+    "corner2": "d2a811ec-fe79-7bf3-3b9f-179e011bcbfb",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "d2a811ec-fe79-7bf3-3b9f-179e011bcbfb",
+    "corner2": "ea7f7f7e-02a9-5f58-4aa5-7070d7c27351",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "ea7f7f7e-02a9-5f58-4aa5-7070d7c27351",
+    "corner2": "62c9e197-31f1-a1ab-397e-05a1ef92b801",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "62c9e197-31f1-a1ab-397e-05a1ef92b801",
+    "corner2": "22d8d748-29a3-7322-e757-bfa08620e612",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "22d8d748-29a3-7322-e757-bfa08620e612",
+    "corner2": "af66e22e-08b4-e54f-94f0-a5d64f8c8011",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "af66e22e-08b4-e54f-94f0-a5d64f8c8011",
+    "corner2": "29a7db33-e3b6-fe07-0283-0f229496103a",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "29a7db33-e3b6-fe07-0283-0f229496103a",
+    "corner2": "2ceb0849-3503-8c0a-ef77-0c5bcc4a72fb",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "2ceb0849-3503-8c0a-ef77-0c5bcc4a72fb",
+    "corner2": "957cd27f-a65e-ec40-4eb0-9f244877fe54",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "957cd27f-a65e-ec40-4eb0-9f244877fe54",
+    "corner2": "87ae2baf-8ad8-8f83-a01e-8f4bdef5aa98",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "87ae2baf-8ad8-8f83-a01e-8f4bdef5aa98",
+    "corner2": "c881c56a-d236-1599-1932-d333c013cc64",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "c881c56a-d236-1599-1932-d333c013cc64",
+    "corner2": "4800d666-ca66-68e4-8821-354a8fe85764",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "4800d666-ca66-68e4-8821-354a8fe85764",
+    "corner2": "fed934d8-db28-1cfe-2ab6-721b0074b9d5",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "fed934d8-db28-1cfe-2ab6-721b0074b9d5",
+    "corner2": "4aaa07e1-8d71-dc10-882f-11bf9f3bd805",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "3eac1f3c-2ef5-215e-b9bd-13e28ae0975a",
+    "corner2": "31efc30d-3a08-42f4-8c43-314fb1c2ebba",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "31efc30d-3a08-42f4-8c43-314fb1c2ebba",
+    "corner2": "3f51b6ef-2f5e-4ede-b058-301805505d37",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "31efc30d-3a08-42f4-8c43-314fb1c2ebba",
+    "corner2": "8593f0fb-0ad6-0253-b903-8f5553d7b780",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "29e52462-b0b6-5463-d506-b44a37ea7d0c",
+    "corner2": "c1ca752e-466e-fe49-c8f3-52d430c5a8f3",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "c1ca752e-466e-fe49-c8f3-52d430c5a8f3",
+    "corner2": "f9882ca0-2fef-6e02-6af9-f66fdd348786",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "f9882ca0-2fef-6e02-6af9-f66fdd348786",
+    "corner2": "e06a9f55-86a1-1c25-eeab-1ab49f4c946c",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "e06a9f55-86a1-1c25-eeab-1ab49f4c946c",
+    "corner2": "aa48f713-254c-86ef-2c92-f8f8af9bafdd",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "aa48f713-254c-86ef-2c92-f8f8af9bafdd",
+    "corner2": "e61b1f9b-899c-4966-1654-00c7606dfb71",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "394c2159-8179-29fe-465e-ca10814a0f0f",
+    "corner2": "2c3766f6-fd01-5905-110a-c9dd2be27122",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "2c3766f6-fd01-5905-110a-c9dd2be27122",
+    "corner2": "66c8cbb0-3b55-e11d-7f57-668cf8d46487",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "66c8cbb0-3b55-e11d-7f57-668cf8d46487",
+    "corner2": "2ea1cd12-2170-a0d4-3996-78ce38ede2da",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "2ea1cd12-2170-a0d4-3996-78ce38ede2da",
+    "corner2": "7eaf4591-1d1e-7e3f-bdae-264eec5a8fd5",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "7eaf4591-1d1e-7e3f-bdae-264eec5a8fd5",
+    "corner2": "676cf373-5eab-bb8e-b91b-17e7d7e582c5",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "676cf373-5eab-bb8e-b91b-17e7d7e582c5",
+    "corner2": "55c07716-d365-6a98-4727-fe94de75a4a7",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "55c07716-d365-6a98-4727-fe94de75a4a7",
+    "corner2": "00c8c4ed-5f9b-ec3c-720e-e9ac6737645d",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "00c8c4ed-5f9b-ec3c-720e-e9ac6737645d",
+    "corner2": "4dc2182e-0992-cd02-fa53-e880c037728e",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "4dc2182e-0992-cd02-fa53-e880c037728e",
+    "corner2": "4de4b706-3671-3fa8-d30f-ecd4e22b7f57",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "4de4b706-3671-3fa8-d30f-ecd4e22b7f57",
+    "corner2": "a03ba43b-6bef-fe00-7b78-70002efe01fb",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "a03ba43b-6bef-fe00-7b78-70002efe01fb",
+    "corner2": "2490a21e-8ae8-4c18-4b8b-c2c7c5ae93c6",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "2490a21e-8ae8-4c18-4b8b-c2c7c5ae93c6",
+    "corner2": "df17edf0-a9a6-2f79-4ed4-3b15def22a02",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "df17edf0-a9a6-2f79-4ed4-3b15def22a02",
+    "corner2": "4cb92bb8-4564-efa8-33bf-8a0b97752ab6",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "4cb92bb8-4564-efa8-33bf-8a0b97752ab6",
+    "corner2": "d0f1ec17-d1c6-ad5d-7708-64e806383911",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "c03d735a-e7b7-2c33-c989-bb3e18134b87",
+    "corner2": "bf061d0b-a55e-6119-6628-4dc9c28815ad",
+    "herkunft": "flur-sued, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "bf061d0b-a55e-6119-6628-4dc9c28815ad",
+    "corner2": "8d0b5b56-5a4b-0131-d03d-7897bd97e606",
+    "herkunft": "flur-sued, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "8d0b5b56-5a4b-0131-d03d-7897bd97e606",
+    "corner2": "a50ff17d-a5a9-04a1-16d0-7d3f3c9b64ef",
+    "herkunft": "flur-sued, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "a50ff17d-a5a9-04a1-16d0-7d3f3c9b64ef",
+    "corner2": "600ca7cd-a025-1396-2f77-519b80a39e57",
+    "herkunft": "flur-sued, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "600ca7cd-a025-1396-2f77-519b80a39e57",
+    "corner2": "be076dfc-de5f-b5a5-3d6a-e08d7520ce45",
+    "herkunft": "flur-sued, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "3f11da75-7e94-0fd0-8c41-f7530471333f",
+    "corner2": "a844d8a1-434e-5ac8-7349-71fb1ee7f451",
+    "herkunft": "flur-sued, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "a844d8a1-434e-5ac8-7349-71fb1ee7f451",
+    "corner2": "47353fa6-01aa-69a4-76f1-85a1ea8e654c",
+    "herkunft": "flur-sued, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "47353fa6-01aa-69a4-76f1-85a1ea8e654c",
+    "corner2": "d5a7fbf6-717f-55b4-c657-a8a3be26f216",
+    "herkunft": "flur-sued, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "d5a7fbf6-717f-55b4-c657-a8a3be26f216",
+    "corner2": "581a80ce-02c9-9e9d-331a-c277eb31ffdf",
+    "herkunft": "flur-sued, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "581a80ce-02c9-9e9d-331a-c277eb31ffdf",
+    "corner2": "3d716b44-c59f-122a-4932-480946e620ec",
+    "herkunft": "flur-sued, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "3d716b44-c59f-122a-4932-480946e620ec",
+    "corner2": "658f5bfb-abec-a81d-75cf-90c17afdfeed",
+    "herkunft": "flur-sued, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "658f5bfb-abec-a81d-75cf-90c17afdfeed",
+    "corner2": "44c4cdb5-51af-2a9e-9696-82a6280154fc",
+    "herkunft": "flur-sued, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "44c4cdb5-51af-2a9e-9696-82a6280154fc",
+    "corner2": "433414c6-01a0-65a5-8897-0db4de237b5d",
+    "herkunft": "flur-sued, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "433414c6-01a0-65a5-8897-0db4de237b5d",
+    "corner2": "b669d3c2-f7b2-e4de-6707-7edda81c6a77",
+    "herkunft": "flur-sued, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "b669d3c2-f7b2-e4de-6707-7edda81c6a77",
+    "corner2": "728b9adf-3fe7-f2b4-466e-cb75e4ae3165",
+    "herkunft": "flur-sued, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "728b9adf-3fe7-f2b4-466e-cb75e4ae3165",
+    "corner2": "590a2cdf-c87c-97fe-886c-1bccf82b3ea1",
+    "herkunft": "flur-sued, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "590a2cdf-c87c-97fe-886c-1bccf82b3ea1",
+    "corner2": "42e52d22-4eb0-a8f4-205c-f27521b2fb11",
+    "herkunft": "flur-sued, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "261aed9d-9fee-d584-0187-84e6e9aed82d",
+    "corner2": "c1ca752e-466e-fe49-c8f3-52d430c5a8f3",
+    "herkunft": "nord-2",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "aec028ae-55b9-38c2-f776-0b93fd1b03ce",
+    "corner2": "f9882ca0-2fef-6e02-6af9-f66fdd348786",
+    "herkunft": "nord-3",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "b046dc67-6b3c-500b-59e3-faba6c3e2931",
+    "corner2": "e06a9f55-86a1-1c25-eeab-1ab49f4c946c",
+    "herkunft": "nord-4",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "fe9a3e92-c699-9638-f3b7-83c344d6ff7f",
+    "corner2": "aa48f713-254c-86ef-2c92-f8f8af9bafdd",
+    "herkunft": "nord-5",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "47419bfa-1d67-798f-1fc9-28546a797386",
+    "corner2": "ac1c7f2f-81dc-ba0a-c30d-e5331721aa5c",
+    "herkunft": "nord-6",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "d8402bf9-0dea-1320-6fa4-09b3a490d70b",
+    "corner2": "2c3766f6-fd01-5905-110a-c9dd2be27122",
+    "herkunft": "nord-11",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "14a64471-6415-f976-2bdf-2c3f93d99e0f",
+    "corner2": "66c8cbb0-3b55-e11d-7f57-668cf8d46487",
+    "herkunft": "nord-12",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "ed41419c-caea-9716-b9ba-dab999fd4386",
+    "corner2": "2ea1cd12-2170-a0d4-3996-78ce38ede2da",
+    "herkunft": "nord-16",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "53bd2193-fa0c-782f-1bf2-249d4857ff22",
+    "corner2": "7eaf4591-1d1e-7e3f-bdae-264eec5a8fd5",
+    "herkunft": "nord-17",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "09f4b409-8ce5-95c6-c90b-1d3145a2ddc3",
+    "corner2": "676cf373-5eab-bb8e-b91b-17e7d7e582c5",
+    "herkunft": "nord-18",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "5101dfe1-2097-f879-08a9-783a84281993",
+    "corner2": "55c07716-d365-6a98-4727-fe94de75a4a7",
+    "herkunft": "nord-19",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "cf35ec30-b41e-5be0-debe-32b4b3165e3f",
+    "corner2": "00c8c4ed-5f9b-ec3c-720e-e9ac6737645d",
+    "herkunft": "nord-20",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "f09a4ae8-ecaa-7532-85e5-6ef58bc7724e",
+    "corner2": "4dc2182e-0992-cd02-fa53-e880c037728e",
+    "herkunft": "nord-21",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "16db8d61-5556-f30d-128c-11fc4f176ea1",
+    "corner2": "4de4b706-3671-3fa8-d30f-ecd4e22b7f57",
+    "herkunft": "nord-25",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "e1d76590-1b54-1e33-6df2-31339ad6c1e9",
+    "corner2": "a03ba43b-6bef-fe00-7b78-70002efe01fb",
+    "herkunft": "nord-29",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "df4f6e18-302c-31a8-e765-39c9d5a54eaf",
+    "corner2": "2490a21e-8ae8-4c18-4b8b-c2c7c5ae93c6",
+    "herkunft": "nord-31",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "f6219242-c72f-e256-9895-d15247a2eb89",
+    "corner2": "df17edf0-a9a6-2f79-4ed4-3b15def22a02",
+    "herkunft": "nord-33",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "d965186f-e58e-8fda-30e7-206ae9773687",
+    "corner2": "4cb92bb8-4564-efa8-33bf-8a0b97752ab6",
+    "herkunft": "nord-34",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "bf061d0b-a55e-6119-6628-4dc9c28815ad",
+    "corner2": "9d5993e2-27c0-1ed8-f0b8-a7d3c0880570",
+    "herkunft": "sued-1",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "8d0b5b56-5a4b-0131-d03d-7897bd97e606",
+    "corner2": "d8f9d976-d8c3-7e95-6526-f8182f8d15e5",
+    "herkunft": "sued-4",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "a50ff17d-a5a9-04a1-16d0-7d3f3c9b64ef",
+    "corner2": "5e33cd16-1b9e-88f4-a5a5-058a84d3a90e",
+    "herkunft": "sued-6",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "600ca7cd-a025-1396-2f77-519b80a39e57",
+    "corner2": "d2a811ec-fe79-7bf3-3b9f-179e011bcbfb",
+    "herkunft": "sued-10",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "a844d8a1-434e-5ac8-7349-71fb1ee7f451",
+    "corner2": "ea7f7f7e-02a9-5f58-4aa5-7070d7c27351",
+    "herkunft": "sued-19",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "47353fa6-01aa-69a4-76f1-85a1ea8e654c",
+    "corner2": "62c9e197-31f1-a1ab-397e-05a1ef92b801",
+    "herkunft": "sued-23",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "d5a7fbf6-717f-55b4-c657-a8a3be26f216",
+    "corner2": "22d8d748-29a3-7322-e757-bfa08620e612",
+    "herkunft": "sued-25",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "581a80ce-02c9-9e9d-331a-c277eb31ffdf",
+    "corner2": "af66e22e-08b4-e54f-94f0-a5d64f8c8011",
+    "herkunft": "sued-27",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "3d716b44-c59f-122a-4932-480946e620ec",
+    "corner2": "29a7db33-e3b6-fe07-0283-0f229496103a",
+    "herkunft": "sued-30",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "658f5bfb-abec-a81d-75cf-90c17afdfeed",
+    "corner2": "2ceb0849-3503-8c0a-ef77-0c5bcc4a72fb",
+    "herkunft": "sued-33",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "44c4cdb5-51af-2a9e-9696-82a6280154fc",
+    "corner2": "957cd27f-a65e-ec40-4eb0-9f244877fe54",
+    "herkunft": "sued-34",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "433414c6-01a0-65a5-8897-0db4de237b5d",
+    "corner2": "87ae2baf-8ad8-8f83-a01e-8f4bdef5aa98",
+    "herkunft": "sued-36",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "b669d3c2-f7b2-e4de-6707-7edda81c6a77",
+    "corner2": "c881c56a-d236-1599-1932-d333c013cc64",
+    "herkunft": "sued-40",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "728b9adf-3fe7-f2b4-466e-cb75e4ae3165",
+    "corner2": "4800d666-ca66-68e4-8821-354a8fe85764",
+    "herkunft": "sued-41",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "590a2cdf-c87c-97fe-886c-1bccf82b3ea1",
+    "corner2": "fed934d8-db28-1cfe-2ab6-721b0074b9d5",
+    "herkunft": "sued-42",
+    "art": "trennwand"
+   }
+  ],
+  "wallTextures": [],
+  "floorTextures": {},
+  "newFloorTextures": {}
+ },
+ "items": []
+}

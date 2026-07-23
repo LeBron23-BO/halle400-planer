@@ -172,6 +172,21 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
     // Load floorplan from IndexedDB or use default
     const loadInitialFloorplan = async () => {
       try {
+        // Vorrang: ein mitgelieferter Plan aus public/plaene, angefordert per
+        // ?plan=<name> — so laesst sich Halle 400 oeffnen, ohne den
+        // gespeicherten Arbeitsstand in IndexedDB zu ueberschreiben.
+        // Der Name wird streng gefiltert: der Parameter darf ausschliesslich
+        // einen Dateinamen benennen, niemals einen Pfad (kein ../, kein /).
+        const gewuenscht = new URLSearchParams(window.location.search).get('plan')
+        if (gewuenscht && /^[a-z0-9-]{1,40}$/.test(gewuenscht)) {
+          const antwort = await fetch(`plaene/${gewuenscht}.json`)
+          if (antwort.ok) {
+            blueprint3d.model.loadSerialized(JSON.stringify(await antwort.json()))
+            return
+          }
+          console.warn(`[Blueprint3DAppBase] Plan "${gewuenscht}" nicht gefunden`)
+        }
+
         const { blueprintTemplateDB } = await import('@blueprint3d/indexdb/blueprint-template')
         const savedTemplate = await blueprintTemplateDB.getTemplate()
 
