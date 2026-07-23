@@ -149,8 +149,10 @@ intelligence.db
 # Overlay-Bilder sind Prüf-Artefakte, jederzeit reproduzierbar via tools/overlay_plan.py
 data/overlay-*.png
 
-# Plan-Kacheln sind Sicht-Artefakte, jederzeit reproduzierbar via tools/plan_tiles.py
-data/kacheln/
+# Plan-Kacheln sind Sicht-Artefakte, jederzeit reproduzierbar via tools/plan_tiles.py.
+# Muster statt fester Name: --aus legt je Massstab einen eigenen Ordner an
+# (data/kacheln10 fuer die 10-m-Stufe), sonst faellt jede neue Stufe durchs Netz.
+data/kacheln*/
 
 # Vergleichsbild ist ein Pruef-Artefakt, reproduzierbar via tools/compare_plan.py
 data/vergleich.png
