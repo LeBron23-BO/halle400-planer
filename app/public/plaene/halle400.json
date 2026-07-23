@@ -33,6 +33,10 @@
     "x": 2576.0,
     "y": 0.0
    },
+   "a80b9040-4695-efcb-daed-8b7c223eec1f": {
+    "x": 2913.0,
+    "y": 0.0
+   },
    "ed41419c-caea-9716-b9ba-dab999fd4386": {
     "x": 3245.0,
     "y": 0.0
@@ -129,14 +133,6 @@
     "x": 5245.0,
     "y": 1531.0
    },
-   "957cd27f-a65e-ec40-4eb0-9f244877fe54": {
-    "x": 5445.0,
-    "y": 1531.0
-   },
-   "87ae2baf-8ad8-8f83-a01e-8f4bdef5aa98": {
-    "x": 5644.0,
-    "y": 1531.0
-   },
    "c881c56a-d236-1599-1932-d333c013cc64": {
     "x": 6515.0,
     "y": 1531.0
@@ -191,6 +187,10 @@
    },
    "66c8cbb0-3b55-e11d-7f57-668cf8d46487": {
     "x": 2576.0,
+    "y": 579.0
+   },
+   "754acb01-d955-abb7-0912-c46553c3dcc1": {
+    "x": 2913.0,
     "y": 579.0
    },
    "2ea1cd12-2170-a0d4-3996-78ce38ede2da": {
@@ -293,14 +293,6 @@
     "x": 5245.0,
     "y": 814.0
    },
-   "44c4cdb5-51af-2a9e-9696-82a6280154fc": {
-    "x": 5445.0,
-    "y": 814.0
-   },
-   "433414c6-01a0-65a5-8897-0db4de237b5d": {
-    "x": 5644.0,
-    "y": 814.0
-   },
    "b669d3c2-f7b2-e4de-6707-7edda81c6a77": {
     "x": 6515.0,
     "y": 814.0
@@ -367,6 +359,12 @@
    },
    {
     "corner1": "14a64471-6415-f976-2bdf-2c3f93d99e0f",
+    "corner2": "a80b9040-4695-efcb-daed-8b7c223eec1f",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "a80b9040-4695-efcb-daed-8b7c223eec1f",
     "corner2": "ed41419c-caea-9716-b9ba-dab999fd4386",
     "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
     "art": "aussen"
@@ -505,18 +503,6 @@
    },
    {
     "corner1": "2ceb0849-3503-8c0a-ef77-0c5bcc4a72fb",
-    "corner2": "957cd27f-a65e-ec40-4eb0-9f244877fe54",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
-    "art": "aussen"
-   },
-   {
-    "corner1": "957cd27f-a65e-ec40-4eb0-9f244877fe54",
-    "corner2": "87ae2baf-8ad8-8f83-a01e-8f4bdef5aa98",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
-    "art": "aussen"
-   },
-   {
-    "corner1": "87ae2baf-8ad8-8f83-a01e-8f4bdef5aa98",
     "corner2": "c881c56a-d236-1599-1932-d333c013cc64",
     "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
     "art": "aussen"
@@ -601,6 +587,12 @@
    },
    {
     "corner1": "66c8cbb0-3b55-e11d-7f57-668cf8d46487",
+    "corner2": "754acb01-d955-abb7-0912-c46553c3dcc1",
+    "herkunft": "flur-nord, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "754acb01-d955-abb7-0912-c46553c3dcc1",
     "corner2": "2ea1cd12-2170-a0d4-3996-78ce38ede2da",
     "herkunft": "flur-nord, Zeilenprojektion",
     "art": "flur"
@@ -739,18 +731,6 @@
    },
    {
     "corner1": "658f5bfb-abec-a81d-75cf-90c17afdfeed",
-    "corner2": "44c4cdb5-51af-2a9e-9696-82a6280154fc",
-    "herkunft": "flur-sued, Zeilenprojektion",
-    "art": "flur"
-   },
-   {
-    "corner1": "44c4cdb5-51af-2a9e-9696-82a6280154fc",
-    "corner2": "433414c6-01a0-65a5-8897-0db4de237b5d",
-    "herkunft": "flur-sued, Zeilenprojektion",
-    "art": "flur"
-   },
-   {
-    "corner1": "433414c6-01a0-65a5-8897-0db4de237b5d",
     "corner2": "b669d3c2-f7b2-e4de-6707-7edda81c6a77",
     "herkunft": "flur-sued, Zeilenprojektion",
     "art": "flur"
@@ -813,6 +793,12 @@
     "corner1": "14a64471-6415-f976-2bdf-2c3f93d99e0f",
     "corner2": "66c8cbb0-3b55-e11d-7f57-668cf8d46487",
     "herkunft": "nord-12",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "a80b9040-4695-efcb-daed-8b7c223eec1f",
+    "corner2": "754acb01-d955-abb7-0912-c46553c3dcc1",
+    "herkunft": "nord-14",
     "art": "trennwand"
    },
    {
@@ -939,18 +925,6 @@
     "corner1": "658f5bfb-abec-a81d-75cf-90c17afdfeed",
     "corner2": "2ceb0849-3503-8c0a-ef77-0c5bcc4a72fb",
     "herkunft": "sued-33",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "44c4cdb5-51af-2a9e-9696-82a6280154fc",
-    "corner2": "957cd27f-a65e-ec40-4eb0-9f244877fe54",
-    "herkunft": "sued-34",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "433414c6-01a0-65a5-8897-0db4de237b5d",
-    "corner2": "87ae2baf-8ad8-8f83-a01e-8f4bdef5aa98",
-    "herkunft": "sued-36",
     "art": "trennwand"
    },
    {

@@ -64,12 +64,26 @@ SEGMENT_MIN_M = 1.5         # kuerzere Flur-Segmente sind Rauschen
 # aber schon. Schluessel = "<zeile>-<nr>" aus measure_walls.py.
 AUSSCHLUSS: dict[str, str] = {
     "nord-1": "Treppenwange zwischen den beiden Treppenlaeufen, keine Raumtrennung",
+    # Sichtentscheidung 2026-07-23 an data/kacheln10/kand_sued_6_54-64m.png:
+    # ein grosser Konferenztisch (x 54.4..56.5 m) steht frei im offenen Bereich,
+    # Stuehle auf BEIDEN Laengsseiten. Seine Laengskanten nehmen fast die volle
+    # Bandhoehe ein und bestehen dadurch den Durchlauf-Test — eine Wand mitten
+    # durch einen ringsum bestuhlten Tisch gibt es nicht.
+    "sued-34": "linke Laengskante des freistehenden Konferenztisches, Stuehle beidseitig",
+    "sued-36": "rechte Laengskante desselben Tisches — derselbe Koerper wie sued-34",
 }
 
 # Umgekehrter Weg: Waende, die der strenge Filter verwirft, die aber am Bild
 # eindeutig sind (typisch: Wand mit breiter Tueroeffnung).
 AUFNAHME: dict[str, str] = {
     "nord-6": "Ostabschluss des Sanitaerblocks; Ende offen zum Flur, daher rand_unten=0",
+    # Sichtentscheidung 2026-07-23 an data/kacheln10/kand_nord_3_27-37m.png:
+    # zwischen nord-12 (25.76 m) und nord-16 (32.45 m) liegt eine 6.7 m breite
+    # Bueroeinheit. nord-14 teilt sie in zwei Zellen von je rund 3.3 m, jede mit
+    # eigenem Schreibtisch — nord-13 und nord-15 liegen MITTEN auf diesen beiden
+    # Tischen und sind deshalb keine Waende. Die Belegung 0.47 kommt daher, dass
+    # die Wand oben an der Loggia endet statt bis zur Aussenkante durchzulaufen.
+    "nord-14": "Trennwand der beiden Nordbueros bei 29.1 m; endet an der Loggia",
 }
 
 # Im Overlay auffaellig, aber nicht sicher entschieden. Bleiben vorerst drin —
@@ -78,7 +92,13 @@ AUFNAHME: dict[str, str] = {
 # fast die volle Bandhoehe einnimmt. Ein kleinerer Randstreifen scheidet sie
 # NICHT aus (geprueft bis 0.12 m), kostet in der Nordzeile aber 20 echte Waende
 # — der Randstreifen ist hier also der falsche Hebel.
-ZU_PRUEFEN = {"sued-34", "sued-36"}
+# Stand 2026-07-23: sued-34/sued-36 sind entschieden (siehe AUSSCHLUSS).
+# Neu hier: nord-17 (35.30 m, beleg 0.73) zeigt dasselbe Muster — die Linie
+# faellt mit der gestrichelt gezeichneten Mittelfuge eines grossen, ringsum
+# bestuhlten Tisches zusammen. Anders als bei sued-34/36 laesst sich am Bild
+# NICHT ausschliessen, dass dahinter eine Wand steht. Sie bleibt deshalb drin
+# und wird benannt, statt sie auf Verdacht zu entfernen.
+ZU_PRUEFEN = {"nord-17"}
 
 
 def _flur_segmente(maske: np.ndarray, y_display: float) -> list[tuple[float, float]]:

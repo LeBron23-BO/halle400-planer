@@ -126,3 +126,52 @@ Wände, die es nicht gibt — oder Säulen-Zuordnungen ins Leere.
    plus Sichtprüfung des Overlays. Zahlen allein schließen T2c nicht ab.
 4. Toleranz mitführen: Wandachse = Mittellinie des Duktus. Bei Konflikt
    gewinnt der Sicht-Vergleich, nicht die zweite Nachkommastelle.
+
+## Sichtentscheidungen T2c-verfeinern (2026-07-23)
+
+Grundlage: `python tools/plan_tiles.py --kandidaten --breite 10 --aus data/kacheln10`
+(20-m-Kacheln zeigen zu wenig Detail — bei 10 m wird die Unterscheidung
+Wand/Moebel am Freihand-Duktus erst sicher).
+
+### Aufgenommen
+
+- **nord-14 (29.1 m)** — Trennwand der beiden Nordbueros. Zwischen nord-12
+  (25.76 m) und nord-16 (32.45 m) liegt eine 6.7 m breite Bueroeinheit;
+  nord-14 teilt sie in zwei Zellen von je rund 3.3 m, jede mit eigenem
+  Schreibtisch. Belegung nur 0.47, weil die Wand oben an der Loggia endet
+  statt bis zur Aussenkante durchzulaufen — kein Messfehler, sondern die
+  Bauform.
+
+### Ausgeschlossen
+
+- **sued-34 (54.45 m) und sued-36 (56.44 m)** — die beiden Laengskanten EINES
+  freistehenden Konferenztisches, Stuehle auf beiden Seiten. Der Tisch nimmt
+  fast die volle Bandhoehe ein und besteht dadurch den Durchlauf-Test. Eine
+  Wand mitten durch einen ringsum bestuhlten Tisch gibt es nicht. Damit ist
+  der bisherige ZU_PRUEFEN-Verdacht entschieden.
+
+### Weiter offen (benannt, nicht geraten)
+
+- **nord-17 (35.30 m, beleg 0.73)** — faellt mit der gestrichelt gezeichneten
+  Mittelfuge eines grossen, ringsum bestuhlten Tisches zusammen, also dasselbe
+  Muster wie sued-34/36. Anders als dort laesst sich am Bild NICHT
+  ausschliessen, dass dahinter eine Wand steht. Bleibt drin, steht in
+  ZU_PRUEFEN.
+
+### Negativbefund: die Suedzeile 19..32 m ist WIRKLICH offen
+
+Die 13-m-Luecke war der groesste Verdacht auf eine fehlende Messung. Sie ist
+keine. Am Bild (`data/kacheln/kand_sued_1_19-39m.png`) ist der Bereich ein
+durchgehend offener Workspace mit Tischgruppen und einer begruenten Loggia;
+die dort verworfenen Kandidaten sued-11 bis sued-18 sind Tischkanten und die
+Begrenzung des Aussenbereichs. Erst bei sued-19 (31.92 m) steht wieder eine
+echte, durchgezeichnete Wand.
+
+Ebenso in der Nordzeile: nord-13 (27.52 m) und nord-15 (30.62 m) liegen MITTEN
+auf den beiden Bueroschreibtischen — sie sind durchlaufend, weil Tisch, Stuhl
+und Pflanze zusammen die Bandhoehe fuellen, nicht weil dort eine Wand steht.
+
+**Uebertragbar:** Eine niedrige Belegung bei durchlaufendem Kandidaten hat zwei
+voellig verschiedene Ursachen — eine echte Wand mit Tueroeffnung ODER eine
+Reihe zufaellig uebereinanderliegender Moebel. Die Zahl allein unterscheidet
+sie nicht; nur der Blick aufs Bild tut es.

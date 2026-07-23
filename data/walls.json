@@ -222,6 +222,21 @@
     {
       "art": "trennwand",
       "von": [
+        29.13,
+        0.0
+      ],
+      "bis": [
+        29.13,
+        5.79
+      ],
+      "quelle": "nord-14",
+      "beleg": 0.47,
+      "kuratiert": true,
+      "zu_pruefen": false
+    },
+    {
+      "art": "trennwand",
+      "von": [
         32.45,
         0.0
       ],
@@ -247,7 +262,7 @@
       "quelle": "nord-17",
       "beleg": 0.73,
       "kuratiert": false,
-      "zu_pruefen": false
+      "zu_pruefen": true
     },
     {
       "art": "trennwand",
@@ -537,36 +552,6 @@
     {
       "art": "trennwand",
       "von": [
-        54.45,
-        8.14
-      ],
-      "bis": [
-        54.45,
-        15.31
-      ],
-      "quelle": "sued-34",
-      "beleg": 0.67,
-      "kuratiert": false,
-      "zu_pruefen": true
-    },
-    {
-      "art": "trennwand",
-      "von": [
-        56.44,
-        8.14
-      ],
-      "bis": [
-        56.44,
-        15.31
-      ],
-      "quelle": "sued-36",
-      "beleg": 0.68,
-      "kuratiert": false,
-      "zu_pruefen": true
-    },
-    {
-      "art": "trennwand",
-      "von": [
         65.15,
         8.14
       ],
@@ -645,11 +630,6 @@
       "kennung": "nord-13",
       "x_m": 27.52,
       "grund": "Belegung 0.42 unter 0.6 — erst beim Verfeinern"
-    },
-    {
-      "kennung": "nord-14",
-      "x_m": 29.13,
-      "grund": "Belegung 0.47 unter 0.6 — erst beim Verfeinern"
     },
     {
       "kennung": "nord-15",
@@ -832,9 +812,19 @@
       "grund": "Belegung 0.48 unter 0.6 — erst beim Verfeinern"
     },
     {
+      "kennung": "sued-34",
+      "x_m": 54.45,
+      "grund": "linke Laengskante des freistehenden Konferenztisches, Stuehle beidseitig"
+    },
+    {
       "kennung": "sued-35",
       "x_m": 55.39,
       "grund": "Belegung 0.43 unter 0.6 — erst beim Verfeinern"
+    },
+    {
+      "kennung": "sued-36",
+      "x_m": 56.44,
+      "grund": "rechte Laengskante desselben Tisches — derselbe Koerper wie sued-34"
     },
     {
       "kennung": "sued-37",
