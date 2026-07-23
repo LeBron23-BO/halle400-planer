@@ -143,3 +143,8 @@ shots/
 out/
 semantic_cache.sqlite
 *.sqlite
+__pycache__/
+*.pyc
+intelligence.db
+# Overlay-Bilder sind Prüf-Artefakte, jederzeit reproduzierbar via tools/overlay_plan.py
+data/overlay-*.png
