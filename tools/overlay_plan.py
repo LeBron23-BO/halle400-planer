@@ -65,15 +65,19 @@ def main() -> int:
     bild = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
     zeichne = ImageDraw.Draw(bild)
 
-    # Massstab aus derselben Quelle wie die Extraktion, nicht neu geraten.
+    # Die Umrechnung kommt aus extract_plan — sie wird hier NICHT nachgebaut.
+    # Sonst driften Extraktion und Sicht-Vergleich auseinander und das Overlay
+    # bestaetigt am Ende nur noch sich selbst.
     import sys
     sys.path.insert(0, str(Path(__file__).parent))
-    from extract_plan import X0_DISPLAY, X1_DISPLAY, Y0_DISPLAY, Y1_DISPLAY, LAENGE_M, TIEFE_M
+    from extract_plan import meter_zu_x, meter_zu_y, x_zu_meter, y_zu_meter, LAENGE_M, TIEFE_M
 
     def px(x_m: float, y_m: float) -> tuple[float, float]:
-        x = X0_DISPLAY + x_m / LAENGE_M * (X1_DISPLAY - X0_DISPLAY)
-        y = Y0_DISPLAY + y_m / TIEFE_M * (Y1_DISPLAY - Y0_DISPLAY)
-        return x * z, y * z
+        return meter_zu_x(x_m) * z, meter_zu_y(y_m) * z
+
+    # Selbstprüfung: Hin- und Rückrechnung müssen sich aufheben.
+    assert abs(x_zu_meter(meter_zu_x(12.0)) - 12.0) < 1e-6
+    assert abs(y_zu_meter(meter_zu_y(7.5)) - 7.5) < 1e-6
 
     # Bezugsrechteck
     o, u = px(0, 0), px(LAENGE_M, TIEFE_M)

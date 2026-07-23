@@ -91,7 +91,17 @@ def x_zu_meter(x: float) -> float:
 
 
 def y_zu_meter(y: float) -> float:
-    return (y - Y0_DISPLAY) / (Y1_DISPLAY - Y0_DISPLAY) * TIEFE_M
+    return (y - Y_NORDKANTE) / PX_PRO_M
+
+
+def meter_zu_x(x_m: float) -> float:
+    """Umkehrung von x_zu_meter — das Overlay zeichnet in Anzeige-Koordinaten."""
+    return X0_DISPLAY + x_m * PX_PRO_M
+
+
+def meter_zu_y(y_m: float) -> float:
+    """Umkehrung von y_zu_meter. Isotroper Massstab: derselbe Faktor wie in x."""
+    return Y_NORDKANTE + y_m * PX_PRO_M
 
 
 @dataclass

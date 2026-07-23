@@ -28,7 +28,7 @@
       "anker_x": 454.0,
       "anker_y": 659.1,
       "anker_x_m": 15.45,
-      "anker_y_m": 4.21
+      "anker_y_m": 4.2
     },
     {
       "text": "Aufzug",
@@ -138,7 +138,7 @@
       "anker_x": 320.8,
       "anker_y": 846.5,
       "anker_x_m": 9.72,
-      "anker_y_m": 12.27
+      "anker_y_m": 12.26
     },
     {
       "text": "Workspace",
@@ -204,7 +204,7 @@
       "anker_x": 1752.0,
       "anker_y": 846.5,
       "anker_x_m": 71.25,
-      "anker_y_m": 12.27
+      "anker_y_m": 12.26
     }
   ],
   "hinweise": []
