@@ -148,3 +148,6 @@ __pycache__/
 intelligence.db
 # Overlay-Bilder sind Prüf-Artefakte, jederzeit reproduzierbar via tools/overlay_plan.py
 data/overlay-*.png
+
+# Plan-Kacheln sind Sicht-Artefakte, jederzeit reproduzierbar via tools/plan_tiles.py
+data/kacheln/
