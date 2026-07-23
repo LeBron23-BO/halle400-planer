@@ -1,0 +1,211 @@
+{
+  "quelle": "C:\\Users\\dania\\Desktop\\Nur Büro.pdf",
+  "seite_breite": 2004.0,
+  "seite_hoehe": 1417.0,
+  "massstab_px_pro_m": 23.013,
+  "riegel_m": {
+    "laenge": 78.0,
+    "tiefe": 15.0
+  },
+  "beschriftungen": [
+    {
+      "text": "Toiletten",
+      "zusatz": "",
+      "seite": "nord",
+      "label_x0": 252.0,
+      "label_y": 341.8,
+      "anker_x": 252.0,
+      "anker_y": 646.4,
+      "anker_x_m": 6.39,
+      "anker_y_m": 4.05
+    },
+    {
+      "text": "Teamtable",
+      "zusatz": "",
+      "seite": "nord",
+      "label_x0": 454.0,
+      "label_y": 341.8,
+      "anker_x": 454.0,
+      "anker_y": 659.1,
+      "anker_x_m": 15.17,
+      "anker_y_m": 4.6
+    },
+    {
+      "text": "Aufzug",
+      "zusatz": "",
+      "seite": "nord",
+      "label_x0": 561.0,
+      "label_y": 341.8,
+      "anker_x": 561.0,
+      "anker_y": 511.9,
+      "anker_x_m": 19.82,
+      "anker_y_m": -1.78
+    },
+    {
+      "text": "Empfang",
+      "zusatz": "",
+      "seite": "nord",
+      "label_x0": 630.0,
+      "label_y": 341.8,
+      "anker_x": 630.0,
+      "anker_y": 608.5,
+      "anker_x_m": 22.81,
+      "anker_y_m": 2.41
+    },
+    {
+      "text": "Einzelbüro",
+      "zusatz": "",
+      "seite": "nord",
+      "label_x0": 783.4,
+      "label_y": 341.8,
+      "anker_x": 783.4,
+      "anker_y": 646.4,
+      "anker_x_m": 29.48,
+      "anker_y_m": 4.05
+    },
+    {
+      "text": "Workspace",
+      "zusatz": "",
+      "seite": "nord",
+      "label_x0": 956.0,
+      "label_y": 341.8,
+      "anker_x": 956.0,
+      "anker_y": 646.4,
+      "anker_x_m": 36.98,
+      "anker_y_m": 4.05
+    },
+    {
+      "text": "Loggia",
+      "zusatz": "",
+      "seite": "nord",
+      "label_x0": 1224.0,
+      "label_y": 341.8,
+      "anker_x": 1224.0,
+      "anker_y": 590.5,
+      "anker_x_m": 48.63,
+      "anker_y_m": 1.63
+    },
+    {
+      "text": "Videokonf",
+      "zusatz": "",
+      "seite": "nord",
+      "label_x0": 1485.0,
+      "label_y": 341.8,
+      "anker_x": 1485.0,
+      "anker_y": 675.5,
+      "anker_x_m": 59.97,
+      "anker_y_m": 5.31
+    },
+    {
+      "text": "Storage",
+      "zusatz": "",
+      "seite": "nord",
+      "label_x0": 1662.4,
+      "label_y": 341.8,
+      "anker_x": 1662.4,
+      "anker_y": 641.5,
+      "anker_x_m": 67.68,
+      "anker_y_m": 3.84
+    },
+    {
+      "text": "Workshop",
+      "zusatz": "",
+      "seite": "nord",
+      "label_x0": 1826.8,
+      "label_y": 341.8,
+      "anker_x": 1826.8,
+      "anker_y": 646.4,
+      "anker_x_m": 74.82,
+      "anker_y_m": 4.05
+    },
+    {
+      "text": "Konferenz",
+      "zusatz": "10-12 Personen",
+      "seite": "sued",
+      "label_x0": 142.0,
+      "label_y": 1038.8,
+      "anker_x": 142.0,
+      "anker_y": 838.5,
+      "anker_x_m": 1.61,
+      "anker_y_m": 12.38
+    },
+    {
+      "text": "Konferenz",
+      "zusatz": "6-8 Personen",
+      "seite": "sued",
+      "label_x0": 320.8,
+      "label_y": 1038.8,
+      "anker_x": 320.8,
+      "anker_y": 846.5,
+      "anker_x_m": 9.38,
+      "anker_y_m": 12.72
+    },
+    {
+      "text": "Workspace",
+      "zusatz": "",
+      "seite": "sued",
+      "label_x0": 564.0,
+      "label_y": 1038.8,
+      "anker_x": 564.0,
+      "anker_y": 825.5,
+      "anker_x_m": 19.95,
+      "anker_y_m": 11.81
+    },
+    {
+      "text": "Workshop",
+      "zusatz": "6-8 Personen",
+      "seite": "sued",
+      "label_x0": 866.8,
+      "label_y": 1038.8,
+      "anker_x": 866.8,
+      "anker_y": 861.5,
+      "anker_x_m": 33.1,
+      "anker_y_m": 13.37
+    },
+    {
+      "text": "Phone Booth",
+      "zusatz": "",
+      "seite": "sued",
+      "label_x0": 1048.0,
+      "label_y": 1038.8,
+      "anker_x": 1048.0,
+      "anker_y": 766.5,
+      "anker_x_m": 40.98,
+      "anker_y_m": 9.26
+    },
+    {
+      "text": "Doppelbüro",
+      "zusatz": "",
+      "seite": "sued",
+      "label_x0": 1267.0,
+      "label_y": 1038.8,
+      "anker_x": 1267.0,
+      "anker_y": 829.4,
+      "anker_x_m": 50.49,
+      "anker_y_m": 11.98
+    },
+    {
+      "text": "Break out",
+      "zusatz": "",
+      "seite": "sued",
+      "label_x0": 1648.0,
+      "label_y": 1038.8,
+      "anker_x": 1648.1,
+      "anker_y": 748.1,
+      "anker_x_m": 67.05,
+      "anker_y_m": 8.46
+    },
+    {
+      "text": "Lager",
+      "zusatz": "",
+      "seite": "sued",
+      "label_x0": 1752.0,
+      "label_y": 1038.8,
+      "anker_x": 1752.0,
+      "anker_y": 846.5,
+      "anker_x_m": 71.57,
+      "anker_y_m": 12.72
+    }
+  ],
+  "hinweise": []
+}
