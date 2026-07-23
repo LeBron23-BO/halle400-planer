@@ -62,8 +62,108 @@ SEGMENT_MIN_M = 1.5         # kuerzere Flur-Segmente sind Rauschen
 
 # Was die Messung nicht von einer Wand unterscheiden kann, die Sichtpruefung
 # aber schon. Schluessel = "<zeile>-<nr>" aus measure_walls.py.
+#
+# DURCHGANG 2026-07-23 (T2c-verfeinern): alle 18 Kacheln aus
+# `python tools/plan_tiles.py --kandidaten --breite 10 --aus data/kacheln10`
+# einzeln angesehen. Dabei traten drei wiederkehrende Muster auf, die den
+# Grossteil der Faelle erklaeren:
+#
+#   MUSTER A — "ein Tisch, drei Kandidaten": ein ringsum bestuhlter Tisch
+#   erzeugt bis zu drei senkrechte Kandidaten (linke Kante, gezeichnete
+#   Mittelfuge, rechte Kante). Der Abstand liegt bei 1.4..1.9 m. Beleg:
+#   sued-7/8/9, sued-11/12/13, sued-17/18, sued-34/35/36, nord-19/20.
+#   GEGENPROBE (mechanisch, unabhaengig vom Auge): zwei benachbarte
+#   "Waende" mit weniger als ~1.5 m Abstand umschliessen keinen Raum,
+#   sondern einen Koerper. Ein 1.39-m-Raum existiert nicht.
+#
+#   MUSTER B — Loggia/Terrasse: die beigen Flaechen mit Bepflanzung und
+#   Kies sind Aussenbereiche mit freier Moeblierung. Was dort senkrecht
+#   misst, ist Pflanzkuebel oder Terrassenmoebel, keine Trennwand.
+#   Betrifft die vermeintlichen "Luecken" Nord 45..64 m und Sued 19..32 m —
+#   sie sind keine fehlenden Messungen, sondern offene Flaechen.
+#
+#   MUSTER C — gestrichelt vs. durchgezogen: Waende sind im Plan
+#   durchgezogen. Eine gestrichelte Senkrechte ist die Fuge zweier
+#   zusammengeschobener Tische (nord-17, sued-35).
 AUSSCHLUSS: dict[str, str] = {
     "nord-1": "Treppenwange zwischen den beiden Treppenlaeufen, keine Raumtrennung",
+
+    # --- Nordzeile: offener Bereich Kueche/Teamtable/Aufzug/Empfang (12.7..23.8 m).
+    # Zwei unabhaengige Messungen zeigten hier schon, dass keine Wand steht;
+    # die Kacheln kand_nord_1/2 bestaetigen es am Bild.
+    "nord-7": "Fuge der Kuechenzeile, laeuft weiter durch den Teamtable (Muster A)",
+    "nord-8": "rechte Kante des Teamtables",
+    "nord-9": "Sesselgruppe der Empfangszone, freistehend",
+    "nord-10": "freistehender Tresen, oben und unten ohne Anschluss",
+
+    # --- Nordbueros 25.8..32.5 m (kand_nord_3): nord-14 teilt sie, die
+    # beiden Nachbarn liegen auf den Schreibtischen der jeweiligen Zelle.
+    "nord-13": "Schreibtisch in der linken Bueroezelle, nicht deren Wand",
+    "nord-15": "Schreibtisch in der rechten Bueroezelle, nicht deren Wand",
+
+    # --- nord-17 war ZU_PRUEFEN und ist jetzt entschieden (kand_nord_3, 10 m):
+    # die Linie ist GESTRICHELT und liegt mittig in einem Tisch mit Stuehlen
+    # auf beiden Laengsseiten. Auf der 20-m-Kachel war das nicht zu sehen.
+    "nord-17": "gestrichelte Mittelfuge eines ringsum bestuhlten Tisches (Muster C)",
+
+    # --- nord-19/20 waren AUFGENOMMEN und sind Falsch-Positive (kand_nord_4).
+    # Sie stehen 1.39 m auseinander, mitten im 6.86-m-Raum nord-18..nord-21,
+    # mit Stuehlen links und rechts davon. Gegenueber im Sueden dasselbe Bild:
+    # 7.0-m-Raum sued-23..sued-27 mit einem Tischblock in der Mitte.
+    "nord-19": "linke Laengskante des Tischblocks im Raum 38.7..45.6 m (Abstand 1.39 m)",
+    "nord-20": "rechte Laengskante desselben Tisches — derselbe Koerper wie nord-19",
+
+    # --- Loggia Nord 45..64 m (kand_nord_5/6): Aussenbereich, keine Luecke.
+    "nord-22": "Bepflanzung und Kiesflaeche der Loggia (Muster B)",
+    "nord-23": "linke Laengskante des Konferenztisches in der Loggia",
+    "nord-24": "rechte Laengskante desselben Tisches",
+    "nord-26": "Kante der Schrankreihe, freistehend",
+    "nord-27": "linke Kante des Sesselblocks",
+    "nord-28": "rechte Kante desselben Sesselblocks",
+    "nord-30": "Loggia-Bepflanzung und Terrassenmoebel (Muster B)",
+
+    # --- Ostteil Nord 63..78 m (kand_nord_7/8).
+    "nord-32": "schmale freistehende Stuetze, ohne Anschluss nach oben und unten",
+    "nord-35": "Tischkante im Ostraum",
+    "nord-36": "Regal im Ostraum, kein Raumabschluss",
+
+    # --- Suedzeile West 0..19 m (kand_sued_0/1).
+    "sued-2": "linke Kante des Workshop-Tisches (Muster A)",
+    "sued-3": "rechte Kante desselben Tisches",
+    "sued-5": "Stuhlkranz am runden Tisch",
+    "sued-7": "linke Kante des Vierertisches (Muster A)",
+    "sued-8": "gezeichnete Mittelfuge desselben Tisches",
+    "sued-9": "rechte Kante desselben Tisches",
+
+    # --- Suedzeile 19..32 m: offener Workspace mit Loggia. Der Negativbefund
+    # der Vorsitzung ("13-m-Luecke ist wirklich offen") ist damit am Bild belegt.
+    "sued-11": "linke Kante des Arbeitsplatz-Blocks (Muster A)",
+    "sued-12": "Mittelfuge desselben Blocks",
+    "sued-13": "rechte Kante desselben Blocks",
+    "sued-14": "Endkante der langen Sitzbank",
+    "sued-15": "Mittelfuge des Moebelblocks daneben",
+    "sued-16": "rechte Kante desselben Moebelblocks",
+    "sued-17": "linke Kante des Doppelschreibtisches",
+    "sued-18": "Mittelfuge desselben Schreibtisches",
+    "sued-20": "Sitzsaecke im offenen Bereich",
+    "sued-21": "Mittelfuge des Tisches bei 35 m",
+    "sued-22": "rechte Kante desselben Tisches",
+
+    # --- Suedzeile Mitte 36..55 m (kand_sued_4/5).
+    "sued-24": "linke Kante des Schreibtischblocks im Raum 38.9..45.9 m",
+    "sued-25": "Mittelfuge DESSELBEN Blocks — war faelschlich aufgenommen",
+    "sued-26": "rechte Kante desselben Blocks (Abstand 24->26 nur 1.92 m)",
+    "sued-28": "Schreibtischkante am Loggia-Rand",
+    "sued-29": "rechte Kante desselben Schreibtisches",
+    "sued-31": "linke Kante des dritten Schreibtisches",
+    "sued-32": "rechte Kante desselben Schreibtisches",
+
+    # --- Suedzeile Ost 54..78 m (kand_sued_6/8).
+    "sued-35": "gestrichelte Mittelfuge des Konferenztisches sued-34/36 (Muster C)",
+    "sued-38": "linke Kante des Terrassenmoebels",
+    "sued-39": "rechte Kante desselben Moebels",
+    "sued-43": "Mitte eines Regalfachs im Lager, keine Raumtrennung",
+
     # Sichtentscheidung 2026-07-23 an data/kacheln10/kand_sued_6_54-64m.png:
     # ein grosser Konferenztisch (x 54.4..56.5 m) steht frei im offenen Bereich,
     # Stuehle auf BEIDEN Laengsseiten. Seine Laengskanten nehmen fast die volle
@@ -84,21 +184,19 @@ AUFNAHME: dict[str, str] = {
     # Tischen und sind deshalb keine Waende. Die Belegung 0.47 kommt daher, dass
     # die Wand oben an der Loggia endet statt bis zur Aussenkante durchzulaufen.
     "nord-14": "Trennwand der beiden Nordbueros bei 29.1 m; endet an der Loggia",
+    # Sichtentscheidung 2026-07-23 an data/kacheln10/kand_sued_6_54-64m.png:
+    # kraeftige, durchgezogene Senkrechte, die auf halber Bandhoehe ansetzt und
+    # bis zur Aussenwand laeuft — sie schliesst die Ost-Loggia nach Westen ab.
+    # Genau dieser Ansatz auf halber Hoehe drueckt die Belegung auf 0.56.
+    "sued-37": "Westabschluss der Ost-Loggia; setzt auf halber Bandhoehe an",
 }
 
 # Im Overlay auffaellig, aber nicht sicher entschieden. Bleiben vorerst drin —
 # mit Kennung, damit die Pruefung beim Verfeinern gezielt moeglich ist.
-# sued-34 / sued-36: laufen durch einen grossen Konferenztisch (x 53..57 m), der
-# fast die volle Bandhoehe einnimmt. Ein kleinerer Randstreifen scheidet sie
-# NICHT aus (geprueft bis 0.12 m), kostet in der Nordzeile aber 20 echte Waende
-# — der Randstreifen ist hier also der falsche Hebel.
-# Stand 2026-07-23: sued-34/sued-36 sind entschieden (siehe AUSSCHLUSS).
-# Neu hier: nord-17 (35.30 m, beleg 0.73) zeigt dasselbe Muster — die Linie
-# faellt mit der gestrichelt gezeichneten Mittelfuge eines grossen, ringsum
-# bestuhlten Tisches zusammen. Anders als bei sued-34/36 laesst sich am Bild
-# NICHT ausschliessen, dass dahinter eine Wand steht. Sie bleibt deshalb drin
-# und wird benannt, statt sie auf Verdacht zu entfernen.
-ZU_PRUEFEN = {"nord-17"}
+# Stand 2026-07-23 nach dem vollstaendigen Kachel-Durchgang: LEER. Jede der 51
+# verworfenen Kennungen und die beiden Falsch-Positiven nord-19/nord-20 sind
+# entschieden und stehen mit Grund in AUSSCHLUSS bzw. AUFNAHME.
+ZU_PRUEFEN: set[str] = set()
 
 
 def _flur_segmente(maske: np.ndarray, y_display: float) -> list[tuple[float, float]]:

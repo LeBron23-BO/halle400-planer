@@ -252,21 +252,6 @@
     {
       "art": "trennwand",
       "von": [
-        35.3,
-        0.0
-      ],
-      "bis": [
-        35.3,
-        5.79
-      ],
-      "quelle": "nord-17",
-      "beleg": 0.73,
-      "kuratiert": false,
-      "zu_pruefen": true
-    },
-    {
-      "art": "trennwand",
-      "von": [
         38.74,
         0.0
       ],
@@ -276,36 +261,6 @@
       ],
       "quelle": "nord-18",
       "beleg": 0.99,
-      "kuratiert": false,
-      "zu_pruefen": false
-    },
-    {
-      "art": "trennwand",
-      "von": [
-        41.5,
-        0.0
-      ],
-      "bis": [
-        41.5,
-        5.79
-      ],
-      "quelle": "nord-19",
-      "beleg": 0.71,
-      "kuratiert": false,
-      "zu_pruefen": false
-    },
-    {
-      "art": "trennwand",
-      "von": [
-        42.89,
-        0.0
-      ],
-      "bis": [
-        42.89,
-        5.79
-      ],
-      "quelle": "nord-20",
-      "beleg": 0.72,
       "kuratiert": false,
       "zu_pruefen": false
     },
@@ -492,21 +447,6 @@
     {
       "art": "trennwand",
       "von": [
-        42.29,
-        8.14
-      ],
-      "bis": [
-        42.29,
-        15.31
-      ],
-      "quelle": "sued-25",
-      "beleg": 0.63,
-      "kuratiert": false,
-      "zu_pruefen": false
-    },
-    {
-      "art": "trennwand",
-      "von": [
         45.92,
         8.14
       ],
@@ -547,6 +487,21 @@
       "quelle": "sued-33",
       "beleg": 0.93,
       "kuratiert": false,
+      "zu_pruefen": false
+    },
+    {
+      "art": "trennwand",
+      "von": [
+        58.8,
+        8.14
+      ],
+      "bis": [
+        58.8,
+        15.31
+      ],
+      "quelle": "sued-37",
+      "beleg": 0.56,
+      "kuratiert": true,
       "zu_pruefen": false
     },
     {
@@ -609,82 +564,97 @@
     {
       "kennung": "nord-7",
       "x_m": 14.34,
-      "grund": "Belegung 0.33 unter 0.6 — erst beim Verfeinern"
+      "grund": "Fuge der Kuechenzeile, laeuft weiter durch den Teamtable (Muster A)"
     },
     {
       "kennung": "nord-8",
       "x_m": 16.48,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "rechte Kante des Teamtables"
     },
     {
       "kennung": "nord-9",
       "x_m": 18.54,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "Sesselgruppe der Empfangszone, freistehend"
     },
     {
       "kennung": "nord-10",
       "x_m": 21.82,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "freistehender Tresen, oben und unten ohne Anschluss"
     },
     {
       "kennung": "nord-13",
       "x_m": 27.52,
-      "grund": "Belegung 0.42 unter 0.6 — erst beim Verfeinern"
+      "grund": "Schreibtisch in der linken Bueroezelle, nicht deren Wand"
     },
     {
       "kennung": "nord-15",
       "x_m": 30.62,
-      "grund": "Belegung 0.49 unter 0.6 — erst beim Verfeinern"
+      "grund": "Schreibtisch in der rechten Bueroezelle, nicht deren Wand"
+    },
+    {
+      "kennung": "nord-17",
+      "x_m": 35.3,
+      "grund": "gestrichelte Mittelfuge eines ringsum bestuhlten Tisches (Muster C)"
+    },
+    {
+      "kennung": "nord-19",
+      "x_m": 41.5,
+      "grund": "linke Laengskante des Tischblocks im Raum 38.7..45.6 m (Abstand 1.39 m)"
+    },
+    {
+      "kennung": "nord-20",
+      "x_m": 42.89,
+      "grund": "rechte Laengskante desselben Tisches — derselbe Koerper wie nord-19"
     },
     {
       "kennung": "nord-22",
       "x_m": 46.7,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "Bepflanzung und Kiesflaeche der Loggia (Muster B)"
     },
     {
       "kennung": "nord-23",
       "x_m": 47.73,
-      "grund": "Belegung 0.39 unter 0.6 — erst beim Verfeinern"
+      "grund": "linke Laengskante des Konferenztisches in der Loggia"
     },
     {
       "kennung": "nord-24",
       "x_m": 50.0,
-      "grund": "Belegung 0.34 unter 0.6 — erst beim Verfeinern"
+      "grund": "rechte Laengskante desselben Tisches"
     },
     {
       "kennung": "nord-26",
       "x_m": 54.05,
-      "grund": "Belegung 0.51 unter 0.6 — erst beim Verfeinern"
+      "grund": "Kante der Schrankreihe, freistehend"
     },
     {
       "kennung": "nord-27",
       "x_m": 56.22,
-      "grund": "Belegung 0.48 unter 0.6 — erst beim Verfeinern"
+      "grund": "linke Kante des Sesselblocks"
     },
     {
       "kennung": "nord-28",
       "x_m": 57.38,
-      "grund": "Belegung 0.57 unter 0.6 — erst beim Verfeinern"
+      "grund": "rechte Kante desselben Sesselblocks"
     },
     {
       "kennung": "nord-30",
       "x_m": 61.71,
-      "grund": "Belegung 0.47 unter 0.6 — erst beim Verfeinern"
+      "grund": "Loggia-Bepflanzung und Terrassenmoebel (Muster B)"
     },
     {
       "kennung": "nord-32",
       "x_m": 66.68,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "schmale freistehende Stuetze, ohne Anschluss nach oben und unten"
     },
     {
       "kennung": "nord-35",
       "x_m": 74.04,
-      "grund": "Belegung 0.42 unter 0.6 — erst beim Verfeinern"
+      "grund": "Tischkante im Ostraum"
     },
     {
       "kennung": "nord-36",
       "x_m": 76.05,
-      "grund": "Belegung 0.38 unter 0.6 — erst beim Verfeinern"
+      "grund": "Regal im Ostraum, kein Raumabschluss"
     },
     {
       "kennung": "nord-37",
@@ -699,117 +669,122 @@
     {
       "kennung": "sued-2",
       "x_m": 2.54,
-      "grund": "Belegung 0.32 unter 0.6 — erst beim Verfeinern"
+      "grund": "linke Kante des Workshop-Tisches (Muster A)"
     },
     {
       "kennung": "sued-3",
       "x_m": 6.27,
-      "grund": "Belegung 0.39 unter 0.6 — erst beim Verfeinern"
+      "grund": "rechte Kante desselben Tisches"
     },
     {
       "kennung": "sued-5",
       "x_m": 9.21,
-      "grund": "Belegung 0.33 unter 0.6 — erst beim Verfeinern"
+      "grund": "Stuhlkranz am runden Tisch"
     },
     {
       "kennung": "sued-7",
       "x_m": 14.42,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "linke Kante des Vierertisches (Muster A)"
     },
     {
       "kennung": "sued-8",
       "x_m": 15.23,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "gezeichnete Mittelfuge desselben Tisches"
     },
     {
       "kennung": "sued-9",
       "x_m": 16.16,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "rechte Kante desselben Tisches"
     },
     {
       "kennung": "sued-11",
       "x_m": 21.33,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "linke Kante des Arbeitsplatz-Blocks (Muster A)"
     },
     {
       "kennung": "sued-12",
       "x_m": 22.21,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "Mittelfuge desselben Blocks"
     },
     {
       "kennung": "sued-13",
       "x_m": 23.1,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "rechte Kante desselben Blocks"
     },
     {
       "kennung": "sued-14",
       "x_m": 25.55,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "Endkante der langen Sitzbank"
     },
     {
       "kennung": "sued-15",
       "x_m": 26.82,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "Mittelfuge des Moebelblocks daneben"
     },
     {
       "kennung": "sued-16",
       "x_m": 27.73,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "rechte Kante desselben Moebelblocks"
     },
     {
       "kennung": "sued-17",
       "x_m": 29.53,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "linke Kante des Doppelschreibtisches"
     },
     {
       "kennung": "sued-18",
       "x_m": 30.32,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "Mittelfuge desselben Schreibtisches"
     },
     {
       "kennung": "sued-20",
       "x_m": 33.86,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "Sitzsaecke im offenen Bereich"
     },
     {
       "kennung": "sued-21",
       "x_m": 35.09,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "Mittelfuge des Tisches bei 35 m"
     },
     {
       "kennung": "sued-22",
       "x_m": 36.65,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "rechte Kante desselben Tisches"
     },
     {
       "kennung": "sued-24",
       "x_m": 41.3,
-      "grund": "Belegung 0.57 unter 0.6 — erst beim Verfeinern"
+      "grund": "linke Kante des Schreibtischblocks im Raum 38.9..45.9 m"
+    },
+    {
+      "kennung": "sued-25",
+      "x_m": 42.29,
+      "grund": "Mittelfuge DESSELBEN Blocks — war faelschlich aufgenommen"
     },
     {
       "kennung": "sued-26",
       "x_m": 43.22,
-      "grund": "Belegung 0.55 unter 0.6 — erst beim Verfeinern"
+      "grund": "rechte Kante desselben Blocks (Abstand 24->26 nur 1.92 m)"
     },
     {
       "kennung": "sued-28",
       "x_m": 46.97,
-      "grund": "Belegung 0.45 unter 0.6 — erst beim Verfeinern"
+      "grund": "Schreibtischkante am Loggia-Rand"
     },
     {
       "kennung": "sued-29",
       "x_m": 47.9,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "rechte Kante desselben Schreibtisches"
     },
     {
       "kennung": "sued-31",
       "x_m": 49.96,
-      "grund": "beruehrt nicht beide Bandraender"
+      "grund": "linke Kante des dritten Schreibtisches"
     },
     {
       "kennung": "sued-32",
       "x_m": 50.82,
-      "grund": "Belegung 0.48 unter 0.6 — erst beim Verfeinern"
+      "grund": "rechte Kante desselben Schreibtisches"
     },
     {
       "kennung": "sued-34",
@@ -819,7 +794,7 @@
     {
       "kennung": "sued-35",
       "x_m": 55.39,
-      "grund": "Belegung 0.43 unter 0.6 — erst beim Verfeinern"
+      "grund": "gestrichelte Mittelfuge des Konferenztisches sued-34/36 (Muster C)"
     },
     {
       "kennung": "sued-36",
@@ -827,24 +802,19 @@
       "grund": "rechte Laengskante desselben Tisches — derselbe Koerper wie sued-34"
     },
     {
-      "kennung": "sued-37",
-      "x_m": 58.8,
-      "grund": "Belegung 0.56 unter 0.6 — erst beim Verfeinern"
-    },
-    {
       "kennung": "sued-38",
       "x_m": 61.4,
-      "grund": "Belegung 0.37 unter 0.6 — erst beim Verfeinern"
+      "grund": "linke Kante des Terrassenmoebels"
     },
     {
       "kennung": "sued-39",
       "x_m": 62.56,
-      "grund": "Belegung 0.34 unter 0.6 — erst beim Verfeinern"
+      "grund": "rechte Kante desselben Moebels"
     },
     {
       "kennung": "sued-43",
       "x_m": 74.76,
-      "grund": "Belegung 0.51 unter 0.6 — erst beim Verfeinern"
+      "grund": "Mitte eines Regalfachs im Lager, keine Raumtrennung"
     },
     {
       "kennung": "sued-44",
