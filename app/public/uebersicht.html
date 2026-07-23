@@ -1,0 +1,877 @@
+<title>Halle 400 — Büro, Axonometrie</title>
+<style>
+  :root{
+    --paper:#F2ECDE; --paper-alt:#E9E1D0; --paper-deep:#DED5C0;
+    --ink:#1E2A25; --ink-dim:#46514A; --ink-mute:#6B7570;
+    --sage:#5C8A7B; --sage-deep:#3F6757; --sage-hi:#8AA391;
+    --teal:#0F4C4A; --amber:#C8703A; --amber-hi:#E8A15C;
+    --hair:#D6CEBC; --hair-strong:#BAB09C;
+    --stage-a:#F4EFE3; --stage-b:#E4DCC8;
+    --panel:rgba(242,236,222,.92); --panel-line:#C9C0AA;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+    --sans:"Avenir Next","Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;
+    --mono:"Roboto Mono","Cascadia Mono",Consolas,"SF Mono",ui-monospace,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --paper:#141A17; --paper-alt:#1B2320; --paper-deep:#222B27;
+      --ink:#E7E0CF; --ink-dim:#B3AE9E; --ink-mute:#8A938C;
+      --hair:#333D38; --hair-strong:#4A554F;
+      --stage-a:#161D1A; --stage-b:#0E1412;
+      --panel:rgba(22,29,26,.92); --panel-line:#39433D;
+      --sage:#7FA795; --sage-deep:#5C8A7B; --sage-hi:#A6BEAF;
+      --amber:#D98A4E; --amber-hi:#EBAE72; --teal:#2C7370;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#141A17; --paper-alt:#1B2320; --paper-deep:#222B27;
+    --ink:#E7E0CF; --ink-dim:#B3AE9E; --ink-mute:#8A938C;
+    --hair:#333D38; --hair-strong:#4A554F;
+    --stage-a:#161D1A; --stage-b:#0E1412;
+    --panel:rgba(22,29,26,.92); --panel-line:#39433D;
+    --sage:#7FA795; --sage-deep:#5C8A7B; --sage-hi:#A6BEAF;
+    --amber:#D98A4E; --amber-hi:#EBAE72; --teal:#2C7370;
+  }
+  :root[data-theme="light"]{
+    --paper:#F2ECDE; --paper-alt:#E9E1D0; --paper-deep:#DED5C0;
+    --ink:#1E2A25; --ink-dim:#46514A; --ink-mute:#6B7570;
+    --hair:#D6CEBC; --hair-strong:#BAB09C;
+    --stage-a:#F4EFE3; --stage-b:#E4DCC8;
+    --panel:rgba(242,236,222,.92); --panel-line:#C9C0AA;
+    --sage:#5C8A7B; --sage-deep:#3F6757; --sage-hi:#8AA391;
+    --amber:#C8703A; --amber-hi:#E8A15C; --teal:#0F4C4A;
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+       -webkit-font-smoothing:antialiased;overflow:hidden}
+  #stage{position:fixed;inset:0}
+  canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+  canvas.dragging{cursor:grabbing}
+
+  /* ---- Planblatt-Kopf ---- */
+  .sheet-head{position:fixed;top:0;left:0;padding:22px 26px;pointer-events:none;max-width:min(46ch,72vw)}
+  .sheet-head h1{font-family:var(--serif);font-weight:600;font-size:clamp(19px,2.5vw,27px);
+       letter-spacing:.005em;margin:0 0 3px;text-wrap:balance;line-height:1.15}
+  .sheet-head .sub{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;
+       text-transform:uppercase;color:var(--ink-mute);line-height:1.7}
+  .rule{height:1px;background:var(--hair-strong);margin:9px 0 8px;max-width:270px}
+
+  /* ---- Instrumentenleiste ---- */
+  .console{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
+       display:flex;flex-wrap:wrap;justify-content:center;gap:5px;padding:6px;
+       background:var(--panel);border:1px solid var(--panel-line);
+       backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
+       max-width:calc(100vw - 24px);z-index:5}
+  .grp{display:flex;gap:2px;align-items:center}
+  .grp + .grp{border-left:1px solid var(--panel-line);padding-left:5px;margin-left:2px}
+  button{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+       color:var(--ink-dim);background:transparent;border:1px solid transparent;
+       padding:7px 10px;cursor:pointer;transition:background .15s,color .15s,border-color .15s;
+       white-space:nowrap}
+  button:hover{background:var(--paper-deep);color:var(--ink)}
+  button[aria-pressed="true"]{color:var(--paper);background:var(--sage-deep);border-color:var(--sage-deep)}
+  button:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+  .lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+       color:var(--ink-mute);padding:0 7px 0 3px;user-select:none}
+
+  /* ---- Säulen-Legende ---- */
+  .legend{position:fixed;top:20px;right:20px;width:270px;max-height:calc(100vh - 130px);
+       background:var(--panel);border:1px solid var(--panel-line);
+       backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
+       display:flex;flex-direction:column;z-index:6;transition:transform .28s ease,opacity .28s ease}
+  .legend[hidden]{display:none}
+  .legend.tucked{transform:translateX(calc(100% + 20px));opacity:0}
+  .legend-hd{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+       padding:13px 14px 9px;border-bottom:1px solid var(--panel-line)}
+  .legend-hd b{font-family:var(--mono);font-size:10px;letter-spacing:.15em;
+       text-transform:uppercase;font-weight:500;color:var(--ink-dim)}
+  .legend-hd span{font-family:var(--mono);font-size:10px;color:var(--ink-mute);
+       font-variant-numeric:tabular-nums}
+  .legend-body{overflow-y:auto;padding:4px 0 8px}
+  .pill{display:grid;grid-template-columns:26px 1fr;gap:9px;padding:8px 14px;
+       align-items:start;border-left:2px solid transparent;transition:background .14s}
+  .pill.on{border-left-color:var(--amber);background:color-mix(in srgb,var(--amber) 9%,transparent)}
+  .pill .n{font-family:var(--mono);font-size:10px;color:var(--ink-mute);
+       padding-top:2px;font-variant-numeric:tabular-nums}
+  .pill.on .n{color:var(--amber)}
+  .pill .nm{font-family:var(--serif);font-size:15px;line-height:1.25;color:var(--ink)}
+  .pill .rm{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
+       color:var(--ink-mute);margin-top:3px;line-height:1.5}
+  .pill.on .rm{color:var(--amber)}
+  .pill .src{font-size:11.5px;color:var(--ink-mute);margin-top:2px;line-height:1.4}
+  .legend-ft{padding:9px 14px 11px;border-top:1px solid var(--panel-line);
+       font-size:11px;line-height:1.5;color:var(--ink-mute)}
+
+  .hint{position:fixed;left:26px;bottom:18px;font-family:var(--mono);font-size:9.5px;
+       letter-spacing:.11em;text-transform:uppercase;color:var(--ink-mute);
+       pointer-events:none;opacity:.85}
+  @media (max-width:900px){
+    .legend{top:auto;bottom:108px;right:10px;left:10px;width:auto;max-height:40vh}
+    .hint{display:none}
+    .sheet-head{padding:12px 14px;max-width:none}
+    .sheet-head .sub{font-size:9px;letter-spacing:.11em;line-height:1.6}
+    .rule{margin:7px 0 6px;max-width:180px}
+    .console{bottom:10px;padding:5px;gap:4px}
+    button{padding:6px 8px;font-size:10px}
+    .lbl{padding:0 4px 0 2px;font-size:9px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
+</style>
+
+<div id="stage"><canvas id="c"></canvas></div>
+
+<header class="sheet-head">
+  <h1>Halle&nbsp;400 &middot; Büro</h1>
+  <div class="rule"></div>
+  <div class="sub" id="meta">Axonometrie 1:250<br>Räume benannt nach den neun Säulen</div>
+</header>
+
+<aside class="legend" id="legend">
+  <div class="legend-hd"><b>Die neun Säulen</b><span id="lgCount"></span></div>
+  <div class="legend-body" id="lgBody"></div>
+  <div class="legend-ft" id="lgFoot"></div>
+</aside>
+
+<div class="console" role="toolbar" aria-label="Ansicht steuern">
+  <div class="grp">
+    <span class="lbl">Blick</span>
+    <button type="button" data-view="0">Nord</button>
+    <button type="button" data-view="1">West</button>
+    <button type="button" data-view="2">Süd</button>
+    <button type="button" data-view="3">Plan</button>
+  </div>
+  <div class="grp">
+    <span class="lbl">Namen</span>
+    <button type="button" data-lab="all">Alle</button>
+    <button type="button" data-lab="pillars">Säulen</button>
+    <button type="button" data-lab="off">Aus</button>
+  </div>
+  <div class="grp">
+    <button type="button" id="btnScope" aria-pressed="false">9&nbsp;Säulen</button>
+    <button type="button" id="btnLegend" aria-pressed="true">Legende</button>
+  </div>
+</div>
+
+<div class="hint">Ziehen dreht &middot; Rad zoomt</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════
+   1 · DIE NEUN SÄULEN  (Quelle: frontend/src/components/saeulenData.js)
+   ══════════════════════════════════════════════════════════════════ */
+const SAEULEN = [
+  {n:'01', pillar:'IHHT',                  rolle:'Der Reiz'},
+  {n:'02', pillar:'Bewegung',              rolle:'Die Aktivierung'},
+  {n:'03', pillar:'Massage',               rolle:'Die Regeneration'},
+  {n:'04', pillar:'Akupunktur',            rolle:'Die Balance'},
+  {n:'05', pillar:'Kurse',                 rolle:'Das Wissen'},
+  {n:'06', pillar:'Ernährung',             rolle:'Der Baustoff'},
+  {n:'07', pillar:'Gewichtsmanagement',    rolle:'Der Alltag'},
+  {n:'08', pillar:'Prävention & Biohacking', rolle:'Die Vorsorge'},
+  {n:'09', pillar:'Yoga',                  rolle:'Der Atem'}
+];
+
+/* ══════════════════════════════════════════════════════════════════
+   2 · GEBÄUDE — rekonstruiert aus den Führungslinien des Originalplans
+        Länge 78 m · Tiefe 15 m · Nordzeile / Mittelzone / Südzeile
+   ══════════════════════════════════════════════════════════════════ */
+const L = 78, D = 15;
+const NZ = [0.35, 6.20];      // Nordzeile
+const MZ = [6.20, 8.60];      // Erschließung
+const SZ = [8.60, 14.65];     // Südzeile
+
+// kind: core|service|meet|work|open|lounge  ·  saeule: Index in SAEULEN
+// scope: 'core' = die vier Arbeitsräume (Auftrag) · 'ext' = Vollausbau
+const ROOMS = [
+  // ── Nordzeile ─────────────────────────────────────────────────
+  {x:[ 0.0, 4.8], z:NZ, name:'Treppenhaus',   kind:'core'},
+  {x:[ 4.8, 9.0], z:NZ, name:'Toiletten',     kind:'service'},
+  {x:[ 9.0,11.5], z:NZ, name:'Teeküche',      kind:'service'},
+  {x:[11.5,18.5], z:NZ, name:'Teamtable',     kind:'work',    saeule:5, scope:'ext'},
+  {x:[18.5,21.6], z:NZ, name:'Aufzug',        kind:'core'},
+  {x:[21.6,25.5], z:NZ, name:'Empfang',       kind:'work'},
+  {x:[25.5,32.5], z:NZ, name:'Einzelbüro',    kind:'cell',    saeule:8, scope:'core'},
+  {x:[32.5,44.0], z:NZ, name:'Workspace',     kind:'bench',   saeule:0, scope:'core'},
+  {x:[44.0,52.5], z:NZ, name:'Loggia',        kind:'open'},
+  {x:[52.5,56.5], z:NZ, name:'',              kind:'open'},
+  {x:[56.5,62.5], z:NZ, name:'Videokonf',     kind:'meet',    saeule:7, scope:'ext'},
+  {x:[62.5,69.5], z:NZ, name:'Storage',       kind:'service'},
+  {x:[69.5,78.0], z:NZ, name:'Workshop',      kind:'meet'},
+  // ── Südzeile ──────────────────────────────────────────────────
+  {x:[ 0.0, 6.5], z:SZ, name:'Konferenz 10–12', kind:'meet',  saeule:4, scope:'ext'},
+  {x:[ 6.5,11.8], z:SZ, name:'Konferenz 6–8', kind:'round'},
+  {x:[11.8,31.5], z:SZ, name:'Workspace',     kind:'bench',   saeule:1, scope:'core'},
+  {x:[31.5,38.5], z:SZ, name:'Workshop 6–8',  kind:'meet',    saeule:6, scope:'ext'},
+  {x:[38.5,43.5], z:SZ, name:'Phone Booth',   kind:'booth'},
+  {x:[43.5,53.0], z:SZ, name:'Doppelbüro',    kind:'duo',     saeule:3, scope:'core'},
+  {x:[53.0,66.5], z:SZ, name:'Teamfläche',    kind:'mixed'},
+  {x:[66.5,71.0], z:SZ, name:'Break out',     kind:'lounge',  saeule:2, scope:'ext'},
+  {x:[71.0,78.0], z:SZ, name:'Lager',         kind:'service'}
+];
+
+// Loggien / begrünte Nischen an den Fassaden
+const LOGGIA = [
+  {x:[12.0,18.2], side:'N'}, {x:[25.8,32.0], side:'N'},
+  {x:[45.7,51.9], side:'N'}, {x:[58.9,65.7], side:'N'},
+  {x:[12.0,18.4], side:'S'}, {x:[25.2,31.7], side:'S'},
+  {x:[46.2,51.9], side:'S'}, {x:[59.0,65.5], side:'S'}
+];
+
+/* ══════════════════════════════════════════════════════════════════
+   3 · MÖBLIERUNG — pro Raumtyp erzeugt, nicht einzeln gezeichnet
+   ══════════════════════════════════════════════════════════════════ */
+const H = {slab:.10, wallOut:1.16, wallIn:0.94, core:2.45,
+           desk:.72, top:.05, seat:.44, back:.80, sofa:.38, sofaB:.70,
+           cab:1.72, booth:2.05, plantP:.42, plantC:.72};
+
+function box(x,y,z,w,h,d,mat){ return {x,y,z,w,h,d,mat}; }
+
+/** Tisch mit Stühlen ringsum. */
+function table(cx,cz,w,d,seatsLong,items,mat='wood'){
+  items.push(box(cx-w/2, H.desk, cz-d/2, w, H.top, d, mat));
+  items.push(box(cx-w/2+.06, 0, cz-d/2+.06, .07, H.desk, .07, 'metal'));
+  items.push(box(cx+w/2-.13, 0, cz+d/2-.13, .07, H.desk, .07, 'metal'));
+  const stepX = w/(seatsLong+1);
+  for(let i=1;i<=seatsLong;i++){
+    const sx = cx-w/2+stepX*i;
+    chair(sx, cz-d/2-.34, items, 0);
+    chair(sx, cz+d/2+.34, items, 1);
+  }
+}
+function chair(cx,cz,items,flip){
+  items.push(box(cx-.23, H.seat, cz-.23, .46, .06, .46, 'seat'));
+  items.push(box(cx-.20, 0, cz-.03, .06, H.seat, .06, 'metal'));
+  items.push(box(cx+.14, 0, cz-.03, .06, H.seat, .06, 'metal'));
+  const bz = flip ? cz+.17 : cz-.23;
+  items.push(box(cx-.22, H.seat, bz, .44, H.back-H.seat, .06, 'seat'));
+}
+/** Doppel-Arbeitsbench: zwei Reihen Rücken an Rücken. */
+function bench(cx,cz,len,items){
+  items.push(box(cx-len/2, H.desk, cz-.78, len, H.top, 1.56, 'wood'));
+  items.push(box(cx-.03, H.desk+H.top, cz-.72, .06, .34, 1.44, 'screen'));
+  for(let i=0;i<4;i++){
+    items.push(box(cx-len/2+.1+i*(len-.3)/3, 0, cz-.72, .07, H.desk, .07, 'metal'));
+    items.push(box(cx-len/2+.1+i*(len-.3)/3, 0, cz+.65, .07, H.desk, .07, 'metal'));
+  }
+  const n = Math.max(1, Math.round(len/1.65));
+  for(let i=0;i<n;i++){
+    const sx = cx-len/2 + len*(i+.5)/n;
+    // Monitore
+    items.push(box(sx-.28, H.desk+H.top, cz-.30, .56, .40, .045, 'screen'));
+    items.push(box(sx-.28, H.desk+H.top, cz+.26, .56, .40, .045, 'screen'));
+    chair(sx, cz-1.28, items, 1);
+    chair(sx, cz+1.28, items, 0);
+  }
+}
+function sofa(cx,cz,w,items,face){
+  const d=.86;
+  items.push(box(cx-w/2, .12, cz-d/2, w, H.sofa-.12, d, 'soft'));
+  const bz = face==='N' ? cz-d/2 : cz+d/2-.18;
+  items.push(box(cx-w/2, H.sofa, bz, w, H.sofaB-H.sofa, .18, 'soft'));
+  items.push(box(cx-w/2, H.sofa, cz-d/2, .16, .28, d, 'soft'));
+  items.push(box(cx+w/2-.16, H.sofa, cz-d/2, .16, .28, d, 'soft'));
+}
+function plant(cx,cz,items,s){
+  s = s||1;
+  items.push(box(cx-.22*s, 0, cz-.22*s, .44*s, H.plantP*s, .44*s, 'pot'));
+  items.push(box(cx-.34*s, H.plantP*s, cz-.34*s, .68*s, H.plantC*s, .68*s, 'green'));
+  items.push(box(cx-.20*s, (H.plantP+H.plantC)*s, cz-.20*s, .40*s, .30*s, .40*s, 'green'));
+}
+function cabinets(x0,x1,cz,items){
+  const w=x1-x0;
+  const n=Math.max(1,Math.floor(w/1.05));
+  for(let i=0;i<n;i++){
+    items.push(box(x0+.06+i*(w/n), 0, cz-.24, w/n-.12, H.cab, .48, 'cab'));
+  }
+}
+
+/** Erzeugt die Einrichtung eines Raums. */
+function furnish(r){
+  const it=[], x0=r.x[0], x1=r.x[1], z0=r.z[0], z1=r.z[1];
+  const cx=(x0+x1)/2, cz=(z0+z1)/2, w=x1-x0, d=z1-z0;
+
+  switch(r.kind){
+    case 'core':
+      if(r.name==='Aufzug'){
+        it.push(box(x0+.5, 0, z0+.3, w-1.0, H.core, d-1.5, 'core'));
+      } else {
+        for(let i=0;i<9;i++)
+          it.push(box(x0+.55+i*.30, i*.155, z0+.5, .28, .16, d-1.6, 'stair'));
+      }
+      break;
+    case 'service':
+      cabinets(x0+.4, x1-.4, z0+.7, it);
+      if(w>4) cabinets(x0+.4, x1-.4, z1-.7, it);
+      break;
+    case 'meet': {
+      const tw=Math.min(w-2.6, 4.6), td=Math.min(d-2.8, 1.35);
+      table(cx, cz, tw, td, Math.max(2,Math.round(tw/1.25)), it);
+      cabinets(x0+.6, Math.min(x1-.6, x0+2.6), (r.z===NZ? z0+.55 : z1-.55), it);
+      break;
+    }
+    case 'round': {
+      table(x0+w*.30, cz, 2.7, 1.2, 3, it);
+      for(let i=0;i<6;i++){
+        const a=i/6*Math.PI*2, rx=x0+w*.74, rz=cz;
+        chair(rx+Math.cos(a)*1.15, rz+Math.sin(a)*1.15, it, a>Math.PI?1:0);
+      }
+      it.push(box(x0+w*.74-.72, H.desk, cz-.72, 1.44, H.top, 1.44, 'wood'));
+      break;
+    }
+    case 'bench': {
+      const rows=Math.max(2, Math.floor(w/5.4));
+      const bz1 = (r.z===NZ) ? z0+2.15 : z0+2.0;
+      for(let i=0;i<rows;i++){
+        const bx = x0 + w*(i+.5)/rows;
+        bench(bx, bz1, Math.min(4.2, w/rows-1.1), it);
+      }
+      if(d>5.4){
+        for(let i=0;i<rows;i++){
+          const bx = x0 + w*(i+.5)/rows;
+          bench(bx, z1-1.85, Math.min(4.2, w/rows-1.1), it);
+        }
+      }
+      cabinets(x0+.5, x0+2.2, (r.z===NZ? z1-.42 : z0+.42), it);
+      break;
+    }
+    case 'cell': {
+      const n=2, cw=w/n;
+      for(let i=0;i<n;i++){
+        const ccx=x0+cw*(i+.5);
+        it.push(box(x0+cw*i, 0, z0+.1, .14, H.wallIn, d-.2, 'wall'));
+        table(ccx, cz+.2, 1.7, .82, 1, it);
+        it.push(box(ccx-.34, H.desk+H.top, cz-.02, .68, .42, .05, 'screen'));
+        cabinets(ccx-.9, ccx+.9, z0+.5, it);
+      }
+      break;
+    }
+    case 'duo': {
+      const n=2, cw=w/n;
+      for(let i=0;i<n;i++){
+        const ccx=x0+cw*(i+.5);
+        if(i) it.push(box(x0+cw*i, 0, z0+.1, .14, H.wallIn, d-.2, 'wall'));
+        table(ccx-.95, cz+.15, 1.55, .78, 1, it);
+        table(ccx+.95, cz+.15, 1.55, .78, 1, it);
+        cabinets(ccx-1.1, ccx+1.1, z1-.5, it);
+      }
+      break;
+    }
+    case 'booth': {
+      const n=Math.max(2, Math.floor(w/1.7));
+      for(let i=0;i<n;i++){
+        const bx=x0+.35+i*((w-.7)/n);
+        it.push(box(bx, 0, z0+1.2, (w-.7)/n-.22, H.booth, 1.5, 'booth'));
+      }
+      sofa(cx, z1-1.2, Math.min(2.4,w-1.4), it, 'S');
+      break;
+    }
+    case 'lounge':
+      sofa(cx-.1, z0+1.5, Math.min(2.6,w-1.2), it, 'N');
+      sofa(cx-.1, z1-1.5, Math.min(2.6,w-1.2), it, 'S');
+      it.push(box(cx-.55, .34, cz-.42, 1.1, .06, .84, 'wood'));
+      plant(x0+.75, z1-.85, it, 1.15);
+      break;
+    case 'mixed': {
+      table(x0+w*.14, cz-.4, 3.6, 1.25, 3, it);
+      bench(x0+w*.44, z0+1.9, 3.4, it);
+      for(let i=0;i<6;i++){
+        const a=i/6*Math.PI*2;
+        chair(x0+w*.64+Math.cos(a)*1.1, cz+.6+Math.sin(a)*1.1, it, a>Math.PI?1:0);
+      }
+      it.push(box(x0+w*.64-.68, H.desk, cz+.6-.68, 1.36, H.top, 1.36, 'wood'));
+      bench(x0+w*.86, z0+1.9, 3.2, it);
+      cabinets(x0+w*.72, x0+w*.72+2.4, z1-.5, it);
+      break;
+    }
+    case 'work':
+      if(r.name==='Empfang'){
+        it.push(box(x0+.9, 0, cz-.45, 2.5, 1.12, .68, 'wood'));
+        it.push(box(x0+.9, 0, cz+.30, .68, 1.12, 1.5, 'wood'));
+        sofa(x1-1.6, z1-1.1, 2.0, it, 'S');
+      } else {
+        table(cx-1.1, cz+.35, 4.2, 1.3, 4, it);
+        cabinets(x1-3.0, x1-.6, z1-.5, it);
+        plant(x0+.8, z1-.8, it, 1);
+      }
+      break;
+    case 'open':
+      if(r.name==='Loggia'){
+        table(cx, cz-.6, 2.2, 1.0, 2, it);
+        plant(x0+1.0, cz+1.1, it, 1.3); plant(x1-1.0, cz+1.1, it, 1.15);
+      } else {
+        plant(cx, cz, it, 1.2);
+      }
+      break;
+  }
+  return it;
+}
+
+/* ── Kachelung: lange Flächen zerlegen ──────────────────────────────
+   Der Maler-Algorithmus sortiert je Fläche über EINEN Tiefenwert. Eine
+   78 m lange Wand bekäme damit die Tiefe ihrer Mitte und würde alles
+   verdecken, was hinter ihrem Mittelpunkt liegt. Also: in Kacheln von
+   höchstens MAXT Metern zerlegen, dann stimmt die Sortierung lokal.   */
+const MAXT = 3.2;
+function tile(o, out){
+  const nx=Math.max(1,Math.ceil(o.w/MAXT)), nz=Math.max(1,Math.ceil(o.d/MAXT));
+  if(nx===1 && nz===1){ out.push(o); return out; }
+  const sw=o.w/nx, sd=o.d/nz;
+  for(let i=0;i<nx;i++) for(let j=0;j<nz;j++)
+    out.push(Object.assign({}, o, {x:o.x+i*sw, z:o.z+j*sd, w:sw, d:sd}));
+  return out;
+}
+
+/* ── Wände: Außenhülle, Zeilentrennung, Raumfugen ──────────────────
+   Außenwände tragen eine Außennormale (nrm) und werden ausgeblendet,
+   sobald sie der Kamera zugewandt sind — der Puppenhaus-Schnitt, der
+   den Blick in die Räume freigibt.                                   */
+function buildWalls(){
+  const raw=[], t=.22;
+  const outer=(o,nrm)=>{ o.nrm=nrm; o.cull=true; raw.push(o); };
+  outer(box(-t, 0, -t, L+2*t, H.wallOut, t, 'wallOut'), [0,0,-1]);   // Nord
+  outer(box(-t, 0, D,   L+2*t, H.wallOut, t, 'wallOut'), [0,0, 1]);  // Süd
+  outer(box(-t, 0, 0, t, H.wallOut, D, 'wallOut'), [-1,0,0]);        // West
+  outer(box(L,  0, 0, t, H.wallOut, D, 'wallOut'), [ 1,0,0]);        // Ost
+  // Zeilenrücken zur Erschließung — mit Durchgängen
+  ROOMS.forEach(r=>{
+    if(r.kind==='open'||r.kind==='mixed') return;
+    const zb = (r.z===NZ) ? NZ[1] : SZ[0]-t;
+    const w0=r.x[0]+.15, w1=r.x[1]-.15, span=w1-w0;
+    const gap=Math.min(1.6, span*.34), g0=w0+(span-gap)/2;
+    raw.push(box(w0, 0, zb, g0-w0, H.wallIn, t, 'wall'));
+    raw.push(box(g0+gap, 0, zb, w1-(g0+gap), H.wallIn, t, 'wall'));
+  });
+  // Fugen zwischen benachbarten Räumen
+  ROOMS.forEach(r=>{
+    if(r.x[0]>0.01) raw.push(box(r.x[0]-t/2, 0, r.z[0], t, H.wallIn, r.z[1]-r.z[0], 'wall'));
+  });
+  const out=[]; raw.forEach(o=>tile(o,out)); return out;
+}
+
+/* ── Böden ── */
+function buildFloors(){
+  const raw=[];
+  raw.push({x:0,y:-.02,z:0,w:L,h:.02,d:D,mat:'corridor'});
+  ROOMS.forEach(r=>{
+    const mat = r.saeule!=null ? 'floorP' : (r.kind==='core'||r.kind==='service' ? 'floorS' : 'floor');
+    raw.push({x:r.x[0], y:0, z:r.z[0], w:r.x[1]-r.x[0], h:H.slab, d:r.z[1]-r.z[0], mat, room:r});
+  });
+  LOGGIA.forEach(g=>{
+    const z = g.side==='N' ? NZ[0] : SZ[1]-1.75;
+    raw.push({x:g.x[0], y:H.slab, z, w:g.x[1]-g.x[0], h:.04, d:1.75, mat:'loggia'});
+  });
+  const out=[]; raw.forEach(o=>tile(o,out)); return out;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   4 · MATERIALIEN
+   ══════════════════════════════════════════════════════════════════ */
+let MAT = {};
+function readPalette(){
+  const cs=getComputedStyle(document.documentElement);
+  const v=n=>cs.getPropertyValue(n).trim();
+  const dark = matchMedia('(prefers-color-scheme:dark)').matches;
+  const th = document.documentElement.getAttribute('data-theme');
+  const isDark = th ? th==='dark' : dark;
+  MAT = {
+    corridor:{c: isDark?'#1F2925':'#E6DFCC', e:0},
+    floor:   {c: isDark?'#26312C':'#EDE7D8', e:0},
+    floorS:  {c: isDark?'#212B27':'#E2DAC6', e:0},
+    floorP:  {c: isDark?'#33322A':'#F0E3D0', e:0},
+    loggia:  {c: isDark?'#2E3A2E':'#DCD0B4', e:0},
+    wallOut: {c: isDark?'#3A4741':'#CFC6B0', e:0},
+    wall:    {c: isDark?'#33403A':'#DAD1BB', e:0},
+    core:    {c: v('--sage-deep')||'#3F6757', e:0},
+    stair:   {c: isDark?'#4A574F':'#C4BBA4', e:0},
+    wood:    {c: isDark?'#7C6647':'#C9A876', e:0},
+    seat:    {c: v('--sage')||'#5C8A7B', e:0},
+    metal:   {c: isDark?'#5A655E':'#9AA29A', e:0},
+    screen:  {c: isDark?'#1A2320':'#3A4741', e:0},
+    cab:     {c: isDark?'#3E4B44':'#D2C8B0', e:0},
+    soft:    {c: v('--amber')||'#C8703A', e:0},
+    booth:   {c: v('--teal')||'#0F4C4A', e:0},
+    pot:     {c: isDark?'#6B5A44':'#B9A583', e:0},
+    green:   {c: isDark?'#4E6B4C':'#7C9A6B', e:0}
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   5 · PROJEKTION & RENDERER (orthographisch, Azimut + Elevation)
+   ══════════════════════════════════════════════════════════════════ */
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+let W=0, Hh=0, DPR=1;
+const cam={az:-0.52, el:0.62, zoom:1, panX:0, panY:0};
+let labelMode='all', scope='core', legendOn=true, dragging=false, quick=false;
+
+function resize(){
+  DPR=Math.min(devicePixelRatio||1, 2);
+  W=innerWidth; Hh=innerHeight;
+  cv.width=Math.round(W*DPR); cv.height=Math.round(Hh*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  draw();
+}
+
+let SIN_A,COS_A,SIN_E,COS_E,SCALE,OX,OY;
+function setCam(){
+  SIN_A=Math.sin(cam.az); COS_A=Math.cos(cam.az);
+  SIN_E=Math.sin(cam.el); COS_E=Math.cos(cam.el);
+  // Maßstab aus der wirklich projizierten Ausdehnung — passt bei jeder Drehung
+  SCALE=1; OX=0; OY=0;
+  let ux0=1e9,ux1=-1e9,uy0=1e9,uy1=-1e9;
+  for(let i=0;i<8;i++){
+    const p=proj(i&1?L:0, i&2?H.core:0, i&4?D:0);
+    if(p.x<ux0)ux0=p.x; if(p.x>ux1)ux1=p.x;
+    if(p.y<uy0)uy0=p.y; if(p.y>uy1)uy1=p.y;
+  }
+  const wide = W>900;
+  const padX = wide ? 62 : 16;
+  const rowsN = labelMode==='pillars' ? 2 : 3;      // Platz für die Beschriftung
+  const padTop = labelMode==='off' ? 70 : (wide ? 150 : 52+rowsN*26);
+  const padBot = labelMode==='off' ? 96 : (wide ? 168 : 86+rowsN*26);
+  const availW = Math.max(120, W - 2*padX - (legendOn && wide ? 300 : 0));
+  const availH = Math.max(120, Hh - padTop - padBot);
+  const base = Math.min(availW/Math.max(.001,ux1-ux0), availH/Math.max(.001,uy1-uy0));
+  SCALE=base*cam.zoom;
+  const cxp=(ux0+ux1)/2*SCALE, cyp=(uy0+uy1)/2*SCALE;
+  OX = (legendOn && wide ? (W-300)/2 : W/2) - cxp + cam.panX;
+  OY = (padTop + (Hh-padTop-padBot)/2) - cyp + cam.panY;
+  // Silhouette in Bildschirmkoordinaten — die Beschriftung legt sich daran an
+  BB = {y0: uy0*SCALE+OY, y1: uy1*SCALE+OY};
+}
+let BB={y0:0,y1:0};
+// Weltmittelpunkt als Drehachse
+const CX=L/2, CZ=D/2, CY=0.6;
+function proj(x,y,z){
+  const dx=x-CX, dz=z-CZ, dy=y-CY;
+  const xr =  dx*COS_A - dz*SIN_A;
+  const zr =  dx*SIN_A + dz*COS_A;
+  return { x: OX + xr*SCALE,
+           y: OY + (zr*SIN_E - dy*COS_E)*SCALE,
+           p: zr*COS_E + dy*SIN_E };
+}
+// Kamerarichtung für Backface-Culling
+function camDir(){ return [COS_E*SIN_A, SIN_E, COS_E*COS_A]; }
+const LIGHT=(function(){ const l=[-.42,.86,.30], m=Math.hypot(l[0],l[1],l[2]);
+  return [l[0]/m,l[1]/m,l[2]/m]; })();
+
+function shade(hex, n){
+  const d=LIGHT[0]*n[0]+LIGHT[1]*n[1]+LIGHT[2]*n[2];
+  const k=0.60+0.40*Math.max(0,d);
+  const h=hex.replace('#',''),
+        r=parseInt(h.substr(0,2),16), g=parseInt(h.substr(2,2),16), b=parseInt(h.substr(4,2),16);
+  const cl=v=>Math.max(0,Math.min(255,Math.round(v*k)));
+  return 'rgb('+cl(r)+','+cl(g)+','+cl(b)+')';
+}
+
+const FACES=[[0,1,2,3,[0,1,0]],[4,7,6,5,[0,-1,0]],[0,4,5,1,[0,0,-1]],
+             [3,2,6,7,[0,0,1]],[0,3,7,4,[-1,0,0]],[1,5,6,2,[1,0,0]]];
+function emit(o, out, cd){
+  // Puppenhaus-Schnitt: kameraseitige Außenwand fällt weg
+  if(o.cull && o.nrm && (o.nrm[0]*cd[0]+o.nrm[1]*cd[1]+o.nrm[2]*cd[2]) > 0.12) return;
+  const x0=o.x,x1=o.x+o.w, y0=o.y,y1=o.y+o.h, z0=o.z,z1=o.z+o.d;
+  const P=[proj(x0,y1,z0),proj(x1,y1,z0),proj(x1,y1,z1),proj(x0,y1,z1),
+           proj(x0,y0,z0),proj(x1,y0,z0),proj(x1,y0,z1),proj(x0,y0,z1)];
+  const m=MAT[o.mat]||MAT.wall;
+  for(let i=0;i<6;i++){
+    const f=FACES[i], n=f[4];
+    if(n[0]*cd[0]+n[1]*cd[1]+n[2]*cd[2] <= 0.001) continue;
+    const a=P[f[0]],b=P[f[1]],c=P[f[2]],d=P[f[3]];
+    out.push({pts:[a,b,c,d], col:shade(m.c,n), depth:(a.p+b.p+c.p+d.p)/4, top:i===0});
+  }
+}
+
+let SCENE=null;
+function buildScene(){
+  const walls=buildWalls(), floors=buildFloors(), furn=[];
+  ROOMS.forEach(r=>{ furnish(r).forEach(o=>furn.push(o)); });
+  SCENE={walls, floors, furn};
+}
+
+function activePillars(){
+  return ROOMS.filter(r=> r.saeule!=null && (scope==='ext' || r.scope==='core'));
+}
+
+function draw(){
+  setCam();
+  const cd=camDir();
+  // Grund
+  const g=ctx.createLinearGradient(0,0,0,Hh);
+  const cs=getComputedStyle(document.documentElement);
+  g.addColorStop(0, cs.getPropertyValue('--stage-a').trim()||'#F4EFE3');
+  g.addColorStop(1, cs.getPropertyValue('--stage-b').trim()||'#E4DCC8');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,Hh);
+
+  const out=[];
+  SCENE.floors.forEach(o=>{
+    if(o.room && o.room.saeule!=null){
+      const on = scope==='ext' || o.room.scope==='core';
+      emit(Object.assign({},o,{mat: on?'floorP':'floor'}), out, cd);
+    } else emit(o,out,cd);
+  });
+  SCENE.walls.forEach(o=>emit(o,out,cd));
+  if(!quick) SCENE.furn.forEach(o=>emit(o,out,cd));
+
+  out.sort((a,b)=>a.depth-b.depth);
+
+  ctx.lineJoin='round';
+  const stroke = cs.getPropertyValue('--ink').trim()||'#1E2A25';
+  for(let i=0;i<out.length;i++){
+    const f=out[i], p=f.pts;
+    ctx.beginPath();
+    ctx.moveTo(p[0].x,p[0].y);
+    ctx.lineTo(p[1].x,p[1].y); ctx.lineTo(p[2].x,p[2].y); ctx.lineTo(p[3].x,p[3].y);
+    ctx.closePath();
+    ctx.fillStyle=f.col; ctx.fill();
+    if(SCALE>2.2){ ctx.strokeStyle=stroke; ctx.globalAlpha=.20; ctx.lineWidth=.6; ctx.stroke(); ctx.globalAlpha=1; }
+  }
+  drawPillarMarks(cs);
+  if(labelMode!=='off') drawLabels(cs);
+}
+
+/* ── Markierung der benannten Räume: Bodenrahmen in Amber ── */
+function drawPillarMarks(cs){
+  const amber=cs.getPropertyValue('--amber').trim()||'#C8703A';
+  ctx.save(); ctx.lineWidth=1.8; ctx.strokeStyle=amber; ctx.globalAlpha=.85;
+  activePillars().forEach(r=>{
+    const a=proj(r.x[0]+.1,H.slab+.02,r.z[0]+.1), b=proj(r.x[1]-.1,H.slab+.02,r.z[0]+.1),
+          c=proj(r.x[1]-.1,H.slab+.02,r.z[1]-.1), d=proj(r.x[0]+.1,H.slab+.02,r.z[1]-.1);
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+    ctx.lineTo(c.x,c.y); ctx.lineTo(d.x,d.y); ctx.closePath(); ctx.stroke();
+  });
+  ctx.restore();
+}
+
+/* ── Beschriftung mit Führungslinien, wie auf dem Originalblatt ── */
+function drawLabels(cs){
+  const ink=cs.getPropertyValue('--ink').trim()||'#1E2A25';
+  const mute=cs.getPropertyValue('--ink-mute').trim()||'#6B7570';
+  const amber=cs.getPropertyValue('--amber').trim()||'#C8703A';
+  const hair=cs.getPropertyValue('--hair-strong').trim()||'#BAB09C';
+  const pillars=new Set(activePillars());
+
+  let list=ROOMS.filter(r=>r.name);
+  if(labelMode==='pillars') list=list.filter(r=>pillars.has(r));
+
+  const items=list.map(r=>{
+    const cx=(r.x[0]+r.x[1])/2, cz=(r.z[0]+r.z[1])/2;
+    const a=proj(cx, H.wallIn+.15, cz);
+    // Nord- oder Südzeile? Gegen die Gebäudeachse an derselben Stelle prüfen,
+    // nicht gegen die Bildmitte — der Riegel liegt schräg im Bild.
+    const axis=proj(cx, H.wallIn+.15, D/2);
+    const isP=pillars.has(r);
+    const name = isP ? SAEULEN[r.saeule].rolle.replace(/^(Der|Die|Das)\s+/,'') : r.name;
+    const sub  = isP ? SAEULEN[r.saeule].n+' · '+SAEULEN[r.saeule].pillar : (r.kind==='core'?'Kern':'');
+    return {r,a,isP,name,sub,up:a.y<axis.y};
+  });
+
+  ctx.save();
+  const serif=cs.getPropertyValue('--serif')||'serif';
+  const mono =cs.getPropertyValue('--mono')||'monospace';
+  const wide = W>900;
+  const maxX = (legendOn && wide) ? W-306 : W-12;
+  const FS = wide ? 13 : 11.5, SS = wide ? 10 : 9;
+  const RG = wide ? 29 : 25;                       // Reihenabstand
+  const NR = labelMode==='pillars' ? [0,1] : [0,1,2];
+
+  ['up','dn'].forEach(dir=>{
+    const set=items.filter(o=> dir==='up' ? o.up : !o.up).sort((p,q)=>p.a.x-q.a.x);
+    if(!set.length) return;
+    // Etiketten legen sich an die Silhouette an, nicht an den Fensterrand
+    const rows = dir==='up'
+      ? NR.map(i=>Math.max(wide?64:34, BB.y0-32-i*RG))
+      : NR.map(i=>Math.min(Hh-(wide?74:96), BB.y1+42+i*RG));
+    // Der Planblatt-Kopf sperrt links — aber nur, wenn die Etiketten
+    // tatsächlich auf seiner Höhe liegen, sonst zerrt es die Linien in die Länge
+    const minX = (dir==='up' && wide && Math.min.apply(null,rows) < 118) ? 352 : 14;
+    const cursor = rows.map(()=> -1e9);
+    set.forEach(o=>{
+      ctx.font='500 '+FS+'px '+serif;
+      const wName=ctx.measureText(o.name).width;
+      ctx.font=SS+'px '+mono;
+      o.w=Math.max(wName, o.sub?ctx.measureText(o.sub).width:0);
+      // erste Reihe, in die das Etikett ohne Überlappung passt
+      const wish=Math.max(minX+o.w/2, Math.min(maxX-o.w/2, o.a.x));
+      let row=0, best=1e9;
+      for(let i=0;i<rows.length;i++){
+        if(wish-o.w/2 >= cursor[i]+13){ row=i; best=0; break; }
+        const push=cursor[i]+13+o.w/2-wish;
+        if(push<best){ best=push; row=i; }
+      }
+      const x = best===0 ? wish : Math.min(maxX-o.w/2, wish+best);
+      cursor[row]=x+o.w/2;
+      o.tx=x; o.ty=rows[row];
+      o.leadY = dir==='up' ? o.ty+(o.sub?16:6) : o.ty-16;
+    });
+    set.forEach(o=>{
+      // Führungslinie: senkrecht aus dem Etikett, dann geknickt zum Raum
+      const knee = dir==='up' ? Math.min(o.a.y-10, o.leadY+26) : Math.max(o.a.y+10, o.leadY-26);
+      ctx.beginPath();
+      ctx.strokeStyle=o.isP?amber:hair; ctx.lineWidth=o.isP?1.1:.85;
+      ctx.globalAlpha=o.isP?.95:.7;
+      ctx.moveTo(o.tx, o.leadY); ctx.lineTo(o.tx, knee); ctx.lineTo(o.a.x, o.a.y);
+      ctx.stroke();
+      ctx.beginPath(); ctx.arc(o.a.x,o.a.y,o.isP?2.7:1.9,0,7);
+      ctx.fillStyle=o.isP?amber:hair; ctx.fill();
+      ctx.globalAlpha=1;
+      // Text
+      ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+      ctx.font='500 '+FS+'px '+serif;
+      ctx.fillStyle=o.isP?amber:ink;
+      ctx.fillText(o.name, o.tx, o.ty);
+      if(o.sub){
+        ctx.font=SS+'px '+mono;
+        ctx.fillStyle=o.isP?amber:mute;
+        ctx.globalAlpha=o.isP?.9:.65;
+        ctx.fillText(o.sub, o.tx, o.ty+12);
+        ctx.globalAlpha=1;
+      }
+    });
+  });
+  ctx.restore();
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   6 · LEGENDE
+   ══════════════════════════════════════════════════════════════════ */
+function renderLegend(){
+  const body=document.getElementById('lgBody');
+  const on=new Map();
+  ROOMS.forEach(r=>{ if(r.saeule!=null && (scope==='ext'||r.scope==='core')) on.set(r.saeule,r); });
+  body.innerHTML='';
+  SAEULEN.forEach((s,i)=>{
+    const r=on.get(i);
+    const el=document.createElement('div');
+    el.className='pill'+(r?' on':'');
+    el.innerHTML='<div class="n">'+s.n+'</div><div>'+
+      '<div class="nm">'+s.rolle+'</div>'+
+      (r?'<div class="rm">'+r.name+'</div>':'')+
+      '<div class="src">'+s.pillar+'</div></div>';
+    body.appendChild(el);
+  });
+  document.getElementById('lgCount').textContent=on.size+'/9 verortet';
+  document.getElementById('lgFoot').textContent = scope==='core'
+    ? 'Die vier Räume, die im Plan Workspace, Einzelbüro oder Doppelbüro hießen.'
+    : 'Vollausbau — auch Teamtable, Konferenz, Workshop, Videokonf und Break out tragen eine Säule.';
+  document.getElementById('meta').innerHTML =
+    'Axonometrie · 78 &times; 15 m<br>'+on.size+' Räume nach den Säulen benannt';
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   7 · INTERAKTION
+   ══════════════════════════════════════════════════════════════════ */
+let px=0, py=0, pid=null, moved=0;
+cv.addEventListener('pointerdown',e=>{
+  pid=e.pointerId; cv.setPointerCapture(pid);
+  dragging=true; quick=true; moved=0; px=e.clientX; py=e.clientY;
+  cv.classList.add('dragging');
+});
+cv.addEventListener('pointermove',e=>{
+  if(!dragging) return;
+  const dx=e.clientX-px, dy=e.clientY-py; px=e.clientX; py=e.clientY;
+  moved+=Math.abs(dx)+Math.abs(dy);
+  if(e.shiftKey){ cam.panX+=dx; cam.panY+=dy; }
+  else{
+    cam.az -= dx*0.0060;
+    cam.el  = Math.max(0.10, Math.min(1.45, cam.el + dy*0.0042));
+  }
+  draw();
+});
+function endDrag(){
+  if(!dragging) return;
+  dragging=false; quick=false; cv.classList.remove('dragging');
+  if(pid!=null){ try{cv.releasePointerCapture(pid);}catch(_){} pid=null; }
+  draw();
+}
+cv.addEventListener('pointerup',endDrag);
+cv.addEventListener('pointercancel',endDrag);
+cv.addEventListener('wheel',e=>{
+  e.preventDefault();
+  cam.zoom=Math.max(.45, Math.min(4.2, cam.zoom*(e.deltaY<0?1.11:0.90)));
+  draw();
+},{passive:false});
+
+// Pinch-Zoom
+let pts=new Map(), pinch=0;
+cv.addEventListener('pointerdown',e=>pts.set(e.pointerId,[e.clientX,e.clientY]));
+cv.addEventListener('pointermove',e=>{
+  if(!pts.has(e.pointerId)) return;
+  pts.set(e.pointerId,[e.clientX,e.clientY]);
+  if(pts.size===2){
+    dragging=false;
+    const v=[...pts.values()], d=Math.hypot(v[0][0]-v[1][0], v[0][1]-v[1][1]);
+    if(pinch) { cam.zoom=Math.max(.45,Math.min(4.2, cam.zoom*(d/pinch))); draw(); }
+    pinch=d;
+  }
+});
+['pointerup','pointercancel'].forEach(t=>cv.addEventListener(t,e=>{
+  pts.delete(e.pointerId); if(pts.size<2) pinch=0;
+}));
+
+const VIEWS=[{az:-0.52,el:0.62},{az:-1.30,el:0.50},{az:-2.62,el:0.62},{az:0,el:1.44}];
+function setActive(sel, val){
+  document.querySelectorAll(sel).forEach(b=>
+    b.setAttribute('aria-pressed', String(b.dataset[Object.keys(b.dataset)[0]]===val)));
+}
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{
+  const v=VIEWS[+b.dataset.view];
+  cam.az=v.az; cam.el=v.el; cam.panX=0; cam.panY=0; cam.zoom=1;
+  setActive('[data-view]', b.dataset.view); draw();
+}));
+document.querySelectorAll('[data-lab]').forEach(b=>b.addEventListener('click',()=>{
+  labelMode=b.dataset.lab; setActive('[data-lab]', labelMode); draw();
+}));
+const btnScope=document.getElementById('btnScope');
+btnScope.addEventListener('click',()=>{
+  scope = scope==='core' ? 'ext' : 'core';
+  btnScope.setAttribute('aria-pressed', String(scope==='ext'));
+  btnScope.textContent = scope==='ext' ? '9 Säulen' : '9 Säulen';
+  renderLegend(); draw();
+});
+const legend=document.getElementById('legend'), btnLegend=document.getElementById('btnLegend');
+btnLegend.addEventListener('click',()=>{
+  legendOn=!legendOn;
+  legend.classList.toggle('tucked', !legendOn);
+  btnLegend.setAttribute('aria-pressed', String(legendOn));
+  draw();
+});
+
+addEventListener('resize',resize);
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{readPalette();draw();});
+new MutationObserver(()=>{readPalette();draw();})
+  .observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+/* ── Start ──────────────────────────────────────────────────────────
+   Auf schmalen Displays längs statt quer blicken: der 78-m-Riegel läuft
+   dann in die Tiefe statt über die Breite und wird gut doppelt so groß.
+   Legende zu, nur die Säulen beschriftet — sonst erschlägt es das Bild. */
+let startView='0';
+if(innerWidth<900){
+  startView='1'; cam.az=VIEWS[1].az; cam.el=0.54;
+  legendOn=false; legend.classList.add('tucked');
+  btnLegend.setAttribute('aria-pressed','false');
+  labelMode='pillars';
+}
+readPalette();
+buildScene();
+renderLegend();
+setActive('[data-view]',startView);
+setActive('[data-lab]',labelMode);
+resize();
+
+/* Sanfter Anflug beim Laden — einmalig, respektiert reduced-motion */
+if(!matchMedia('(prefers-reduced-motion:reduce)').matches){
+  const t0=performance.now(), az0=cam.az-0.42, el0=1.16, zm0=.72;
+  const azT=cam.az, elT=cam.el;
+  cam.az=az0; cam.el=el0; cam.zoom=zm0;
+  (function step(t){
+    const k=Math.min(1,(t-t0)/1150), e=1-Math.pow(1-k,3);
+    cam.az=az0+(azT-az0)*e; cam.el=el0+(elT-el0)*e; cam.zoom=zm0+(1-zm0)*e;
+    draw();
+    if(k<1) requestAnimationFrame(step);
+  })(t0);
+}
+})();
+</script>
