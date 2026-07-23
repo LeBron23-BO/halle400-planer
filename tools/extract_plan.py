@@ -48,9 +48,33 @@ import fitz  # PyMuPDF
 PDF_STANDARD = Path(r"C:/Users/dania/Desktop/Nur Büro.pdf")
 
 # --- Massstab (Anzeige-Koordinaten -> Meter) --------------------------------
-X0_DISPLAY, X1_DISPLAY = 105.0, 1900.0   # 0 .. 78 m (Laenge des Riegels)
-Y0_DISPLAY, Y1_DISPLAY = 553.0, 899.0    # 0 .. 15 m (Tiefe)
-LAENGE_M, TIEFE_M = 78.0, 15.0
+# GEMESSEN am 2026-07-23 (T2b), nicht mehr aus der Vorarbeit geerbt.
+# Verfahren: Render bei 3x, Schwelle Grauwert < 150, Fuehrungslinien vorher
+# getilgt (sie reichen bis in die Raeume und verfaelschen jede Projektion),
+# dann spaltenweise die aeusserste Zeichnung im Fenster y 430..1000 gesucht.
+#
+# Die geerbten Werte lagen daneben — sichtbar erst im Overlay, nie in den Zahlen:
+#   geerbt  x 105.0 .. 1900.0   y 553.0 .. 899.0
+#   gemessen x  94.7 .. 1909.0  Nordkante 561.3  Suedkante 917.3
+X0_DISPLAY, X1_DISPLAY = 94.7, 1909.0
+Y_NORDKANTE, Y_SUEDKANTE = 561.3, 917.3
+
+# Die Laenge (78 m) ist eine gesetzte Angabe aus der Vorarbeit — der Plan traegt
+# KEINE Masskette, sie ist aus dem PDF nicht nachpruefbar. Der Massstab wird
+# deshalb auf die Laenge kalibriert und ISOTROP verwendet (ein Architekturplan
+# hat in beiden Achsen denselben Massstab). Die Tiefe ist damit ein MESSWERT:
+# (917.3 - 561.3) / 23.26 = 15.31 m — nicht die gerundeten 15 m der Vorarbeit.
+LAENGE_M = 78.0
+PX_PRO_M = (X1_DISPLAY - X0_DISPLAY) / LAENGE_M          # 23.26
+TIEFE_M = round((Y_SUEDKANTE - Y_NORDKANTE) / PX_PRO_M, 2)
+
+# Waagerechte Achsen, ebenfalls gemessen (staerkste durchgehende Linien):
+Y_FLUR_NORD, Y_FLUR_SUED = 696.0, 750.7   # = 5.79 m und 8.14 m
+# Gegenprobe: Flurbreite 2.35 m gegen 2.40 m aus der Vorarbeit — unabhaengig
+# bestaetigt, die Kalibrierung stimmt.
+
+# Rueckwaertskompatible Namen (Overlay nutzt sie)
+Y0_DISPLAY, Y1_DISPLAY = Y_NORDKANTE, Y_SUEDKANTE
 
 # --- Schwellen, alle an den gemessenen Werten kalibriert --------------------
 # Die Wortluecke taugt NICHT als Trenner: innerhalb eines Namens 5.2-5.3 px
