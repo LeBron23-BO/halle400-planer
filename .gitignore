@@ -151,3 +151,6 @@ data/overlay-*.png
 
 # Plan-Kacheln sind Sicht-Artefakte, jederzeit reproduzierbar via tools/plan_tiles.py
 data/kacheln/
+
+# Vergleichsbild ist ein Pruef-Artefakt, reproduzierbar via tools/compare_plan.py
+data/vergleich.png
