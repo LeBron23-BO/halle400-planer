@@ -41,20 +41,8 @@
     "x": 3245.0,
     "y": 0.0
    },
-   "53bd2193-fa0c-782f-1bf2-249d4857ff22": {
-    "x": 3530.0,
-    "y": 0.0
-   },
    "09f4b409-8ce5-95c6-c90b-1d3145a2ddc3": {
     "x": 3874.0,
-    "y": 0.0
-   },
-   "5101dfe1-2097-f879-08a9-783a84281993": {
-    "x": 4150.0,
-    "y": 0.0
-   },
-   "cf35ec30-b41e-5be0-debe-32b4b3165e3f": {
-    "x": 4289.0,
     "y": 0.0
    },
    "f09a4ae8-ecaa-7532-85e5-6ef58bc7724e": {
@@ -117,10 +105,6 @@
     "x": 3894.0,
     "y": 1531.0
    },
-   "22d8d748-29a3-7322-e757-bfa08620e612": {
-    "x": 4229.0,
-    "y": 1531.0
-   },
    "af66e22e-08b4-e54f-94f0-a5d64f8c8011": {
     "x": 4592.0,
     "y": 1531.0
@@ -131,6 +115,10 @@
    },
    "2ceb0849-3503-8c0a-ef77-0c5bcc4a72fb": {
     "x": 5245.0,
+    "y": 1531.0
+   },
+   "b7605296-d23d-822f-c8fa-274af67df4b1": {
+    "x": 5880.0,
     "y": 1531.0
    },
    "c881c56a-d236-1599-1932-d333c013cc64": {
@@ -197,20 +185,8 @@
     "x": 3245.0,
     "y": 579.0
    },
-   "7eaf4591-1d1e-7e3f-bdae-264eec5a8fd5": {
-    "x": 3530.0,
-    "y": 579.0
-   },
    "676cf373-5eab-bb8e-b91b-17e7d7e582c5": {
     "x": 3874.0,
-    "y": 579.0
-   },
-   "55c07716-d365-6a98-4727-fe94de75a4a7": {
-    "x": 4150.0,
-    "y": 579.0
-   },
-   "00c8c4ed-5f9b-ec3c-720e-e9ac6737645d": {
-    "x": 4289.0,
     "y": 579.0
    },
    "4dc2182e-0992-cd02-fa53-e880c037728e": {
@@ -277,10 +253,6 @@
     "x": 3894.0,
     "y": 814.0
    },
-   "d5a7fbf6-717f-55b4-c657-a8a3be26f216": {
-    "x": 4229.0,
-    "y": 814.0
-   },
    "581a80ce-02c9-9e9d-331a-c277eb31ffdf": {
     "x": 4592.0,
     "y": 814.0
@@ -291,6 +263,10 @@
    },
    "658f5bfb-abec-a81d-75cf-90c17afdfeed": {
     "x": 5245.0,
+    "y": 814.0
+   },
+   "33ed2923-1445-259b-f33d-f7ad012cbf06": {
+    "x": 5880.0,
     "y": 814.0
    },
    "b669d3c2-f7b2-e4de-6707-7edda81c6a77": {
@@ -371,30 +347,12 @@
    },
    {
     "corner1": "ed41419c-caea-9716-b9ba-dab999fd4386",
-    "corner2": "53bd2193-fa0c-782f-1bf2-249d4857ff22",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
-    "art": "aussen"
-   },
-   {
-    "corner1": "53bd2193-fa0c-782f-1bf2-249d4857ff22",
     "corner2": "09f4b409-8ce5-95c6-c90b-1d3145a2ddc3",
     "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
     "art": "aussen"
    },
    {
     "corner1": "09f4b409-8ce5-95c6-c90b-1d3145a2ddc3",
-    "corner2": "5101dfe1-2097-f879-08a9-783a84281993",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
-    "art": "aussen"
-   },
-   {
-    "corner1": "5101dfe1-2097-f879-08a9-783a84281993",
-    "corner2": "cf35ec30-b41e-5be0-debe-32b4b3165e3f",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
-    "art": "aussen"
-   },
-   {
-    "corner1": "cf35ec30-b41e-5be0-debe-32b4b3165e3f",
     "corner2": "f09a4ae8-ecaa-7532-85e5-6ef58bc7724e",
     "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
     "art": "aussen"
@@ -479,12 +437,6 @@
    },
    {
     "corner1": "62c9e197-31f1-a1ab-397e-05a1ef92b801",
-    "corner2": "22d8d748-29a3-7322-e757-bfa08620e612",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
-    "art": "aussen"
-   },
-   {
-    "corner1": "22d8d748-29a3-7322-e757-bfa08620e612",
     "corner2": "af66e22e-08b4-e54f-94f0-a5d64f8c8011",
     "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
     "art": "aussen"
@@ -503,6 +455,12 @@
    },
    {
     "corner1": "2ceb0849-3503-8c0a-ef77-0c5bcc4a72fb",
+    "corner2": "b7605296-d23d-822f-c8fa-274af67df4b1",
+    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "b7605296-d23d-822f-c8fa-274af67df4b1",
     "corner2": "c881c56a-d236-1599-1932-d333c013cc64",
     "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
     "art": "aussen"
@@ -599,30 +557,12 @@
    },
    {
     "corner1": "2ea1cd12-2170-a0d4-3996-78ce38ede2da",
-    "corner2": "7eaf4591-1d1e-7e3f-bdae-264eec5a8fd5",
-    "herkunft": "flur-nord, Zeilenprojektion",
-    "art": "flur"
-   },
-   {
-    "corner1": "7eaf4591-1d1e-7e3f-bdae-264eec5a8fd5",
     "corner2": "676cf373-5eab-bb8e-b91b-17e7d7e582c5",
     "herkunft": "flur-nord, Zeilenprojektion",
     "art": "flur"
    },
    {
     "corner1": "676cf373-5eab-bb8e-b91b-17e7d7e582c5",
-    "corner2": "55c07716-d365-6a98-4727-fe94de75a4a7",
-    "herkunft": "flur-nord, Zeilenprojektion",
-    "art": "flur"
-   },
-   {
-    "corner1": "55c07716-d365-6a98-4727-fe94de75a4a7",
-    "corner2": "00c8c4ed-5f9b-ec3c-720e-e9ac6737645d",
-    "herkunft": "flur-nord, Zeilenprojektion",
-    "art": "flur"
-   },
-   {
-    "corner1": "00c8c4ed-5f9b-ec3c-720e-e9ac6737645d",
     "corner2": "4dc2182e-0992-cd02-fa53-e880c037728e",
     "herkunft": "flur-nord, Zeilenprojektion",
     "art": "flur"
@@ -707,12 +647,6 @@
    },
    {
     "corner1": "47353fa6-01aa-69a4-76f1-85a1ea8e654c",
-    "corner2": "d5a7fbf6-717f-55b4-c657-a8a3be26f216",
-    "herkunft": "flur-sued, Zeilenprojektion",
-    "art": "flur"
-   },
-   {
-    "corner1": "d5a7fbf6-717f-55b4-c657-a8a3be26f216",
     "corner2": "581a80ce-02c9-9e9d-331a-c277eb31ffdf",
     "herkunft": "flur-sued, Zeilenprojektion",
     "art": "flur"
@@ -731,6 +665,12 @@
    },
    {
     "corner1": "658f5bfb-abec-a81d-75cf-90c17afdfeed",
+    "corner2": "33ed2923-1445-259b-f33d-f7ad012cbf06",
+    "herkunft": "flur-sued, Zeilenprojektion",
+    "art": "flur"
+   },
+   {
+    "corner1": "33ed2923-1445-259b-f33d-f7ad012cbf06",
     "corner2": "b669d3c2-f7b2-e4de-6707-7edda81c6a77",
     "herkunft": "flur-sued, Zeilenprojektion",
     "art": "flur"
@@ -808,27 +748,9 @@
     "art": "trennwand"
    },
    {
-    "corner1": "53bd2193-fa0c-782f-1bf2-249d4857ff22",
-    "corner2": "7eaf4591-1d1e-7e3f-bdae-264eec5a8fd5",
-    "herkunft": "nord-17",
-    "art": "trennwand"
-   },
-   {
     "corner1": "09f4b409-8ce5-95c6-c90b-1d3145a2ddc3",
     "corner2": "676cf373-5eab-bb8e-b91b-17e7d7e582c5",
     "herkunft": "nord-18",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "5101dfe1-2097-f879-08a9-783a84281993",
-    "corner2": "55c07716-d365-6a98-4727-fe94de75a4a7",
-    "herkunft": "nord-19",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "cf35ec30-b41e-5be0-debe-32b4b3165e3f",
-    "corner2": "00c8c4ed-5f9b-ec3c-720e-e9ac6737645d",
-    "herkunft": "nord-20",
     "art": "trennwand"
    },
    {
@@ -904,12 +826,6 @@
     "art": "trennwand"
    },
    {
-    "corner1": "d5a7fbf6-717f-55b4-c657-a8a3be26f216",
-    "corner2": "22d8d748-29a3-7322-e757-bfa08620e612",
-    "herkunft": "sued-25",
-    "art": "trennwand"
-   },
-   {
     "corner1": "581a80ce-02c9-9e9d-331a-c277eb31ffdf",
     "corner2": "af66e22e-08b4-e54f-94f0-a5d64f8c8011",
     "herkunft": "sued-27",
@@ -925,6 +841,12 @@
     "corner1": "658f5bfb-abec-a81d-75cf-90c17afdfeed",
     "corner2": "2ceb0849-3503-8c0a-ef77-0c5bcc4a72fb",
     "herkunft": "sued-33",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "33ed2923-1445-259b-f33d-f7ad012cbf06",
+    "corner2": "b7605296-d23d-822f-c8fa-274af67df4b1",
+    "herkunft": "sued-37",
     "art": "trennwand"
    },
    {

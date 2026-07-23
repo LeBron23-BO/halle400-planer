@@ -150,13 +150,16 @@ Wand/Moebel am Freihand-Duktus erst sicher).
   Wand mitten durch einen ringsum bestuhlten Tisch gibt es nicht. Damit ist
   der bisherige ZU_PRUEFEN-Verdacht entschieden.
 
-### Weiter offen (benannt, nicht geraten)
+### Weiter offen (benannt, nicht geraten) — AUFGELÖST am 2026-07-23
 
-- **nord-17 (35.30 m, beleg 0.73)** — faellt mit der gestrichelt gezeichneten
+- **nord-17 (35.30 m, beleg 0.73)** — fiel mit der gestrichelt gezeichneten
   Mittelfuge eines grossen, ringsum bestuhlten Tisches zusammen, also dasselbe
-  Muster wie sued-34/36. Anders als dort laesst sich am Bild NICHT
-  ausschliessen, dass dahinter eine Wand steht. Bleibt drin, steht in
-  ZU_PRUEFEN.
+  Muster wie sued-34/36. Damals liess sich am Bild NICHT ausschliessen, dass
+  dahinter eine Wand steht.
+  **Entschieden im Volldurchgang (siehe Abschnitt unten): ausgeschlossen.**
+  Auf der 10-m-Kachel ist erkennbar, was die 20-m-Kachel verschluckte — die
+  Linie ist gestrichelt, und Waende sind in diesem Plan durchgezogen.
+  ZU_PRUEFEN ist seitdem leer.
 
 ### Negativbefund: die Suedzeile 19..32 m ist WIRKLICH offen
 
@@ -175,3 +178,72 @@ und Pflanze zusammen die Bandhoehe fuellen, nicht weil dort eine Wand steht.
 voellig verschiedene Ursachen — eine echte Wand mit Tueroeffnung ODER eine
 Reihe zufaellig uebereinanderliegender Moebel. Die Zahl allein unterscheidet
 sie nicht; nur der Blick aufs Bild tut es.
+
+---
+
+## 6. Volldurchgang aller Kandidaten (2026-07-23)
+
+Alle 18 Kacheln aus `python tools/plan_tiles.py --kandidaten --breite 10 --aus
+data/kacheln10` wurden einzeln angesehen. Damit ist **jede** der 83 Kennungen
+entschieden; `ZU_PRUEFEN` ist leer. Ergebnis: **29 Trennwände** (vorher 32),
+38 Wände gesamt, 54 verworfen.
+
+Die Zahl sank, obwohl verfeinert wurde — weil vier Falsch-Positive
+verschwanden und nur eine echte Wand hinzukam. Das ist der Sinn der Übung:
+eine Wand, die es nicht gibt, ist schädlicher als eine, die noch fehlt.
+
+### Drei Muster erklären fast alle Fälle
+
+**Muster A — ein Tisch, drei Kandidaten.** Ein ringsum bestuhlter Tisch
+erzeugt bis zu drei senkrechte Kandidaten: linke Kante, gezeichnete
+Mittelfuge, rechte Kante. Belegt bei sued-7/8/9, sued-11/12/13, sued-17/18,
+sued-34/35/36, nord-19/20. Alle drei bestehen den Durchlauf-Test, weil Tisch
+plus Stühle die Bandhöhe füllen.
+
+**Muster B — Loggia/Terrasse.** Die beigen Flächen mit Bepflanzung und Kies
+sind Außenbereiche mit freier Möblierung. Was dort senkrecht misst, ist
+Pflanzkübel oder Terrassenmöbel. Das betrifft ausgerechnet die beiden
+Bereiche, die als „fehlende Messung" verdächtigt waren — Nord 45..64 m und
+Süd 19..32 m. Beide sind keine Lücken, sondern offene Flächen.
+
+**Muster C — gestrichelt statt durchgezogen.** Wände sind in diesem Plan
+durchgezogen. Eine gestrichelte Senkrechte ist die Fuge zweier
+zusammengeschobener Tische (nord-17, sued-35).
+
+### Zwei Falsch-Positive, gefunden durch eine Gegenprobe ohne Auge
+
+`nord-19` (41.50 m) und `nord-20` (42.89 m) standen als Wände in der Liste.
+Ihr Abstand beträgt **1.39 m** — mitten im 6.86-m-Raum zwischen nord-18 und
+nord-21, mit Stühlen links und rechts davon. Ebenso `sued-25` (42.29 m): die
+Mittelfuge eines 1.92-m-Schreibtischblocks im 7.0-m-Raum sued-23..sued-27.
+
+Gegenüberliegend zeigt der Plan dasselbe Bild: Nord 38.74..45.60 m und
+Süd 38.94..45.92 m sind zwei etwa gleich große Räume mit je einem Tischblock
+in der Mitte. Die Messung hatte im Norden die Tischkanten, im Süden die
+Tischfuge für eine Wand gehalten.
+
+**Der mechanische Test dahinter:** zwei benachbarte „Wände" mit weniger als
+rund 1.5 m Abstand umschließen keinen Raum, sondern einen Körper. Dieser Test
+braucht kein Bild und findet genau die Fehler, die am Bild leicht durchrutschen
+— er ergänzt die Sichtprüfung, statt sie zu ersetzen.
+
+### Was der Test noch anzeigt (bewusst so belassen)
+
+- **Nord 10.02..10.99 m (0.97 m).** Zwei lange, durchgezogene Linien im
+  Sanitärblock. Für einen begehbaren Raum knapp, für Installationsschacht oder
+  WC-Kabine normal. Bleibt drin — die Linien sind eindeutig gezeichnet.
+- **Nord 12.70..23.76 m (11.06 m)** und **Süd 18.64..31.92 m (13.28 m).** Die
+  bekannten offenen Bereiche. Kein Messfehler, sondern das Gebäude.
+
+### Aufgenommen in diesem Durchgang
+
+- **sued-37 (58.80 m, beleg 0.56)** — kräftige, durchgezogene Senkrechte, die
+  auf halber Bandhöhe ansetzt und bis zur Außenwand läuft: der Westabschluss
+  der Ost-Loggia. Genau dieser Ansatz auf halber Höhe drückt die Belegung
+  unter die Schwelle.
+
+**Übertragbar:** Wo eine Messung strukturell mehrdeutig ist, hilft nicht das
+feinere Parameter-Tuning, sondern eine **zweite, unabhängige Frage an dieselben
+Daten**. Hier war es die Plausibilität der Raumbreite — sie stützt sich auf
+gar keine Bildinformation und fand trotzdem drei Fehler, die die Sichtprüfung
+allein übersehen hätte.
