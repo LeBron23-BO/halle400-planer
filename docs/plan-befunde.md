@@ -290,6 +290,47 @@ sie zieht die Grenze zwischen *echter Geometrie* und *Zeichenrauschen*. Im
 Zweifel gewinnt die gerade Kante: eine erfundene Zacke sieht exakt aus und ist
 falsch, eine geglättete Kante ist ehrlich ungenau.
 
+## Ausstattung: 289 Zeichen, abgelesen statt gerechnet (A1–A4, 2026-07-25)
+
+Für die Einrichtung gibt es — wie für die Wände — **keine Vektor-Ebene**. Sie
+ist Teil desselben Rasterbilds im Freihand-Duktus. Anders als bei den Wänden
+half hier aber auch keine Projektionsanalyse: ein Schreibtisch ist kein
+durchlaufendes Merkmal, das sich mechanisch von einem Stuhl trennen ließe.
+
+Deshalb wurde **abgelesen**, nicht gerechnet: `tools/mess_kachel.py` rendert
+Ausschnitte mit **beidachsigem** Meterraster (plan_tiles.py hat nur ein
+senkrechtes — es beantwortet die Wandfrage, und die hat nur eine Koordinate).
+Jedes Element trägt in `data/ausstattung.json` seinen `beleg` auf die Kachel,
+an der es abgelesen wurde.
+
+### Die Gegenprobe, die nichts gekostet hat
+
+Die 18 Raumbeschriftungen stammen aus der **Text**-Ebene der PDF (exakt), die
+Möblierung aus der **Raster**-Ebene (abgelesen). Beide wurden unabhängig
+voneinander gewonnen — und passen zusammen:
+
+| Beschriftung | unabhängig gemessene Möblierung |
+|---|---|
+| *Konferenz 10-12 Personen* | Tisch mit **12** Stühlen |
+| *Konferenz 6-8 Personen* | runder Tisch mit **6** Stühlen |
+| *Workshop 6-8 Personen* | runder Tisch mit **6** Stühlen |
+| *Toiletten* | 8 WC-Kabinen + Waschbecken-Block |
+| *Lager* / *Storage* | Regalblöcke, keine Bestuhlung |
+| *Teamtable* | ein großer Tisch mit 8 Plätzen |
+
+**Übertragbar:** Das ist dieselbe Methode wie die Raumbreiten-Plausibilität in
+Abschnitt 6 — eine **zweite, unabhängige Frage an dieselben Daten**. Sie kostet
+nichts, weil beide Größen ohnehin erhoben wurden, und sie stützt beide
+Messungen gegenseitig. Hätte an *Konferenz 10-12 Personen* ein Vierertisch
+gestanden, wäre entweder die Ablesung oder die Zuordnung falsch gewesen.
+
+### Was bewusst NICHT nachgebildet ist
+
+Die Kiestextur und der Bewuchs der Loggien sind als **eine** Fläche plus
+Pflanzkübel geführt, nicht Kiesel für Kiesel. Ein Grundriss-Zeichen ist eine
+Aussage über Lage und Ausdehnung, keine Reproduktion des Strichbilds — und
+jeder zusätzliche Punkt wäre erfunden, nicht gemessen.
+
 **Blender-Weiterverwendung (Ausblick):** `data/walls.json` ist die neutrale
 Geometrie-Quelle, die später auch ein 3D-Rendering speist. Was ihr für ein
 Volumenmodell noch fehlt, ist die **Wandhöhe** — die ist aus einem Grundriss

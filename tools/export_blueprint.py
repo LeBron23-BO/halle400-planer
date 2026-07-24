@@ -197,6 +197,11 @@ def lade_ausstattung(pfad: Path) -> list[dict]:
     elemente = roh.get("elemente", roh if isinstance(roh, list) else [])
     sauber: list[dict] = []
     for i, e in enumerate(elemente):
+        # Blosse Zeichenketten sind Abschnitts-Trenner ("--- A2 WEST ---").
+        # Die Quelldatei wird von Hand gepflegt und waechst auf mehrere hundert
+        # Zeilen; eine Gliederung darin ist Sorgfalt, kein Schmutz.
+        if isinstance(e, str):
+            continue
         typ = e.get("typ")
         if typ not in ERLAUBTE_TYPEN:
             raise SystemExit(f"ausstattung[{i}]: unbekannter Typ {typ!r}")

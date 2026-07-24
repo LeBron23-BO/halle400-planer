@@ -70,7 +70,7 @@ async function oeffne(browser, breite, hoehe, mobil) {
       const el = document.getElementById('floorplanner-canvas')
       const d = el.getContext('2d').getImageData(0, 0, el.width, el.height).data
       const nah = (v, soll, tol) => Math.abs(v - soll) <= tol
-      let aus = { n: 0, minX: 1e9, maxX: -1, minY: 1e9, maxY: -1, sx: 0, sy: 0 }
+      let aus = { n: 0, minX: 1e9, maxX: -1, minY: 1e9, maxY: -1, sx: 0, sy: 0, spalten: [] }
       let bau = { n: 0, minX: 1e9, maxX: -1, minY: 1e9, maxY: -1 }
       for (let y = 0; y < el.height; y++) {
         for (let x = 0; x < el.width; x++) {
@@ -108,6 +108,27 @@ async function oeffne(browser, breite, hoehe, mobil) {
         aus.cx = aus.sx / aus.n
         aus.cy = aus.sy / aus.n
       }
+      // Wie viele Ausstattungs-Pixel liegen in jedem Zehntel der Bausubstanz?
+      // Das ist der Vollstaendigkeits-Nachweis: ein leeres Zehntel bedeutet
+      // einen Hallenabschnitt, der nie erfasst wurde — eine Luecke, die eine
+      // blosse Gesamtzahl niemals sichtbar machen wuerde.
+      const spalten = new Array(10).fill(0)
+      if (bau.maxX > bau.minX) {
+        for (let y = 0; y < el.height; y++) {
+          for (let x = 0; x < el.width; x++) {
+            const i = (y * el.width + x) * 4
+            if (d[i + 3] <= 10) continue
+            const r = d[i]
+            const g = d[i + 1]
+            const b = d[i + 2]
+            if (b - r >= 12 && nah(r, 125, 22) && nah(g, 138, 22) && nah(b, 156, 22)) {
+              const k = Math.min(9, Math.max(0, Math.floor(((x - bau.minX) / (bau.maxX - bau.minX)) * 10)))
+              spalten[k]++
+            }
+          }
+        }
+      }
+      aus.spalten = spalten
       return { cw: el.width, ch: el.height, aus, bau }
     }
   })
@@ -123,10 +144,12 @@ const klick = (page, label) =>
 
 const messe = (page) => page.evaluate(() => window.__messe())
 
-// Der erfasste Abschnitt (A1) liegt bei x 26.9..37.2 m von 78 m Hallenlaenge.
-// Daraus folgt, wo seine Zeichen im eingepassten Bild liegen MUESSEN.
-const SOLL_CX_MIN = 0.3
-const SOLL_CX_MAX = 0.52
+// Nach A2..A4 ist die GANZE Halle erfasst. Der Schwerpunkt muss deshalb
+// ungefaehr mittig liegen, und die Zeichen muessen sich ueber nahezu die
+// volle Laenge erstrecken.
+const SOLL_CX_MIN = 0.35
+const SOLL_CX_MAX = 0.65
+const SOLL_ABDECKUNG = 0.85
 
 const ergebnisse = []
 const pruefe = (name, ok, zusatz = '') => {
@@ -155,17 +178,25 @@ try {
     relCx >= SOLL_CX_MIN && relCx <= SOLL_CX_MAX,
     `${relCx.toFixed(3)} (Soll ${SOLL_CX_MIN}..${SOLL_CX_MAX})`
   )
-  // Der schaerfste Test: nicht nur der Schwerpunkt, sondern die AUSDEHNUNG
-  // muss im erfassten Abschnitt liegen. Ein Schwerpunkt allein kann stimmen,
-  // waehrend die Zeichen ueber die ganze Halle verstreut sind — genau dieses
-  // Bild lieferte die erste, farbblinde Fassung der Messung.
+  // Vollstaendigkeit: die Zeichen muessen fast die ganze Hallenlaenge decken
+  // UND in JEDEM Zehntel vorkommen. Eine blosse Gesamtzahl kann gross und
+  // trotzdem lueckenhaft sein — 289 Zeichen, alle im selben Drittel, saehen
+  // in einer Summe genauso aus wie 289 gleichmaessig verteilte.
   const relMin = a.n > 0 ? (a.minX - b.minX) / (b.maxX - b.minX) : -1
   const relMax = a.n > 0 ? (a.maxX - b.minX) / (b.maxX - b.minX) : -1
-  log(`  Ausstattung x-relativ ${relMin.toFixed(3)}..${relMax.toFixed(3)} (Soll im Band ${SOLL_CX_MIN}..${SOLL_CX_MAX})`)
+  const abdeckung = relMax - relMin
+  const leere = a.spalten.map((v, i) => (v === 0 ? i : -1)).filter((i) => i >= 0)
+  log(`  Ausstattung x-relativ ${relMin.toFixed(3)}..${relMax.toFixed(3)} (Abdeckung ${(abdeckung * 100).toFixed(0)} %)`)
+  log(`  Zeichen je Zehntel: ${a.spalten.join(' · ')}`)
   pruefe(
-    'Ausstattung bleibt im erfassten Abschnitt (keine Streuung ueber die Halle)',
-    relMin >= SOLL_CX_MIN && relMax <= SOLL_CX_MAX,
-    `${relMin.toFixed(3)}..${relMax.toFixed(3)}`
+    'Ausstattung deckt nahezu die ganze Hallenlaenge',
+    abdeckung >= SOLL_ABDECKUNG,
+    `${(abdeckung * 100).toFixed(0)} % (Soll >= ${SOLL_ABDECKUNG * 100} %)`
+  )
+  pruefe(
+    'Kein Hallenabschnitt ohne Ausstattung',
+    leere.length === 0,
+    leere.length ? `leere Zehntel: ${leere.join(', ')}` : 'alle 10 Zehntel belegt'
   )
   pruefe(
     'Ausstattung liegt innerhalb der Bausubstanz',

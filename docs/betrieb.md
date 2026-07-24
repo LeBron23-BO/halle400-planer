@@ -94,6 +94,10 @@ unsichtbar, der der PDF entspricht. Dazu trägt der Katalog des Upstreams eine
 Küchenzeile oder Aufzug, und jedes Modell wiegt Megabytes auf einem fremden
 CDN — bei rund 200 Möbeln wären das Dutzende MB externe Anfragen je Aufruf.
 
+**Stand:** die **ganze Halle** ist erfasst — 289 Zeichen von 1,95 m bis 76,35 m,
+in jedem Zehntel der Länge vorhanden (`pruefe-ausstattung.mjs` prüft genau das:
+eine bloße Gesamtzahl kann groß und trotzdem lückenhaft sein).
+
 **Woher die Daten kommen.** `data/ausstattung.json` ist die kuratierte Quelle,
 genau wie `data/walls.json` bei den Wänden: aus der PDF **gemessen**, jedes
 Element mit `beleg` auf die Mess-Kachel, an der es abgelesen wurde. Der Export
