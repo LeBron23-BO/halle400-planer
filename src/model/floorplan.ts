@@ -10,6 +10,54 @@ export type FloorTexture = { url: string; scale: number }
 export type WallTexture = { url: string; stretch: boolean; scale: number }
 /** User-editable per-room metadata. Currently just the room name (T4). */
 export type RoomMeta = { name: string }
+
+/**
+ * Signatur-Arten der Ausstattung (A1). Bewusst eine geschlossene Liste von
+ * GRUNDRISS-ZEICHEN, nicht von Möbelstücken: gezeichnet wird, was der Plan
+ * zeigt (ein Rechteck mit vier Kreisen IST das Kochfeld), nicht ein
+ * fotorealistisches Modell. Darum trägt jede Art ihre eigene Zeichenvorschrift
+ * in `floorplanner_view.zeichneSignatur` — und keine `model_url` auf ein
+ * fremdes CDN.
+ */
+export type AusstattungTyp =
+  | 'tisch' // Rechteck — Schreibtisch, Konferenztisch, Teamtable
+  | 'rundtisch' // Kreis — Bistrotisch auf den Loggien
+  | 'stuhl' // kleines gerundetes Rechteck, zeigt zum zugehörigen Tisch
+  | 'schrank' // Rechteck mit Diagonale (Norm-Zeichen für Schrank/Regal)
+  | 'treppe' // Stufenband mit Laufrichtung
+  | 'wc' // Sanitär: Becken im Kabinen-Rechteck
+  | 'waschbecken'
+  | 'kochfeld' // Rechteck mit vier Platten
+  | 'pflanze' // Kreis mit Zacken — Kübel auf Loggia/in Büros
+  | 'aufzug' // Rechteck mit Kreuz (Norm-Zeichen)
+  | 'flaeche' // gefüllte Fläche — Loggia, Kiesbett
+
+/**
+ * EIN Ausstattungs-Zeichen, GEMESSEN aus `Nur Büro.pdf` (Projekt-DNA: die PDF
+ * ist die Grundwahrheit). Koordinaten in cm im selben Bezugsrahmen wie
+ * `corners` — dadurch wandert die Ausstattung beim Zoomen automatisch mit der
+ * Bausubstanz mit und kann nie gegen sie verrutschen.
+ */
+export type AusstattungElement = {
+  typ: AusstattungTyp
+  /** Mittelpunkt in cm. */
+  x: number
+  y: number
+  /** Ausdehnung in cm, VOR der Drehung: `breite` entlang x, `tiefe` entlang y. */
+  breite: number
+  tiefe: number
+  /** Drehung im Bogenmaß um den Mittelpunkt. Fehlt = 0. */
+  drehung?: number
+  /**
+   * Herkunftsnachweis der Messung (z. B. `kacheln10/kand_nord_3_27-37m.png`).
+   * Pflichtfeld der Sorgfalt, nicht Zierde: eine Position ohne Beleg ist
+   * geraten, und geratene Geometrie sieht exakt aus, ohne es zu sein.
+   */
+  beleg?: string
+  /** Freie Beschriftung, nur in der Detailstufe sichtbar. */
+  text?: string
+}
+
 export interface SavedFloorplan {
   corners: Record<string, { x: number; y: number }>
   walls: Array<{
@@ -23,6 +71,8 @@ export interface SavedFloorplan {
   newFloorTextures?: Record<string, FloorTexture>
   /** User room/label names keyed by a stable label key (see app/lib/roomNaming). */
   roomMeta?: Record<string, RoomMeta>
+  /** Aus der PDF gemessene Ausstattungs-Zeichen (A1). */
+  ausstattung?: AusstattungElement[]
 }
 
 /** */
@@ -71,6 +121,15 @@ export class Floorplan {
    * anchored to the PDF label, not to a derived room, so it survives wall edits.
    */
   private roomMeta: Record<string, RoomMeta> = {}
+
+  /**
+   * Aus der PDF gemessene Ausstattung (A1). Liegt bewusst auf DERSELBEN Achse
+   * wie `roomMeta` — dadurch erbt sie die erprobte Speicher-/Lade-Mechanik und
+   * übersteht damit auch das Rückgängig, das seine Momentaufnahmen über
+   * `saveFloorplan`/`loadFloorplan` zieht (siehe `src/core/undo.ts`). Eine
+   * eigene, daneben laufende Ablage wäre beim ersten Strg+Z verschwunden.
+   */
+  private ausstattung: AusstattungElement[] = []
 
   /** Constructs a floorplan. */
   constructor() {}
@@ -225,7 +284,8 @@ export class Floorplan {
       wallTextures: [],
       floorTextures: {},
       newFloorTextures: {},
-      roomMeta: {}
+      roomMeta: {},
+      ausstattung: []
     }
 
     this.corners.forEach((corner) => {
@@ -245,6 +305,7 @@ export class Floorplan {
     })
     floorplan.newFloorTextures = this.floorTextures
     floorplan.roomMeta = this.roomMeta
+    floorplan.ausstattung = this.ausstattung
     return floorplan
   }
 
@@ -286,6 +347,7 @@ export class Floorplan {
       this.floorTextures = floorplan.newFloorTextures
     }
     this.roomMeta = floorplan.roomMeta ?? {}
+    this.ausstattung = floorplan.ausstattung ?? []
 
     this.update()
     this.roomLoadedCallbacks.fire()
@@ -309,6 +371,20 @@ export class Floorplan {
   /** The whole name-override map — read access for runtime label resolution. */
   public getAllRoomMeta(): Record<string, RoomMeta> {
     return this.roomMeta
+  }
+
+  /** Die gemessene Ausstattung — Lesezugriff für den 2D-Zeichner (A1). */
+  public getAusstattung(): AusstattungElement[] {
+    return this.ausstattung
+  }
+
+  /**
+   * Ersetzt die Ausstattung vollständig. Bewusst KEIN Einzel-Setter: die
+   * Ausstattung ist eine zusammenhängende Messung aus der PDF, kein vom Nutzer
+   * Stück für Stück gepflegter Bestand.
+   */
+  public setAusstattung(elemente: AusstattungElement[]): void {
+    this.ausstattung = elemente
   }
 
   /**

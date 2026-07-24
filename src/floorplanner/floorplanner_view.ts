@@ -1,4 +1,4 @@
-import { Floorplan } from '../model/floorplan'
+import { Floorplan, AusstattungElement } from '../model/floorplan'
 import { Wall } from '../model/wall'
 import { Corner } from '../model/corner'
 import { Room } from '../model/room'
@@ -32,6 +32,26 @@ const edgeColorHover = '#008cba'
 const edgeWidth = 1
 
 const deleteColor = '#ff0000'
+
+// Ausstattung (A1) — bewusst zurückhaltend: die Bausubstanz muss die
+// kräftigste Linie im Bild bleiben, die Möblierung ist Beiwerk.
+const ausstattungLinie = '#8a9099'
+const ausstattungFuellung = '#ffffff'
+const ausstattungFlaeche = '#efe7dd' // Loggia/Kiesbett, wie im Plan beige
+const ausstattungGruen = '#cfdcc8' // Bepflanzung
+const ausstattungLinienBreite = 1
+
+/**
+ * Ab wann die Ausstattung DETAILS zeigt (Treppenstufen, Kochfeld-Platten,
+ * Stuhl-Lehnen) und ab wann nur noch ihren Umriss. Beides sind Schwellen in
+ * BILDSCHIRM-Pixeln pro cm, nicht in Weltmaß — dieselbe Lehre wie bei den
+ * Maßangaben und Raumnamen in T7: was mit dem Zoom mitschrumpft, wird bei
+ * eingepasster Halle zu Matsch. Bei 0,045 px/cm (Handy, ganze Halle) ist ein
+ * 160-cm-Schreibtisch sieben Pixel breit — ein Umriss sagt dort mehr als ein
+ * Detail, das zu einem Fleck verklumpt.
+ */
+const AUSSTATTUNG_DETAIL_AB = 0.3
+const AUSSTATTUNG_UMRISS_AB = 0.03
 
 // corner config
 const cornerRadius = 0
@@ -105,6 +125,12 @@ export class FloorplannerView {
     this.floorplan.getRooms().forEach((room) => {
       this.drawRoom(room)
     })
+
+    // Die Ausstattung liegt zwischen Raum und Wand: so überdeckt die kräftige
+    // Wandlinie die Möbelkanten, die an sie stoßen — genau wie im gezeichneten
+    // Plan. Andersherum lägen Tischkanten über der Wand und ließen sie
+    // durchbrochen erscheinen.
+    this.drawAusstattung()
 
     this.floorplan.getWalls().forEach((wall) => {
       this.drawWall(wall)
@@ -235,6 +261,198 @@ export class FloorplannerView {
       true,
       roomColor
     )
+  }
+
+  // ---------------------------------------------------------------- A1
+  // Ausstattung: Grundriss-Zeichen statt 3D-Möbel.
+  //
+  // WARUM HIER UND NICHT ALS `items`: der 2D-Editor zeichnet `items`
+  // überhaupt nicht (draw() kennt nur Raster, Räume, Wände, Ecken, Maße) —
+  // eine als Item eingepflegte Einrichtung wäre im Grundriss unsichtbar, also
+  // genau in der Ansicht, die der PDF entspricht. Dazu trägt der Katalog des
+  // Upstreams eine Wohnungs-Einrichtung (Betten, Sofas) ohne Treppe, Sanitär
+  // oder Küchenzeile, und jedes Modell wiegt Megabytes auf einem fremden CDN.
+
+  /** Zeichnet die gesamte gemessene Ausstattung. */
+  private drawAusstattung() {
+    const proCm = this.viewmodel.pixelProCm()
+    if (proCm < AUSSTATTUNG_UMRISS_AB) {
+      return
+    }
+    const detail = proCm >= AUSSTATTUNG_DETAIL_AB
+    this.floorplan.getAusstattung().forEach((el) => {
+      this.zeichneAusstattung(el, detail)
+    })
+  }
+
+  /**
+   * Rechnet einen Punkt im lokalen System des Elements (dx/dy in cm vom
+   * Mittelpunkt, vor Drehung) in Bildschirm-Pixel um. Die Drehung passiert
+   * bewusst hier in Weltkoordinaten und nicht über `context.rotate`: so bleibt
+   * jede Signatur eine schlichte Punktliste und kann nie gegen den Zoom
+   * verrutschen.
+   */
+  private ausPunkt(el: AusstattungElement, dx: number, dy: number): [number, number] {
+    const w = el.drehung ?? 0
+    const cos = Math.cos(w)
+    const sin = Math.sin(w)
+    return [
+      this.viewmodel.convertX(el.x + dx * cos - dy * sin),
+      this.viewmodel.convertY(el.y + dx * sin + dy * cos)
+    ]
+  }
+
+  /** Umriss-Rechteck des Elements, wahlweise gefüllt. */
+  private ausRechteck(el: AusstattungElement, fuellung: string | null, rand: boolean = true) {
+    const hb = el.breite / 2
+    const ht = el.tiefe / 2
+    const ecken: Array<[number, number]> = [
+      this.ausPunkt(el, -hb, -ht),
+      this.ausPunkt(el, hb, -ht),
+      this.ausPunkt(el, hb, ht),
+      this.ausPunkt(el, -hb, ht)
+    ]
+    this.drawPolygon(
+      ecken.map((p) => p[0]),
+      ecken.map((p) => p[1]),
+      fuellung !== null,
+      fuellung,
+      rand,
+      ausstattungLinie,
+      ausstattungLinienBreite
+    )
+  }
+
+  /** Linie zwischen zwei Punkten im lokalen System des Elements. */
+  private ausLinie(
+    el: AusstattungElement,
+    dx1: number,
+    dy1: number,
+    dx2: number,
+    dy2: number
+  ) {
+    const a = this.ausPunkt(el, dx1, dy1)
+    const b = this.ausPunkt(el, dx2, dy2)
+    this.drawLine(a[0], a[1], b[0], b[1], ausstattungLinienBreite, ausstattungLinie)
+  }
+
+  /** Ellipse im lokalen System (Mittelpunkt dx/dy, Halbachsen in cm). */
+  private ausEllipse(
+    el: AusstattungElement,
+    dx: number,
+    dy: number,
+    rx: number,
+    ry: number,
+    fuellung: string | null
+  ) {
+    const proCm = this.viewmodel.pixelProCm()
+    const m = this.ausPunkt(el, dx, dy)
+    this.context.beginPath()
+    this.context.ellipse(m[0], m[1], rx * proCm, ry * proCm, el.drehung ?? 0, 0, 2 * Math.PI)
+    if (fuellung) {
+      this.context.fillStyle = fuellung
+      this.context.fill()
+    }
+    this.context.lineWidth = ausstattungLinienBreite
+    this.context.strokeStyle = ausstattungLinie
+    this.context.stroke()
+  }
+
+  /** Ein einzelnes Ausstattungs-Zeichen. */
+  private zeichneAusstattung(el: AusstattungElement, detail: boolean) {
+    const hb = el.breite / 2
+    const ht = el.tiefe / 2
+
+    switch (el.typ) {
+      case 'flaeche':
+        // Loggia/Kiesbett: nur Fläche, kein Rand — sie ist Untergrund, kein Möbel.
+        this.ausRechteck(el, ausstattungFlaeche, false)
+        return
+
+      case 'rundtisch':
+        this.ausEllipse(el, 0, 0, hb, ht, ausstattungFuellung)
+        return
+
+      case 'pflanze':
+        this.ausEllipse(el, 0, 0, hb, ht, ausstattungGruen)
+        if (detail) {
+          // vier Zacken deuten das Blattwerk an
+          for (let i = 0; i < 4; i++) {
+            const w = (i * Math.PI) / 2 + Math.PI / 4
+            this.ausLinie(el, Math.cos(w) * hb * 0.5, Math.sin(w) * ht * 0.5, Math.cos(w) * hb, Math.sin(w) * ht)
+          }
+        }
+        return
+
+      case 'stuhl':
+        this.ausRechteck(el, ausstattungFuellung)
+        if (detail) {
+          // Lehne: die Kante, die vom zugehörigen Tisch wegzeigt (lokal +y)
+          this.ausLinie(el, -hb, ht, hb, ht)
+        }
+        return
+
+      case 'schrank':
+        this.ausRechteck(el, ausstattungFuellung)
+        if (detail) {
+          this.ausLinie(el, -hb, -ht, hb, ht)
+        }
+        return
+
+      case 'aufzug':
+        this.ausRechteck(el, ausstattungFuellung)
+        this.ausLinie(el, -hb, -ht, hb, ht)
+        this.ausLinie(el, hb, -ht, -hb, ht)
+        return
+
+      case 'treppe': {
+        this.ausRechteck(el, ausstattungFuellung)
+        if (detail) {
+          // Stufen quer zur Laufrichtung (Lauf = lokale x-Achse), rund 28 cm
+          // Auftritt — das ist die Norm-Darstellung eines Treppenlaufs.
+          const stufen = Math.max(2, Math.round(el.breite / 28))
+          for (let i = 1; i < stufen; i++) {
+            const dx = -hb + (el.breite * i) / stufen
+            this.ausLinie(el, dx, -ht, dx, ht)
+          }
+        }
+        return
+      }
+
+      case 'kochfeld': {
+        this.ausRechteck(el, ausstattungFuellung)
+        if (detail) {
+          const rx = el.breite / 8
+          const ry = el.tiefe / 8
+          for (const sx of [-1, 1]) {
+            for (const sy of [-1, 1]) {
+              this.ausEllipse(el, (sx * el.breite) / 4, (sy * el.tiefe) / 4, rx, ry, null)
+            }
+          }
+        }
+        return
+      }
+
+      case 'wc':
+        // Kabine als Rechteck, Becken als Ellipse an der Rückwand (lokal -y)
+        this.ausRechteck(el, ausstattungFuellung)
+        if (detail) {
+          this.ausEllipse(el, 0, -ht * 0.25, hb * 0.5, ht * 0.32, null)
+        }
+        return
+
+      case 'waschbecken':
+        this.ausRechteck(el, ausstattungFuellung)
+        if (detail) {
+          this.ausEllipse(el, 0, 0, hb * 0.62, ht * 0.52, null)
+        }
+        return
+
+      case 'tisch':
+      default:
+        this.ausRechteck(el, ausstattungFuellung)
+        return
+    }
   }
 
   /** */
