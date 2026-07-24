@@ -142,6 +142,16 @@ export function FloorplannerControls({
           )}
         </Button>
       </div>
+
+      {/* Am Handy eine EIGENE zweite Zeile. Nicht Geschmack, sondern
+          Notwendigkeit: der 2D/3D-Umschalter der Kopfleiste ist mittig
+          absolut positioniert und liegt mit z-[100] UEBER dieser Leiste
+          (z-[60]) — bei 390 px verdeckte er die beiden Pfeile vollstaendig,
+          sie waeren am Handy nicht ausloesbar gewesen. Die zweite Zeile
+          liegt unter dem Umschalter und bleibt frei. */}
+      {isMobile && (
+        <div className="mt-2 flex w-fit gap-1.5 pointer-events-auto">{historienKnoepfe}</div>
+      )}
     </div>
   )
 }

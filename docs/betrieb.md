@@ -51,10 +51,32 @@ nach dem Neuladen sofort sichtbar.
 (Auslieferung). Am Handy immer den Namen `zen.taild936f8.ts.net` verwenden, nie die
 IP — `tailscale serve` unterscheidet nach Host-Header, eine IP-Anfrage endet in 404.
 
+## Rückgängig / Wiederholen (T5a)
+
+Im 2D-Editor: die beiden Pfeile in der Werkzeugleiste, oder **Strg+Z** und
+**Strg+Y** (auch **Strg+Umschalt+Z**). Am Handy stehen die Pfeile in einer
+**eigenen zweiten Zeile** — der mittig positionierte 2D/3D-Umschalter der
+Kopfleiste liegt sonst darüber und schluckt die Berührung (siehe unten).
+
+Die Historie führt **50 Schritte** und umfasst den **Grundriss**: Wände zeichnen,
+Wände und Ecken löschen, Wände und Ecken ziehen. Ein Ziehen ist **ein** Schritt,
+egal über wie viele Bewegungen es geht. Beim Laden eines anderen Plans wird die
+Historie verworfen — sonst spielte ein Rückgängig Wände eines fremden Grundrisses ein.
+
+**Bewusst nicht enthalten:** Möbel (die stehen nach einem Rückgängig unverändert)
+und Raumnamen (die liegen getrennt im localStorage; nähme ein Rückgängig sie mit,
+zeigte der Plan einen anderen Namen als der gespeicherte Stand).
+
 ## Bekannte offene Punkte
 
 - **Mobile Kopfleiste überlappt** (Upstream-Layout): bei 390 px verdeckt der
   2D/3D-Umschalter „Add Items" und „New Plan". Gehört zu T6 (Handy-Tauglichkeit).
+  Aus demselben Grund stehen die Rückgängig-Pfeile am Handy in der zweiten Zeile.
+- **Wandgebundene Möbel und Rückgängig** (relevant erst mit T3a Türen/Fenster):
+  ein Rückgängig erzeugt alle Wände als neue Objekte. Ein Item, das an einer Wand
+  hängt, hält danach eine Referenz auf eine Wand, die es nicht mehr gibt. Solange
+  nur freistehende Möbel im Einsatz sind, ist das folgenlos; mit T3a muss die
+  Wand-Bindung nach dem Zurückspielen neu aufgelöst werden.
 - **Middleware ist im Export wirkungslos.** `app/middleware.ts` (next-intl-Routing)
   wird beim statischen Export ignoriert — Next warnt darüber, der Build bleibt grün.
   Die vier Sprachseiten (`de`/`en`/`zh`/`tw`) werden statisch vorgerendert.
