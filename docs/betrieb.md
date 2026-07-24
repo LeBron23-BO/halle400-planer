@@ -51,6 +51,32 @@ nach dem Neuladen sofort sichtbar.
 (Auslieferung). Am Handy immer den Namen `zen.taild936f8.ts.net` verwenden, nie die
 IP — `tailscale serve` unterscheidet nach Host-Header, eine IP-Anfrage endet in 404.
 
+## Ansicht: die ganze Halle sehen (T7)
+
+Beim Öffnen des 2D-Editors wird der **gesamte Grundriss eingepasst**. Vorher war
+der Maßstab eine Konstante (2,032 cm/Pixel) — die 78 m lange Halle war damit am
+Rechner nur zu **38 %** und am Handy zu **10 %** sichtbar, ohne jede Abhilfe.
+
+Bedienung: **Mausrad** (zoomt dorthin, wo der Zeiger steht), am Handy **zwei
+Finger spreizen**, ein Finger schiebt. Dazu drei Schaltflächen — näher heran,
+weiter weg, **Ganze Halle zeigen**. Zoombereich 0,04 bis 8.
+
+Zwei Dinge skalieren bewusst **nicht** mit, weil sie sonst unlesbar würden:
+
+- **Maßangaben** werden ab einer Wandlänge unter 45 Bildschirmpixeln weggelassen
+  — sonst lägen bei voller Übersicht hundert Zahlen übereinander.
+- **Raumnamen** verschwinden unterhalb von 0,12 Pixel/cm. Am Handy ist die
+  eingepasste Halle bei 0,045 — dort ergäben alle 18 Namen übereinander nur
+  Buchstabensalat; beim Hineinzoomen kommen sie zurück.
+
+Die **Greifzone** für Wände und Ecken ist seit T7 in Bildschirmpixeln definiert
+(8 px), nicht mehr in Zentimetern. Sonst wären Wände bei eingepasster Ansicht
+nur noch rund 2 Pixel breit zu treffen gewesen.
+
+Nachprüfbar bei laufendem Server: **`node tools/pruefe-ansicht.mjs`**
+(Exit 0 = bestanden) — misst am echten Bild, ob der Grundriss vollständig und
+mit Rand im Fenster liegt, und ob Mausrad, Finger und Schaltflächen zoomen.
+
 ## Rückgängig / Wiederholen (T5a)
 
 Im 2D-Editor: die beiden Pfeile in der Werkzeugleiste, oder **Strg+Z** und
