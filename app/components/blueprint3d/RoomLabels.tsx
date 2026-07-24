@@ -37,6 +37,15 @@ interface RoomLabelsProps {
  * Positions-/Sichtbarkeitsaenderung geschrieben), damit ein statischer View
  * keine Dauer-Reflows erzeugt.
  */
+/**
+ * Ab wieviel Bildschirm-Pixeln je Zentimeter die Raumnamen in der 2D-Ansicht
+ * ueberhaupt sinnvoll lesbar sind (T7). Darunter werden sie ausgeblendet.
+ * Hergeleitet: ein Etikett ist rund 90 px breit, ein Raum im Mittel etwa 7 m —
+ * 90 / 700 cm ist 0.13; mit 0.12 bleibt der eingepasste Blick am Rechner
+ * (gemessen 0.18) beschriftet, der am Handy (gemessen 0.045) nicht.
+ */
+const LABEL_MIN_PIXEL_PRO_CM = 0.12
+
 export function RoomLabels({
   blueprint3d,
   viewMode,
@@ -125,7 +134,16 @@ export function RoomLabels({
           y = -9999
         }
 
-        const onscreen = !behind && x >= 0 && x <= w && y >= 0 && y <= h
+        // Bei weit herausgezogener 2D-Ansicht die Namen weglassen (T7): die
+        // Etiketten behalten ihre Groesse, der Plan schrumpft — auf dem Handy
+        // legten sich beim Einpassen der ganzen 78-m-Halle alle 18 Namen
+        // uebereinander und ergaben unlesbaren Buchstabensalat. Ein sauberer
+        // Umriss sagt dort mehr; beim Hineinzoomen kommen die Namen zurueck.
+        // Schwelle: rund 90 px Etikettenbreite brauchen etwa 7 m Raumbreite.
+        const zuKleinFuerNamen =
+          viewMode === '2d' && !!fp2d && fp2d.pixelProCm() < LABEL_MIN_PIXEL_PRO_CM
+
+        const onscreen = !behind && !zuKleinFuerNamen && x >= 0 && x <= w && y >= 0 && y <= h
         const want = onscreen
           ? `1|translate(-50%,-50%) translate(${Math.round(x)}px,${Math.round(y)}px)`
           : '0'
