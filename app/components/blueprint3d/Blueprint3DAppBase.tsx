@@ -13,6 +13,7 @@ import { FloorplannerControls } from './FloorplannerControls'
 import { RoomLabels } from './RoomLabels'
 import { TextureSelector } from './TextureSelector'
 import type { PlanLabel } from '@/lib/roomNaming'
+import { loadRoomMeta } from '@/lib/labelStore'
 import { SaveFloorplanDialog } from './SaveFloorplanDialog'
 import { TouchHelp } from './TouchHelp'
 import { ControlsHelp } from './ControlsHelp'
@@ -86,6 +87,7 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   // Raum-Label-Anker aus dem geladenen Plan + Bereitschaft der blueprint3d-Instanz
   const [planLabels, setPlanLabels] = useState<PlanLabel[]>([])
+  const [planName, setPlanName] = useState('')
   const [ready, setReady] = useState(false)
 
   const [currentBlueprint, setCurrentBlueprint] = useState<{
@@ -133,11 +135,6 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
     const blueprint3d = new Blueprint3d(opts)
     blueprint3dRef.current = blueprint3d
     setReady(true)
-    // Debug-Handle: erlaubt es, die aus dem Wandgraphen abgeleiteten Raeume
-    // (samt Namens-Zuordnung, T4) zur Laufzeit zu inspizieren.
-    if (typeof window !== 'undefined') {
-      ;(window as unknown as { __bp3d?: Blueprint3d }).__bp3d = blueprint3d
-    }
 
     if (onBlueprint3DReady) {
       onBlueprint3DReady(blueprint3d)
@@ -208,6 +205,16 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
             // floorplan/items; loadSerialized ignoriert sie, das RoomLabels-
             // Overlay liest sie hier aus dem rohen Plan-JSON.
             setPlanLabels(Array.isArray(planData.labels) ? planData.labels : [])
+            setPlanName(gewuenscht)
+            // User-Umbenennungen (plan-skopiert im localStorage) in den Plan
+            // injizieren, damit loadFloorplan sie als roomMeta uebernimmt — die
+            // statische Datei traegt keine, sonst ginge die Umbenennung beim
+            // Reload verloren.
+            const savedMeta = loadRoomMeta(gewuenscht)
+            if (Object.keys(savedMeta).length > 0) {
+              planData.floorplan = planData.floorplan ?? {}
+              planData.floorplan.roomMeta = savedMeta
+            }
             blueprint3d.model.loadSerialized(JSON.stringify(planData))
             return
           }
@@ -670,6 +677,7 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
               viewMode={viewMode}
               active={activeTab === 'edit'}
               labels={planLabels}
+              planName={planName}
             />
           )}
 

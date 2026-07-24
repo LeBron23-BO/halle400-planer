@@ -294,11 +294,6 @@ export class Floorplan {
     }
   }
 
-  /** User-set name for a label key, or null if unset. */
-  public getRoomMeta(key: string): RoomMeta | null {
-    return key in this.roomMeta ? this.roomMeta[key] : null
-  }
-
   /** The whole name-override map — read access for runtime label resolution. */
   public getAllRoomMeta(): Record<string, RoomMeta> {
     return this.roomMeta

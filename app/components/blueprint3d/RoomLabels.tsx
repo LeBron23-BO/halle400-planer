@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
+import { Pencil } from 'lucide-react'
 import type { Blueprint3d } from '@blueprint3d/blueprint3d'
 import { resolveLabels, type PlanLabel, type ResolvedLabel } from '@/lib/roomNaming'
+import { saveRoomMeta } from '@/lib/labelStore'
 
 interface RoomLabelsProps {
   blueprint3d: Blueprint3d
@@ -12,19 +14,22 @@ interface RoomLabelsProps {
   active: boolean
   /** PDF-Label-Anker aus dem geladenen Plan (halle400.json → labels). */
   labels: PlanLabel[]
+  /** Aktiver Plan-Name (?plan=…) — Schluessel fuer die Persistenz der Umbenennungen. */
+  planName: string
 }
 
 /**
  * Zeigt die PDF-Raumnamen als DOM-Overlay ueber der 2D- UND 3D-Ansicht und macht
- * sie per Doppelklick editierbar (T4).
+ * sie ueber ein Stift-Icon (Einzelklick/Tap) editierbar (T4).
  *
  * Positioniert wird jedes Label an seiner PDF-Ankerposition (cm), projiziert auf
  * den Bildschirm ueber die jeweils aktive Kamera — NICHT an einem abgeleiteten
- * Raum (siehe roomNaming.ts fuer die Begruendung). Die Projektion laeuft
- * imperativ pro Frame (rAF) ueber die DOM-Refs, damit das Drehen/Zoomen der
- * 3D-Kamera keinen React-Re-Render ausloest.
+ * Raum (Begruendung: roomNaming.ts). Die Projektion laeuft imperativ pro Frame
+ * (rAF) ueber die DOM-Refs; Style-Writes werden gecacht (nur bei echter
+ * Positions-/Sichtbarkeitsaenderung geschrieben), damit ein statischer View
+ * keine Dauer-Reflows erzeugt.
  */
-export function RoomLabels({ blueprint3d, viewMode, active, labels }: RoomLabelsProps) {
+export function RoomLabels({ blueprint3d, viewMode, active, labels, planName }: RoomLabelsProps) {
   const [resolved, setResolved] = useState<ResolvedLabel[]>([])
   const [editing, setEditing] = useState<string | null>(null)
 
@@ -33,6 +38,8 @@ export function RoomLabels({ blueprint3d, viewMode, active, labels }: RoomLabels
   const containerRef = useRef<HTMLDivElement>(null)
   const labelRefs = useRef<Map<string, HTMLDivElement>>(new Map())
   const rafRef = useRef<number | null>(null)
+  const lastWriteRef = useRef<Map<string, string>>(new Map())
+  const cancelledRef = useRef(false)
 
   // --- Namen aufloesen: PDF-Default + User-Overrides (roomMeta, key = labelKey)
   const recompute = useCallback(() => {
@@ -43,17 +50,20 @@ export function RoomLabels({ blueprint3d, viewMode, active, labels }: RoomLabels
   useEffect(() => {
     let mounted = true
     const fp = blueprint3d.model.floorplan
-    // Nach einem Plan-Load koennen persistierte Overrides dazukommen.
-    fp.roomLoadedCallbacks.add(() => {
+    // Named callback + remove: sonst akkumulieren tote Closures im EventEmitter
+    // (er hat kein Auto-Cleanup), jede haelt das alte labels-Array fest.
+    const onRoomLoaded = () => {
       if (mounted) recompute()
-    })
+    }
+    fp.roomLoadedCallbacks.add(onRoomLoaded)
     recompute()
     return () => {
       mounted = false
+      fp.roomLoadedCallbacks.remove(onRoomLoaded)
     }
   }, [blueprint3d, recompute])
 
-  // --- Positionierung pro Frame (imperativ, kein State pro Frame)
+  // --- Positionierung pro Frame (imperativ, Style-Writes gecacht)
   useEffect(() => {
     if (!active) return
     const three = blueprint3d.three
@@ -91,9 +101,18 @@ export function RoomLabels({ blueprint3d, viewMode, active, labels }: RoomLabels
         }
 
         const onscreen = !behind && x >= 0 && x <= w && y >= 0 && y <= h
-        el.style.display = onscreen ? '' : 'none'
-        el.style.transform =
-          `translate(-50%, -50%) translate(${Math.round(x)}px, ${Math.round(y)}px)`
+        const want = onscreen
+          ? `1|translate(-50%,-50%) translate(${Math.round(x)}px,${Math.round(y)}px)`
+          : '0'
+        if (lastWriteRef.current.get(label.key) !== want) {
+          if (onscreen) {
+            el.style.display = ''
+            el.style.transform = want.slice(2)
+          } else {
+            el.style.display = 'none'
+          }
+          lastWriteRef.current.set(label.key, want)
+        }
       }
 
       rafRef.current = requestAnimationFrame(tick)
@@ -102,6 +121,7 @@ export function RoomLabels({ blueprint3d, viewMode, active, labels }: RoomLabels
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
       rafRef.current = null
+      lastWriteRef.current.clear()
     }
   }, [active, viewMode, blueprint3d])
 
@@ -113,11 +133,15 @@ export function RoomLabels({ blueprint3d, viewMode, active, labels }: RoomLabels
   const commitEdit = useCallback(
     (key: string, value: string) => {
       // Leerer Name = Override loeschen → PDF-Default kommt zurueck (setRoomName).
-      blueprint3d.model.floorplan.setRoomName(key, value)
+      const fp = blueprint3d.model.floorplan
+      fp.setRoomName(key, value)
+      // F1: plan-skopiert persistieren, damit die Umbenennung einen Reload
+      // (?plan=…) uebersteht — die statische Plan-Datei traegt kein roomMeta.
+      saveRoomMeta(planName, fp.getAllRoomMeta())
       setEditing(null)
       recompute()
     },
-    [blueprint3d, recompute]
+    [blueprint3d, planName, recompute]
   )
 
   if (!active) return null
@@ -131,35 +155,57 @@ export function RoomLabels({ blueprint3d, viewMode, active, labels }: RoomLabels
         <div
           key={label.key}
           ref={(el) => setLabelRef(label.key, el)}
-          className="absolute left-0 top-0 pointer-events-auto select-none"
-          style={{ willChange: 'transform' }}
-          onDoubleClick={() => setEditing(label.key)}
-          title="Doppelklick zum Umbenennen"
+          className="absolute left-0 top-0 select-none"
         >
           {editing === label.key ? (
             <input
               autoFocus
               defaultValue={label.name}
-              className="w-28 rounded border border-primary bg-background px-1 py-0.5 text-xs text-foreground shadow outline-none"
+              style={{ touchAction: 'manipulation' }}
+              className="pointer-events-auto w-28 rounded border border-primary bg-background px-1 py-0.5 text-xs text-foreground shadow outline-none"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   commitEdit(label.key, (e.target as HTMLInputElement).value)
                 } else if (e.key === 'Escape') {
+                  cancelledRef.current = true
                   setEditing(null)
                 }
               }}
-              onBlur={(e) => commitEdit(label.key, e.target.value)}
+              onBlur={(e) => {
+                // Escape hat schon abgebrochen → nicht doch committen (der Unmount
+                // feuert sonst blur mit dem geaenderten Wert).
+                if (cancelledRef.current) {
+                  cancelledRef.current = false
+                  return
+                }
+                commitEdit(label.key, e.target.value)
+              }}
             />
           ) : (
-            <div className="flex cursor-text flex-col items-center rounded bg-background/80 px-1.5 py-0.5 text-center shadow-sm backdrop-blur-sm">
-              <span className="whitespace-nowrap text-xs font-medium leading-tight text-foreground">
-                {label.name}
-              </span>
-              {label.zusatz && (
-                <span className="whitespace-nowrap text-[10px] leading-tight text-muted-foreground">
-                  {label.zusatz}
+            // Pille bewusst pointer-events-none, damit sie Klicks auf den Canvas
+            // darunter (Boden-Textur, Wand-Zeichnen) an den Raum-Zentren NICHT
+            // schluckt. Editierbar ist nur das kleine Stift-Icon.
+            <div className="flex items-center gap-1 rounded bg-background/80 px-1.5 py-0.5 shadow-sm backdrop-blur-sm">
+              <div className="flex flex-col items-center text-center">
+                <span className="whitespace-nowrap text-xs font-medium leading-tight text-foreground">
+                  {label.name}
                 </span>
-              )}
+                {label.zusatz && (
+                  <span className="whitespace-nowrap text-[10px] leading-tight text-muted-foreground">
+                    {label.zusatz}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                style={{ touchAction: 'manipulation' }}
+                className="pointer-events-auto shrink-0 rounded p-0.5 text-muted-foreground opacity-60 transition-opacity hover:bg-accent hover:opacity-100"
+                aria-label={`${label.name} umbenennen`}
+                title="Umbenennen"
+                onClick={() => setEditing(label.key)}
+              >
+                <Pencil className="h-3 w-3" />
+              </button>
             </div>
           )}
         </div>
