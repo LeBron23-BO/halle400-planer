@@ -29,6 +29,35 @@ export function FloorplannerControls({
   const t = useTranslations('BluePrint.floorplanner')
   const isMobile = useIsMobile()
 
+  // Einmal definiert, an zwei Stellen platziert — am Schreibtisch in der
+  // Werkzeugzeile, am Handy in einer eigenen zweiten Zeile (Begruendung unten).
+  const historienKnoepfe = (
+    <>
+      <Button
+        size="icon"
+        variant="secondary"
+        onClick={onUndo}
+        disabled={!canUndo}
+        className={cn(isMobile && 'h-11 w-11 shadow-lg active:scale-95 transition-transform')}
+        title={t('undo')}
+        aria-label={t('undo')}
+      >
+        <Undo2 className={cn(isMobile ? 'h-5 w-5' : 'h-4 w-4')} />
+      </Button>
+      <Button
+        size="icon"
+        variant="secondary"
+        onClick={onRedo}
+        disabled={!canRedo}
+        className={cn(isMobile && 'h-11 w-11 shadow-lg active:scale-95 transition-transform')}
+        title={t('redo')}
+        aria-label={t('redo')}
+      >
+        <Redo2 className={cn(isMobile ? 'h-5 w-5' : 'h-4 w-4')} />
+      </Button>
+    </>
+  )
+
   return (
     <div className={cn('absolute left-0 top-0 w-full z-[60] pointer-events-none', isMobile ? 'my-3 px-3' : 'my-3 px-5')}>
       {/* flex-wrap: auf schmalen Geraeten rutscht die Zeile um, statt dass
@@ -82,32 +111,15 @@ export function FloorplannerControls({
             {!isMobile && t('deleteWalls')}
           </Button>
 
-          {/* Trenner: Rueckgaengig/Wiederholen sind keine Werkzeuge, sondern
+          {/* Am Schreibtisch direkt neben den Werkzeugen, getrennt durch einen
+              Strich: Rueckgaengig/Wiederholen sind keine Werkzeuge, sondern
               wirken AUF das mit den Werkzeugen Gebaute. */}
-          <div className="w-px self-stretch bg-border/70 mx-0.5" aria-hidden="true" />
-
-          <Button
-            size="icon"
-            variant="secondary"
-            onClick={onUndo}
-            disabled={!canUndo}
-            className={cn(isMobile && 'h-11 w-11 shadow-lg active:scale-95 transition-transform')}
-            title={t('undo')}
-            aria-label={t('undo')}
-          >
-            <Undo2 className={cn(isMobile ? 'h-5 w-5' : 'h-4 w-4')} />
-          </Button>
-          <Button
-            size="icon"
-            variant="secondary"
-            onClick={onRedo}
-            disabled={!canRedo}
-            className={cn(isMobile && 'h-11 w-11 shadow-lg active:scale-95 transition-transform')}
-            title={t('redo')}
-            aria-label={t('redo')}
-          >
-            <Redo2 className={cn(isMobile ? 'h-5 w-5' : 'h-4 w-4')} />
-          </Button>
+          {!isMobile && (
+            <>
+              <div className="w-px self-stretch bg-border/70 mx-0.5" aria-hidden="true" />
+              {historienKnoepfe}
+            </>
+          )}
         </div>
 
         <Button
