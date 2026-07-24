@@ -32,6 +32,9 @@ export class Blueprint3d {
 
   public floorplanner?: Floorplanner
 
+  /** Rueckgaengig/Wiederholen fuer den Grundriss (T5a). */
+  public undo: UndoManager
+
   /** Creates an instance.
    * @param options The initialization options.
    */
@@ -47,5 +50,11 @@ export class Blueprint3d {
     } else {
       this.three.getController().enabled = false
     }
+
+    // NACH dem Floorplanner erzeugen: beide haengen an roomLoadedCallbacks, und
+    // beim Zurueckspielen muss erst dessen reset() laufen, damit die Historie
+    // die Ansicht danach wiederherstellen kann (Reihenfolge = Registrierung).
+    this.undo = new UndoManager(this.model.floorplan)
+    this.floorplanner?.setUndoManager(this.undo)
   }
 }

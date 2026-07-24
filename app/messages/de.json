@@ -22,7 +22,12 @@
       "drawWalls": "Wände zeichnen",
       "deleteWalls": "Wände löschen",
       "done": "Fertig",
-      "escHint": "Mit der Taste „Esc\" das Zeichnen beenden"
+      "escHint": "Mit der Taste „Esc\" das Zeichnen beenden",
+      "undo": "Rückgängig",
+      "redo": "Wiederholen",
+      "nothingToUndo": "Nichts zum Rückgängigmachen",
+      "undone": "Rückgängig gemacht",
+      "redone": "Wiederhergestellt"
     },
     "viewToggle": {
       "3d": "3D",

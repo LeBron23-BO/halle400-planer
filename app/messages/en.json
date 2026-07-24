@@ -22,7 +22,12 @@
       "drawWalls": "Draw Walls",
       "deleteWalls": "Delete Walls",
       "done": "Done",
-      "escHint": "Press the \"Esc\" key to stop drawing walls"
+      "escHint": "Press the \"Esc\" key to stop drawing walls",
+      "undo": "Undo",
+      "redo": "Redo",
+      "nothingToUndo": "Nothing to undo",
+      "undone": "Undone",
+      "redone": "Redone"
     },
     "viewToggle": {
       "3d": "3D",

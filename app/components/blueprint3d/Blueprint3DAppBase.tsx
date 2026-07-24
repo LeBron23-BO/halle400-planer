@@ -89,6 +89,10 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
   const [planLabels, setPlanLabels] = useState<PlanLabel[]>([])
   const [planName, setPlanName] = useState('')
   const [ready, setReady] = useState(false)
+  // Rueckgaengig/Wiederholen (T5a): gespiegelter Zustand der Historie, damit
+  // die Schaltflaechen ausgegraut sind, wenn es nichts zurueckzunehmen gibt.
+  const [canUndo, setCanUndo] = useState(false)
+  const [canRedo, setCanRedo] = useState(false)
 
   const [currentBlueprint, setCurrentBlueprint] = useState<{
     id: string
@@ -139,6 +143,13 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
     if (onBlueprint3DReady) {
       onBlueprint3DReady(blueprint3d)
     }
+
+    // Historie -> React spiegeln (T5a). Ein eigenes Abmelden ist nicht noetig:
+    // die blueprint3d-Instanz lebt genau so lange wie diese Komponente.
+    blueprint3d.undo.changed.add(() => {
+      setCanUndo(blueprint3d.undo.canUndo())
+      setCanRedo(blueprint3d.undo.canRedo())
+    })
 
     blueprint3d.three.itemSelectedCallbacks.add((item) => {
       setSelectedItem(item)
@@ -535,6 +546,48 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
     }
   }, [])
 
+  const handleUndo = useCallback(() => {
+    blueprint3dRef.current?.undo.undo()
+  }, [])
+
+  const handleRedo = useCallback(() => {
+    blueprint3dRef.current?.undo.redo()
+  }, [])
+
+  // Tastenkuerzel Strg/Cmd+Z bzw. +Y / +Shift+Z (T5a).
+  // Bewusst nur im 2D-Editor: dort wird die Geometrie bearbeitet. In der
+  // 3D-Ansicht erwartete man ein Zuruecknehmen der Moebel — das kann diese
+  // Historie NICHT (sie fuehrt nur den Grundriss), also fasst sie dort nichts an.
+  useEffect(() => {
+    if (viewMode !== '2d' || activeTab !== 'edit') return
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return
+
+      // Steht der Nutzer in einem Textfeld (Raum umbenennen), gehoert Strg+Z
+      // der Texteingabe — sonst nehmen wir ihm mitten im Tippen eine Wand weg.
+      const ziel = e.target as HTMLElement | null
+      if (
+        ziel &&
+        (ziel.tagName === 'INPUT' || ziel.tagName === 'TEXTAREA' || ziel.isContentEditable)
+      ) {
+        return
+      }
+
+      const taste = e.key.toLowerCase()
+      if (taste === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        handleUndo()
+      } else if (taste === 'y' || (taste === 'z' && e.shiftKey)) {
+        e.preventDefault()
+        handleRedo()
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [viewMode, activeTab, handleUndo, handleRedo])
+
   const handleItemSelect = useCallback(
     (item: {
       name: string
@@ -659,6 +712,10 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
                   mode={floorplannerMode}
                   onModeChange={handleFloorplannerModeChange}
                   onDone={handleFloorplannerDone}
+                  canUndo={canUndo}
+                  canRedo={canRedo}
+                  onUndo={handleUndo}
+                  onRedo={handleRedo}
                 />
                 {floorplannerMode === 'draw' && (
                   <div className="absolute left-5 bottom-5 bg-black/50 text-primary-foreground px-2.5 py-1.5 rounded text-sm">

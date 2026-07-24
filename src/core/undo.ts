@@ -147,9 +147,18 @@ export class UndoManager {
   /** */
   private apply(json: string): void {
     const ansicht = this.viewState ? this.viewState.save() : undefined
+    const daten = JSON.parse(json) as SavedFloorplan
+
+    // Raumnamen sind bewusst NICHT Teil der Geometrie-Historie: sie werden
+    // getrennt im localStorage gefuehrt (plan-skopiert, s. Blueprint3DAppBase).
+    // Naehme ein Undo sie mit zurueck, zeigte der Plan einen anderen Namen als
+    // der gespeicherte Stand — und beim naechsten Laden spraenge er zurueck.
+    // Also: Geometrie zurueck, Namen bleiben wie sie sind.
+    daten.roomMeta = { ...this.floorplan.getAllRoomMeta() }
+
     this.applying = true
     try {
-      this.floorplan.loadFloorplan(JSON.parse(json) as SavedFloorplan)
+      this.floorplan.loadFloorplan(daten)
     } finally {
       // Auch bei kaputtem JSON darf die Sperre nicht haengen bleiben, sonst
       // waere jeder weitere Snapshot stumm und die Historie stuende still.
