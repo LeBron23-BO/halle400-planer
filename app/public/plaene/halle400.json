@@ -912,5 +912,169 @@
   "floorTextures": {},
   "newFloorTextures": {}
  },
- "items": []
+ "items": [],
+ "labels": [
+  {
+   "text": "Toiletten",
+   "zusatz": "",
+   "seite": "nord",
+   "anker_cm": [
+    676.0,
+    366.0
+   ]
+  },
+  {
+   "text": "Teamtable",
+   "zusatz": "",
+   "seite": "nord",
+   "anker_cm": [
+    1545.0,
+    420.0
+   ]
+  },
+  {
+   "text": "Aufzug",
+   "zusatz": "",
+   "seite": "nord",
+   "anker_cm": [
+    2005.0,
+    -212.0
+   ]
+  },
+  {
+   "text": "Empfang",
+   "zusatz": "",
+   "seite": "nord",
+   "anker_cm": [
+    2301.0,
+    203.0
+   ]
+  },
+  {
+   "text": "Einzelbüro",
+   "zusatz": "",
+   "seite": "nord",
+   "anker_cm": [
+    2961.0,
+    366.0
+   ]
+  },
+  {
+   "text": "Workspace",
+   "zusatz": "",
+   "seite": "nord",
+   "anker_cm": [
+    3703.0,
+    366.0
+   ]
+  },
+  {
+   "text": "Loggia",
+   "zusatz": "",
+   "seite": "nord",
+   "anker_cm": [
+    4855.0,
+    126.0
+   ]
+  },
+  {
+   "text": "Videokonf",
+   "zusatz": "",
+   "seite": "nord",
+   "anker_cm": [
+    5977.0,
+    491.0
+   ]
+  },
+  {
+   "text": "Storage",
+   "zusatz": "",
+   "seite": "nord",
+   "anker_cm": [
+    6740.0,
+    345.0
+   ]
+  },
+  {
+   "text": "Workshop",
+   "zusatz": "",
+   "seite": "nord",
+   "anker_cm": [
+    7447.0,
+    366.0
+   ]
+  },
+  {
+   "text": "Konferenz",
+   "zusatz": "10-12 Personen",
+   "seite": "sued",
+   "anker_cm": [
+    203.0,
+    1192.0
+   ]
+  },
+  {
+   "text": "Konferenz",
+   "zusatz": "6-8 Personen",
+   "seite": "sued",
+   "anker_cm": [
+    972.0,
+    1226.0
+   ]
+  },
+  {
+   "text": "Workspace",
+   "zusatz": "",
+   "seite": "sued",
+   "anker_cm": [
+    2018.0,
+    1136.0
+   ]
+  },
+  {
+   "text": "Workshop",
+   "zusatz": "6-8 Personen",
+   "seite": "sued",
+   "anker_cm": [
+    3319.0,
+    1291.0
+   ]
+  },
+  {
+   "text": "Phone Booth",
+   "zusatz": "",
+   "seite": "sued",
+   "anker_cm": [
+    4098.0,
+    882.0
+   ]
+  },
+  {
+   "text": "Doppelbüro",
+   "zusatz": "",
+   "seite": "sued",
+   "anker_cm": [
+    5040.0,
+    1153.0
+   ]
+  },
+  {
+   "text": "Break out",
+   "zusatz": "",
+   "seite": "sued",
+   "anker_cm": [
+    6678.0,
+    803.0
+   ]
+  },
+  {
+   "text": "Lager",
+   "zusatz": "",
+   "seite": "sued",
+   "anker_cm": [
+    7125.0,
+    1226.0
+   ]
+  }
+ ]
 }

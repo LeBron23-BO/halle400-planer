@@ -180,6 +180,9 @@ def main() -> int:
     # unter data/ waere eine zweite Wahrheit, die beim naechsten Lauf driftet.
     p.add_argument("--out", type=Path,
                    default=Path("app/public/plaene/halle400.json"))
+    p.add_argument("--geometry", type=Path,
+                   default=Path("data/plan-geometry.json"),
+                   help="PDF-Beschriftungen fuer die Raum-Label")
     args = p.parse_args()
 
     if not args.walls.exists():
@@ -205,6 +208,9 @@ def main() -> int:
     print(f"Ecken nach Grad: " + " · ".join(
         f"{g}er {sum(1 for v in grad.values() if v == g)}"
         for g in sorted(set(grad.values()))))
+
+    plan["labels"] = lade_labels(args.geometry)
+    print(f"{len(plan['labels'])} Raum-Label(s) aus {args.geometry}")
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(plan, indent=1, ensure_ascii=False), encoding="utf-8")
