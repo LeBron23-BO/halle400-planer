@@ -16,6 +16,14 @@ interface RoomLabelsProps {
   labels: PlanLabel[]
   /** Aktiver Plan-Name (?plan=…) — Schluessel fuer die Persistenz der Umbenennungen. */
   planName: string
+  /**
+   * Darf gerade umbenannt werden? Nur dann faengt das Stift-Icon Klicks ab.
+   * Im 2D-Zeichnen-/Loesch-Modus MUSS das false sein: die Stifte sitzen genau
+   * auf den Raum-Zentren und schluckten dort sonst den Werkzeug-Klick
+   * (gemessen: 18 blockierte Stellen), d.h. eine Wand liesse sich ausgerechnet
+   * in der Raummitte nicht zeichnen oder loeschen.
+   */
+  umbenennenErlaubt: boolean
 }
 
 /**
@@ -29,7 +37,14 @@ interface RoomLabelsProps {
  * Positions-/Sichtbarkeitsaenderung geschrieben), damit ein statischer View
  * keine Dauer-Reflows erzeugt.
  */
-export function RoomLabels({ blueprint3d, viewMode, active, labels, planName }: RoomLabelsProps) {
+export function RoomLabels({
+  blueprint3d,
+  viewMode,
+  active,
+  labels,
+  planName,
+  umbenennenErlaubt
+}: RoomLabelsProps) {
   const [resolved, setResolved] = useState<ResolvedLabel[]>([])
   const [editing, setEditing] = useState<string | null>(null)
 
@@ -62,6 +77,16 @@ export function RoomLabels({ blueprint3d, viewMode, active, labels, planName }: 
       fp.roomLoadedCallbacks.remove(onRoomLoaded)
     }
   }, [blueprint3d, recompute])
+
+  // Wechselt der Nutzer ins Zeichnen/Loeschen, waehrend ein Namensfeld offen
+  // ist, muss es schliessen: ein offenes Feld ist pointer-events-auto und wuerde
+  // sonst genau ueber dem Raumzentrum weiter Werkzeug-Klicks abfangen.
+  useEffect(() => {
+    if (!umbenennenErlaubt) {
+      cancelledRef.current = true
+      setEditing(null)
+    }
+  }, [umbenennenErlaubt])
 
   // --- Positionierung pro Frame (imperativ, Style-Writes gecacht)
   useEffect(() => {
@@ -157,7 +182,7 @@ export function RoomLabels({ blueprint3d, viewMode, active, labels, planName }: 
           ref={(el) => setLabelRef(label.key, el)}
           className="absolute left-0 top-0 select-none"
         >
-          {editing === label.key ? (
+          {editing === label.key && umbenennenErlaubt ? (
             <input
               autoFocus
               defaultValue={label.name}
@@ -196,16 +221,21 @@ export function RoomLabels({ blueprint3d, viewMode, active, labels, planName }: 
                   </span>
                 )}
               </div>
-              <button
-                type="button"
-                style={{ touchAction: 'manipulation' }}
-                className="pointer-events-auto shrink-0 rounded p-0.5 text-muted-foreground opacity-60 transition-opacity hover:bg-accent hover:opacity-100"
-                aria-label={`${label.name} umbenennen`}
-                title="Umbenennen"
-                onClick={() => setEditing(label.key)}
-              >
-                <Pencil className="h-3 w-3" />
-              </button>
+              {/* Im Zeichnen-/Loesch-Modus komplett weg (nicht nur inaktiv):
+                  ein sichtbarer, aber wirkungsloser Stift waere irrefuehrend,
+                  und der Canvas darunter bleibt so an JEDER Stelle bedienbar. */}
+              {umbenennenErlaubt && (
+                <button
+                  type="button"
+                  style={{ touchAction: 'manipulation' }}
+                  className="pointer-events-auto shrink-0 rounded p-0.5 text-muted-foreground opacity-60 transition-opacity hover:bg-accent hover:opacity-100"
+                  aria-label={`${label.name} umbenennen`}
+                  title="Umbenennen"
+                  onClick={() => setEditing(label.key)}
+                >
+                  <Pencil className="h-3 w-3" />
+                </button>
+              )}
             </div>
           )}
         </div>

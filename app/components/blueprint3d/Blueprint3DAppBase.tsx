@@ -670,7 +670,9 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
             )}
           </div>
 
-          {/* Raum-Labels (T4): PDF-Namen ueber 2D + 3D, editierbar per Doppelklick */}
+          {/* Raum-Labels (T4): PDF-Namen ueber 2D + 3D, editierbar per Stift-Klick.
+              Umbenennen nur, wenn kein Zeichen-/Loesch-Werkzeug aktiv ist —
+              sonst blockierten die Stifte die Raum-Zentren (s. RoomLabels). */}
           {ready && blueprint3dRef.current && (
             <RoomLabels
               blueprint3d={blueprint3dRef.current}
@@ -678,6 +680,7 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
               active={activeTab === 'edit'}
               labels={planLabels}
               planName={planName}
+              umbenennenErlaubt={viewMode === '3d' || floorplannerMode === 'move'}
             />
           )}
 
