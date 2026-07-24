@@ -133,6 +133,11 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
     const blueprint3d = new Blueprint3d(opts)
     blueprint3dRef.current = blueprint3d
     setReady(true)
+    // Debug-Handle: erlaubt es, die aus dem Wandgraphen abgeleiteten Raeume
+    // (samt Namens-Zuordnung, T4) zur Laufzeit zu inspizieren.
+    if (typeof window !== 'undefined') {
+      ;(window as unknown as { __bp3d?: Blueprint3d }).__bp3d = blueprint3d
+    }
 
     if (onBlueprint3DReady) {
       onBlueprint3DReady(blueprint3d)
