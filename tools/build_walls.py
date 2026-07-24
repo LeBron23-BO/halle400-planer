@@ -13,10 +13,13 @@ Kandidatennummern in AUFNAHME oder AUSSCHLUSS wandern — jede mit Begruendung.
 
 Vier Quellen
 ------------
-1. AUSSENKONTUR  — Rechteck 0/0 .. 78/15.31 m aus den gemessenen Kanten.
-   Vereinfachung mit Ansage: der Bau hat Verspruenge (der Aufzug springt als
-   Vorbau nach Norden heraus, Anker y = -1.78 m). Fuer den ersten Import
-   traegt das Rechteck; die Verspruenge folgen beim Verfeinern.
+1. AUSSENKONTUR  — spaltenweise gemessene Treppe (T2d), nicht mehr das
+   umschliessende Rechteck. Die Nord- und Suedkante werden Spalte fuer Spalte
+   aus dem Rasterbild gelesen; wo eine Kante ueber eine Mindestlaenge deutlich
+   von der Referenz abweicht (Schwelle 0.8 m), entsteht ein Versprung. So faellt
+   der Aufzug-Vorbau heraus (springt ~3.5 m nach Norden, x 18.5..22.3 m). Das
+   Freihand-Zittern (< 0.8 m) wird bewusst zur geraden Referenzkante geglaettet
+   — keine Schein-Genauigkeit aus einer gezeichneten Skizze.
 
 2. FLURACHSEN    — y = 5.79 und 8.14 m, aber NUR dort, wo tatsaechlich eine
    Linie gezeichnet ist. Gemessen ueber eine Zeilenprojektion im Streifen
@@ -48,8 +51,9 @@ import fitz
 import numpy as np
 
 from extract_plan import (
-    PDF_STANDARD, X0_DISPLAY, X1_DISPLAY, Y_FLUR_NORD, Y_FLUR_SUED,
-    PX_PRO_M, LAENGE_M, TIEFE_M, x_zu_meter, y_zu_meter,
+    PDF_STANDARD, X0_DISPLAY, X1_DISPLAY, Y_NORDKANTE, Y_SUEDKANTE,
+    Y_FLUR_NORD, Y_FLUR_SUED, PX_PRO_M, LAENGE_M, TIEFE_M,
+    x_zu_meter, y_zu_meter,
 )
 from measure_walls import ZOOM, dunkelmaske, messe_alle
 
@@ -59,6 +63,16 @@ FLUR_STREIFEN_M = 0.25      # halbe Dicke des Suchstreifens um eine Flurachse
 FLUR_BELEGT = 0.15          # ab hier gilt ein Meter-Block als gezeichnet
 TUER_LUECKE_M = 2.0         # kuerzere Luecke = Tueroeffnung, wird ueberbrueckt
 SEGMENT_MIN_M = 1.5         # kuerzere Flur-Segmente sind Rauschen
+
+# --- Aussenkontur (T2d) -----------------------------------------------------
+KONTUR_PUFFER_M = 4.0       # wie weit UEBER die Referenzkante hinaus gesucht wird;
+                            # deckt den Aufzug-Vorbau (~3.5 m nach Norden) ab
+KONTUR_SCHRITT_M = 0.25     # Abtastschritt entlang der Laengsachse
+KONTUR_MINDARK = 3          # so viele dunkle Pixel im Spaltenfenster = Kante
+KONTUR_FENSTER_PX = 2       # halbe Fensterbreite (Render-px) gegen Einzelpixel
+VERSPRUNG_SCHWELLE_M = 0.8  # Abweichung von der Referenz, um ein Versprung zu sein
+                            # — bewusst ueber dem Freihand-Zittern (~0.4 m)
+VERSPRUNG_MINDEST_M = 1.0   # kuerzere Abweichungen sind Rauschen oder Tueroeffnung
 
 # Was die Messung nicht von einer Wand unterscheiden kann, die Sichtpruefung
 # aber schon. Schluessel = "<zeile>-<nr>" aus measure_walls.py.
