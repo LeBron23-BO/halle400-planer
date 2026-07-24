@@ -261,6 +261,18 @@ export class Floorplan {
     }
     const scope = this
     floorplan.walls.forEach((wall) => {
+      // Eine Wand, deren Ecke im Plan fehlt, ueberspringen statt daran zu
+      // zerbrechen: `new Wall(undefined, …)` warf einen TypeError und liess die
+      // Anwendung mit halb geladenem Grundriss stehen. Die Ursache solcher
+      // Plaene ist behoben (Corner.removeAll), aber ein VORHER gespeicherter
+      // Stand liegt weiterhin in der Datenbank des Nutzers — der muss sich
+      // oeffnen lassen, wenn auch ohne diese eine Wand.
+      if (!corners[wall.corner1] || !corners[wall.corner2]) {
+        console.warn(
+          `[Floorplan] Wand ohne gueltige Ecke uebersprungen (${wall.corner1} -> ${wall.corner2})`
+        )
+        return
+      }
       const newWall = scope.newWall(corners[wall.corner1], corners[wall.corner2])
       if (wall.frontTexture) {
         newWall.frontTexture = wall.frontTexture

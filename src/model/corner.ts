@@ -120,14 +120,26 @@ export class Corner implements Point {
     this.deleted_callbacks.fire(this)
   }
 
-  /** Removes all walls. */
+  /**
+   * Removes all walls.
+   *
+   * ÜBER KOPIEN iterieren, nicht über die Original-Arrays: `wall.remove()` ruft
+   * `detachWall()` und nimmt die Wand aus genau diesen beiden Arrays heraus.
+   * Bei direkter Iteration schrumpft das Array, während der Zähler wächst —
+   * jede zweite Wand wurde übersprungen und behielt ihren Verweis auf diese
+   * gerade gelöschte Ecke.
+   *
+   * Folge war ein Grundriss, der sich nicht mehr laden ließ: `saveFloorplan()`
+   * schrieb Wände mit einer Ecken-Kennung, die es nicht mehr gab, und
+   * `loadFloorplan()` stürzte darüber ab. Sichtbar wurde das erst über
+   * Rückgängig/Wiederholen (T5a) — betroffen war aber ebenso „Plan speichern",
+   * wo es einen unbrauchbaren gespeicherten Stand erzeugt hätte.
+   */
   public removeAll(): void {
-    for (let i = 0; i < this.wallStarts.length; i++) {
-      this.wallStarts[i].remove()
-    }
-    for (let i = 0; i < this.wallEnds.length; i++) {
-      this.wallEnds[i].remove()
-    }
+    const starts = this.wallStarts.slice(0)
+    const ends = this.wallEnds.slice(0)
+    starts.forEach((wall) => wall.remove())
+    ends.forEach((wall) => wall.remove())
     this.remove()
   }
 
