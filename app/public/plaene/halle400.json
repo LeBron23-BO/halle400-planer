@@ -910,7 +910,376 @@
   ],
   "wallTextures": [],
   "floorTextures": {},
-  "newFloorTextures": {}
+  "newFloorTextures": {},
+  "ausstattung": [
+   {
+    "typ": "rundtisch",
+    "x": 2760.0,
+    "y": 190.0,
+    "breite": 70.0,
+    "tiefe": 70.0,
+    "text": "Bistrotisch Loggia Nord",
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 2695.0,
+    "y": 180.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "drehung": 1.571,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 2745.0,
+    "y": 135.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "drehung": 3.142,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 2825.0,
+    "y": 195.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "drehung": -1.571,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "rundtisch",
+    "x": 2995.0,
+    "y": 185.0,
+    "breite": 70.0,
+    "tiefe": 70.0,
+    "text": "Bistrotisch Loggia Nord",
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 2930.0,
+    "y": 175.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "drehung": 1.571,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 2980.0,
+    "y": 130.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "drehung": 3.142,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 3055.0,
+    "y": 190.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "drehung": -1.571,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "tisch",
+    "x": 2783.0,
+    "y": 435.0,
+    "breite": 95.0,
+    "tiefe": 170.0,
+    "text": "Schreibtisch Einzelbuero West",
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 2855.0,
+    "y": 430.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "drehung": -1.571,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "tisch",
+    "x": 3000.0,
+    "y": 435.0,
+    "breite": 95.0,
+    "tiefe": 170.0,
+    "text": "Schreibtisch Einzelbuero Ost",
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 3072.0,
+    "y": 430.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "drehung": -1.571,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "treppe",
+    "x": 3220.0,
+    "y": 310.0,
+    "breite": 500.0,
+    "tiefe": 50.0,
+    "drehung": 1.571,
+    "text": "Aufgang Nord",
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "tisch",
+    "x": 3448.0,
+    "y": 378.0,
+    "breite": 230.0,
+    "tiefe": 340.0,
+    "text": "Konferenztisch Nord",
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 3295.0,
+    "y": 250.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "drehung": 1.571,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 3295.0,
+    "y": 360.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "drehung": 1.571,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 3295.0,
+    "y": 470.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "drehung": 1.571,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 3600.0,
+    "y": 250.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "drehung": -1.571,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 3600.0,
+    "y": 360.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "drehung": -1.571,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 3600.0,
+    "y": 470.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "drehung": -1.571,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "schrank",
+    "x": 2880.0,
+    "y": 775.0,
+    "breite": 300.0,
+    "tiefe": 40.0,
+    "text": "Schrankzeile Flur Sued",
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "schrank",
+    "x": 3490.0,
+    "y": 790.0,
+    "breite": 280.0,
+    "tiefe": 40.0,
+    "text": "Schrankzeile Flur Sued",
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "tisch",
+    "x": 2715.0,
+    "y": 990.0,
+    "breite": 170.0,
+    "tiefe": 200.0,
+    "text": "Arbeitstisch Sued West",
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 2830.0,
+    "y": 975.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "drehung": -1.571,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "tisch",
+    "x": 3015.0,
+    "y": 990.0,
+    "breite": 170.0,
+    "tiefe": 200.0,
+    "text": "Arbeitstisch Sued Mitte",
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 2900.0,
+    "y": 975.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "drehung": 1.571,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 3130.0,
+    "y": 975.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "drehung": -1.571,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "tisch",
+    "x": 3455.0,
+    "y": 975.0,
+    "breite": 250.0,
+    "tiefe": 175.0,
+    "text": "Arbeitstisch Sued Ost",
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 3355.0,
+    "y": 1090.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 3455.0,
+    "y": 1090.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 3555.0,
+    "y": 1090.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 3355.0,
+    "y": 860.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "drehung": 3.142,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 3465.0,
+    "y": 860.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "drehung": 3.142,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "stuhl",
+    "x": 3575.0,
+    "y": 860.0,
+    "breite": 45.0,
+    "tiefe": 45.0,
+    "drehung": 3.142,
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "rundtisch",
+    "x": 3410.0,
+    "y": 1195.0,
+    "breite": 80.0,
+    "tiefe": 80.0,
+    "text": "Sessel Lounge Sued",
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "rundtisch",
+    "x": 3540.0,
+    "y": 1180.0,
+    "breite": 80.0,
+    "tiefe": 80.0,
+    "text": "Sessel Lounge Sued",
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "rundtisch",
+    "x": 3665.0,
+    "y": 1185.0,
+    "breite": 75.0,
+    "tiefe": 75.0,
+    "text": "Sessel Lounge Sued",
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "rundtisch",
+    "x": 3470.0,
+    "y": 1330.0,
+    "breite": 75.0,
+    "tiefe": 75.0,
+    "text": "Sessel Lounge Sued",
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "rundtisch",
+    "x": 3590.0,
+    "y": 1325.0,
+    "breite": 75.0,
+    "tiefe": 75.0,
+    "text": "Sessel Lounge Sued",
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "rundtisch",
+    "x": 2925.0,
+    "y": 1300.0,
+    "breite": 70.0,
+    "tiefe": 70.0,
+    "text": "Bistrotisch Loggia Sued",
+    "beleg": "mess/x27-37_y0-15.31.png"
+   },
+   {
+    "typ": "pflanze",
+    "x": 3055.0,
+    "y": 1320.0,
+    "breite": 110.0,
+    "tiefe": 150.0,
+    "text": "Bepflanzung Loggia Sued",
+    "beleg": "mess/x27-37_y0-15.31.png"
+   }
+  ]
  },
  "items": [],
  "labels": [

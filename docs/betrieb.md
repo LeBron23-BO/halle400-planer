@@ -77,6 +77,53 @@ Nachprüfbar bei laufendem Server: **`node tools/pruefe-ansicht.mjs`**
 (Exit 0 = bestanden) — misst am echten Bild, ob der Grundriss vollständig und
 mit Rand im Fenster liegt, und ob Mausrad, Finger und Schaltflächen zoomen.
 
+## Ausstattung: was in den Räumen steht (A1)
+
+Der Grundriss zeigt nicht nur die Bausubstanz, sondern auch die **Einrichtung** —
+als Grundriss-Zeichen, wie ein Architekturplan sie führt: Tische als Rechtecke,
+Stühle als kleine Rechtecke mit Lehne, Treppen als Stufenband, dazu Rundtisch,
+Schrank (Rechteck mit Diagonale), WC, Waschbecken, Kochfeld, Pflanze, Aufzug
+und Fläche (Loggia/Kiesbett).
+
+**Warum als Zeichen und nicht als 3D-Möbel.** Das Datenmodell kennt zwar
+`items` mit `model_url` — aber der 2D-Editor zeichnet sie überhaupt nicht
+(`floorplanner_view.draw()` kennt nur Raster, Räume, Wände, Ecken, Maße). Eine
+als Item eingepflegte Einrichtung wäre also ausgerechnet im Grundriss
+unsichtbar, der der PDF entspricht. Dazu trägt der Katalog des Upstreams eine
+**Wohnungs**-Einrichtung (Betten, Sofas, Kleiderschränke) ohne Treppe, Sanitär,
+Küchenzeile oder Aufzug, und jedes Modell wiegt Megabytes auf einem fremden
+CDN — bei rund 200 Möbeln wären das Dutzende MB externe Anfragen je Aufruf.
+
+**Woher die Daten kommen.** `data/ausstattung.json` ist die kuratierte Quelle,
+genau wie `data/walls.json` bei den Wänden: aus der PDF **gemessen**, jedes
+Element mit `beleg` auf die Mess-Kachel, an der es abgelesen wurde. Der Export
+prüft sie fail-closed — unbekannter Typ, fehlende Zahl oder eine Ausdehnung
+≤ 0 brechen ab, statt lautlos ein unsichtbares Möbel zu erzeugen.
+
+```
+python tools/mess_kachel.py --von 27 --bis 37   # Lineal: Ausschnitt mit xy-Meterraster
+python tools/export_blueprint.py                # traegt data/ausstattung.json in den Plan ein
+node tools/pruefe-ausstattung.mjs               # Beweis am gerenderten Canvas
+```
+
+Die Ausstattung liegt im `floorplan`-Zweig (nicht in `items`) und erbt dadurch
+die erprobte Speicher-/Lade-Mechanik — sie übersteht damit auch ein
+**Rückgängig**, das seine Momentaufnahmen über genau diesen Pfad zieht.
+
+Zwei Lesbarkeitsstufen, beide in Bildschirmpixeln pro cm gemessen (dieselbe
+Lehre wie bei Maßangaben und Raumnamen in T7): ab **0,30** mit Details
+(Treppenstufen, Kochfeld-Platten, Stuhllehnen), ab **0,03** nur der Umriss,
+darunter gar nicht — bei eingepasster Halle am Handy (0,045) ist ein
+160-cm-Schreibtisch sieben Pixel breit, dort sagt ein Umriss mehr als ein
+Detail, das zu einem Fleck verklumpt.
+
+**Eigene Linienfarbe mit Absicht:** `#7d8a9c` ist blaugrau, kein neutrales
+Grau. Die Wand-Kante ist `#888888` (r=g=b) — ein neutralgraues Möbel wäre von
+ihr weder für das Auge noch für eine Messung sicher zu trennen. Die erste
+Fassung von `pruefe-ausstattung.mjs` hielt prompt jede Wandkante für
+Ausstattung und meldete trotzdem „bestanden" (10.980 statt 695 Pixel). Der
+Blaustich macht den Unterschied eindeutig.
+
 ## Rückgängig / Wiederholen (T5a)
 
 Im 2D-Editor: die beiden Pfeile in der Werkzeugleiste, oder **Strg+Z** und

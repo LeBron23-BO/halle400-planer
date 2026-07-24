@@ -20,12 +20,14 @@ python tools/extract_plan.py       # Text-Anker + Maßstab aus der PDF -> data/p
 python tools/measure_walls.py      # Trennwand-Kandidaten aus dem Rasterbild
 python tools/build_walls.py        # kuratierte Wandliste + Außenkontur -> data/walls.json
 python tools/export_blueprint.py   # -> app/public/plaene/halle400.json (blueprint3d-Schema, cm)
+python tools/mess_kachel.py --von 27 --bis 37   # Lineal: Ausschnitt mit xy-Meterraster (A1..A4)
 python tools/compare_plan.py       # -> data/vergleich.png : Original vs. Nachbildung ANSEHEN
 cd app && ./node_modules/.bin/next build && cp out/de.html out/index.html   # statischer Export (T6: Deutsch ist Standardsprache)
 node tools/serve-local.mjs         # Auslieferung: PC http://localhost:3301/?plan=halle400
                                    #               Handy https://zen.taild936f8.ts.net:8458/?plan=halle400
 node tools/pruefe-undo.mjs         # T5a: Rueckgaengig/Wiederholen am gerenderten Canvas (Exit 0 = bestanden)
 node tools/pruefe-ansicht.mjs      # T7: ganzer Grundriss im Bild + Zoom (Rechner UND Handy)
+node tools/pruefe-ausstattung.mjs  # A1: Ausstattung gezeichnet, an der richtigen Stelle, Stufen schalten
 ```
 
 E2E-Beweis (der einzige, der die Auslieferung wirklich prüft):

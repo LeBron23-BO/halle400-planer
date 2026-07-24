@@ -172,10 +172,59 @@ def lade_labels(geometry_pfad: Path) -> list[dict]:
     return labels
 
 
+ERLAUBTE_TYPEN = {
+    "tisch", "rundtisch", "stuhl", "schrank", "treppe", "wc",
+    "waschbecken", "kochfeld", "pflanze", "aufzug", "flaeche",
+}
+
+
+def lade_ausstattung(pfad: Path) -> list[dict]:
+    """Liest die gemessene Ausstattung (A1) und prueft sie fail-closed.
+
+    Sie wandert in den `floorplan`-Zweig, NICHT nach `items`: dort landet, was
+    `Model.loadSerialized` an `Floorplan.loadFloorplan` durchreicht — dadurch
+    erbt sie die erprobte Speicher-/Lade-Mechanik und uebersteht damit auch das
+    Rueckgaengig, das seine Momentaufnahmen ueber genau diesen Pfad zieht.
+
+    Geprueft wird streng, weil ein Tippfehler sonst lautlos ein unsichtbares
+    Moebel erzeugt: unbekannter Typ, fehlende Pflichtzahl oder eine Ausdehnung
+    <= 0 brechen den Export ab, statt einen halben Plan auszuliefern.
+    """
+    if not pfad.exists():
+        print(f"warnung: {pfad} fehlt — keine Ausstattung exportiert")
+        return []
+    roh = json.loads(pfad.read_text(encoding="utf-8"))
+    elemente = roh.get("elemente", roh if isinstance(roh, list) else [])
+    sauber: list[dict] = []
+    for i, e in enumerate(elemente):
+        typ = e.get("typ")
+        if typ not in ERLAUBTE_TYPEN:
+            raise SystemExit(f"ausstattung[{i}]: unbekannter Typ {typ!r}")
+        for feld in ("x", "y", "breite", "tiefe"):
+            if not isinstance(e.get(feld), (int, float)):
+                raise SystemExit(f"ausstattung[{i}] ({typ}): {feld} fehlt oder ist keine Zahl")
+        if e["breite"] <= 0 or e["tiefe"] <= 0:
+            raise SystemExit(f"ausstattung[{i}] ({typ}): Ausdehnung muss > 0 sein")
+        eintrag = {
+            "typ": typ,
+            "x": _raste(e["x"]), "y": _raste(e["y"]),
+            "breite": _raste(e["breite"]), "tiefe": _raste(e["tiefe"]),
+        }
+        if e.get("drehung"):
+            eintrag["drehung"] = round(float(e["drehung"]), 4)
+        for feld in ("text", "beleg"):
+            if e.get(feld):
+                eintrag[feld] = e[feld]
+        sauber.append(eintrag)
+    return sauber
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--walls", type=Path, default=Path("data/walls.json"))
+    p.add_argument("--ausstattung", type=Path, default=Path("data/ausstattung.json"),
+                   help="gemessene Ausstattung (A1)")
     # Zielort ist bewusst das Verzeichnis, aus dem die App liest. Eine Kopie
     # unter data/ waere eine zweite Wahrheit, die beim naechsten Lauf driftet.
     p.add_argument("--out", type=Path,
@@ -211,6 +260,14 @@ def main() -> int:
 
     plan["labels"] = lade_labels(args.geometry)
     print(f"{len(plan['labels'])} Raum-Label(s) aus {args.geometry}")
+
+    plan["floorplan"]["ausstattung"] = lade_ausstattung(args.ausstattung)
+    if plan["floorplan"]["ausstattung"]:
+        arten: dict[str, int] = {}
+        for e in plan["floorplan"]["ausstattung"]:
+            arten[e["typ"]] = arten.get(e["typ"], 0) + 1
+        print(f"{len(plan['floorplan']['ausstattung'])} Ausstattungs-Zeichen "
+              f"({' · '.join(f'{k} {v}' for k, v in sorted(arten.items()))})")
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(plan, indent=1, ensure_ascii=False), encoding="utf-8")

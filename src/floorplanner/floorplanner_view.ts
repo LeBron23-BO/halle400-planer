@@ -35,7 +35,12 @@ const deleteColor = '#ff0000'
 
 // Ausstattung (A1) — bewusst zurückhaltend: die Bausubstanz muss die
 // kräftigste Linie im Bild bleiben, die Möblierung ist Beiwerk.
-const ausstattungLinie = '#8a9099'
+// Bewusst ein BLAUGRAU, kein neutrales Grau: die Wand-Kante ist #888888
+// (r=g=b). Ein neutralgraues Möbel wäre von ihr weder für das Auge noch für
+// eine Messung sicher zu trennen — die erste Fassung dieser Prüfung hielt
+// prompt jede Wandkante für Ausstattung und meldete trotzdem „bestanden".
+// Der Blaustich (b − r = 31) macht den Unterschied eindeutig, ohne laut zu sein.
+const ausstattungLinie = '#7d8a9c'
 const ausstattungFuellung = '#ffffff'
 const ausstattungFlaeche = '#efe7dd' // Loggia/Kiesbett, wie im Plan beige
 const ausstattungGruen = '#cfdcc8' // Bepflanzung
