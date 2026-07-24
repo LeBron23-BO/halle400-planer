@@ -143,6 +143,35 @@ def baue(wandliste: dict) -> dict:
             "items": []}
 
 
+def lade_labels(geometry_pfad: Path) -> list[dict]:
+    """Liest die PDF-Beschriftungen als Raum-Label-Anker (cm).
+
+    Die Ankerpunkte kommen in Metern aus der PDF (plan-geometry.json). Hier
+    werden sie mit DERSELBEN METER_ZU_CM-Umrechnung wie die Waende ins
+    cm-System des Grundriss-JSON gebracht — verifiziert: Anker und Waende
+    teilen ein Koordinatensystem (kein Offset, keine Spiegelung), der
+    Aufzug-Anker liegt bei y<0 sauber im Nord-Vorbau.
+
+    Die Zuordnung Label->Raum passiert bewusst NICHT hier, sondern zur
+    Laufzeit per Punkt-in-Polygon — so bleibt sie robust gegen spaetere
+    Editier-Aenderungen an den Waenden (Raum-UUIDs sind dann nicht stabil).
+    """
+    if not geometry_pfad.exists():
+        print(f"warnung: {geometry_pfad} fehlt — keine Raum-Label exportiert")
+        return []
+    geo = json.loads(geometry_pfad.read_text(encoding="utf-8"))
+    labels: list[dict] = []
+    for b in geo.get("beschriftungen", []):
+        labels.append({
+            "text": b["text"],
+            "zusatz": b.get("zusatz", ""),
+            "seite": b.get("seite", ""),
+            "anker_cm": [_raste(b["anker_x_m"] * METER_ZU_CM),
+                         _raste(b["anker_y_m"] * METER_ZU_CM)],
+        })
+    return labels
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)

@@ -8,6 +8,8 @@ import { HalfEdge } from './half_edge'
 
 export type FloorTexture = { url: string; scale: number }
 export type WallTexture = { url: string; stretch: boolean; scale: number }
+/** User-editable per-room metadata. Currently just the room name (T4). */
+export type RoomMeta = { name: string }
 export interface SavedFloorplan {
   corners: Record<string, { x: number; y: number }>
   walls: Array<{
@@ -19,6 +21,8 @@ export interface SavedFloorplan {
   wallTextures?: unknown[]
   floorTextures?: Record<string, FloorTexture>
   newFloorTextures?: Record<string, FloorTexture>
+  /** Room names keyed by Room.getUuid() — same axis as floorTextures. */
+  roomMeta?: Record<string, RoomMeta>
 }
 
 /** */
@@ -59,6 +63,15 @@ export class Floorplan {
    * url and scale attributes.
    */
   private floorTextures: Record<string, FloorTexture> = {}
+
+  /**
+   * Room names, keyed by Room.getUuid() — same persistence axis as
+   * floorTextures. Deliberately NOT pruned when a UUID disappears (unlike
+   * updateFloorTextures): a room's UUID breaks when a corner is deleted and
+   * re-created, and we don't want a user-given name to vanish in that gap.
+   * The runtime name assignment (RoomLabels) repairs stale keys via centroid.
+   */
+  private roomMeta: Record<string, RoomMeta> = {}
 
   /** Constructs a floorplan. */
   constructor() {}
@@ -212,7 +225,8 @@ export class Floorplan {
       walls: [],
       wallTextures: [],
       floorTextures: {},
-      newFloorTextures: {}
+      newFloorTextures: {},
+      roomMeta: {}
     }
 
     this.corners.forEach((corner) => {
@@ -231,6 +245,7 @@ export class Floorplan {
       })
     })
     floorplan.newFloorTextures = this.floorTextures
+    floorplan.roomMeta = this.roomMeta
     return floorplan
   }
 
@@ -259,6 +274,7 @@ export class Floorplan {
     if (floorplan.newFloorTextures) {
       this.floorTextures = floorplan.newFloorTextures
     }
+    this.roomMeta = floorplan.roomMeta ?? {}
 
     this.update()
     this.roomLoadedCallbacks.fire()
@@ -276,6 +292,29 @@ export class Floorplan {
     this.floorTextures[uuid] = {
       url: url,
       scale: scale
+    }
+  }
+
+  /** Room metadata (user-set name) for a room UUID, or null if unset. */
+  public getRoomMeta(uuid: string): RoomMeta | null {
+    return uuid in this.roomMeta ? this.roomMeta[uuid] : null
+  }
+
+  /** The whole roomMeta map — read access for runtime name assignment/repair. */
+  public getAllRoomMeta(): Record<string, RoomMeta> {
+    return this.roomMeta
+  }
+
+  /**
+   * Sets a user-defined room name. A blank name clears the override, so the
+   * PDF-derived default name shows again.
+   */
+  public setRoomName(uuid: string, name: string): void {
+    const trimmed = name.trim()
+    if (trimmed === '') {
+      delete this.roomMeta[uuid]
+    } else {
+      this.roomMeta[uuid] = { ...this.roomMeta[uuid], name: trimmed }
     }
   }
 
