@@ -10,7 +10,9 @@ import { SettingsDialog } from './SettingsDialog'
 import { ContextMenu } from './ContextMenu'
 import { BedSizeInput } from './BedSizeInput'
 import { FloorplannerControls } from './FloorplannerControls'
+import { RoomLabels } from './RoomLabels'
 import { TextureSelector } from './TextureSelector'
+import type { PlanLabel } from '@/lib/roomNaming'
 import { SaveFloorplanDialog } from './SaveFloorplanDialog'
 import { TouchHelp } from './TouchHelp'
 import { ControlsHelp } from './ControlsHelp'
@@ -82,6 +84,9 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
   const [itemsLoading, setItemsLoading] = useState(0)
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('3d')
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
+  // Raum-Label-Anker aus dem geladenen Plan + Bereitschaft der blueprint3d-Instanz
+  const [planLabels, setPlanLabels] = useState<PlanLabel[]>([])
+  const [ready, setReady] = useState(false)
 
   const [currentBlueprint, setCurrentBlueprint] = useState<{
     id: string
@@ -127,6 +132,7 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
 
     const blueprint3d = new Blueprint3d(opts)
     blueprint3dRef.current = blueprint3d
+    setReady(true)
 
     if (onBlueprint3DReady) {
       onBlueprint3DReady(blueprint3d)
@@ -192,7 +198,12 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
         if (gewuenscht && /^[a-z0-9-]{1,40}$/.test(gewuenscht)) {
           const antwort = await fetch(`plaene/${gewuenscht}.json`)
           if (antwort.ok) {
-            blueprint3d.model.loadSerialized(JSON.stringify(await antwort.json()))
+            const planData = await antwort.json()
+            // Die Raum-Label liegen als eigener Top-Level-Zweig neben
+            // floorplan/items; loadSerialized ignoriert sie, das RoomLabels-
+            // Overlay liest sie hier aus dem rohen Plan-JSON.
+            setPlanLabels(Array.isArray(planData.labels) ? planData.labels : [])
+            blueprint3d.model.loadSerialized(JSON.stringify(planData))
             return
           }
           console.warn(`[Blueprint3DAppBase] Plan "${gewuenscht}" nicht gefunden`)
@@ -646,6 +657,16 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
               </>
             )}
           </div>
+
+          {/* Raum-Labels (T4): PDF-Namen ueber 2D + 3D, editierbar per Doppelklick */}
+          {ready && blueprint3dRef.current && (
+            <RoomLabels
+              blueprint3d={blueprint3dRef.current}
+              viewMode={viewMode}
+              active={activeTab === 'edit'}
+              labels={planLabels}
+            />
+          )}
 
           {/* Context Menu */}
           {selectedItem && !textureType && !isFullscreen && (
