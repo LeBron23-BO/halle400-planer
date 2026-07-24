@@ -61,7 +61,7 @@ export function ControlsHelp({ className, viewMode = '3d' }: ControlsHelpProps) 
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-border">
               <h2 className={cn('font-semibold', isMobile ? 'text-xl' : 'text-lg')}>
-                {viewMode === '2d' ? '2D Floorplanner Controls' : '3D Viewer Controls'}
+                {viewMode === '2d' ? 'Bedienung des 2D-Grundrisses' : 'Bedienung der 3D-Ansicht'}
               </h2>
               <Button
                 onClick={toggleHelp}
@@ -84,9 +84,9 @@ export function ControlsHelp({ className, viewMode = '3d' }: ControlsHelpProps) 
                         <Move className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <h3 className="font-medium mb-1">Move Mode</h3>
+                        <h3 className="font-medium mb-1">Bewegen</h3>
                         <p className="text-muted-foreground text-sm">
-                          Click and drag walls or corners to adjust room shape
+                          Wände oder Ecken anklicken und ziehen, um den Raumzuschnitt zu ändern
                         </p>
                       </div>
                     </div>
@@ -96,9 +96,9 @@ export function ControlsHelp({ className, viewMode = '3d' }: ControlsHelpProps) 
                         <Pencil className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <h3 className="font-medium mb-1">Draw Mode</h3>
+                        <h3 className="font-medium mb-1">Zeichnen</h3>
                         <p className="text-muted-foreground text-sm">
-                          Click to place new wall points. Press ESC to finish drawing.
+                          Klicken setzt neue Wandpunkte. Mit ESC das Zeichnen beenden.
                         </p>
                       </div>
                     </div>
@@ -108,9 +108,9 @@ export function ControlsHelp({ className, viewMode = '3d' }: ControlsHelpProps) 
                         <Trash2 className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <h3 className="font-medium mb-1">Delete Mode</h3>
+                        <h3 className="font-medium mb-1">Löschen</h3>
                         <p className="text-muted-foreground text-sm">
-                          Click on walls or corners to remove them
+                          Wände oder Ecken anklicken, um sie zu entfernen
                         </p>
                       </div>
                     </div>
@@ -120,9 +120,9 @@ export function ControlsHelp({ className, viewMode = '3d' }: ControlsHelpProps) 
                         <ZoomIn className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <h3 className="font-medium mb-1">Zoom & Pan</h3>
+                        <h3 className="font-medium mb-1">Zoomen und Verschieben</h3>
                         <p className="text-muted-foreground text-sm">
-                          {isMobile ? 'Pinch to zoom, drag with two fingers to pan' : 'Mouse wheel to zoom, middle-click drag to pan'}
+                          {isMobile ? 'Auf- und zuziehen zum Zoomen, mit zwei Fingern ziehen verschiebt den Ausschnitt' : 'Mausrad zoomt, Ziehen mit der mittleren Maustaste verschiebt den Ausschnitt'}
                         </p>
                       </div>
                     </div>
@@ -138,9 +138,9 @@ export function ControlsHelp({ className, viewMode = '3d' }: ControlsHelpProps) 
                           <Hand className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <h3 className="font-medium mb-1">One Finger</h3>
+                          <h3 className="font-medium mb-1">Ein Finger</h3>
                           <p className="text-muted-foreground text-sm">
-                            Drag to rotate camera around the scene
+                            Ziehen dreht die Ansicht um die Szene
                           </p>
                         </div>
                       </div>
@@ -150,9 +150,9 @@ export function ControlsHelp({ className, viewMode = '3d' }: ControlsHelpProps) 
                           <ZoomIn className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <h3 className="font-medium mb-1">Two Fingers</h3>
+                          <h3 className="font-medium mb-1">Zwei Finger</h3>
                           <p className="text-muted-foreground text-sm">
-                            Pinch to zoom in and out
+                            Auf- und zuziehen vergrößert und verkleinert
                           </p>
                         </div>
                       </div>
@@ -162,9 +162,9 @@ export function ControlsHelp({ className, viewMode = '3d' }: ControlsHelpProps) 
                           <Move className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <h3 className="font-medium mb-1">Three Fingers</h3>
+                          <h3 className="font-medium mb-1">Drei Finger</h3>
                           <p className="text-muted-foreground text-sm">
-                            Drag to pan camera
+                            Ziehen verschiebt den Bildausschnitt
                           </p>
                         </div>
                       </div>
@@ -174,9 +174,9 @@ export function ControlsHelp({ className, viewMode = '3d' }: ControlsHelpProps) 
                           <MousePointer2 className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <h3 className="font-medium mb-1">Tap Object</h3>
+                          <h3 className="font-medium mb-1">Möbel antippen</h3>
                           <p className="text-muted-foreground text-sm">
-                            Select furniture to move, rotate, or delete
+                            Möbel auswählen, um es zu verschieben, zu drehen oder zu löschen
                           </p>
                         </div>
                       </div>
@@ -188,9 +188,9 @@ export function ControlsHelp({ className, viewMode = '3d' }: ControlsHelpProps) 
                           <RotateCw className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <h3 className="font-medium mb-1">Left Click + Drag</h3>
+                          <h3 className="font-medium mb-1">Linke Maustaste + ziehen</h3>
                           <p className="text-muted-foreground">
-                            Rotate camera around the scene
+                            Dreht die Ansicht um die Szene
                           </p>
                         </div>
                       </div>
@@ -200,9 +200,9 @@ export function ControlsHelp({ className, viewMode = '3d' }: ControlsHelpProps) 
                           <ZoomIn className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <h3 className="font-medium mb-1">Mouse Wheel</h3>
+                          <h3 className="font-medium mb-1">Mausrad</h3>
                           <p className="text-muted-foreground">
-                            Scroll to zoom in and out
+                            Scrollen vergrößert und verkleinert
                           </p>
                         </div>
                       </div>
@@ -212,9 +212,9 @@ export function ControlsHelp({ className, viewMode = '3d' }: ControlsHelpProps) 
                           <Move className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <h3 className="font-medium mb-1">Right Click + Drag</h3>
+                          <h3 className="font-medium mb-1">Rechte Maustaste + ziehen</h3>
                           <p className="text-muted-foreground">
-                            Pan camera view
+                            Verschiebt den Bildausschnitt
                           </p>
                         </div>
                       </div>
@@ -224,9 +224,9 @@ export function ControlsHelp({ className, viewMode = '3d' }: ControlsHelpProps) 
                           <MousePointer2 className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <h3 className="font-medium mb-1">Click Object</h3>
+                          <h3 className="font-medium mb-1">Möbel anklicken</h3>
                           <p className="text-muted-foreground">
-                            Select furniture to move, rotate, or delete
+                            Möbel auswählen, um es zu verschieben, zu drehen oder zu löschen
                           </p>
                         </div>
                       </div>
@@ -239,8 +239,8 @@ export function ControlsHelp({ className, viewMode = '3d' }: ControlsHelpProps) 
               <div className="pt-4 border-t border-border">
                 <p className="text-xs text-muted-foreground text-center">
                   {viewMode === '2d'
-                    ? 'Tip: Click "Done" when finished to switch to 3D view'
-                    : 'Tip: Switch between 2D and 3D views using the toggle at the top'
+                    ? 'Tipp: Am Ende auf „Fertig" klicken, um in die 3D-Ansicht zu wechseln'
+                    : 'Tipp: Oben mittig lässt sich zwischen 2D und 3D umschalten'
                   }
                 </p>
               </div>

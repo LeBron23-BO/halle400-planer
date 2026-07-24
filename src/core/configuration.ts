@@ -1,4 +1,4 @@
-import { dimInch } from './dimensioning'
+import { dimMeter } from './dimensioning'
 
 // GENERAL:
 
@@ -22,7 +22,9 @@ export const configSnapToWallDistance = 'snapToWallDistance'
 export class Configuration {
   /** Configuration data loaded from/stored to extern. */
   private static data: { [key: string]: any } = {
-    dimUnit: dimInch,
+    // Metrisch als Grundeinstellung (T6): die gesamte Halle-400-Geometrie wird
+    // in cm aus der PDF gemessen — Fuss/Zoll waere hier eine Fremdeinheit.
+    dimUnit: dimMeter,
 
     wallHeight: 250,
     wallThickness: 10,

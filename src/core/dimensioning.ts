@@ -31,7 +31,11 @@ export class Dimensioning {
         return '' + Math.round(10 * cm) / 10 + ' cm'
       case dimMeter:
       default:
-        return '' + Math.round(10 * cm) / 1000 + ' m'
+        // Auf Zentimeter runden (2 Nachkommastellen), NICHT auf Millimeter:
+        // die Halle-400-Geometrie ist aus einem freihaendig GEZEICHNETEN Plan
+        // in cm gemessen. Eine dritte Nachkommastelle behauptet eine
+        // Millimeter-Praezision, die das Original nicht hergibt (Projekt-DNA).
+        return '' + Math.round(cm) / 100 + ' m'
     }
   }
 }

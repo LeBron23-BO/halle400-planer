@@ -33,8 +33,8 @@ interface TemplateSelectorProps {
 
 export function TemplateSelector({
   targetUrl,
-  title = 'Choose Your Starting Point',
-  subtitle = 'Select a template to begin designing your space',
+  title = 'Womit möchtest du beginnen?',
+  subtitle = 'Wähle eine Vorlage, um mit dem Entwurf zu starten',
   initialRoomType = RoomType.BEDROOM
 }: TemplateSelectorProps) {
   const router = useRouter()
@@ -94,8 +94,8 @@ export function TemplateSelector({
   const handleStartFresh = async (roomType: RoomType) => {
     const blankTemplate: TemplateOption = {
       id: `blank-${roomType}`,
-      name: 'Start Fresh',
-      description: 'Start from scratch with an empty room',
+      name: 'Neu beginnen',
+      description: 'Mit einem leeren Raum von vorn anfangen',
       preview: '/templates/refresh/blank.webp',
       roomType,
       template: blank as Blueprint3DTemplate
@@ -106,8 +106,8 @@ export function TemplateSelector({
   const handleOpenDesign = async (roomType: RoomType) => {
     const blankTemplate: TemplateOption = {
       id: 'open-my-design',
-      name: 'Open My Design',
-      description: 'Browse and open your saved floor plans',
+      name: 'Eigenen Entwurf öffnen',
+      description: 'Gespeicherte Grundrisse durchsehen und öffnen',
       preview: '/templates/refresh/history.webp',
       roomType,
       template: blank as Blueprint3DTemplate

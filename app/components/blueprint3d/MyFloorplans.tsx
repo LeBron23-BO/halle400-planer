@@ -82,7 +82,7 @@ export function MyFloorplans({ onLoadFloorplan }: MyFloorplansProps) {
       toast.success(t('deleteSuccess', { name }), { id: toastId })
     } catch (error) {
       console.error('Failed to delete floorplan:', error)
-      toast.error(t('deleteError') || 'Failed to delete floorplan', { id: toastId })
+      toast.error(t('deleteError') || 'Grundriss konnte nicht gelöscht werden', { id: toastId })
     }
   }
 

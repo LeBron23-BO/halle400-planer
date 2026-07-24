@@ -1,0 +1,269 @@
+{
+  "BluePrint": {
+    "sidebar": {
+      "editFloorplan": "Grundriss bearbeiten",
+      "design": "Entwurf",
+      "edit": "Bearbeiten",
+      "projects": "Projekte",
+      "addItems": "Möbel hinzufügen",
+      "myFloorplans": "Meine Grundrisse",
+      "settings": "Einstellungen",
+      "openSidebar": "Seitenleiste öffnen",
+      "collapseSidebar": "Seitenleiste einklappen"
+    },
+    "mainControls": {
+      "newPlan": "Neuer Plan",
+      "savePlan": "Plan speichern",
+      "downloadPlan": "Plan herunterladen",
+      "loadPlan": "Plan laden"
+    },
+    "floorplanner": {
+      "moveWalls": "Wände bewegen",
+      "drawWalls": "Wände zeichnen",
+      "deleteWalls": "Wände löschen",
+      "done": "Fertig",
+      "escHint": "Mit der Taste „Esc\" das Zeichnen beenden"
+    },
+    "viewToggle": {
+      "3d": "3D",
+      "2d": "2D"
+    },
+    "textureSelector": {
+      "adjustFloor": "Boden anpassen",
+      "adjustWall": "Wand anpassen"
+    },
+    "myFloorplans": {
+      "title": "Meine gespeicherten Grundrisse",
+      "noFloorplans": "Noch keine Grundrisse gespeichert",
+      "saveFirst": "Speichere deinen ersten Grundriss, dann erscheint er hier",
+      "loading": "Wird geladen …",
+      "loadButton": "Laden",
+      "loadError": "Grundriss konnte nicht geladen werden",
+      "loadNotFound": "Grundriss nicht gefunden",
+      "deleteButton": "Löschen",
+      "editButton": "Bearbeiten",
+      "deleteConfirm": "Diesen Grundriss wirklich löschen?",
+      "deleteError": "Grundriss konnte nicht gelöscht werden",
+      "lastModified": "Zuletzt geändert",
+      "loadingItem": "„{name}\" wird geladen …",
+      "loadedSuccess": "„{name}\" geladen",
+      "deletingItem": "„{name}\" wird gelöscht …",
+      "deleteSuccess": "„{name}\" gelöscht",
+      "savedCount": "{count} gespeicherte{count, plural, =1 {r Grundriss} other { Grundrisse}}",
+      "filterAll": "Alle Räume",
+      "gridView": "Kachelansicht",
+      "listView": "Listenansicht",
+      "roomTypes": {
+        "bedroom": "Schlafzimmer",
+        "living-room": "Wohnzimmer",
+        "kitchen": "Küche",
+        "bathroom": "Badezimmer",
+        "office": "Büro"
+      }
+    },
+    "settings": {
+      "title": "Einstellungen",
+      "dimensionUnit": "Maßeinheit",
+      "language": "Sprache",
+      "languageDescription": "Wähle deine bevorzugte Sprache",
+      "dimensionUnitDescription": "Wähle das Einheitensystem, in dem Maße im Grundriss angezeigt werden.",
+      "currentSelection": "Aktuelle Auswahl",
+      "appliesTo": "Diese Einstellung gilt überall für:",
+      "applies2dFloorplan": "Wandmaße im 2D-Grundriss",
+      "applies3dDimensions": "Abmessungen der 3D-Möbel",
+      "appliesAllDimensions": "alle Maßangaben",
+      "active": "Aktiv",
+      "units": {
+        "inch": {
+          "label": "Angloamerikanisch (ft/in)",
+          "description": "Fuß und Zoll"
+        },
+        "m": {
+          "label": "Metrisch – Meter (m)",
+          "description": "Meter"
+        },
+        "cm": {
+          "label": "Metrisch – Zentimeter (cm)",
+          "description": "Zentimeter"
+        },
+        "mm": {
+          "label": "Metrisch – Millimeter (mm)",
+          "description": "Millimeter"
+        }
+      },
+      "languages": {
+        "de": "Deutsch",
+        "en": "English",
+        "zh": "简体中文",
+        "tw": "繁體中文"
+      }
+    },
+    "items": {
+      "list": {
+        "itemCount": "{count} {count, plural, =1 {Möbelstück} other {Möbelstücke}}",
+        "noItemsFound": "Keine Möbel gefunden",
+        "selectDifferentLayer": "Wähle eine andere Kategorie"
+      },
+      "categories": {
+        "all": "Alle",
+        "bed": "Betten",
+        "drawer": "Kommoden",
+        "wardrobe": "Schränke",
+        "light": "Leuchten",
+        "storage": "Regale",
+        "table": "Tische",
+        "chair": "Stühle",
+        "sofa": "Sofas",
+        "armchair": "Sessel",
+        "stool": "Hocker",
+        "door": "Türen",
+        "window": "Fenster",
+        "toilet": "Sanitär"
+      },
+      "loadingItem": "„{name}\" wird geladen …",
+      "loadedSuccess": "„{name}\" geladen",
+      "loadError": "„{name}\" konnte nicht geladen werden",
+      "bedOne": "Modernes gepolstertes Einzelbett",
+      "drawerOne": "Weiße Kommode mit sechs Schubladen",
+      "drawerTwo": "Moderne Holzkommode mit acht Schubladen",
+      "drawerThree": "Nachttisch aus dunklem Holz",
+      "drawerFour": "Weißer Schminktisch, klassisch",
+      "drawerFive": "Schlichter grauer Schminktisch",
+      "drawerSix": "Schlichter Schreibtisch aus Eiche",
+      "wardrobeOne": "Weißer Kleiderschrank mit drei Türen",
+      "wardrobeTwo": "Modulares offenes Schranksystem",
+      "wardrobeThree": "Weißer Kleiderschrank mit zwei Türen",
+      "wardrobeFour": "Offenes Schrankgestell",
+      "lightOne": "Weiße Kugel-Tischleuchte",
+      "lightTwo": "Grüne Stehleuchte aus Metall",
+      "lightThree": "Dreibein-Stehleuchte aus Holz",
+      "lightFour": "Klassische Tischleuchte aus Messing",
+      "storageOne": "Vitrine aus salbeigrünem Holz",
+      "storageTwo": "Klassische Vitrine aus dunklem Holz",
+      "storageThree": "Weiße Anrichte aus Holz",
+      "storageFour": "Geschirrschrank aus dunklem Holz",
+      "storageFive": "Schwarze Glasvitrine",
+      "storageSix": "Schwarzer Aufbewahrungsschrank mit zwei Türen",
+      "storageSeven": "Hohes schmales Bücherregal, weiß",
+      "storageEight": "Skandinavisches Regal mit fünf Böden",
+      "storageNine": "Hohes schwarzes Bücherregal",
+      "storageTen": "Regal mit acht Fächern",
+      "storageEleven": "Metallregal, industriell verzinkt",
+      "storageTwelve": "Schwarzes Medien-Sideboard",
+      "storageThirteen": "Medien-Sideboard aus Eiche",
+      "storageFourteen": "Schwarzer TV-Unterschrank",
+      "storageFifteen": "Wandhängendes Medienboard",
+      "storageSixteen": "Medienboard aus Metallgitter",
+      "tableOne": "Schwarzer Esstisch aus Holz",
+      "tableTwo": "Rechteckiger Esstisch, zweifarbig",
+      "tableThree": "Runder Couchtisch mit Glasplatte, gold",
+      "tableFour": "Ovaler Couchtisch aus Holz",
+      "tableFive": "Runder Beistelltisch aus Metall",
+      "tableSix": "C-förmiger Laptoptisch",
+      "tableSeven": "Weißer quadratischer Beistelltisch",
+      "tableEight": "Schwarzer rechteckiger Esstisch",
+      "tableNine": "Weißer Esstisch mit Säulenfuß",
+      "tableTen": "Weißer rechteckiger Esstisch",
+      "tableEleven": "Beistelltisch aus Holz, mehrstufig",
+      "tableTwelve": "Weißer Würfel-Beistelltisch",
+      "tableThirteen": "Rustikale Esstischgruppe aus Holz",
+      "tableFourteen": "Runde Esstischgruppe aus Holz",
+      "tableFifteen": "Esstischgruppe aus Rattan",
+      "chairOne": "Schwarzer Esszimmerstuhl aus Metall",
+      "chairTwo": "Gepolsterter Esszimmerstuhl",
+      "chairThree": "Weißer Schalensessel",
+      "chairFour": "Esszimmerstuhl aus gelochtem Metall",
+      "chairFive": "Transparenter Acrylstuhl",
+      "chairSix": "Skandinavischer Esszimmerstuhl",
+      "chairSeven": "Esszimmerstuhl aus hellem Holz",
+      "chairEight": "Esszimmerstuhl aus dunklem Holz",
+      "chairNine": "Schwarzer Klappstuhl aus Metall",
+      "sofaTen": "Schlichtes Zweisitzer-Sofa",
+      "sofaEleven": "Ledersofa mit Knopfheftung",
+      "sofaTwelve": "Beiges Ecksofa",
+      "sofaThirteen": "Graues L-förmiges Ecksofa",
+      "sofaFourteen": "Weißes Sofa mit Hussenbezug",
+      "armchairFifteen": "Sessel mit Stoffbezug, Mid-Century",
+      "armchairSixteen": "Skandinavischer Bugholz-Sessel",
+      "armchairSeventeen": "Weißer Sessel mit Hussenbezug",
+      "armchairEighteen": "Sessel mit gestepptem Stoffbezug",
+      "armchairNineteen": "Oranger Cordsessel, Mid-Century",
+      "armchairTwenty": "Sessel aus Naturrattan",
+      "stoolTwentyOne": "Runder gelber Polsterhocker",
+      "stoolTwentyTwo": "Grauer Polsterhocker",
+      "stoolTwentyThree": "Dunkelblauer Polsterhocker",
+      "stoolTwentyFour": "Hocker mit gestepptem Bezug",
+      "stoolTwentyFive": "Sechseckiger Hocker mit Stauraum",
+      "closedDoor": "Geschlossene Tür",
+      "openDoor": "Offene Tür",
+      "windowOne": "Weißes Flügelfenster",
+      "doorOne": "Schlichte weiße Innentür",
+      "doorTwo": "Weiße Kassettentür",
+      "toiletOne": "WC",
+      "bathtubOne": "Badewanne",
+      "showerRoomOne": "Duschkabine",
+      "showerHeadOne": "Duschkopf",
+      "sinkOne": "Waschbecken"
+    },
+    "contextMenu": {
+      "deleteItem": "Möbel löschen",
+      "adjustSize": "Größe anpassen",
+      "width": "Breite",
+      "depth": "Tiefe",
+      "height": "Höhe",
+      "lockInPlace": "Position feststellen",
+      "measurementsIn": "Maße in",
+      "units": {
+        "inches": "Zoll",
+        "meters": "Meter",
+        "centimeters": "Zentimeter",
+        "millimeters": "Millimeter"
+      }
+    },
+    "newDialog": {
+      "title": "Neuer Grundriss",
+      "description": "Wähle den Raumtyp für deinen neuen Grundriss.",
+      "roomTypeLabel": "Raumtyp",
+      "cancel": "Abbrechen",
+      "confirm": "Erstellen"
+    },
+    "saveDialog": {
+      "title": "Grundriss speichern",
+      "description": "Gib deinem Grundriss einen Namen. Du findest ihn später unter „Meine Grundrisse\".",
+      "nameLabel": "Name des Grundrisses",
+      "namePlaceholder": "z. B. Halle 400 – Bürolayout",
+      "cancel": "Abbrechen",
+      "save": "Speichern",
+      "saving": "Grundriss wird gespeichert …",
+      "saveSuccess": "Grundriss gespeichert!",
+      "saveError": "Speichern fehlgeschlagen. Bitte noch einmal versuchen.",
+      "roomTypeLabel": "Raumtyp",
+      "openSidebar": "Seitenleiste öffnen"
+    },
+    "bedSizeInput": {
+      "title": "Bettgröße",
+      "bedDimensions": "Maße des Betts",
+      "width": "Breite",
+      "length": "Länge",
+      "measurementsIn": "Maße in",
+      "units": {
+        "inches": "Zoll",
+        "meters": "Meter",
+        "centimeters": "Zentimeter",
+        "millimeters": "Millimeter"
+      }
+    },
+    "Component": {
+      "FloorPlanDesign": {
+        "TemplateSelector": {
+          "title": "Vorlage wählen",
+          "description": "Starte mit einer Vorlage oder einer leeren Fläche",
+          "blank": "Leere Fläche",
+          "blankDescription": "Mit einem leeren Raum beginnen",
+          "useTemplate": "Vorlage verwenden",
+          "selectRoomType": "Raumtyp wählen"
+        }
+      }
+    }
+  }
+}

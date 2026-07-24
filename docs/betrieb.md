@@ -57,8 +57,7 @@ IP — `tailscale serve` unterscheidet nach Host-Header, eine IP-Anfrage endet i
   2D/3D-Umschalter „Add Items" und „New Plan". Gehört zu T6 (Handy-Tauglichkeit).
 - **Middleware ist im Export wirkungslos.** `app/middleware.ts` (next-intl-Routing)
   wird beim statischen Export ignoriert — Next warnt darüber, der Build bleibt grün.
-  Die drei Sprachseiten (`en`/`zh`/`tw`) werden statisch vorgerendert. Beim
-  Eindeutschen (T6) fällt die Middleware ersatzlos weg.
+  Die vier Sprachseiten (`de`/`en`/`zh`/`tw`) werden statisch vorgerendert.
 - **`index.html` wird nachträglich erzeugt.** Wegen `localePrefix: 'as-needed'`
-  entsteht keine Wurzelseite, nur `en.html`. Bis zum Eindeutschen: nach dem Build
-  `cp app/out/en.html app/out/index.html`.
+  entsteht keine Wurzelseite. Seit T6 ist Deutsch die Standardsprache, deshalb
+  nach dem Build **`cp app/out/de.html app/out/index.html`** (vorher `en.html`).

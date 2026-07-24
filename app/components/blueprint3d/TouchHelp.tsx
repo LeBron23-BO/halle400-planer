@@ -64,7 +64,7 @@ export function TouchHelp({ className }: TouchHelpProps) {
           <X className="h-4 w-4" />
         </Button>
 
-        <h3 className="text-lg font-semibold text-foreground mb-4">Touch Controls</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-4">Bedienung per Finger</h3>
 
         <div className="space-y-4 text-sm text-muted-foreground">
           <div className="flex items-start gap-3">
@@ -72,9 +72,9 @@ export function TouchHelp({ className }: TouchHelpProps) {
               <Hand className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="font-medium text-foreground">Single Finger</p>
-              <p>Tap to select, drag to move furniture</p>
-              <p className="text-xs mt-1">Swipe to rotate camera view</p>
+              <p className="font-medium text-foreground">Ein Finger</p>
+              <p>Tippen zum Auswählen, ziehen zum Verschieben von Möbeln</p>
+              <p className="text-xs mt-1">Wischen dreht die Ansicht</p>
             </div>
           </div>
 
@@ -83,8 +83,8 @@ export function TouchHelp({ className }: TouchHelpProps) {
               <ZoomIn className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="font-medium text-foreground">Two Fingers</p>
-              <p>Pinch to zoom in/out</p>
+              <p className="font-medium text-foreground">Zwei Finger</p>
+              <p>Auf- und zuziehen zum Vergrößern und Verkleinern</p>
             </div>
           </div>
 
@@ -93,8 +93,8 @@ export function TouchHelp({ className }: TouchHelpProps) {
               <RotateCw className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="font-medium text-foreground">Rotate Objects</p>
-              <p>Tap the rotation arrow, then drag</p>
+              <p className="font-medium text-foreground">Möbel drehen</p>
+              <p>Auf den Drehpfeil tippen, dann ziehen</p>
             </div>
           </div>
 
@@ -103,14 +103,14 @@ export function TouchHelp({ className }: TouchHelpProps) {
               <Move className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="font-medium text-foreground">Three Fingers</p>
-              <p>Drag to pan the camera</p>
+              <p className="font-medium text-foreground">Drei Finger</p>
+              <p>Ziehen verschiebt den Bildausschnitt</p>
             </div>
           </div>
         </div>
 
         <Button className="w-full mt-6" onClick={handleDismiss}>
-          Got it!
+          Verstanden
         </Button>
       </div>
     </div>

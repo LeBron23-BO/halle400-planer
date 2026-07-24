@@ -20,7 +20,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onUnitChange, isLanguageO
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Settings</DialogTitle>
+          <DialogTitle>Einstellungen</DialogTitle>
         </DialogHeader>
         <div className="py-4">
           <Settings onUnitChange={onUnitChange} isLanguageOption={isLanguageOption} />

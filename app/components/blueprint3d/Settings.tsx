@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from 'react'
 import { Settings as SettingsIcon, Languages, Check } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
-import { useRouter, usePathname } from '@/i18n/routing'
+import { useRouter, usePathname, locales } from '@/i18n/routing'
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
@@ -24,10 +24,12 @@ export function Settings({ onUnitChange, languageMap = {}, isLanguageOption }: S
   const pathname = usePathname()
   const [isPending, startTransition] = useTransition()
 
-  const [selectedUnit, setSelectedUnit] = useState('inch')
+  // Metrisch ist Standard (T6) — ein Hallengrundriss in Fuss/Zoll ist unbrauchbar.
+  const [selectedUnit, setSelectedUnit] = useState('m')
   const [selectedLanguage, setSelectedLanguage] = useState(locale)
 
-  const locales = ['en', 'zh', 'tw'] as const
+  // Sprachliste aus der Routing-Definition, NICHT hartcodiert: eine zweite
+  // Liste hier haette Deutsch in der Auswahl fehlen lassen (Single Source).
 
   // Load saved unit from localStorage on mount
   useEffect(() => {

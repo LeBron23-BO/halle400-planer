@@ -27,21 +27,23 @@ export function ContextMenu({ selectedItem, onDelete, onResize, onFixedChange }:
   const [height, setHeight] = useState(0)
   const [depth, setDepth] = useState(0)
   const [fixed, setFixed] = useState(false)
-  const [currentUnit, setCurrentUnit] = useState('inch')
+  // Metrisch als Vorgabe UND als Rueckfall (T6): die default-Zweige fielen
+  // frueher still auf Zoll zurueck — bei unbekannter Einheit erschienen dann
+  // Zoll-Zahlen mit metrischem Etikett.
+  const [currentUnit, setCurrentUnit] = useState('m')
 
   // Convert cm to display unit
   const cmToDisplay = (cm: number, unit: string): number => {
     switch (unit) {
       case 'inch':
         return cm / 2.54
-      case 'm':
-        return cm / 100
       case 'cm':
         return cm
       case 'mm':
         return cm * 10
+      case 'm':
       default:
-        return cm / 2.54
+        return cm / 100
     }
   }
 
@@ -50,14 +52,13 @@ export function ContextMenu({ selectedItem, onDelete, onResize, onFixedChange }:
     switch (unit) {
       case 'inch':
         return value * 2.54
-      case 'm':
-        return value * 100
       case 'cm':
         return value
       case 'mm':
         return value / 10
+      case 'm':
       default:
-        return value * 2.54
+        return value * 100
     }
   }
 
@@ -66,14 +67,13 @@ export function ContextMenu({ selectedItem, onDelete, onResize, onFixedChange }:
     switch (unit) {
       case 'inch':
         return t('units.inches')
-      case 'm':
-        return t('units.meters')
       case 'cm':
         return t('units.centimeters')
       case 'mm':
         return t('units.millimeters')
+      case 'm':
       default:
-        return t('units.inches')
+        return t('units.meters')
     }
   }
 
@@ -82,14 +82,13 @@ export function ContextMenu({ selectedItem, onDelete, onResize, onFixedChange }:
     switch (unit) {
       case 'inch':
         return 0
-      case 'm':
-        return 2
       case 'cm':
         return 1
       case 'mm':
         return 0
+      case 'm':
       default:
-        return 0
+        return 2
     }
   }
 
