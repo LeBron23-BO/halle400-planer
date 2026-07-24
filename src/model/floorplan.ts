@@ -21,7 +21,7 @@ export interface SavedFloorplan {
   wallTextures?: unknown[]
   floorTextures?: Record<string, FloorTexture>
   newFloorTextures?: Record<string, FloorTexture>
-  /** Room names keyed by Room.getUuid() — same axis as floorTextures. */
+  /** User room/label names keyed by a stable label key (see app/lib/roomNaming). */
   roomMeta?: Record<string, RoomMeta>
 }
 
@@ -65,11 +65,10 @@ export class Floorplan {
   private floorTextures: Record<string, FloorTexture> = {}
 
   /**
-   * Room names, keyed by Room.getUuid() — same persistence axis as
-   * floorTextures. Deliberately NOT pruned when a UUID disappears (unlike
-   * updateFloorTextures): a room's UUID breaks when a corner is deleted and
-   * re-created, and we don't want a user-given name to vanish in that gap.
-   * The runtime name assignment (RoomLabels) repairs stale keys via centroid.
+   * User-defined room/label names, keyed by a stable label key (the PDF anchor
+   * position — see app/lib/roomNaming). Persisted on the same axis as
+   * floorTextures, but deliberately NOT pruned on room changes: the key is
+   * anchored to the PDF label, not to a derived room, so it survives wall edits.
    */
   private roomMeta: Record<string, RoomMeta> = {}
 
@@ -295,26 +294,26 @@ export class Floorplan {
     }
   }
 
-  /** Room metadata (user-set name) for a room UUID, or null if unset. */
-  public getRoomMeta(uuid: string): RoomMeta | null {
-    return uuid in this.roomMeta ? this.roomMeta[uuid] : null
+  /** User-set name for a label key, or null if unset. */
+  public getRoomMeta(key: string): RoomMeta | null {
+    return key in this.roomMeta ? this.roomMeta[key] : null
   }
 
-  /** The whole roomMeta map — read access for runtime name assignment/repair. */
+  /** The whole name-override map — read access for runtime label resolution. */
   public getAllRoomMeta(): Record<string, RoomMeta> {
     return this.roomMeta
   }
 
   /**
-   * Sets a user-defined room name. A blank name clears the override, so the
-   * PDF-derived default name shows again.
+   * Sets a user-defined name for a label key. A blank name clears the override,
+   * so the PDF-derived default name shows again.
    */
-  public setRoomName(uuid: string, name: string): void {
+  public setRoomName(key: string, name: string): void {
     const trimmed = name.trim()
     if (trimmed === '') {
-      delete this.roomMeta[uuid]
+      delete this.roomMeta[key]
     } else {
-      this.roomMeta[uuid] = { ...this.roomMeta[uuid], name: trimmed }
+      this.roomMeta[key] = { ...this.roomMeta[key], name: trimmed }
     }
   }
 

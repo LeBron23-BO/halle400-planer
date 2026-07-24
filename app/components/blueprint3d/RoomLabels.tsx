@@ -3,12 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import type { Blueprint3d } from '@blueprint3d/blueprint3d'
-import {
-  assignRoomNames,
-  roomCentroid,
-  type PlanLabel,
-  type ResolvedRoomName
-} from '@/lib/roomNaming'
+import { resolveLabels, type PlanLabel, type ResolvedLabel } from '@/lib/roomNaming'
 
 interface RoomLabelsProps {
   blueprint3d: Blueprint3d
@@ -20,47 +15,45 @@ interface RoomLabelsProps {
 }
 
 /**
- * Zeigt die Raumnamen als DOM-Overlay ueber der 2D- UND 3D-Ansicht und macht sie
- * per Doppelklick editierbar (T4).
+ * Zeigt die PDF-Raumnamen als DOM-Overlay ueber der 2D- UND 3D-Ansicht und macht
+ * sie per Doppelklick editierbar (T4).
  *
- * Zwei getrennte Takte:
- *  - Zuordnung Name→Raum (teuer, Punkt-in-Polygon) nur bei Plan-Load / Wand-
- *    Aenderung / Umbenennung → React-State `names`.
- *  - Positionierung (billig) jeden Frame per rAF, rein imperativ ueber die
- *    DOM-Refs (KEIN React-State pro Frame → kein Re-Render-Sturm beim Drehen).
+ * Positioniert wird jedes Label an seiner PDF-Ankerposition (cm), projiziert auf
+ * den Bildschirm ueber die jeweils aktive Kamera — NICHT an einem abgeleiteten
+ * Raum (siehe roomNaming.ts fuer die Begruendung). Die Projektion laeuft
+ * imperativ pro Frame (rAF) ueber die DOM-Refs, damit das Drehen/Zoomen der
+ * 3D-Kamera keinen React-Re-Render ausloest.
  */
 export function RoomLabels({ blueprint3d, viewMode, active, labels }: RoomLabelsProps) {
-  const [names, setNames] = useState<Map<string, ResolvedRoomName>>(new Map())
+  const [resolved, setResolved] = useState<ResolvedLabel[]>([])
   const [editing, setEditing] = useState<string | null>(null)
 
-  const namesRef = useRef(names)
-  namesRef.current = names
+  const resolvedRef = useRef(resolved)
+  resolvedRef.current = resolved
   const containerRef = useRef<HTMLDivElement>(null)
   const labelRefs = useRef<Map<string, HTMLDivElement>>(new Map())
   const rafRef = useRef<number | null>(null)
 
-  // --- Namen (neu) zuordnen: Plan-Load, Wand-Aenderung, Label-/Override-Wechsel
+  // --- Namen aufloesen: PDF-Default + User-Overrides (roomMeta, key = labelKey)
   const recompute = useCallback(() => {
     const fp = blueprint3d.model.floorplan
-    setNames(assignRoomNames(fp.getRooms(), labels, fp.getAllRoomMeta()))
+    setResolved(resolveLabels(labels, fp.getAllRoomMeta()))
   }, [blueprint3d, labels])
 
   useEffect(() => {
     let mounted = true
     const fp = blueprint3d.model.floorplan
-    // fireOnUpdatedRooms feuert bei jeder Wand-Aktualisierung UND nach dem
-    // Plan-Load (loadFloorplan ruft update()). Der mounted-Guard ersetzt das
-    // fehlende removeListener der EventEmitter-API.
-    fp.fireOnUpdatedRooms(() => {
+    // Nach einem Plan-Load koennen persistierte Overrides dazukommen.
+    fp.roomLoadedCallbacks.add(() => {
       if (mounted) recompute()
     })
-    recompute() // Fall: der Plan war beim Mount schon geladen
+    recompute()
     return () => {
       mounted = false
     }
   }, [blueprint3d, recompute])
 
-  // --- Positionierung pro Frame (imperativ)
+  // --- Positionierung pro Frame (imperativ, kein State pro Frame)
   useEffect(() => {
     if (!active) return
     const three = blueprint3d.three
@@ -70,38 +63,28 @@ export function RoomLabels({ blueprint3d, viewMode, active, labels }: RoomLabels
 
     const ndc = new THREE.Vector3()
     const tick = () => {
-      const rooms = blueprint3d.model.floorplan.getRooms()
-      const byUuid = new Map<string, (typeof rooms)[number]>()
-      for (const r of rooms) byUuid.set(r.getUuid(), r)
-
       const w = container.clientWidth
       const h = container.clientHeight
 
-      namesRef.current.forEach((_rn, uuid) => {
-        const el = labelRefs.current.get(uuid)
-        if (!el) return
-        const room = byUuid.get(uuid)
-        if (!room) {
-          el.style.display = 'none'
-          return
-        }
-        const c = roomCentroid(room)
+      for (const label of resolvedRef.current) {
+        const el = labelRefs.current.get(label.key)
+        if (!el) continue
+        const [ax, ay] = label.anker_cm
 
         let x: number
         let y: number
         let behind = false
         if (viewMode === '3d') {
-          // Boden-Mittelpunkt (Floorplan-y → three-z, wie im Thumbnail-Code).
-          // Eigene NDC→Pixel-Rechnung statt three.projectVector, weil wir hier
-          // zusaetzlich das z fuer den "hinter der Kamera"-Test brauchen; die
-          // Umrechnung ist identisch (main.ts:projectVector).
-          ndc.set(c.x, 0, c.y).project(three.camera)
+          // Boden-Punkt an der PDF-Ankerposition (Floorplan-y → three-z).
+          // NDC→Pixel wie main.ts:projectVector, plus z fuer den "hinter der
+          // Kamera"-Test.
+          ndc.set(ax, 0, ay).project(three.camera)
           behind = ndc.z > 1
           x = ndc.x * (w / 2) + w / 2
           y = -(ndc.y * (h / 2)) + h / 2
         } else if (fp2d) {
-          x = fp2d.convertX(c.x)
-          y = fp2d.convertY(c.y)
+          x = fp2d.convertX(ax)
+          y = fp2d.convertY(ay)
         } else {
           x = -9999
           y = -9999
@@ -111,7 +94,7 @@ export function RoomLabels({ blueprint3d, viewMode, active, labels }: RoomLabels
         el.style.display = onscreen ? '' : 'none'
         el.style.transform =
           `translate(-50%, -50%) translate(${Math.round(x)}px, ${Math.round(y)}px)`
-      })
+      }
 
       rafRef.current = requestAnimationFrame(tick)
     }
@@ -122,15 +105,15 @@ export function RoomLabels({ blueprint3d, viewMode, active, labels }: RoomLabels
     }
   }, [active, viewMode, blueprint3d])
 
-  const setLabelRef = useCallback((uuid: string, el: HTMLDivElement | null) => {
-    if (el) labelRefs.current.set(uuid, el)
-    else labelRefs.current.delete(uuid)
+  const setLabelRef = useCallback((key: string, el: HTMLDivElement | null) => {
+    if (el) labelRefs.current.set(key, el)
+    else labelRefs.current.delete(key)
   }, [])
 
   const commitEdit = useCallback(
-    (uuid: string, value: string) => {
+    (key: string, value: string) => {
       // Leerer Name = Override loeschen → PDF-Default kommt zurueck (setRoomName).
-      blueprint3d.model.floorplan.setRoomName(uuid, value)
+      blueprint3d.model.floorplan.setRoomName(key, value)
       setEditing(null)
       recompute()
     },
@@ -144,37 +127,37 @@ export function RoomLabels({ blueprint3d, viewMode, active, labels }: RoomLabels
       ref={containerRef}
       className="absolute inset-0 z-40 overflow-hidden pointer-events-none"
     >
-      {[...names.entries()].map(([uuid, rn]) => (
+      {resolved.map((label) => (
         <div
-          key={uuid}
-          ref={(el) => setLabelRef(uuid, el)}
+          key={label.key}
+          ref={(el) => setLabelRef(label.key, el)}
           className="absolute left-0 top-0 pointer-events-auto select-none"
           style={{ willChange: 'transform' }}
-          onDoubleClick={() => setEditing(uuid)}
+          onDoubleClick={() => setEditing(label.key)}
           title="Doppelklick zum Umbenennen"
         >
-          {editing === uuid ? (
+          {editing === label.key ? (
             <input
               autoFocus
-              defaultValue={rn.name}
+              defaultValue={label.name}
               className="w-28 rounded border border-primary bg-background px-1 py-0.5 text-xs text-foreground shadow outline-none"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  commitEdit(uuid, (e.target as HTMLInputElement).value)
+                  commitEdit(label.key, (e.target as HTMLInputElement).value)
                 } else if (e.key === 'Escape') {
                   setEditing(null)
                 }
               }}
-              onBlur={(e) => commitEdit(uuid, e.target.value)}
+              onBlur={(e) => commitEdit(label.key, e.target.value)}
             />
           ) : (
             <div className="flex cursor-text flex-col items-center rounded bg-background/80 px-1.5 py-0.5 text-center shadow-sm backdrop-blur-sm">
               <span className="whitespace-nowrap text-xs font-medium leading-tight text-foreground">
-                {rn.name}
+                {label.name}
               </span>
-              {rn.zusatz && (
+              {label.zusatz && (
                 <span className="whitespace-nowrap text-[10px] leading-tight text-muted-foreground">
-                  {rn.zusatz}
+                  {label.zusatz}
                 </span>
               )}
             </div>

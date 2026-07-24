@@ -1,15 +1,15 @@
-import type { Room } from '@blueprint3d/model/room'
-
 /**
- * Zuordnung von PDF-Raumnamen zu den aus dem Wandgraphen abgeleiteten Raeumen.
+ * Aufloesung der anzuzeigenden Raumnamen aus den PDF-Beschriftungen plus
+ * etwaigen User-Umbenennungen.
  *
- * Warum ueberhaupt eine Laufzeit-Zuordnung statt einer festen Tabelle:
- * blueprint3d speichert keine Raeume, es berechnet sie nach jeder Wand-Aenderung
- * neu (src/model/floorplan.ts -> findRooms). Die Identitaet eines Raums ist seine
- * Raum-UUID = die sortierten Ecken-IDs (room.ts:50). Loescht der Nutzer eine Ecke
- * und setzt sie neu, aendert sich diese UUID und eine feste Zuordnung risse ab.
- * Der PDF-Ankerpunkt dagegen ist fix — er findet seinen Raum per Punkt-in-Polygon
- * auch nach solchen Editier-Aenderungen wieder.
+ * WARUM an der Ankerposition und NICHT an einem abgeleiteten Raum (Befund
+ * 2026-07-24, per Laufzeit-Diagnose belegt): blueprint3d leitet Raeume als die
+ * kleinsten Zyklen des Wandgraphen ab. Nach der PDF-treuen Wandextraktion bilden
+ * 6 der 18 beschrifteten Zonen (Aufzug, Empfang, Teamtable, Workshop-Nord,
+ * Workspace-Sued, Break-out) KEINE eigene geschlossene Zelle — sie fallen alle in
+ * denselben grossen konkaven Rest-/Flurraum und gingen bei einer Raum-Zuordnung
+ * bis auf einen verloren. Der PDF-Ankerpunkt dagegen ist die Grundwahrheit und
+ * fuer jede Beschriftung eindeutig. Deshalb haengt der Name an der Ankerposition.
  */
 
 /** Ein aus der PDF exportierter Raum-Label-Anker (cm, siehe export_blueprint.py). */
@@ -21,105 +21,45 @@ export interface PlanLabel {
   anker_cm: [number, number]
 }
 
-/** Der einem Raum zugeordnete Name samt Herkunft. */
-export interface ResolvedRoomName {
+/** Der aufgeloeste, anzuzeigende Raumname. */
+export interface ResolvedLabel {
+  /** Stabiler Persistenz-Schluessel (die PDF-Ankerposition, aendert sich nie). */
+  key: string
+  /** Angezeigter Name: User-Umbenennung, sonst PDF-Default. */
   name: string
+  /** PDF-Zusatz (z.B. "6-8 Personen") — nur solange kein User-Override greift. */
   zusatz: string
-  /** 'pdf' = aus der Grundwahrheit abgeleitet, 'user' = im Editor umbenannt. */
+  anker_cm: [number, number]
   source: 'pdf' | 'user'
 }
 
-/** Schwerpunkt (Mittel der Innen-Ecken) eines Raums, in cm. */
-export function roomCentroid(room: Room): { x: number; y: number } {
-  const pts = room.interiorCorners
-  if (pts.length === 0) return { x: 0, y: 0 }
-  let sx = 0
-  let sy = 0
-  for (const p of pts) {
-    sx += p.x
-    sy += p.y
-  }
-  return { x: sx / pts.length, y: sy / pts.length }
-}
-
-/** Punkt-in-Polygon per Ray-Casting auf einem einfachen Polygon. */
-export function pointInPolygon(
-  x: number,
-  y: number,
-  poly: { x: number; y: number }[]
-): boolean {
-  let inside = false
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const xi = poly[i].x
-    const yi = poly[i].y
-    const xj = poly[j].x
-    const yj = poly[j].y
-    const intersect =
-      yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi
-    if (intersect) inside = !inside
-  }
-  return inside
+/**
+ * Stabiler Schluessel eines Labels = seine PDF-Ankerposition. Eindeutig (jede
+ * Beschriftung hat eine andere Position) und stabil ueber Sessions/Wand-Edits.
+ */
+export function labelKey(label: PlanLabel): string {
+  return `${label.anker_cm[0]},${label.anker_cm[1]}`
 }
 
 /**
- * Ordnet die PDF-Label den aktuellen Raeumen zu und legt die User-Umbenennungen
- * (roomMeta) darueber. Rueckgabe: Raum-UUID -> aufgeloester Name.
- *
- * Reihenfolge der Wahrheit:
- *  1. PDF-Default: Label -> Raum per Punkt-in-Polygon (Innen-Ecken). Faellt ein
- *     Ankerpunkt in keinen Umriss (z.B. dicht an einer Wand), greift als
- *     Reparaturpfad der naechstgelegene Raum-Schwerpunkt.
- *  2. User-Override: ein in roomMeta gesetzter Name sticht den PDF-Default.
+ * Loest die anzuzeigenden Namen auf: PDF-Default aus dem Label, ueberschrieben
+ * durch eine etwaige User-Umbenennung (`overrides`, gekeyt via labelKey).
+ * Ein leerer Override loescht sich selbst schon in floorplan.setRoomName —
+ * hier gewinnt jeder nicht-leere Override den Default.
  */
-export function assignRoomNames(
-  rooms: Room[],
+export function resolveLabels(
   labels: PlanLabel[],
-  roomMeta: Record<string, { name: string }>
-): Map<string, ResolvedRoomName> {
-  const result = new Map<string, ResolvedRoomName>()
-
-  for (const label of labels) {
-    const [lx, ly] = label.anker_cm
-
-    // Primaer: welcher Raum-Umriss enthaelt den Ankerpunkt?
-    let ziel: Room | null = null
-    for (const room of rooms) {
-      if (pointInPolygon(lx, ly, room.interiorCorners)) {
-        ziel = room
-        break
-      }
+  overrides: Record<string, { name: string }>
+): ResolvedLabel[] {
+  return labels.map((l) => {
+    const key = labelKey(l)
+    const ov = overrides[key]?.name?.trim()
+    return {
+      key,
+      name: ov || l.text,
+      zusatz: ov ? '' : l.zusatz ?? '',
+      anker_cm: l.anker_cm,
+      source: ov ? 'user' : 'pdf'
     }
-    // Reparaturpfad: naechster Schwerpunkt (Ankerpunkt lag knapp ausserhalb).
-    if (!ziel) {
-      let best = Infinity
-      for (const room of rooms) {
-        const c = roomCentroid(room)
-        const d = (c.x - lx) ** 2 + (c.y - ly) ** 2
-        if (d < best) {
-          best = d
-          ziel = room
-        }
-      }
-    }
-    if (!ziel) continue
-
-    const uuid = ziel.getUuid()
-    // Bei (unerwarteter) Kollision zweier Label im selben Raum bleibt der erste
-    // Treffer stehen — deterministisch nach Label-Reihenfolge, keine stille Wahl.
-    if (result.has(uuid)) continue
-    result.set(uuid, {
-      name: label.text,
-      zusatz: label.zusatz ?? '',
-      source: 'pdf'
-    })
-  }
-
-  // User-Umbenennungen ueberschreiben den Default (leere Namen sind gar nicht
-  // erst in roomMeta — setRoomName loescht bei leerer Eingabe).
-  for (const uuid in roomMeta) {
-    const name = roomMeta[uuid]?.name?.trim()
-    if (name) result.set(uuid, { name, zusatz: '', source: 'user' })
-  }
-
-  return result
+  })
 }
