@@ -67,6 +67,12 @@ Historie verworfen — sonst spielte ein Rückgängig Wände eines fremden Grund
 und Raumnamen (die liegen getrennt im localStorage; nähme ein Rückgängig sie mit,
 zeigte der Plan einen anderen Namen als der gespeicherte Stand).
 
+Nachprüfbar bei laufendem Server: **`node tools/pruefe-undo.mjs`** fährt die
+zwölf Schritte im echten Browser ab und misst die gezeichneten Pixel vor und
+nach jedem Zug (Exit 0 = bestanden). Dass die Wiederherstellung auf Abweichung
+**0** landet, beweist zugleich, dass die Ansicht nicht springt — ein verschobener
+Ausschnitt ergäbe bei identischer Geometrie ein anderes Bild.
+
 ## Bekannte offene Punkte
 
 - **Mobile Kopfleiste überlappt** (Upstream-Layout): bei 390 px verdeckt der

@@ -24,6 +24,7 @@ python tools/compare_plan.py       # -> data/vergleich.png : Original vs. Nachbi
 cd app && ./node_modules/.bin/next build && cp out/de.html out/index.html   # statischer Export (T6: Deutsch ist Standardsprache)
 node tools/serve-local.mjs         # Auslieferung: PC http://localhost:3301/?plan=halle400
                                    #               Handy https://zen.taild936f8.ts.net:8458/?plan=halle400
+node tools/pruefe-undo.mjs         # T5a: Rueckgaengig/Wiederholen am gerenderten Canvas (Exit 0 = bestanden)
 ```
 
 E2E-Beweis (der einzige, der die Auslieferung wirklich prüft):
