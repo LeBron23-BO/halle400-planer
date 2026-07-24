@@ -247,3 +247,51 @@ feinere Parameter-Tuning, sondern eine **zweite, unabhängige Frage an dieselben
 Daten**. Hier war es die Plausibilität der Raumbreite — sie stützt sich auf
 gar keine Bildinformation und fand trotzdem drei Fehler, die die Sichtprüfung
 allein übersehen hätte.
+
+## Außenkontur mit Versprüngen (T2d, 2026-07-24)
+
+Die Kalibrierung aus T2b (`extract_plan.py`) hat die Fassade spaltenweise
+gemessen, aber nur die vier **Extremwerte** behalten — daraus wurde eine
+Außenkontur als umschließendes Rechteck (0/0 .. 78/15.31 m). Der Verlauf mit
+seinen Versprüngen ging dabei verloren. T2d liest die Nord- und Südkante wieder
+Spalte für Spalte aus dem Rasterbild (`build_walls._kante_verlauf`) und leitet
+daraus eine Treppen-Kontur ab.
+
+### Ein echter Versprung, gemessen — nicht mehrere geraten
+
+Der spaltenweise Verlauf zeigt genau **einen** eindeutigen Versprung: den
+**Aufzug-Vorbau bei x 18.5..22.25 m**, der ~3.52 m über die Nordkante nach
+Norden hinaussteht (der Raum-Anker der Beschriftung „Aufzug" liegt bei
+y = -1.78 m — das ist das Führungslinien-Ende *im* Vorbau, die Außenkante
+steht weiter draußen). Er ist im Overlay wie im Untereinander-Vergleich
+deckungsgleich mit dem gezeichneten Aufzugskasten.
+
+Alles andere schwankt um ±0.4 m um die Referenzkante — das ist der Freihand-
+Duktus, kein Versprung. Ein schwacher Süd-Rücksprung bei x 12.5..17.5 m (~0.5 m)
+liegt im selben Rauschband und wird **bewusst nicht** nachgebildet.
+
+### Die Schwelle ist die eigentliche Entscheidung
+
+`VERSPRUNG_SCHWELLE_M = 0.8` trennt echten Versprung von Zeichen-Ungenauigkeit —
+bewusst über das gemessene Freihand-Zittern (~0.4 m) gelegt, sodass der
+3.5-m-Vorbau klar qualifiziert, das 0.5-m-Zittern nicht. Zusätzlich muss eine
+Abweichung ≥ 1.0 m lang sein (`VERSPRUNG_MINDEST_M`), damit eine Türöffnung
+oder eine einzelne Zeichenlücke keinen Zacken erzeugt.
+
+**Kritischer Griff beim Messen:** Das Suchfenster der Nordkante reicht
+`KONTUR_PUFFER_M = 4.0` m *über* die Referenzkante hinaus — sonst würde genau
+der Vorbau, der nach Norden übersteht, abgeschnitten und nie gefunden. Ebenso
+musste `compare_plan.py` oben mehr Luft bekommen, sonst schneidet das
+Prüfbild den Versprung ab, den es zeigen soll.
+
+**Übertragbar:** Bei einer freihändig gezeichneten Vorlage ist die
+Versprung-Schwelle keine Nebensache, sondern die zentrale Design-Entscheidung —
+sie zieht die Grenze zwischen *echter Geometrie* und *Zeichenrauschen*. Im
+Zweifel gewinnt die gerade Kante: eine erfundene Zacke sieht exakt aus und ist
+falsch, eine geglättete Kante ist ehrlich ungenau.
+
+**Blender-Weiterverwendung (Ausblick):** `data/walls.json` ist die neutrale
+Geometrie-Quelle, die später auch ein 3D-Rendering speist. Was ihr für ein
+Volumenmodell noch fehlt, ist die **Wandhöhe** — die ist aus einem Grundriss
+grundsätzlich nicht messbar und muss aus einer anderen Quelle kommen
+(Axonometrie/Schnitt oder als gesetzte Raumhöhe). Sie wird in T3b gesetzt.

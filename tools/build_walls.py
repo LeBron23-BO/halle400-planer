@@ -236,6 +236,112 @@ def _flur_segmente(maske: np.ndarray, y_display: float) -> list[tuple[float, flo
     return [(a, b) for a, b in segmente if b - a >= SEGMENT_MIN_M]
 
 
+def _kante_verlauf(maske: np.ndarray, seite: str) -> tuple[list[float], list[float | None]]:
+    """Spaltenweiser Verlauf einer Aussenkante als (x_m, kante_m|None).
+
+    Von aussen nach innen gesucht: die erste Zeile mit genug dunklen Pixeln ist
+    die Fassade. Das Suchfenster reicht KONTUR_PUFFER_M ueber die Referenzkante
+    hinaus, sonst wuerde der Aufzug-Vorbau (der nach Norden uebersteht)
+    abgeschnitten. Der kleine horizontale Lauf (KONTUR_FENSTER_PX) filtert
+    einzelne Stoerpixel; die Raumbeschriftungen liegen weiter aussen als der
+    Puffer und stoeren deshalb nicht.
+    """
+    px_pro_m = PX_PRO_M * ZOOM
+    c0, c1 = int(round(X0_DISPLAY * ZOOM)), int(round(X1_DISPLAY * ZOOM))
+    hoehe = maske.shape[0]
+    if seite == "nord":
+        r_aussen = max(0, int(round((Y_NORDKANTE - KONTUR_PUFFER_M * PX_PRO_M) * ZOOM)))
+        r_innen = int(round(Y_FLUR_NORD * ZOOM))
+        reihen = range(r_aussen, r_innen)
+    else:
+        r_aussen = min(hoehe, int(round((Y_SUEDKANTE + KONTUR_PUFFER_M * PX_PRO_M) * ZOOM))) - 1
+        r_innen = int(round(Y_FLUR_SUED * ZOOM))
+        reihen = range(r_aussen, r_innen, -1)
+
+    xs: list[float] = []
+    kante: list[float | None] = []
+    x_m = 0.0
+    while x_m <= LAENGE_M + 1e-9:
+        spalte = int(round((X0_DISPLAY + x_m * PX_PRO_M) * ZOOM))
+        lo, hi = max(c0, spalte - KONTUR_FENSTER_PX), min(c1, spalte + KONTUR_FENSTER_PX + 1)
+        gefunden = None
+        for zeile in reihen:
+            if maske[zeile, lo:hi].sum() >= KONTUR_MINDARK:
+                gefunden = y_zu_meter(zeile / ZOOM)
+                break
+        xs.append(round(x_m, 2))
+        kante.append(gefunden)
+        x_m += KONTUR_SCHRITT_M
+    return xs, kante
+
+
+def _verspruenge(xs: list[float], kante: list[float | None],
+                 referenz_m: float) -> list[tuple[float, float, float]]:
+    """Zusammenhaengende Bereiche, in denen die Kante deutlich von der Referenz
+    abweicht, als (x_von, x_bis, y_median). Luecken (None) werden vom naechsten
+    gueltigen Nachbarn ueberbrueckt (Tueroeffnung/Zeichenluecke)."""
+    gueltig = [(i, v) for i, v in enumerate(kante) if v is not None]
+    if not gueltig:
+        return []
+    voll = [v if v is not None
+            else kante[min(gueltig, key=lambda t: abs(t[0] - i))[0]]
+            for i, v in enumerate(kante)]
+    weit = [abs(k - referenz_m) >= VERSPRUNG_SCHWELLE_M for k in voll]
+
+    segmente: list[tuple[float, float, float]] = []
+    i, n = 0, len(xs)
+    while i < n:
+        if not weit[i]:
+            i += 1
+            continue
+        j = i
+        while j < n and weit[j]:
+            j += 1
+        x_von, x_bis = xs[i], round(xs[j - 1] + KONTUR_SCHRITT_M, 2)
+        if x_bis - x_von >= VERSPRUNG_MINDEST_M:
+            y_med = round(float(np.median([voll[k] for k in range(i, j)])), 2)
+            segmente.append((round(x_von, 2), x_bis, y_med))
+        i = j
+    return segmente
+
+
+def _kontur_punkte(vorspruenge: list[tuple[float, float, float]],
+                   referenz_m: float) -> list[tuple[float, float]]:
+    """Treppen-Polylinie einer Kante von x=0 bis x=LAENGE, Referenz + Versprünge."""
+    pkte = [(0.0, referenz_m)]
+    for a, b, y in sorted(vorspruenge):
+        pkte += [(a, referenz_m), (a, y), (b, y), (b, referenz_m)]
+    pkte.append((LAENGE_M, referenz_m))
+    sauber = [pkte[0]]
+    for p in pkte[1:]:
+        if p != sauber[-1]:
+            sauber.append(p)
+    return sauber
+
+
+def _kontur_waende(maske: np.ndarray) -> list[dict]:
+    """Aussenkontur als achsparallele 'aussen'-Segmente: Nord-Treppe (mit dem
+    Aufzug-Vorbau), gerade Suedkante und die beiden Seitenkanten. Alle Ecken
+    teilen ihre Koordinaten, damit export_blueprint sie zu geteilten Ecken
+    verschmilzt."""
+    poly_nord = _kontur_punkte(_verspruenge(*_kante_verlauf(maske, "nord"), 0.0), 0.0)
+    poly_sued = _kontur_punkte(_verspruenge(*_kante_verlauf(maske, "sued"), TIEFE_M), TIEFE_M)
+
+    waende: list[dict] = []
+    for name, poly in (("Nordkontur", poly_nord), ("Suedkontur", poly_sued)):
+        for (x0, y0), (x1, y1) in zip(poly, poly[1:]):
+            waende.append({
+                "art": "aussen",
+                "von": [round(x0, 2), round(y0, 2)], "bis": [round(x1, 2), round(y1, 2)],
+                "quelle": f"T2d {name} (spaltenweise gemessen)",
+            })
+    waende.append({"art": "aussen", "von": [0.0, 0.0], "bis": [0.0, TIEFE_M],
+                   "quelle": "T2d Westkante"})
+    waende.append({"art": "aussen", "von": [LAENGE_M, 0.0], "bis": [LAENGE_M, TIEFE_M],
+                   "quelle": "T2d Ostkante"})
+    return waende
+
+
 def baue(pdf: Path = PDF_STANDARD, streng: float = BELEG_STRENG) -> dict:
     seite = fitz.open(pdf)[0]
     maske = dunkelmaske(seite)
@@ -243,13 +349,9 @@ def baue(pdf: Path = PDF_STANDARD, streng: float = BELEG_STRENG) -> dict:
 
     waende: list[dict] = []
 
-    # 1 — Aussenkontur
-    ecken = [(0.0, 0.0), (LAENGE_M, 0.0), (LAENGE_M, TIEFE_M), (0.0, TIEFE_M)]
-    for i, von in enumerate(ecken):
-        waende.append({
-            "art": "aussen", "von": list(von), "bis": list(ecken[(i + 1) % 4]),
-            "quelle": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
-        })
+    # 1 — Aussenkontur: spaltenweise gemessene Treppe mit Verspruengen (T2d),
+    #     nicht mehr das umschliessende Rechteck.
+    waende.extend(_kontur_waende(maske))
 
     # 2 — Flurachsen, nur wo gezeichnet
     for name, y_display in (("flur-nord", Y_FLUR_NORD), ("flur-sued", Y_FLUR_SUED)):

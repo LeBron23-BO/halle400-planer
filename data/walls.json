@@ -13,10 +13,82 @@
         0.0
       ],
       "bis": [
+        18.5,
+        0.0
+      ],
+      "quelle": "T2d Nordkontur (spaltenweise gemessen)"
+    },
+    {
+      "art": "aussen",
+      "von": [
+        18.5,
+        0.0
+      ],
+      "bis": [
+        18.5,
+        -3.52
+      ],
+      "quelle": "T2d Nordkontur (spaltenweise gemessen)"
+    },
+    {
+      "art": "aussen",
+      "von": [
+        18.5,
+        -3.52
+      ],
+      "bis": [
+        22.25,
+        -3.52
+      ],
+      "quelle": "T2d Nordkontur (spaltenweise gemessen)"
+    },
+    {
+      "art": "aussen",
+      "von": [
+        22.25,
+        -3.52
+      ],
+      "bis": [
+        22.25,
+        0.0
+      ],
+      "quelle": "T2d Nordkontur (spaltenweise gemessen)"
+    },
+    {
+      "art": "aussen",
+      "von": [
+        22.25,
+        0.0
+      ],
+      "bis": [
         78.0,
         0.0
       ],
-      "quelle": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)"
+      "quelle": "T2d Nordkontur (spaltenweise gemessen)"
+    },
+    {
+      "art": "aussen",
+      "von": [
+        0.0,
+        15.31
+      ],
+      "bis": [
+        78.0,
+        15.31
+      ],
+      "quelle": "T2d Suedkontur (spaltenweise gemessen)"
+    },
+    {
+      "art": "aussen",
+      "von": [
+        0.0,
+        0.0
+      ],
+      "bis": [
+        0.0,
+        15.31
+      ],
+      "quelle": "T2d Westkante"
     },
     {
       "art": "aussen",
@@ -28,31 +100,7 @@
         78.0,
         15.31
       ],
-      "quelle": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)"
-    },
-    {
-      "art": "aussen",
-      "von": [
-        78.0,
-        15.31
-      ],
-      "bis": [
-        0.0,
-        15.31
-      ],
-      "quelle": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)"
-    },
-    {
-      "art": "aussen",
-      "von": [
-        0.0,
-        15.31
-      ],
-      "bis": [
-        0.0,
-        0.0
-      ],
-      "quelle": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)"
+      "quelle": "T2d Ostkante"
     },
     {
       "art": "flur",

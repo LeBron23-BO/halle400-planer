@@ -62,15 +62,19 @@ def main() -> int:
     original = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
     waende = json.loads(args.walls.read_text(encoding="utf-8"))["waende"]
 
-    luft = 0.8 * PX_PRO_M
-    hoehe = int((Y_SUEDKANTE - Y_NORDKANTE + 2 * luft) * z)
+    # Oben mehr Luft: seit T2d steht der Aufzug-Vorbau ~3.5 m ueber die
+    # Nordkante hinaus. Mit nur 0.8 m Rand wuerde genau der Versprung, den
+    # dieses Bild pruefen soll, abgeschnitten.
+    luft_oben = 4.2 * PX_PRO_M
+    luft_unten = 0.8 * PX_PRO_M
+    hoehe = int((Y_SUEDKANTE - Y_NORDKANTE + luft_oben + luft_unten) * z)
     fb, fk = schrift(int(15 * z)), schrift(int(9 * z))
 
     streifen: list[Image.Image] = []
     for a, b in ABSCHNITTE:
         x0 = int(meter_zu_x(a) * z)
         x1 = int(meter_zu_x(b) * z)
-        y0 = int((Y_NORDKANTE - luft) * z)
+        y0 = int((Y_NORDKANTE - luft_oben) * z)
         breite = x1 - x0
 
         # oben: das Original

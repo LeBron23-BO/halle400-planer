@@ -25,6 +25,22 @@
     "x": 1270.0,
     "y": 0.0
    },
+   "91cc28cb-54d5-922a-710c-8f9fb26893f6": {
+    "x": 1850.0,
+    "y": 0.0
+   },
+   "1e7fcdd3-9f55-e40b-8d7f-8b8bc1c58f48": {
+    "x": 1850.0,
+    "y": -352.0
+   },
+   "f7f2a927-53fe-318b-2e07-a01135a4fce6": {
+    "x": 2225.0,
+    "y": -352.0
+   },
+   "46c947f0-701b-7694-426d-c699f25f5bd4": {
+    "x": 2225.0,
+    "y": 0.0
+   },
    "d8402bf9-0dea-1320-6fa4-09b3a490d70b": {
     "x": 2376.0,
     "y": 0.0
@@ -72,10 +88,6 @@
    "715b3263-a218-20a3-eead-764b5d65171c": {
     "x": 7800.0,
     "y": 0.0
-   },
-   "4aaa07e1-8d71-dc10-882f-11bf9f3bd805": {
-    "x": 7800.0,
-    "y": 1531.0
    },
    "3f51b6ef-2f5e-4ede-b058-301805505d37": {
     "x": 0.0,
@@ -131,6 +143,10 @@
    },
    "fed934d8-db28-1cfe-2ab6-721b0074b9d5": {
     "x": 7200.0,
+    "y": 1531.0
+   },
+   "4aaa07e1-8d71-dc10-882f-11bf9f3bd805": {
+    "x": 7800.0,
     "y": 1531.0
    },
    "31efc30d-3a08-42f4-8c43-314fb1c2ebba": {
@@ -294,205 +310,229 @@
    {
     "corner1": "3eac1f3c-2ef5-215e-b9bd-13e28ae0975a",
     "corner2": "261aed9d-9fee-d584-0187-84e6e9aed82d",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "261aed9d-9fee-d584-0187-84e6e9aed82d",
     "corner2": "aec028ae-55b9-38c2-f776-0b93fd1b03ce",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "aec028ae-55b9-38c2-f776-0b93fd1b03ce",
     "corner2": "b046dc67-6b3c-500b-59e3-faba6c3e2931",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "b046dc67-6b3c-500b-59e3-faba6c3e2931",
     "corner2": "fe9a3e92-c699-9638-f3b7-83c344d6ff7f",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "fe9a3e92-c699-9638-f3b7-83c344d6ff7f",
     "corner2": "47419bfa-1d67-798f-1fc9-28546a797386",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "47419bfa-1d67-798f-1fc9-28546a797386",
+    "corner2": "91cc28cb-54d5-922a-710c-8f9fb26893f6",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "1e7fcdd3-9f55-e40b-8d7f-8b8bc1c58f48",
+    "corner2": "91cc28cb-54d5-922a-710c-8f9fb26893f6",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "1e7fcdd3-9f55-e40b-8d7f-8b8bc1c58f48",
+    "corner2": "f7f2a927-53fe-318b-2e07-a01135a4fce6",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "f7f2a927-53fe-318b-2e07-a01135a4fce6",
+    "corner2": "46c947f0-701b-7694-426d-c699f25f5bd4",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "46c947f0-701b-7694-426d-c699f25f5bd4",
     "corner2": "d8402bf9-0dea-1320-6fa4-09b3a490d70b",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "d8402bf9-0dea-1320-6fa4-09b3a490d70b",
     "corner2": "14a64471-6415-f976-2bdf-2c3f93d99e0f",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "14a64471-6415-f976-2bdf-2c3f93d99e0f",
     "corner2": "a80b9040-4695-efcb-daed-8b7c223eec1f",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "a80b9040-4695-efcb-daed-8b7c223eec1f",
     "corner2": "ed41419c-caea-9716-b9ba-dab999fd4386",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "ed41419c-caea-9716-b9ba-dab999fd4386",
     "corner2": "09f4b409-8ce5-95c6-c90b-1d3145a2ddc3",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "09f4b409-8ce5-95c6-c90b-1d3145a2ddc3",
     "corner2": "f09a4ae8-ecaa-7532-85e5-6ef58bc7724e",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "f09a4ae8-ecaa-7532-85e5-6ef58bc7724e",
     "corner2": "16db8d61-5556-f30d-128c-11fc4f176ea1",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "16db8d61-5556-f30d-128c-11fc4f176ea1",
     "corner2": "e1d76590-1b54-1e33-6df2-31339ad6c1e9",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "e1d76590-1b54-1e33-6df2-31339ad6c1e9",
     "corner2": "df4f6e18-302c-31a8-e765-39c9d5a54eaf",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "df4f6e18-302c-31a8-e765-39c9d5a54eaf",
     "corner2": "f6219242-c72f-e256-9895-d15247a2eb89",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "f6219242-c72f-e256-9895-d15247a2eb89",
     "corner2": "d965186f-e58e-8fda-30e7-206ae9773687",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "d965186f-e58e-8fda-30e7-206ae9773687",
     "corner2": "715b3263-a218-20a3-eead-764b5d65171c",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
-    "art": "aussen"
-   },
-   {
-    "corner1": "715b3263-a218-20a3-eead-764b5d65171c",
-    "corner2": "4aaa07e1-8d71-dc10-882f-11bf9f3bd805",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Nordkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "3f51b6ef-2f5e-4ede-b058-301805505d37",
     "corner2": "9d5993e2-27c0-1ed8-f0b8-a7d3c0880570",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Suedkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "9d5993e2-27c0-1ed8-f0b8-a7d3c0880570",
     "corner2": "d8f9d976-d8c3-7e95-6526-f8182f8d15e5",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Suedkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "d8f9d976-d8c3-7e95-6526-f8182f8d15e5",
     "corner2": "5e33cd16-1b9e-88f4-a5a5-058a84d3a90e",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Suedkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "5e33cd16-1b9e-88f4-a5a5-058a84d3a90e",
     "corner2": "d2a811ec-fe79-7bf3-3b9f-179e011bcbfb",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Suedkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "d2a811ec-fe79-7bf3-3b9f-179e011bcbfb",
     "corner2": "ea7f7f7e-02a9-5f58-4aa5-7070d7c27351",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Suedkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "ea7f7f7e-02a9-5f58-4aa5-7070d7c27351",
     "corner2": "62c9e197-31f1-a1ab-397e-05a1ef92b801",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Suedkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "62c9e197-31f1-a1ab-397e-05a1ef92b801",
     "corner2": "af66e22e-08b4-e54f-94f0-a5d64f8c8011",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Suedkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "af66e22e-08b4-e54f-94f0-a5d64f8c8011",
     "corner2": "29a7db33-e3b6-fe07-0283-0f229496103a",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Suedkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "29a7db33-e3b6-fe07-0283-0f229496103a",
     "corner2": "2ceb0849-3503-8c0a-ef77-0c5bcc4a72fb",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Suedkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "2ceb0849-3503-8c0a-ef77-0c5bcc4a72fb",
     "corner2": "b7605296-d23d-822f-c8fa-274af67df4b1",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Suedkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "b7605296-d23d-822f-c8fa-274af67df4b1",
     "corner2": "c881c56a-d236-1599-1932-d333c013cc64",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Suedkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "c881c56a-d236-1599-1932-d333c013cc64",
     "corner2": "4800d666-ca66-68e4-8821-354a8fe85764",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Suedkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "4800d666-ca66-68e4-8821-354a8fe85764",
     "corner2": "fed934d8-db28-1cfe-2ab6-721b0074b9d5",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Suedkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "fed934d8-db28-1cfe-2ab6-721b0074b9d5",
     "corner2": "4aaa07e1-8d71-dc10-882f-11bf9f3bd805",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Suedkontur (spaltenweise gemessen)",
     "art": "aussen"
    },
    {
     "corner1": "3eac1f3c-2ef5-215e-b9bd-13e28ae0975a",
     "corner2": "31efc30d-3a08-42f4-8c43-314fb1c2ebba",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Westkante",
     "art": "aussen"
    },
    {
     "corner1": "31efc30d-3a08-42f4-8c43-314fb1c2ebba",
     "corner2": "3f51b6ef-2f5e-4ede-b058-301805505d37",
-    "herkunft": "T2b gemessene Aussenkanten (Rechteck-Vereinfachung)",
+    "herkunft": "T2d Westkante",
+    "art": "aussen"
+   },
+   {
+    "corner1": "715b3263-a218-20a3-eead-764b5d65171c",
+    "corner2": "4aaa07e1-8d71-dc10-882f-11bf9f3bd805",
+    "herkunft": "T2d Ostkante",
     "art": "aussen"
    },
    {
