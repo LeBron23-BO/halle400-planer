@@ -19,7 +19,9 @@ import { blueprintStorage } from '@/services/storage'
 
 import { Blueprint3d } from '@blueprint3d/blueprint3d'
 import { floorplannerModes } from '@blueprint3d/floorplanner/floorplanner_view'
-import { Configuration, configDimUnit } from '@blueprint3d/core/configuration'
+import {
+  Configuration, configDimUnit, configWallHeight, configWallThickness
+} from '@blueprint3d/core/configuration'
 import type { Item } from '@blueprint3d/items/item'
 import type { HalfEdge } from '@blueprint3d/model/half_edge'
 import type { Room } from '@blueprint3d/model/room'
@@ -104,6 +106,15 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
     if (savedUnit) {
       Configuration.setValue(configDimUnit, savedUnit)
     }
+
+    // Halle 400: die Buero-Einbauten sind 3.00 m hoch. Ein Grundriss gibt keine
+    // Hoehe her (T3b) — 300 cm ist die vom Nutzer gesetzte Raumhoehe, bewusst
+    // statt des 250-cm-Defaults. Dicke ebenso bewusst gesetzt: 12.5 cm als
+    // Standard-Trennwand (Aussenwaende sind real dicker — bekannte Vereinfachung,
+    // die Wandliste fuehrt Mittellinien). MUSS vor loadSerialized stehen, weil
+    // Wall Hoehe/Dicke bei der Erzeugung aus Configuration liest, nicht aus dem JSON.
+    Configuration.setValue(configWallHeight, 300)
+    Configuration.setValue(configWallThickness, 12.5)
 
     const opts = {
       floorplannerElement: 'floorplanner-canvas',
