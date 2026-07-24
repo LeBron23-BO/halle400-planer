@@ -9,6 +9,19 @@ type FloorplannerMode = (typeof floorplannerModes)[keyof typeof floorplannerMode
 /** how much will we move a corner to make a wall axis aligned (cm) */
 const snapTolerance = 25
 
+/**
+ * Wie nah der Zeiger an einer Wand/Ecke sein muss, damit sie greifbar wird —
+ * in BILDSCHIRM-Pixeln, nicht in Zentimetern (T7).
+ *
+ * Vorher war das eine feste Weltgroesse (10 cm). Solange der Massstab fest war,
+ * ging das auf. Seit die Ansicht standardmaessig den ganzen Grundriss zeigt,
+ * waeren 10 cm nur noch rund 2 Pixel — die Waende waeren kaum noch zu treffen.
+ * Umgekehrt soll die Zone beim Hineinzoomen nicht mitwachsen, sonst greift man
+ * im Detail versehentlich die Nachbarwand. Konstant in Pixeln ist beides
+ * richtig: bei Zoom 1 entspricht das rund 16 cm, also etwa dem alten Wert.
+ */
+const GREIF_TOLERANZ_PX = 8
+
 /** Was ueber ein Zurueckspielen hinweg erhalten bleiben muss (T5a). */
 type AnsichtsZustand = {
   originX: number
@@ -323,8 +336,19 @@ export class Floorplanner {
 
     // update object target
     if (this.mode != floorplannerModes.DRAW && !this.mouseDown) {
-      const hoverCorner: Corner | null = this.floorplan.overlappedCorner(this.mouseX, this.mouseY)
-      const hoverWall: Wall | null = this.floorplan.overlappedWall(this.mouseX, this.mouseY)
+      // Greifzone in Weltkoordinaten umrechnen, damit sie auf dem Bildschirm
+      // bei jedem Zoom gleich gross bleibt (T7).
+      const toleranz = GREIF_TOLERANZ_PX * this.cmPerPixel
+      const hoverCorner: Corner | null = this.floorplan.overlappedCorner(
+        this.mouseX,
+        this.mouseY,
+        toleranz
+      )
+      const hoverWall: Wall | null = this.floorplan.overlappedWall(
+        this.mouseX,
+        this.mouseY,
+        toleranz
+      )
       let draw = false
       if (hoverCorner != this.activeCorner) {
         this.activeCorner = hoverCorner

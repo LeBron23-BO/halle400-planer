@@ -87,13 +87,18 @@ await page.evaluate(() => {
     el.dispatchEvent(new MouseEvent(typ, { bubbles: true, clientX: r.x + x, clientY: r.y + y }))
   }
 
-  // Tinte = Zahl der Pixel, die nicht Hintergrund sind: wieviel ist gezeichnet.
+  // Tinte = Zahl der wirklich BEMALTEN Pixel.
+  // Der Alpha-Test ist kein Detail: ein Canvas ohne Hintergrund liefert fuer
+  // unbemalte Flaechen RGB 0,0,0 bei alpha 0. Ohne ihn zaehlt jede leere
+  // Flaeche als Tinte — seit die Ansicht den ganzen Grundriss einpasst (T7),
+  // ist der Grossteil des Bildes leer, und der aufgeblaehte Grundwert machte
+  // eine daran gekoppelte Toleranz groesser als die gesuchte Aenderung.
   window.__tinte = () => {
     const el = c()
     const d = el.getContext('2d').getImageData(0, 0, el.width, el.height).data
     let n = 0
     for (let i = 0; i < d.length; i += 4) {
-      if (d[i] < 240 || d[i + 1] < 240 || d[i + 2] < 240) n++
+      if (d[i + 3] > 10 && (d[i] < 240 || d[i + 1] < 240 || d[i + 2] < 240)) n++
     }
     return n
   }
@@ -209,7 +214,12 @@ const nochUndo = await page.evaluate(
 log(`SCHRITT 12: Rueckgaengig jetzt ausgegraut (Historie leer)? = ${nochUndo}`)
 
 // --- Urteil ---
-const tol = Math.max(200, Math.round(A * 0.002))
+// Feste Toleranz statt eines Anteils vom Grundwert: eine gelungene
+// Wiederherstellung trifft den Ausgangszustand EXAKT (gemessen: Abweichung 0),
+// 60 Pixel sind reines Polster gegen Kantenglaettung. Ein Anteil des
+// Grundwerts waere dagegen zoomabhaengig — bei eingepasster Ansicht waere er
+// groesser als eine geloeschte Wand ueberhaupt ausmacht.
+const tol = 60
 const pruefungen = [
   ['Loeschen veraendert das Bild', Math.abs(B - A) > tol],
   ['Rueckgaengig stellt exakt den Ausgangszustand her', Math.abs(C - A) <= tol],
