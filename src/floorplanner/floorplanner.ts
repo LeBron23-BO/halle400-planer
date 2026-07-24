@@ -13,8 +13,27 @@ const snapTolerance = 25
 type AnsichtsZustand = {
   originX: number
   originY: number
+  zoom: number
   mode: FloorplannerMode
 }
+
+/**
+ * Massstab bei Zoomstufe 1 (T7): 30.48 cm je 15 Pixel = 2.032 cm/Pixel.
+ * Das ist der Upstream-Wert und bleibt der Bezugspunkt — gezoomt wird als
+ * Faktor DARAUF, damit "Zoom 1" weiterhin das gewohnte Bild ergibt.
+ */
+const BASIS_CM_PRO_PIXEL = 30.48 / 15.0
+
+/**
+ * Zoom-Grenzen. Die untere Grenze muss die ganze Halle auf ein Handy bringen:
+ * 78 m auf 390 px sind rund 0.09 — mit 0.04 bleibt Luft fuer noch schmalere
+ * Geraete und laengere Grundrisse.
+ */
+const ZOOM_MIN = 0.04
+const ZOOM_MAX = 8
+
+/** Randanteil, den "Alles einpassen" rundherum frei laesst. */
+const EINPASS_RAND = 0.06
 
 /**
  * The Floorplanner implements an interactive tool for creation of floorplans.
@@ -92,11 +111,25 @@ export class Floorplanner {
   /** mouse position at last click */
   private lastY = 0
 
-  /** */
-  private cmPerPixel: number
+  /**
+   * Zoomstufe (T7). 1 = der gewohnte Upstream-Massstab, kleiner = weiter weg.
+   * Frueher war der Massstab eine Konstante — dadurch war die 78 m lange Halle
+   * am Rechner nur zu 38 % und am Handy zu 10 % zu sehen, ohne jede Abhilfe.
+   */
+  private zoom = 1
 
-  /** */
-  private pixelsPerCm: number
+  /** Abgeleitet aus dem Zoom — nie direkt setzen. */
+  private get cmPerPixel(): number {
+    return BASIS_CM_PRO_PIXEL / this.zoom
+  }
+
+  /** Abgeleitet aus dem Zoom — nie direkt setzen. */
+  private get pixelsPerCm(): number {
+    return this.zoom / BASIS_CM_PRO_PIXEL
+  }
+
+  /** Meldet Zoomstufe + Einpass-Moeglichkeit an die Oberflaeche. */
+  private zoomCallbacks: Array<(zoom: number) => void> = []
 
   /** Add a callback for mode reset */
   public addModeResetCallback(callback: (mode: FloorplannerMode) => void): void {
@@ -149,11 +182,6 @@ export class Floorplanner {
 
     this.view = new FloorplannerView(this.floorplan, this, canvas)
 
-    const cmPerFoot = 30.48
-    const pixelsPerFoot = 15.0
-    this.cmPerPixel = cmPerFoot * (1.0 / pixelsPerFoot)
-    this.pixelsPerCm = 1.0 / this.cmPerPixel
-
     this.wallWidth = 10.0 * this.pixelsPerCm
 
     // Initialization:
@@ -172,6 +200,35 @@ export class Floorplanner {
     this.canvasElement.addEventListener('mouseleave', () => {
       this.mouseleave()
     })
+
+    // --- Zoom per Mausrad (T7). passive:false, weil preventDefault noetig ist:
+    // sonst scrollt die Seite statt zu zoomen.
+    this.canvasElement.addEventListener(
+      'wheel',
+      (e: WheelEvent) => {
+        e.preventDefault()
+        const rect = this.canvasElement.getBoundingClientRect()
+        // Ein Rasten des Rades = 10 %. deltaY ist geraeteabhaengig gross,
+        // deshalb nur die Richtung auswerten.
+        const faktor = e.deltaY < 0 ? 1.1 : 1 / 1.1
+        this.zoomeAufPunkt(this.zoom * faktor, e.clientX - rect.left, e.clientY - rect.top)
+      },
+      { passive: false }
+    )
+
+    // --- Navigation per Finger (T7): schieben mit einem, zoomen mit zweien.
+    // BEWUSST nur Navigation — Waende bearbeiten bleibt am Handy ungeloest
+    // (eigener Task TOUCH). preventDefault unterdrueckt zugleich die
+    // Maus-Emulation des Browsers, sonst loeste ein Tippen ungewollt das
+    // Zeichnen- oder Loeschen-Werkzeug aus.
+    this.canvasElement.addEventListener('touchstart', (e: TouchEvent) => this.fingerStart(e), {
+      passive: false
+    })
+    this.canvasElement.addEventListener('touchmove', (e: TouchEvent) => this.fingerBewegt(e), {
+      passive: false
+    })
+    this.canvasElement.addEventListener('touchend', () => this.fingerEnde(), { passive: false })
+    this.canvasElement.addEventListener('touchcancel', () => this.fingerEnde(), { passive: false })
 
     document.addEventListener('keyup', (e: KeyboardEvent) => {
       if (e.keyCode == 27) {
