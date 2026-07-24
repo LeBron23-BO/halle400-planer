@@ -87,44 +87,59 @@ await page.evaluate(() => {
     el.dispatchEvent(new MouseEvent(typ, { bubbles: true, clientX: r.x + x, clientY: r.y + y }))
   }
 
-  // Tinte = Zahl der wirklich BEMALTEN Pixel.
-  // Der Alpha-Test ist kein Detail: ein Canvas ohne Hintergrund liefert fuer
-  // unbemalte Flaechen RGB 0,0,0 bei alpha 0. Ohne ihn zaehlt jede leere
-  // Flaeche als Tinte — seit die Ansicht den ganzen Grundriss einpasst (T7),
-  // ist der Grossteil des Bildes leer, und der aufgeblaehte Grundwert machte
-  // eine daran gekoppelte Toleranz groesser als die gesuchte Aenderung.
-  window.__tinte = () => {
+  // Mass des Bildes: Zahl der bemalten Pixel PLUS deren Schwerpunkt.
+  //
+  // Die Zahl allein genuegt nicht — eine VERSCHOBENE Wand ist gleich lang und
+  // ergibt fast dieselbe Pixelzahl, ein Ziehen waere damit unsichtbar. Der
+  // Schwerpunkt verraet die Ortsaenderung.
+  //
+  // Der Alpha-Test ist ebenfalls kein Detail: ein Canvas ohne Hintergrund
+  // liefert fuer unbemalte Flaechen RGB 0,0,0 bei alpha 0. Ohne ihn zaehlt
+  // jede leere Flaeche mit — seit die Ansicht den ganzen Grundriss einpasst
+  // (T7), ist der Grossteil des Bildes leer.
+  window.__mass = () => {
     const el = c()
-    const d = el.getContext('2d').getImageData(0, 0, el.width, el.height).data
+    const w = el.width
+    const d = el.getContext('2d').getImageData(0, 0, w, el.height).data
     let n = 0
+    let sx = 0
+    let sy = 0
     for (let i = 0; i < d.length; i += 4) {
-      if (d[i + 3] > 10 && (d[i] < 240 || d[i + 1] < 240 || d[i + 2] < 240)) n++
+      if (d[i + 3] > 10 && (d[i] < 240 || d[i + 1] < 240 || d[i + 2] < 240)) {
+        const p = i / 4
+        n++
+        sx += p % w
+        sy += Math.floor(p / w)
+      }
     }
-    return n
+    return n === 0 ? { n: 0, x: 0, y: 0 } : { n, x: sx / n, y: sy / n }
   }
 
   // Zeiger aus dem Weg — ein Hover-Highlight verfaelscht jede Messung.
   window.__mausWeg = () => window.__maus('mousemove', 2, 2)
 })
 
-const tinte = async () => {
+const mass = async () => {
   await page.evaluate(() => window.__mausWeg())
   await page.waitForTimeout(120)
-  return page.evaluate(() => window.__tinte())
+  return page.evaluate(() => window.__mass())
 }
+/** Wie stark unterscheiden sich zwei Bilder — Pixelzahl UND Schwerpunkt. */
+const unterschied = (a, b) => Math.abs(a.n - b.n) + 20 * (Math.abs(a.x - b.x) + Math.abs(a.y - b.y))
+const zeig = (m) => `${m.n} Pixel, Schwerpunkt ${m.x.toFixed(1)}/${m.y.toFixed(1)}`
 
-const A = await tinte()
-log(`SCHRITT 3: Ausgangs-Tinte A = ${A}`)
+const A = await mass()
+log(`SCHRITT 3: Ausgangsbild A = ${zeig(A)}`)
 await page.screenshot({ path: `${DIR}/A_start.png` })
 
 // --- eine Wand finden: Hover hebt sie hervor, die Tinte aendert sich ---
 const treffer = await page.evaluate((g) => {
-  const ruhe = window.__tinte()
+  const ruhe = window.__mass().n
   const funde = []
   for (let y = 40; y < g.h - 40 && funde.length < 6; y += 12) {
     for (let x = 40; x < g.w - 40 && funde.length < 6; x += 12) {
       window.__maus('mousemove', x, y)
-      if (Math.abs(window.__tinte() - ruhe) > 300) funde.push({ x, y })
+      if (Math.abs(window.__mass().n - ruhe) > 60) funde.push({ x, y })
     }
   }
   window.__mausWeg()
@@ -155,8 +170,8 @@ await page.evaluate((z) => {
   window.__maus('mouseup', z.x, z.y)
 }, ziel)
 await page.waitForTimeout(400)
-const B = await tinte()
-log(`SCHRITT 5: nach LOESCHEN bei (${ziel.x},${ziel.y}) -> Tinte B = ${B}  (Delta zu A: ${B - A})`)
+const B = await mass()
+log(`SCHRITT 5: nach LOESCHEN bei (${ziel.x},${ziel.y}) -> B = ${zeig(B)}  (Unterschied zu A: ${unterschied(B, A).toFixed(0)})`)
 await page.screenshot({ path: `${DIR}/B_geloescht.png` })
 
 const knopfZustand = await page.evaluate(
@@ -171,21 +186,21 @@ log('SCHRITT 6: Schaltflaechen nach dem Loeschen (ausgegraut?) = ' + JSON.string
 // --- Rueckgaengig per Schaltflaeche ---
 await klick(L.undo)
 await page.waitForTimeout(600)
-const C = await tinte()
-log(`SCHRITT 7: nach RUECKGAENGIG (Schaltflaeche) -> Tinte C = ${C}  (Abweichung zu A: ${C - A})`)
+const C = await mass()
+log(`SCHRITT 7: nach RUECKGAENGIG (Schaltflaeche) -> C = ${zeig(C)}  (Abweichung zu A: ${unterschied(C, A).toFixed(0)})`)
 await page.screenshot({ path: `${DIR}/C_zurueck.png` })
 
 // --- Wiederholen ---
 await klick(L.redo)
 await page.waitForTimeout(600)
-const D = await tinte()
-log(`SCHRITT 8: nach WIEDERHOLEN -> Tinte D = ${D}  (Abweichung zu B: ${D - B})`)
+const D = await mass()
+log(`SCHRITT 8: nach WIEDERHOLEN -> D = ${zeig(D)}  (Abweichung zu B: ${unterschied(D, B).toFixed(0)})`)
 
 // --- Rueckgaengig per Tastatur (echte Tasten) ---
 await page.keyboard.press('Control+z')
 await page.waitForTimeout(600)
-const E = await tinte()
-log(`SCHRITT 9: nach STRG+Z (Tastatur) -> Tinte E = ${E}  (Abweichung zu A: ${E - A})`)
+const E = await mass()
+log(`SCHRITT 9: nach STRG+Z (Tastatur) -> E = ${zeig(E)}  (Abweichung zu A: ${unterschied(E, A).toFixed(0)})`)
 
 // --- Ziehen: viele Bewegungen muessen EIN Undo-Schritt sein ---
 await klick(L.bewegen)
@@ -197,14 +212,14 @@ await page.evaluate((z) => {
   window.__maus('mouseup', z.x + 50, z.y + 50)
 }, ziel)
 await page.waitForTimeout(500)
-const F = await tinte()
-log(`SCHRITT 10: nach ZIEHEN (25 Bewegungsschritte) -> Tinte F = ${F}  (Abweichung zu A: ${F - A})`)
+const F = await mass()
+log(`SCHRITT 10: nach ZIEHEN (25 Bewegungsschritte) -> F = ${zeig(F)}  (Unterschied zu A: ${unterschied(F, A).toFixed(0)})`)
 await page.screenshot({ path: `${DIR}/F_gezogen.png` })
 
 await page.keyboard.press('Control+z')
 await page.waitForTimeout(600)
-const G = await tinte()
-log(`SCHRITT 11: EIN Strg+Z nach dem Ziehen -> Tinte G = ${G}  (Abweichung zu A: ${G - A})`)
+const G = await mass()
+log(`SCHRITT 11: EIN Strg+Z nach dem Ziehen -> G = ${zeig(G)}  (Abweichung zu A: ${unterschied(G, A).toFixed(0)})`)
 await page.screenshot({ path: `${DIR}/G_zug_zurueck.png` })
 
 const nochUndo = await page.evaluate(
@@ -221,12 +236,12 @@ log(`SCHRITT 12: Rueckgaengig jetzt ausgegraut (Historie leer)? = ${nochUndo}`)
 // groesser als eine geloeschte Wand ueberhaupt ausmacht.
 const tol = 60
 const pruefungen = [
-  ['Loeschen veraendert das Bild', Math.abs(B - A) > tol],
-  ['Rueckgaengig stellt exakt den Ausgangszustand her', Math.abs(C - A) <= tol],
-  ['Wiederholen stellt den geloeschten Zustand her', Math.abs(D - B) <= tol],
-  ['Strg+Z wirkt wie die Schaltflaeche', Math.abs(E - A) <= tol],
-  ['Ziehen veraendert das Bild', Math.abs(F - A) > tol],
-  ['EIN Strg+Z nimmt das ganze Ziehen zurueck', Math.abs(G - A) <= tol],
+  ['Loeschen veraendert das Bild', unterschied(B, A) > tol],
+  ['Rueckgaengig stellt exakt den Ausgangszustand her', unterschied(C, A) <= tol],
+  ['Wiederholen stellt den geloeschten Zustand her', unterschied(D, B) <= tol],
+  ['Strg+Z wirkt wie die Schaltflaeche', unterschied(E, A) <= tol],
+  ['Ziehen veraendert das Bild', unterschied(F, A) > tol],
+  ['EIN Strg+Z nimmt das ganze Ziehen zurueck', unterschied(G, A) <= tol],
   ['Historie ist danach leer (Schaltflaeche aus)', nochUndo === true]
 ]
 log(`\n--- URTEIL (Toleranz ${tol} Pixel) ---`)
