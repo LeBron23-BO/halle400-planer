@@ -32,8 +32,14 @@ const BASIS_CM_PRO_PIXEL = 30.48 / 15.0
 const ZOOM_MIN = 0.04
 const ZOOM_MAX = 8
 
-/** Randanteil, den "Alles einpassen" rundherum frei laesst. */
-const EINPASS_RAND = 0.06
+/**
+ * Rand, den "Alles einpassen" rundherum frei laesst — in PIXELN, nicht in
+ * Prozent. Grund: was ueber die Geometrie hinausragt, sind die Massangaben,
+ * und die bleiben konstant 12 px gross. Ein prozentualer Rand schrumpft am
+ * Handy mit, der Textueberstand nicht — gemessen blieben dort rechts nur noch
+ * 2 px Luft. 32 px decken den halben laengsten Text ab.
+ */
+const EINPASS_RAND_PX = 32
 
 /**
  * The Floorplanner implements an interactive tool for creation of floorplans.
@@ -476,8 +482,10 @@ export class Floorplanner {
     const planBreite = Math.max(1, maxX - minX)
     const planHoehe = Math.max(1, maxY - minY)
 
-    const nutzbarBreite = breitePx * (1 - 2 * EINPASS_RAND)
-    const nutzbarHoehe = hoehePx * (1 - 2 * EINPASS_RAND)
+    // Bei einem sehr kleinen Fenster darf der feste Rand nicht die ganze
+    // Flaeche auffressen — dann lieber die Haelfte nutzen als nichts.
+    const nutzbarBreite = Math.max(breitePx * 0.5, breitePx - 2 * EINPASS_RAND_PX)
+    const nutzbarHoehe = Math.max(hoehePx * 0.5, hoehePx - 2 * EINPASS_RAND_PX)
     const gewuenschtPixelProCm = Math.min(nutzbarBreite / planBreite, nutzbarHoehe / planHoehe)
 
     this.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, gewuenschtPixelProCm * BASIS_CM_PRO_PIXEL))
