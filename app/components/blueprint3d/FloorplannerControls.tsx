@@ -1,6 +1,6 @@
 'use client'
 
-import { Move, Pencil, Trash2, Check, Undo2, Redo2 } from 'lucide-react'
+import { Move, Pencil, Trash2, Check, Undo2, Redo2, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useTranslations } from 'next-intl'
@@ -15,6 +15,10 @@ interface FloorplannerControlsProps {
   canRedo: boolean
   onUndo: () => void
   onRedo: () => void
+  /** Ansicht (T7) */
+  onZoomIn: () => void
+  onZoomOut: () => void
+  onFitAll: () => void
 }
 
 export function FloorplannerControls({
@@ -24,7 +28,10 @@ export function FloorplannerControls({
   canUndo,
   canRedo,
   onUndo,
-  onRedo
+  onRedo,
+  onZoomIn,
+  onZoomOut,
+  onFitAll
 }: FloorplannerControlsProps) {
   const t = useTranslations('BluePrint.floorplanner')
   const isMobile = useIsMobile()
@@ -57,6 +64,45 @@ export function FloorplannerControls({
       </Button>
     </>
   )
+
+  // Ansicht (T7). "Ganze Halle zeigen" ist der wichtigste Knopf hier: die
+  // Halle ist 78 m lang und passt in keinem festen Massstab ins Bild.
+  const ansichtsKnoepfe = (
+    <>
+      <Button
+        size="icon"
+        variant="secondary"
+        onClick={onZoomOut}
+        className={cn(isMobile && 'h-11 w-11 shadow-lg active:scale-95 transition-transform')}
+        title={t('zoomOut')}
+        aria-label={t('zoomOut')}
+      >
+        <ZoomOut className={cn(isMobile ? 'h-5 w-5' : 'h-4 w-4')} />
+      </Button>
+      <Button
+        size="icon"
+        variant="secondary"
+        onClick={onZoomIn}
+        className={cn(isMobile && 'h-11 w-11 shadow-lg active:scale-95 transition-transform')}
+        title={t('zoomIn')}
+        aria-label={t('zoomIn')}
+      >
+        <ZoomIn className={cn(isMobile ? 'h-5 w-5' : 'h-4 w-4')} />
+      </Button>
+      <Button
+        size="icon"
+        variant="secondary"
+        onClick={onFitAll}
+        className={cn(isMobile && 'h-11 w-11 shadow-lg active:scale-95 transition-transform')}
+        title={t('fitAll')}
+        aria-label={t('fitAll')}
+      >
+        <Maximize2 className={cn(isMobile ? 'h-5 w-5' : 'h-4 w-4')} />
+      </Button>
+    </>
+  )
+
+  const trenner = <div className="w-px self-stretch bg-border/70 mx-0.5" aria-hidden="true" />
 
   return (
     <div className={cn('absolute left-0 top-0 w-full z-[60] pointer-events-none', isMobile ? 'my-3 px-3' : 'my-3 px-5')}>
@@ -116,8 +162,10 @@ export function FloorplannerControls({
               wirken AUF das mit den Werkzeugen Gebaute. */}
           {!isMobile && (
             <>
-              <div className="w-px self-stretch bg-border/70 mx-0.5" aria-hidden="true" />
+              {trenner}
               {historienKnoepfe}
+              {trenner}
+              {ansichtsKnoepfe}
             </>
           )}
         </div>
@@ -150,7 +198,11 @@ export function FloorplannerControls({
           sie waeren am Handy nicht ausloesbar gewesen. Die zweite Zeile
           liegt unter dem Umschalter und bleibt frei. */}
       {isMobile && (
-        <div className="mt-2 flex w-fit gap-1.5 pointer-events-auto">{historienKnoepfe}</div>
+        <div className="mt-2 flex w-fit items-center gap-1.5 pointer-events-auto">
+          {historienKnoepfe}
+          {trenner}
+          {ansichtsKnoepfe}
+        </div>
       )}
     </div>
   )

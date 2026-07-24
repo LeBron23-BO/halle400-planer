@@ -150,12 +150,16 @@ export class Floorplanner {
       save: (): AnsichtsZustand => ({
         originX: this.originX,
         originY: this.originY,
+        zoom: this.zoom,
         mode: this.mode
       }),
       restore: (zustand: unknown): void => {
         const a = zustand as AnsichtsZustand
         this.originX = a.originX
         this.originY = a.originY
+        // Ohne den Zoom spraenge die Ansicht bei jedem Strg+Z auf
+        // "alles einpassen" zurueck, weil reset() das inzwischen tut.
+        this.zoom = a.zoom
         // setMode nullt lastNode — genau richtig: die zuletzt gesetzte Ecke
         // kann nach dem Zurueckspielen verschwunden sein, ein Anschluss daran
         // waere ein Geist. setMode zeichnet die Ansicht gleich mit neu.
@@ -394,12 +398,162 @@ export class Floorplanner {
     //scope.setMode(scope.modes.MOVE);
   }
 
+  // ---------------------------------------------------------------- Zoom (T7)
+
+  /** Fuer die Oberflaeche: aktuelle Zoomstufe (1 = Ausgangsmassstab). */
+  public getZoom(): number {
+    return this.zoom
+  }
+
+  /** Meldet jede Zoom-Aenderung (Anzeige, Schaltflaechen). */
+  public addZoomCallback(callback: (zoom: number) => void): void {
+    this.zoomCallbacks.push(callback)
+  }
+
+  /**
+   * Zoomt so, dass der Punkt (screenX, screenY) auf dem Bildschirm stehen
+   * bleibt — man zoomt also dorthin, wo der Zeiger steht, statt zur Bildmitte.
+   */
+  public zoomeAufPunkt(neuerZoom: number, screenX: number, screenY: number): void {
+    const ziel = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, neuerZoom))
+    if (ziel === this.zoom) {
+      return
+    }
+    // Welt-Koordinate unter dem Ankerpunkt VOR dem Zoom …
+    const weltX = (screenX + this.originX) * this.cmPerPixel
+    const weltY = (screenY + this.originY) * this.cmPerPixel
+
+    this.zoom = ziel
+
+    // … und danach wieder unter denselben Bildschirmpunkt legen.
+    this.originX = weltX * this.pixelsPerCm - screenX
+    this.originY = weltY * this.pixelsPerCm - screenY
+
+    this.zoomCallbacks.forEach((cb) => cb(this.zoom))
+    this.view.draw()
+  }
+
+  /** Zoomt um die Bildmitte — fuer die Plus/Minus-Schaltflaechen. */
+  public zoomeUmFaktor(faktor: number): void {
+    this.zoomeAufPunkt(
+      this.zoom * faktor,
+      this.canvasElement.clientWidth / 2,
+      this.canvasElement.clientHeight / 2
+    )
+  }
+
+  /**
+   * Legt den GANZEN Grundriss ins Bild — der Grund, warum es diesen Zoom gibt.
+   * Ohne das sieht man von der 78 m langen Halle nie mehr als einen Ausschnitt.
+   */
+  public allesEinpassen(): void {
+    const ecken = this.floorplan.getCorners()
+    const breitePx = this.canvasElement.clientWidth
+    const hoehePx = this.canvasElement.clientHeight
+    if (ecken.length === 0 || breitePx === 0 || hoehePx === 0) {
+      // Nichts zu zeigen (oder Canvas noch ohne Groesse) — auf den
+      // Ausgangsmassstab zurueck, damit kein wirrer Zustand stehen bleibt.
+      this.zoom = 1
+      this.resetOrigin()
+      this.zoomCallbacks.forEach((cb) => cb(this.zoom))
+      this.view.draw()
+      return
+    }
+
+    let minX = Infinity
+    let maxX = -Infinity
+    let minY = Infinity
+    let maxY = -Infinity
+    ecken.forEach((ecke) => {
+      if (ecke.x < minX) minX = ecke.x
+      if (ecke.x > maxX) maxX = ecke.x
+      if (ecke.y < minY) minY = ecke.y
+      if (ecke.y > maxY) maxY = ecke.y
+    })
+
+    // Ein Grundriss ohne Ausdehnung in einer Richtung (alle Ecken auf einer
+    // Linie) wuerde sonst durch Null teilen.
+    const planBreite = Math.max(1, maxX - minX)
+    const planHoehe = Math.max(1, maxY - minY)
+
+    const nutzbarBreite = breitePx * (1 - 2 * EINPASS_RAND)
+    const nutzbarHoehe = hoehePx * (1 - 2 * EINPASS_RAND)
+    const gewuenschtPixelProCm = Math.min(nutzbarBreite / planBreite, nutzbarHoehe / planHoehe)
+
+    this.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, gewuenschtPixelProCm * BASIS_CM_PRO_PIXEL))
+
+    // Mitte des Grundrisses auf die Mitte des Bildes.
+    this.originX = ((minX + maxX) / 2) * this.pixelsPerCm - breitePx / 2
+    this.originY = ((minY + maxY) / 2) * this.pixelsPerCm - hoehePx / 2
+
+    this.zoomCallbacks.forEach((cb) => cb(this.zoom))
+    this.view.draw()
+  }
+
+  // ------------------------------------------------------- Finger-Navigation
+
+  /** Abstand des letzten Zwei-Finger-Griffs, fuer das Verhaeltnis beim Zoomen. */
+  private fingerAbstand = 0
+
+  /** Letzte Ein-Finger-Position, zum Schieben. */
+  private fingerX = 0
+  private fingerY = 0
+
+  /** */
+  private fingerStart(e: TouchEvent): void {
+    e.preventDefault()
+    if (e.touches.length === 1) {
+      this.fingerX = e.touches[0].clientX
+      this.fingerY = e.touches[0].clientY
+    } else if (e.touches.length === 2) {
+      this.fingerAbstand = this.abstandZwischen(e)
+    }
+  }
+
+  /** */
+  private fingerBewegt(e: TouchEvent): void {
+    e.preventDefault()
+    if (e.touches.length === 1) {
+      // Schieben: die Ansicht folgt dem Finger.
+      const dx = e.touches[0].clientX - this.fingerX
+      const dy = e.touches[0].clientY - this.fingerY
+      this.originX -= dx
+      this.originY -= dy
+      this.fingerX = e.touches[0].clientX
+      this.fingerY = e.touches[0].clientY
+      this.view.draw()
+    } else if (e.touches.length === 2) {
+      const abstand = this.abstandZwischen(e)
+      if (this.fingerAbstand > 0 && abstand > 0) {
+        const rect = this.canvasElement.getBoundingClientRect()
+        // Zwischen den beiden Fingern zoomen — dort schaut der Nutzer hin.
+        const mitteX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left
+        const mitteY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top
+        this.zoomeAufPunkt(this.zoom * (abstand / this.fingerAbstand), mitteX, mitteY)
+      }
+      this.fingerAbstand = abstand
+    }
+  }
+
+  /** */
+  private fingerEnde(): void {
+    this.fingerAbstand = 0
+  }
+
+  /** */
+  private abstandZwischen(e: TouchEvent): number {
+    const dx = e.touches[0].clientX - e.touches[1].clientX
+    const dy = e.touches[0].clientY - e.touches[1].clientY
+    return Math.sqrt(dx * dx + dy * dy)
+  }
+
   /** Resets the view - centers and resizes the floorplan */
   public reset(): void {
     this.resizeView()
     this.setMode(floorplannerModes.MOVE)
-    this.resetOrigin()
-    this.view.draw()
+    // Beim Oeffnen den ganzen Grundriss zeigen statt eines mittigen
+    // Ausschnitts im Ausgangsmassstab (T7).
+    this.allesEinpassen()
   }
 
   /** Resizes the view to fit the container */
@@ -422,6 +576,12 @@ export class Floorplanner {
     const centerFloorplan = this.floorplan.getCenter()
     this.originX = centerFloorplan.x * this.pixelsPerCm - centerX
     this.originY = centerFloorplan.z * this.pixelsPerCm - centerY
+  }
+
+  /** Pixel je Zentimeter beim aktuellen Zoom — der View entscheidet damit,
+   *  ob eine Massangabe auf dem Bildschirm ueberhaupt noch Platz hat (T7). */
+  public pixelProCm(): number {
+    return this.pixelsPerCm
   }
 
   /** Convert from THREEjs coords to canvas coords. */

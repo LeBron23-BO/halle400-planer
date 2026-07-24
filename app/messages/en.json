@@ -27,7 +27,10 @@
       "redo": "Redo",
       "nothingToUndo": "Nothing to undo",
       "undone": "Undone",
-      "redone": "Redone"
+      "redone": "Redone",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "fitAll": "Fit whole plan"
     },
     "viewToggle": {
       "3d": "3D",

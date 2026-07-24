@@ -306,8 +306,10 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
       if (mode === '2d') {
         setTimeout(() => {
           if (blueprint3dRef.current) {
+            // reset() passt seit T7 den ganzen Grundriss ein; das frueher hier
+            // zusaetzlich gerufene resetOrigin() waere nur eine zweite,
+            // gleichlautende Zentrierung.
             blueprint3dRef.current.floorplanner?.reset()
-            blueprint3dRef.current.floorplanner?.resetOrigin()
           }
         }, 50)
       } else {
@@ -508,8 +510,9 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
           if (canvas) {
             const resizeObserver = new ResizeObserver(() => {
               if (blueprint3dRef.current && canvas.clientWidth > 0) {
+                // Erst wenn der Canvas eine Breite hat, kann eingepasst werden
+                // (T7) — vorher waere der Massstab durch Null geteilt.
                 blueprint3dRef.current.floorplanner?.reset()
-                blueprint3dRef.current.floorplanner?.resetOrigin()
                 resizeObserver.disconnect()
               }
             })
@@ -544,6 +547,20 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
     if (blueprint3dRef.current) {
       blueprint3dRef.current.model.floorplan.update()
     }
+  }, [])
+
+  // Ansicht (T7). Ohne diese Bedienung war von der 78 m langen Halle am
+  // Rechner nur gut ein Drittel und am Handy ein Zehntel zu sehen.
+  const handleZoomIn = useCallback(() => {
+    blueprint3dRef.current?.floorplanner?.zoomeUmFaktor(1.25)
+  }, [])
+
+  const handleZoomOut = useCallback(() => {
+    blueprint3dRef.current?.floorplanner?.zoomeUmFaktor(1 / 1.25)
+  }, [])
+
+  const handleFitAll = useCallback(() => {
+    blueprint3dRef.current?.floorplanner?.allesEinpassen()
   }, [])
 
   const handleUndo = useCallback(() => {
@@ -716,6 +733,9 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
                   canRedo={canRedo}
                   onUndo={handleUndo}
                   onRedo={handleRedo}
+                  onZoomIn={handleZoomIn}
+                  onZoomOut={handleZoomOut}
+                  onFitAll={handleFitAll}
                 />
                 {floorplannerMode === 'draw' && (
                   <div className="absolute left-5 bottom-5 bg-black/50 text-primary-foreground px-2.5 py-1.5 rounded text-sm">

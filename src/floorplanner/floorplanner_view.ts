@@ -172,6 +172,13 @@ export class FloorplannerView {
       // dont draw labels on walls this short
       return
     }
+    // Die Schrift skaliert NICHT mit (12 px bleiben 12 px), die Wand aber
+    // schon. Beim Herauszoomen auf die ganze Halle laegen sonst hundert
+    // Massangaben uebereinander und ergaeben einen unlesbaren Textbrei —
+    // deshalb entscheidet die Laenge AUF DEM BILDSCHIRM, nicht die in cm (T7).
+    if (length * this.viewmodel.pixelProCm() < 45) {
+      return
+    }
     this.context.font = 'normal 12px Arial'
     this.context.fillStyle = '#000000'
     this.context.textBaseline = 'middle'

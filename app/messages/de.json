@@ -27,7 +27,10 @@
       "redo": "Wiederholen",
       "nothingToUndo": "Nichts zum Rückgängigmachen",
       "undone": "Rückgängig gemacht",
-      "redone": "Wiederhergestellt"
+      "redone": "Wiederhergestellt",
+      "zoomIn": "Näher heran",
+      "zoomOut": "Weiter weg",
+      "fitAll": "Ganze Halle zeigen"
     },
     "viewToggle": {
       "3d": "3D",
