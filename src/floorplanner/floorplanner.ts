@@ -2,11 +2,19 @@ import { Floorplan } from '../model/floorplan'
 import { Wall } from '../model/wall'
 import { Corner } from '../model/corner'
 import { FloorplannerView, floorplannerModes } from './floorplanner_view'
+import type { UndoManager } from '../core/undo'
 
 type FloorplannerMode = (typeof floorplannerModes)[keyof typeof floorplannerModes]
 
 /** how much will we move a corner to make a wall axis aligned (cm) */
 const snapTolerance = 25
+
+/** Was ueber ein Zurueckspielen hinweg erhalten bleiben muss (T5a). */
+type AnsichtsZustand = {
+  originX: number
+  originY: number
+  mode: FloorplannerMode
+}
 
 /**
  * The Floorplanner implements an interactive tool for creation of floorplans.
@@ -55,6 +63,17 @@ export class Floorplanner {
   /** */
   private mouseMoved = false
 
+  /** Rueckgaengig-Historie (T5a). Optional: ohne bleibt alles wie zuvor. */
+  private undoManager: UndoManager | null = null
+
+  /**
+   * Wurde fuer das laufende Ziehen schon gesichert? Ein Ziehen laeuft ueber
+   * hunderte mousemove-Ereignisse — ohne diese Sperre waere jedes einzelne ein
+   * eigener Undo-Schritt, und ein einmaliges Strg+Z bewegte die Wand um ein
+   * unsichtbares Stueck zurueck statt an ihren Ausgangsort.
+   */
+  private zugGesichert = false
+
   /** in ThreeJS coords */
   private mouseX = 0
 
@@ -82,6 +101,34 @@ export class Floorplanner {
   /** Add a callback for mode reset */
   public addModeResetCallback(callback: (mode: FloorplannerMode) => void): void {
     this.modeResetCallbacks.push(callback)
+  }
+
+  /**
+   * Haengt die Rueckgaengig-Historie an (T5a) und meldet ihr, wie die Ansicht
+   * ueber ein Zurueckspielen zu retten ist. Ohne diesen Aufruf verhaelt sich
+   * der Floorplanner exakt wie zuvor.
+   */
+  public setUndoManager(undoManager: UndoManager | null): void {
+    this.undoManager = undoManager
+    if (!undoManager) {
+      return
+    }
+    undoManager.setViewStateHandler({
+      save: (): AnsichtsZustand => ({
+        originX: this.originX,
+        originY: this.originY,
+        mode: this.mode
+      }),
+      restore: (zustand: unknown): void => {
+        const a = zustand as AnsichtsZustand
+        this.originX = a.originX
+        this.originY = a.originY
+        // setMode nullt lastNode — genau richtig: die zuletzt gesetzte Ecke
+        // kann nach dem Zurueckspielen verschwunden sein, ein Anschluss daran
+        // waere ein Geist. setMode zeichnet die Ansicht gleich mit neu.
+        this.setMode(a.mode)
+      }
+    })
   }
 
   /** Provides jQuery-style Callbacks API for backward compatibility */
@@ -167,14 +214,19 @@ export class Floorplanner {
   private mousedown(): void {
     this.mouseDown = true
     this.mouseMoved = false
+    this.zugGesichert = false
     this.lastX = this.rawMouseX
     this.lastY = this.rawMouseY
 
     // delete
     if (this.mode == floorplannerModes.DELETE) {
       if (this.activeCorner) {
+        // Sichern nur, wenn wirklich geloescht wird — ein Klick ins Leere
+        // wechselt bloss den Modus und darf keinen Undo-Schritt erzeugen.
+        this.undoManager?.snapshot()
         this.activeCorner.removeAll()
       } else if (this.activeWall) {
+        this.undoManager?.snapshot()
         this.activeWall.remove()
       } else {
         this.setMode(floorplannerModes.MOVE)
@@ -236,6 +288,13 @@ export class Floorplanner {
 
     // dragging
     if (this.mode == floorplannerModes.MOVE && this.mouseDown) {
+      // Erst hier sichern, nicht schon bei mousedown: ein Druck auf eine Wand
+      // ohne Bewegung (oder ein Schwenk der Ansicht) aendert nichts und soll
+      // die Historie nicht mit Leerschritten fuellen.
+      if ((this.activeCorner || this.activeWall) && !this.zugGesichert) {
+        this.undoManager?.snapshot()
+        this.zugGesichert = true
+      }
       if (this.activeCorner) {
         this.activeCorner.move(this.mouseX, this.mouseY)
         this.activeCorner.snapToAxis(snapTolerance)
@@ -258,6 +317,9 @@ export class Floorplanner {
 
     // drawing
     if (this.mode == floorplannerModes.DRAW && !this.mouseMoved) {
+      // Jeder gesetzte Punkt ist ein eigener Zug: beim Zeichnen eines
+      // Streckenzugs nimmt Strg+Z Punkt fuer Punkt zurueck, nicht alles auf einmal.
+      this.undoManager?.snapshot()
       const corner = this.floorplan.newCorner(this.targetX, this.targetY)
       if (this.lastNode != null) {
         this.floorplan.newWall(this.lastNode, corner)

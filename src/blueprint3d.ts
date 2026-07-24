@@ -1,6 +1,7 @@
 import { Model } from './model/model'
 import { Floorplanner } from './floorplanner/floorplanner'
 import { Main } from './three/main'
+import { UndoManager } from './core/undo'
 
 /** Startup options. */
 export interface Options {
