@@ -388,6 +388,77 @@ export class Floorplan {
   }
 
   /**
+   * Welches Ausstattungs-Zeichen liegt unter diesem Punkt? (E1)
+   *
+   * Gegenstück zu `overlappedWall`/`overlappedCorner`, das es für die
+   * Ausstattung bisher nicht gab — ohne diese Prüfung war ein Möbel im
+   * 2D-Zeichner überhaupt nicht treffbar und damit auch nicht löschbar.
+   *
+   * Der Punkt wird in das lokale System des Elements ZURÜCKgedreht (die
+   * Umkehrung von `floorplanner_view.ausPunkt`) und dann gegen das
+   * achsenparallele Rechteck geprüft. Runde Zeichen werden bewusst ebenfalls
+   * über ihr umschließendes Rechteck getroffen: die Greifzone ist eine
+   * Bedienhilfe, keine Geometrie-Aussage — ein Kreis-Test würde in den vier
+   * Ecken nur Fehlgriffe erzeugen.
+   *
+   * Bei Überlappung gewinnt das FLÄCHENKLEINSTE Element. Sonst läge auf einer
+   * Loggia immer die große `flaeche` obenauf, und der Stuhl darauf wäre nie
+   * anzuklicken — man würde beim Griff nach dem Stuhl die ganze Loggia treffen.
+   */
+  public overlappedAusstattung(
+    x: number,
+    y: number,
+    tolerance?: number
+  ): AusstattungElement | null {
+    const toleranz = tolerance || defaultFloorPlanTolerance
+    let treffer: AusstattungElement | null = null
+    let kleinsteFlaeche = Infinity
+
+    this.ausstattung.forEach((el) => {
+      const w = el.drehung ?? 0
+      const cos = Math.cos(w)
+      const sin = Math.sin(w)
+      const rx = x - el.x
+      const ry = y - el.y
+      // Rückdrehung um -w: die Umkehrung von (dx·cos - dy·sin, dx·sin + dy·cos).
+      const dx = rx * cos + ry * sin
+      const dy = -rx * sin + ry * cos
+
+      if (
+        Math.abs(dx) <= el.breite / 2 + toleranz &&
+        Math.abs(dy) <= el.tiefe / 2 + toleranz
+      ) {
+        const flaeche = el.breite * el.tiefe
+        if (flaeche < kleinsteFlaeche) {
+          kleinsteFlaeche = flaeche
+          treffer = el
+        }
+      }
+    })
+
+    return treffer
+  }
+
+  /**
+   * Entfernt EIN Ausstattungs-Zeichen (E1). Bewusst über die Objektreferenz
+   * und nicht über einen Index: zwischen dem Zeigen der Rückfrage und dem
+   * Bestätigen liegt Zeit, in der sich die Liste verschoben haben kann — ein
+   * gemerkter Index würde dann das falsche Möbel löschen.
+   *
+   * Die PDF bleibt Grundwahrheit: gelöscht wird die ANZEIGE des Nutzers,
+   * neu geladen steht wieder alles da. Rückgabe meldet, ob wirklich etwas
+   * entfernt wurde (VERIFIED-EFFECT statt stillem No-Op).
+   */
+  public entferneAusstattung(element: AusstattungElement): boolean {
+    const index = this.ausstattung.indexOf(element)
+    if (index < 0) {
+      return false
+    }
+    this.ausstattung.splice(index, 1)
+    return true
+  }
+
+  /**
    * Sets a user-defined name for a label key. A blank name clears the override,
    * so the PDF-derived default name shows again.
    */

@@ -1,10 +1,53 @@
 import { Floorplan } from '../model/floorplan'
+import type { AusstattungElement } from '../model/floorplan'
 import { Wall } from '../model/wall'
 import { Corner } from '../model/corner'
 import { FloorplannerView, floorplannerModes } from './floorplanner_view'
 import type { UndoManager } from '../core/undo'
 
 type FloorplannerMode = (typeof floorplannerModes)[keyof typeof floorplannerModes]
+
+/**
+ * Wie lange der Zeiger ruhen muss, bis das Objekt darunter zum Löschen
+ * vorgeschlagen wird (E1). 700 ms ist die Mitte zwischen zwei Fehlern: zu kurz
+ * und die Rückfrage springt einen beim blossen Hinüberfahren an, zu lang und es
+ * fühlt sich kaputt an, weil man nicht weiss, ob noch etwas kommt.
+ */
+const VERWEIL_MS = 700
+
+/**
+ * Wie weit der Zeiger wackeln darf, ohne das Verweilen abzubrechen — in
+ * BILDSCHIRM-Pixeln, aus demselben Grund wie `GREIF_TOLERANZ_PX`. Ohne diese
+ * Toleranz bricht schon das Zittern der Hand (oder ein Trackpad-Rauschen von
+ * 1 px) das Verweilen ab, und die Rückfrage erschiene nie.
+ */
+const VERWEIL_WACKEL_PX = 4
+
+/**
+ * Was gerade zum Löschen vorgeschlagen wird (E1). Bewusst die Objektreferenz
+ * und nicht ein Index oder eine ID: zwischen Vorschlag und Bestätigung liegt
+ * eine Rückfrage, und in dieser Zeit darf sich die Liste verschieben, ohne dass
+ * am Ende das Falsche verschwindet.
+ */
+export type LoeschZiel =
+  | { art: 'ecke'; ecke: Corner; beschreibung: string }
+  | { art: 'wand'; wand: Wall; beschreibung: string }
+  | { art: 'ausstattung'; element: AusstattungElement; beschreibung: string }
+
+/** Deutsche Namen der Ausstattungs-Zeichen für die Rückfrage (E1). */
+const AUSSTATTUNG_NAME: Record<string, string> = {
+  tisch: 'Tisch',
+  rundtisch: 'Runder Tisch',
+  stuhl: 'Stuhl',
+  schrank: 'Schrank',
+  treppe: 'Treppe',
+  wc: 'WC',
+  waschbecken: 'Waschbecken',
+  kochfeld: 'Kochfeld',
+  pflanze: 'Pflanze',
+  aufzug: 'Aufzug',
+  flaeche: 'Fläche'
+}
 
 /** how much will we move a corner to make a wall axis aligned (cm) */
 const snapTolerance = 25
@@ -150,9 +193,150 @@ export class Floorplanner {
   /** Meldet Zoomstufe + Einpass-Moeglichkeit an die Oberflaeche. */
   private zoomCallbacks: Array<(zoom: number) => void> = []
 
+  // ------------------------------------------------- Löschen per Verweilen (E1)
+
+  /** Was gerade zum Löschen vorgeschlagen ist — `null` heisst: keine Rückfrage. */
+  public loeschKandidat: LoeschZiel | null = null
+
+  /** Was der Zeiger gerade überdeckt, auch ohne dass schon verweilt wurde. */
+  public activeAusstattung: AusstattungElement | null = null
+
+  /** Läuft, solange der Zeiger über einem löschbaren Objekt ruht. */
+  private verweilTimer: ReturnType<typeof setTimeout> | null = null
+
+  /** Zeigerposition, an der das aktuelle Verweilen begann (Bildschirm-Pixel). */
+  private verweilX = 0
+  private verweilY = 0
+
+  /** Meldet der Oberfläche, dass eine Rückfrage zu zeigen (oder zu schliessen) ist. */
+  private loeschAnfrageCallbacks: Array<(ziel: LoeschZiel | null) => void> = []
+
   /** Add a callback for mode reset */
   public addModeResetCallback(callback: (mode: FloorplannerMode) => void): void {
     this.modeResetCallbacks.push(callback)
+  }
+
+  /**
+   * Die Oberfläche hängt sich hier ein, um die Rückfrage zu zeigen (E1).
+   * Wird mit `null` gerufen, sobald der Vorschlag hinfällig ist — die
+   * Rückfrage muss also nie selbst raten, wann sie wieder verschwindet.
+   */
+  public addLoeschAnfrageCallback(callback: (ziel: LoeschZiel | null) => void): void {
+    this.loeschAnfrageCallbacks.push(callback)
+  }
+
+  /** Startet das Verweilen neu — bei jeder Zeigerbewegung. */
+  private verweilenNeuStarten(screenX: number, screenY: number): void {
+    this.verweilAbbrechen()
+    this.verweilX = screenX
+    this.verweilY = screenY
+    this.verweilTimer = setTimeout(() => this.verweilenAbgelaufen(), VERWEIL_MS)
+  }
+
+  /** Stoppt das Verweilen, ohne einen bestehenden Vorschlag anzutasten. */
+  private verweilAbbrechen(): void {
+    if (this.verweilTimer !== null) {
+      clearTimeout(this.verweilTimer)
+      this.verweilTimer = null
+    }
+  }
+
+  /**
+   * Der Zeiger hat lange genug geruht: was liegt darunter? Die Reihenfolge
+   * Ecke → Wand → Ausstattung ist dieselbe wie beim Greifen, damit „was ich
+   * hervorgehoben sehe" und „was gelöscht wird" nie auseinanderlaufen.
+   */
+  private verweilenAbgelaufen(): void {
+    this.verweilTimer = null
+    if (this.mode != floorplannerModes.DELETE || this.mouseDown) {
+      return
+    }
+
+    let ziel: LoeschZiel | null = null
+    if (this.activeCorner) {
+      ziel = { art: 'ecke', ecke: this.activeCorner, beschreibung: 'diese Ecke mit allen Wänden daran' }
+    } else if (this.activeWall) {
+      ziel = { art: 'wand', wand: this.activeWall, beschreibung: this.wandBeschreibung(this.activeWall) }
+    } else if (this.activeAusstattung) {
+      const el = this.activeAusstattung
+      ziel = {
+        art: 'ausstattung',
+        element: el,
+        beschreibung: AUSSTATTUNG_NAME[el.typ] ?? el.typ
+      }
+    }
+
+    if (ziel) {
+      this.loeschKandidat = ziel
+      this.view.draw()
+      this.loeschAnfrageCallbacks.forEach((cb) => cb(ziel))
+    }
+  }
+
+  /**
+   * „diese Wand (3,63 m lang)" — damit die Rückfrage benennt, was verschwindet.
+   * Zwei Nachkommastellen in Metern, also Zentimeter: dieselbe Genauigkeit wie
+   * `Dimensioning.cmToMeasure` (Projekt-DNA Punkt 3 — eine dritte Stelle wäre
+   * Scheingenauigkeit, der Plan ist freihändig gezeichnet).
+   */
+  private wandBeschreibung(wand: Wall): string {
+    const dx = wand.getEndX() - wand.getStartX()
+    const dy = wand.getEndY() - wand.getStartY()
+    const laengeM = Math.hypot(dx, dy) / 100
+    return `diese Wand (${laengeM.toFixed(2).replace('.', ',')} m lang)`
+  }
+
+  /**
+   * Nimmt den Vorschlag zurück, ohne zu löschen — bei Zeigerbewegung, Escape,
+   * Moduswechsel oder wenn die Oberfläche „Abbrechen" meldet.
+   */
+  public loeschungAbbrechen(): void {
+    this.verweilAbbrechen()
+    if (this.loeschKandidat === null) {
+      return
+    }
+    this.loeschKandidat = null
+    this.view.draw()
+    this.loeschAnfrageCallbacks.forEach((cb) => cb(null))
+  }
+
+  /**
+   * Führt die bestätigte Löschung aus (E1). Der Undo-Schnappschuss wird ERST
+   * hier gezogen, nicht schon beim Vorschlagen: ein weggeklickter Vorschlag
+   * darf die Historie nicht mit Leerschritten füllen.
+   *
+   * Rückgabe meldet, ob wirklich etwas verschwunden ist — ein stilles „ist
+   * erledigt" ohne gemessene Wirkung wäre eine Behauptung, kein Beweis.
+   */
+  public loeschungBestaetigen(): boolean {
+    const ziel = this.loeschKandidat
+    if (!ziel) {
+      return false
+    }
+
+    this.undoManager?.snapshot()
+    let entfernt = false
+
+    if (ziel.art === 'ecke') {
+      ziel.ecke.removeAll()
+      entfernt = true
+    } else if (ziel.art === 'wand') {
+      ziel.wand.remove()
+      entfernt = true
+    } else {
+      entfernt = this.floorplan.entferneAusstattung(ziel.element)
+    }
+
+    // Der Vorschlag ist verbraucht, und was gelöscht wurde, kann der Zeiger
+    // nicht mehr überdecken — sonst schlüge das nächste Verweilen dasselbe
+    // (jetzt verschwundene) Objekt erneut vor.
+    this.loeschKandidat = null
+    this.activeCorner = null
+    this.activeWall = null
+    this.activeAusstattung = null
+    this.view.draw()
+    this.loeschAnfrageCallbacks.forEach((cb) => cb(null))
+    return entfernt
   }
 
   /**
@@ -363,8 +547,47 @@ export class Floorplanner {
       } else {
         this.activeWall = null
       }
+
+      // Ausstattung greifen (E1) — BEWUSST nur im Löschen-Werkzeug. Im
+      // Verschieben-Modus würde ein hervorgehobenes Möbel nur verwirren, denn
+      // bewegen lässt es sich (noch) nicht; und Zeile "panning" unten prüft
+      // ausschliesslich Ecke/Wand, bliebe davon also unberührt.
+      if (this.mode == floorplannerModes.DELETE) {
+        const hoverAusstattung =
+          this.activeCorner == null && this.activeWall == null
+            ? this.floorplan.overlappedAusstattung(this.mouseX, this.mouseY, toleranz)
+            : null
+        if (hoverAusstattung != this.activeAusstattung) {
+          this.activeAusstattung = hoverAusstattung
+          draw = true
+        }
+      } else if (this.activeAusstattung != null) {
+        this.activeAusstattung = null
+        draw = true
+      }
+
       if (draw) {
         this.view.draw()
+      }
+
+      // --- Verweilen (E1)
+      // Jede echte Bewegung nimmt einen offenen Vorschlag zurück und setzt die
+      // Uhr neu. Die Wackel-Toleranz ist nötig, weil eine ruhende Hand trotzdem
+      // einzelne Pixel-Ereignisse erzeugt — ohne sie liefe die Uhr nie ab.
+      const wackel = Math.hypot(this.rawMouseX - this.verweilX, this.rawMouseY - this.verweilY)
+      if (wackel > VERWEIL_WACKEL_PX) {
+        if (this.loeschKandidat) {
+          this.loeschungAbbrechen()
+        }
+        const etwasUnterDemZeiger =
+          this.activeCorner != null || this.activeWall != null || this.activeAusstattung != null
+        if (this.mode == floorplannerModes.DELETE && etwasUnterDemZeiger) {
+          this.verweilenNeuStarten(this.rawMouseX, this.rawMouseY)
+        } else {
+          this.verweilAbbrechen()
+          this.verweilX = this.rawMouseX
+          this.verweilY = this.rawMouseY
+        }
       }
     }
 
