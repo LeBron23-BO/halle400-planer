@@ -17,6 +17,8 @@ import { loadRoomMeta } from '@/lib/labelStore'
 import { SaveFloorplanDialog } from './SaveFloorplanDialog'
 import { TouchHelp } from './TouchHelp'
 import { ControlsHelp } from './ControlsHelp'
+import { LoeschRueckfrage } from './LoeschRueckfrage'
+import type { LoeschZiel } from '@blueprint3d/floorplanner/floorplanner'
 import DefaultFloorplan from '@blueprint3d/templates/default.json'
 import { blueprintStorage } from '@/services/storage'
 
@@ -93,6 +95,9 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
   // die Schaltflaechen ausgegraut sind, wenn es nichts zurueckzunehmen gibt.
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
+  // Was gerade zum Loeschen vorgeschlagen ist (E1) — gespiegelt aus dem
+  // Floorplanner, damit die Rueckfrage im React-Baum leben kann.
+  const [loeschAnfrage, setLoeschAnfrage] = useState<LoeschZiel | null>(null)
 
   const [currentBlueprint, setCurrentBlueprint] = useState<{
     id: string
