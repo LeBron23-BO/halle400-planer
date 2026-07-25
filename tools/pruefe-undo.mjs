@@ -166,9 +166,24 @@ await klick(L.loeschen)
 await page.waitForTimeout(400)
 await page.evaluate((z) => {
   window.__maus('mousemove', z.x, z.y) // setzt activeWall
-  window.__maus('mousedown', z.x, z.y) // loescht im DELETE-Modus
+  window.__maus('mousedown', z.x, z.y) // schlaegt im DELETE-Modus das Loeschen vor
   window.__maus('mouseup', z.x, z.y)
 }, ziel)
+await page.waitForTimeout(400)
+
+// Seit E1 loescht der Klick nicht mehr sofort, sondern fragt zurueck. Diese
+// Pruefung gilt dem RUECKGAENGIG, nicht dem Bedienweg — also wird hier
+// bestaetigt und danach wie gehabt gemessen. Faellt die Rueckfrage einmal weg,
+// bleibt der Zweig einfach wirkungslos, statt die Pruefung zum Absturz zu
+// bringen.
+const bestaetigt = await page.evaluate(() => {
+  const b = [...document.querySelectorAll('[role="alertdialog"] button')].find((x) =>
+    x.innerText.trim().startsWith('Entfernen')
+  )
+  if (b) b.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  return !!b
+})
+log(`SCHRITT 4b: Loesch-Rueckfrage bestaetigt (E1) = ${bestaetigt}`)
 await page.waitForTimeout(400)
 const B = await mass()
 log(`SCHRITT 5: nach LOESCHEN bei (${ziel.x},${ziel.y}) -> B = ${zeig(B)}  (Unterschied zu A: ${unterschied(B, A).toFixed(0)})`)
