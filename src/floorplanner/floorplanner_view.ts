@@ -63,7 +63,13 @@ const ausstattungLinienBreite = 1
  * Detail, das zu einem Fleck verklumpt.
  */
 const AUSSTATTUNG_DETAIL_AB = 0.3
-const AUSSTATTUNG_UMRISS_AB = 0.03
+/**
+ * Exportiert, weil der Floorplanner dieselbe Schwelle fürs GREIFEN braucht
+ * (E1): was nicht gezeichnet wird, darf auch nicht getroffen und gelöscht
+ * werden — sonst verschwände beim weit herausgezoomten Blick ein Möbel, das
+ * der Nutzer an dieser Stelle gar nicht sehen konnte.
+ */
+export const AUSSTATTUNG_UMRISS_AB = 0.03
 
 // corner config
 const cornerRadius = 0

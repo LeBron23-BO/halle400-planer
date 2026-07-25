@@ -2,7 +2,7 @@ import { Floorplan } from '../model/floorplan'
 import type { AusstattungElement } from '../model/floorplan'
 import { Wall } from '../model/wall'
 import { Corner } from '../model/corner'
-import { FloorplannerView, floorplannerModes } from './floorplanner_view'
+import { FloorplannerView, floorplannerModes, AUSSTATTUNG_UMRISS_AB } from './floorplanner_view'
 import type { UndoManager } from '../core/undo'
 
 type FloorplannerMode = (typeof floorplannerModes)[keyof typeof floorplannerModes]
@@ -570,8 +570,13 @@ export class Floorplanner {
       // bewegen lässt es sich (noch) nicht; und Zeile "panning" unten prüft
       // ausschliesslich Ecke/Wand, bliebe davon also unberührt.
       if (this.mode == floorplannerModes.DELETE) {
+        // Nur greifbar, solange die Ausstattung auch GEZEICHNET wird. Ohne
+        // diese Kopplung liesse sich beim weit herausgezoomten Blick ein Möbel
+        // löschen, das dort gar nicht zu sehen ist — die Rückfrage benennte
+        // dann einen „Stuhl", den der Nutzer nirgends findet.
+        const sichtbar = this.pixelProCm() >= AUSSTATTUNG_UMRISS_AB
         const hoverAusstattung =
-          this.activeCorner == null && this.activeWall == null
+          sichtbar && this.activeCorner == null && this.activeWall == null
             ? this.floorplan.overlappedAusstattung(this.mouseX, this.mouseY, toleranz)
             : null
         if (hoverAusstattung != this.activeAusstattung) {
