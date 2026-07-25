@@ -219,6 +219,54 @@ nach jedem Zug (Exit 0 = bestanden). Dass die Wiederherstellung auf Abweichung
 **0** landet, beweist zugleich, dass die Ansicht nicht springt — ein verschobener
 Ausschnitt ergäbe bei identischer Geometrie ein anderes Bild.
 
+## Bank-Ansicht: das Modell für den Businessplan (E4)
+
+Für den Businessplan gibt es eine **einzelne HTML-Datei**, die eine Bank per
+Doppelklick öffnet — ohne Node, ohne Server, ohne Netz, ohne Installation.
+
+```
+node tools/baue-bank-ansicht.mjs     # erzeugt Halle400-Modell.html (~2 MB)
+node tools/pruefe-bank-ansicht.mjs   # prüft sie UNTER Bank-Bedingungen + erzeugt bank-export/*.png
+```
+
+Ergebnis: `Halle400-Modell.html` (drehbares Modell) und vier Standbilder in
+`bank-export/` fürs gedruckte Papier.
+
+**Warum eine eigene Datei und nicht `app/out/`:** Der Next-Export schreibt
+absolute Asset-Pfade und braucht deshalb `serve-local.mjs` — also eine
+Node-Installation, die eine Bank nicht hat (siehe „Warum kein Doppelklick auf
+eine HTML-Datei" weiter oben).
+
+**Die drei Offline-Blocker** lagen im Renderpfad und luden alle von einem
+FREMDEN CDN (`cdn-images.lumenfeng.com`): Bodentextur (`src/model/room.ts`),
+Wandtextur (`src/model/wall.ts`), Wand-Lichtkarte (`src/three/edge.ts`). Die
+Bank-Ansicht **rechnet** ihre Maserung stattdessen im Browser — das wiegt nichts
+und kann nicht ausfallen, wenn ein fremder Anbieter seine URLs ändert.
+
+**Die Prüfung ist der Zweck, die Bilder sind das Nebenprodukt.** Geprüft wird
+unter genau den Bedingungen der Bank: `file://`, **Netz hart gesperrt**, keine
+Konsolenfehler. Ohne die Netzsperre bestünde die Prüfung auch mit einer
+verbliebenen CDN-URL — auf *diesem* Rechner ist das CDN ja erreichbar; der
+Fehler zeigte sich erst bei der Bank, wo niemand mehr nachbessern kann.
+
+**Grenzen, bewusst so:** Die Datei ist ein BETRACHTER, kein Editor. Sie zeichnet
+die Geometrie eigenständig aus dem Grundriss-JSON und teilt sich den Code nicht
+mit `src/three/` — den ganzen Editor-Graphen ohne Bündler in eine Datei zu
+pressen wäre fragiler als 200 Zeilen Betrachter. Damit beide nicht
+auseinanderlaufen, liest der Generator die Ausstattungs-Höhen zur Bauzeit aus
+`src/three/ausstattung.ts`, statt sie abzuschreiben. Ändert dort jemand eine
+Höhe, ändert sich die Bank-Ansicht mit; fehlt der Block, bricht der Generator ab.
+
+Zwei Stolpersteine, falls `three` einmal aktualisiert wird — der Generator
+bricht dann laut ab, statt eine weiße Seite auszuliefern:
+
+- `three.module.js` ist **nicht selbstständig**, sondern ein Aufsatz auf
+  `three.core.js`, und trägt DREI Modul-Blöcke (Import, Re-Export, eigener
+  Export). Wer nur den letzten entfernt, bekommt „Unexpected token 'export'".
+- Beide Dateien einfach aneinanderzuhängen scheitert an gleichnamigen internen
+  Hilfsgrößen (`_m1$1`). Jede bekommt deshalb einen eigenen Scope, verbunden
+  über einen gemeinsamen Namens-Beutel.
+
 ## Bekannte offene Punkte
 
 - **Mobile Kopfleiste überlappt** (Upstream-Layout): bei 390 px verdeckt der

@@ -110,22 +110,14 @@ pruefe(modell !== null && modell.moebelZahl > 100, `SCHRITT 5: die Ausstattung i
 // --- Ist wirklich etwas ZU SEHEN? Ein leerer Betrachter meldet sich genauso
 // bereit wie ein voller. Gemessen wird die Farbvielfalt: eine leere Szene
 // zeigt nur die Hintergrundfarbe.
-const sicht = bereit
-  ? await page.evaluate(() => {
-      const c = document.querySelector('#buehne canvas')
-      const h = document.createElement('canvas')
-      h.width = 200
-      h.height = 130
-      const g = h.getContext('2d')
-      g.drawImage(c, 0, 0, 200, 130)
-      const d = g.getImageData(0, 0, 200, 130).data
-      const toene = new Set()
-      for (let i = 0; i < d.length; i += 4) {
-        toene.add((d[i] >> 4) + ',' + (d[i + 1] >> 4) + ',' + (d[i + 2] >> 4))
-      }
-      return toene.size
-    })
-  : 0
+//
+// Die Messung liegt IM Betrachter (window.__modell.farbtoene), weil sie direkt
+// nach einem render() aus WebGL lesen muss. Der Umweg ueber ein 2D-Canvas
+// scheiterte hier zuerst: ohne preserveDrawingBuffer ist der Zeichenpuffer
+// nach dem Anzeigen leer, die Messung meldete "1 Farbton" — waehrend das
+// Standbild daneben die komplette Halle zeigte. Ein Gate, das das Gegenteil
+// dessen behauptet, was im Bild steht, verdaechtigt man zuerst selbst.
+const sicht = bereit ? await page.evaluate(() => window.__modell.farbtoene()) : 0
 pruefe(sicht > 12, `SCHRITT 6: das Bild zeigt wirklich etwas (${sicht} verschiedene Farbtoene, nicht nur Hintergrund)`)
 
 // ---- Standbilder fuers Papier ----------------------------------------------

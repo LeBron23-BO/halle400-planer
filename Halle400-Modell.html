@@ -77788,9 +77788,36 @@ bild();
 
 // Fuer die Standbild-Erzeugung (tools/baue-bank-bilder.mjs) und als ehrliche
 // Selbstauskunft: was wurde wirklich gebaut?
-window.__modell = { wandZahl, moebelZahl, breite, tiefe, blick: (d, n) => {
-  drehung = d; neigung = n; abstand = abstandFuerGanzeHalle(); kameraSetzen();
-} };
+window.__modell = {
+  wandZahl, moebelZahl, breite, tiefe,
+  blick: (d, n) => {
+    drehung = d; neigung = n; abstand = abstandFuerGanzeHalle(); kameraSetzen();
+  },
+  /**
+   * Wie viele verschiedene Farbtoene stehen gerade im Bild? Beweist, dass
+   * wirklich etwas zu sehen ist — ein leerer Betrachter meldet sich genauso
+   * bereit wie ein voller.
+   *
+   * Gelesen wird DIREKT aus WebGL und unmittelbar nach einem render(). Der
+   * naheliegende Weg (das Canvas per drawImage auf ein 2D-Canvas kopieren)
+   * liefert ein LEERES Bild: ohne preserveDrawingBuffer ist der Zeichenpuffer
+   * nach dem Anzeigen dahin. Genau daran scheiterte die erste Messung — sie
+   * meldete "1 Farbton", waehrend das Standbild die ganze Halle zeigte.
+   */
+  farbtoene: () => {
+    maler.render(szene, kamera);
+    const gl = maler.getContext();
+    const b = gl.drawingBufferWidth;
+    const h = gl.drawingBufferHeight;
+    const px = new Uint8Array(b * h * 4);
+    gl.readPixels(0, 0, b, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    const toene = new Set();
+    for (let i = 0; i < px.length; i += 4 * 37) {
+      toene.add((px[i] >> 4) + ',' + (px[i + 1] >> 4) + ',' + (px[i + 2] >> 4));
+    }
+    return toene.size;
+  }
+};
 window.__bereit = true;
 
 </script>
