@@ -73,12 +73,17 @@ async function oeffne(browser) {
   await page.waitForTimeout(400)
 
   await page.evaluate(() => {
-    window.__messe3d = () => {
+    window.__messe3d = async () => {
       // Der 3D-Canvas ist das Kind von #viewer; #floorplanner-canvas ist die
       // 2D-Ansicht und hier bewusst NICHT gemeint.
       const gl = document.querySelector('#viewer canvas')
       const bild = new Image()
       bild.src = gl.toDataURL('image/png')
+      // PFLICHT: ein Image laedt auch aus einer data-URL asynchron. Ohne
+      // decode() zeichnet drawImage ein leeres Bild und die Messung meldet
+      // null Pixel — ein Fehlschlag des Messwerkzeugs, der wie ein Fehlschlag
+      // des Gemessenen aussieht.
+      await bild.decode()
       const hilfs = document.createElement('canvas')
       hilfs.width = gl.width
       hilfs.height = gl.height
@@ -135,7 +140,7 @@ async function oeffne(browser) {
   return page
 }
 
-const messe = (page) => page.evaluate(() => window.__messe3d())
+const messe = (page) => page.evaluate(async () => await window.__messe3d())
 
 /** Kamera weit rausziehen (bis an controls.maxDistance). */
 async function zoomeRaus(page, schritte = 25) {
