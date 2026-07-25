@@ -156,6 +156,17 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
       setCanRedo(blueprint3d.undo.canRedo())
     })
 
+    // Werkzeugwechsel -> React spiegeln (E2). Der Floorplanner schaltet auch von
+    // SELBST zurueck: bei Escape, bei einem Klick ins Leere im Loeschen-Werkzeug
+    // und wenn ein Streckenzug an einer vorhandenen Ecke schliesst. Ohne diese
+    // Spiegelung blieb die Leiste auf "Waende zeichnen" stehen, obwohl laengst
+    // das Verschieben aktiv war — die Anzeige log ueber den Zustand.
+    blueprint3dRef.current.floorplanner?.addModeResetCallback((m) => {
+      setFloorplannerMode(
+        m === floorplannerModes.DRAW ? 'draw' : m === floorplannerModes.DELETE ? 'delete' : 'move'
+      )
+    })
+
     // Loesch-Rueckfrage -> React spiegeln (E1). Der Floorplanner meldet mit
     // `null`, wenn der Vorschlag hinfaellig ist — die Rueckfrage muss also nie
     // selbst raten, wann sie wieder verschwindet.

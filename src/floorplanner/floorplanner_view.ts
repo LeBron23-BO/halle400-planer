@@ -40,6 +40,14 @@ const deleteColor = '#ff0000'
  */
 const loeschFuellung = 'rgba(255, 0, 0, 0.22)'
 
+/**
+ * Ring um eine Ecke, auf die der nächste Zeichenpunkt einrastet (E2). Grün,
+ * bewusst NICHT die Hover-Farbe: Hover heisst „das könntest du greifen",
+ * Einrasten heisst „hier landet der Punkt wirklich" — zwei verschiedene
+ * Aussagen brauchen zwei verschiedene Farben.
+ */
+const fangFarbe = '#22a04a'
+
 // Ausstattung (A1) — bewusst zurückhaltend: die Bausubstanz muss die
 // kräftigste Linie im Bild bleiben, die Möblierung ist Beiwerk.
 // Bewusst ein BLAUGRAU, kein neutrales Grau: die Wand-Kante ist #888888
@@ -529,22 +537,48 @@ export class FloorplannerView {
 
   /** */
   private drawTarget(x: number, y: number, lastNode: Corner | null) {
-    this.drawCircle(
-      this.viewmodel.convertX(x),
-      this.viewmodel.convertY(y),
-      cornerRadiusHover,
-      cornerColorHover
-    )
-    if (this.viewmodel.lastNode) {
-      this.drawLine(
-        this.viewmodel.convertX(lastNode!.x),
-        this.viewmodel.convertY(lastNode!.y),
-        this.viewmodel.convertX(x),
-        this.viewmodel.convertY(y),
-        wallWidthHover,
-        wallColorHover
-      )
+    const zx = this.viewmodel.convertX(x)
+    const zy = this.viewmodel.convertY(y)
+
+    // Rastet der Punkt gerade auf eine vorhandene Ecke ein (E2), wird das
+    // ANGEZEIGT — ein grösserer Ring in der Fangfarbe. Einrasten, das man nicht
+    // sieht, hilft wenig: man erführe erst nach dem Klick, ob der Anschluss
+    // sass, und müsste im Zweifel zurücknehmen.
+    if (this.viewmodel.fangEcke) {
+      this.drawCircle(zx, zy, cornerRadiusHover + 5, fangFarbe)
     }
+    this.drawCircle(zx, zy, cornerRadiusHover, cornerColorHover)
+
+    if (this.viewmodel.lastNode) {
+      const ax = this.viewmodel.convertX(lastNode!.x)
+      const ay = this.viewmodel.convertY(lastNode!.y)
+      this.drawLine(ax, ay, zx, zy, wallWidthHover, wallColorHover)
+
+      // Live-Länge in Metern (E2). Ohne sie zeichnet man ins Blaue und misst
+      // erst hinterher nach. Zwei Nachkommastellen = Zentimeter, dieselbe
+      // Genauigkeit wie die Wand-Massangaben (Projekt-DNA Punkt 3).
+      const laenge = this.viewmodel.zeichenLaenge()
+      if (laenge !== null && laenge > 0) {
+        const text = `${(laenge / 100).toFixed(2).replace('.', ',')} m`
+        // Mittig auf der Strecke, ein Stück oberhalb — auf der Linie selbst
+        // läge die Schrift unter dem Strich und wäre schlecht zu lesen.
+        this.zeichneLaengenSchild(text, (ax + zx) / 2, (ay + zy) / 2 - 12)
+      }
+    }
+  }
+
+  /** Meterangabe der gezogenen Strecke, auf hellem Grund lesbar (E2). */
+  private zeichneLaengenSchild(text: string, x: number, y: number) {
+    this.context.font = 'bold 13px sans-serif'
+    this.context.textAlign = 'center'
+    this.context.textBaseline = 'middle'
+    const breite = this.context.measureText(text).width
+    // Hinterlegt, weil die Strecke über Räume, Möbel und das Raster laufen kann
+    // — auf hellem Grund allein wäre der Text stellenweise unlesbar.
+    this.context.fillStyle = 'rgba(255, 255, 255, 0.92)'
+    this.context.fillRect(x - breite / 2 - 5, y - 10, breite + 10, 20)
+    this.context.fillStyle = wallColorHover
+    this.context.fillText(text, x, y)
   }
 
   /** */

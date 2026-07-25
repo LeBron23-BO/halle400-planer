@@ -24,6 +24,26 @@ const VERWEIL_MS = 700
 const VERWEIL_WACKEL_PX = 4
 
 /**
+ * Wie nah der Zeiger einer vorhandenen Ecke kommen muss, damit der neue Punkt
+ * exakt auf sie fällt (E2). In BILDSCHIRM-Pixeln, aus demselben Grund wie
+ * `GREIF_TOLERANZ_PX`. Grosszügiger als die Greifzone (8 px), weil Fangen ein
+ * Angebot ist: daneben zu klicken kostet einen Zug, den Anschluss zu verfehlen
+ * kostet eine Wand, die in 3D Licht durchlässt.
+ */
+const FANG_ECKE_PX = 14
+
+/** Auf welche Winkel eingerastet wird: alle 45°. */
+const WINKEL_RASTER = Math.PI / 4
+
+/**
+ * Wie weit man daneben zielen darf und trotzdem auf dem glatten Winkel landet:
+ * 5°. Grösser gedacht war es zuerst — bei 45°-Raster und 10° Fenster liegen
+ * die Fenster aber schon bei einem Viertel des Kreises, und eine bewusst
+ * schräge Wand liesse sich kaum noch zeichnen.
+ */
+const WINKEL_TOLERANZ = (5 * Math.PI) / 180
+
+/**
  * Was gerade zum Löschen vorgeschlagen wird (E1). Bewusst die Objektreferenz
  * und nicht ein Index oder eine ID: zwischen Vorschlag und Bestätigung liegt
  * eine Rückfrage, und in dieser Zeit darf sich die Liste verschieben, ohne dass
@@ -200,6 +220,14 @@ export class Floorplanner {
 
   /** Was der Zeiger gerade überdeckt, auch ohne dass schon verweilt wurde. */
   public activeAusstattung: AusstattungElement | null = null
+
+  /**
+   * Die vorhandene Ecke, auf die der nächste Punkt gerade einrastet (E2), oder
+   * `null`. Die Ansicht hebt sie hervor — Einrasten, das man nicht SIEHT, ist
+   * kaum besser als keins: man erfährt sonst erst nach dem Klick, ob der
+   * Anschluss saß.
+   */
+  public fangEcke: Corner | null = null
 
   /** Läuft, solange der Zeiger über einem löschbaren Objekt ruht. */
   private verweilTimer: ReturnType<typeof setTimeout> | null = null
@@ -467,28 +495,96 @@ export class Floorplanner {
       this.loeschungAbbrechen()
       return
     }
+    // Beim Zeichnen beendet Escape zuerst den laufenden Streckenzug (E2), ohne
+    // das Werkzeug wegzunehmen: nach einer fertigen Wand will man meist gleich
+    // die nächste ziehen, nicht erst „Wände zeichnen" neu greifen. Ein zweites
+    // Escape legt dann das Werkzeug zurück.
+    if (this.mode == floorplannerModes.DRAW && this.lastNode) {
+      this.lastNode = null
+      this.fangEcke = null
+      this.updateTarget()
+      return
+    }
     this.setMode(floorplannerModes.MOVE)
   }
 
-  /** */
+  /**
+   * Wohin der nächste Punkt WIRKLICH gesetzt wird (E2) — zwei Einrastungen,
+   * in dieser Reihenfolge:
+   *
+   * 1. AN EINE VORHANDENE ECKE. Wichtigster Fall: eine neue Trennwand soll an
+   *    die Aussenwand anschliessen. Ohne Fang landet der Punkt ein paar
+   *    Zentimeter daneben — sichtbar erst in 3D, wo dann Licht durch den Spalt
+   *    fällt. Der Fang gewinnt IMMER, denn ein exakter Anschluss ist
+   *    wertvoller als ein glatter Winkel.
+   *
+   * 2. AUF EINEN GLATTEN WINKEL zur zuletzt gesetzten Ecke (0°, 45°, 90°, …).
+   *
+   * Warum Winkel statt der bisherigen Achsen-Prüfung: vorher wurde x oder y auf
+   * die letzte Ecke gezogen, wenn die Differenz unter 25 cm lag. Das ist ein
+   * ABSOLUTES Fenster — bei einer 6 m langen Wand entspricht es rund 2,4°, man
+   * verfehlt die Waagerechte also fast immer. Ein Winkelfenster ist von der
+   * Länge unabhängig: nah an der letzten Ecke ebenso treffsicher wie weit weg.
+   */
   private updateTarget(): void {
-    if (this.mode == floorplannerModes.DRAW && this.lastNode) {
-      if (Math.abs(this.mouseX - this.lastNode.x) < snapTolerance) {
-        this.targetX = this.lastNode.x
-      } else {
-        this.targetX = this.mouseX
-      }
-      if (Math.abs(this.mouseY - this.lastNode.y) < snapTolerance) {
-        this.targetY = this.lastNode.y
-      } else {
-        this.targetY = this.mouseY
-      }
-    } else {
+    if (this.mode != floorplannerModes.DRAW) {
       this.targetX = this.mouseX
       this.targetY = this.mouseY
+      this.fangEcke = null
+      this.view.draw()
+      return
     }
 
+    // --- 1. an eine vorhandene Ecke fangen
+    const fangToleranz = FANG_ECKE_PX * this.cmPerPixel
+    const fang = this.floorplan.overlappedCorner(this.mouseX, this.mouseY, fangToleranz)
+    if (fang && fang !== this.lastNode) {
+      this.targetX = fang.x
+      this.targetY = fang.y
+      this.fangEcke = fang
+      this.view.draw()
+      return
+    }
+    this.fangEcke = null
+
+    // --- 2. auf einen glatten Winkel einrasten
+    if (this.lastNode) {
+      const dx = this.mouseX - this.lastNode.x
+      const dy = this.mouseY - this.lastNode.y
+      const laenge = Math.hypot(dx, dy)
+      if (laenge > 0) {
+        const winkel = Math.atan2(dy, dx)
+        const gerastet = Math.round(winkel / WINKEL_RASTER) * WINKEL_RASTER
+        // Differenz normalisiert auf -PI..PI, sonst gilt der Sprung bei +/-180°
+        // als riesige Abweichung und rastet dort nie ein.
+        let abweichung = winkel - gerastet
+        while (abweichung > Math.PI) abweichung -= 2 * Math.PI
+        while (abweichung < -Math.PI) abweichung += 2 * Math.PI
+
+        if (Math.abs(abweichung) <= WINKEL_TOLERANZ) {
+          this.targetX = this.lastNode.x + Math.cos(gerastet) * laenge
+          this.targetY = this.lastNode.y + Math.sin(gerastet) * laenge
+          this.view.draw()
+          return
+        }
+      }
+    }
+
+    this.targetX = this.mouseX
+    this.targetY = this.mouseY
     this.view.draw()
+  }
+
+  /**
+   * Länge der Strecke, die gerade gezogen wird (E2) — in cm, `null` wenn nicht
+   * gezeichnet wird. Die Ansicht schreibt sie als Meterangabe an die Linie:
+   * ohne sie zeichnet man ins Blaue und misst erst hinterher nach.
+   */
+  public zeichenLaenge(): number | null {
+    if (this.mode != floorplannerModes.DRAW || !this.lastNode) {
+      return null
+    }
+    return Math.hypot(this.targetX - this.lastNode.x, this.targetY - this.lastNode.y)
   }
 
   /** */
