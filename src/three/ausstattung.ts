@@ -209,7 +209,7 @@ export class AusstattungThree {
       // Tischen weg statt zu ihnen zeigen.
       quaternion.setFromAxisAngle(yAchse, -(el.drehung ?? 0))
 
-      skalierung.set(el.breite, hoehe, el.tiefe)
+      skalierung.set(el.breite, dicke, el.tiefe)
 
       matrix.compose(position, quaternion, skalierung)
       mesh.setMatrixAt(i, matrix)
