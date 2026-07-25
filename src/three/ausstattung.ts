@@ -31,10 +31,11 @@ import type { AusstattungElement, AusstattungTyp } from '../model/floorplan'
  */
 
 /**
- * Gesetzte Bauhöhen in cm — KEINE Messwerte aus der PDF (siehe Klassen-Kopf).
- * Grundlage sind übliche Möbel- und Sanitärmaße; die Quelle steht je Zeile.
+ * Gesetzte OBERKANTEN in cm über dem Boden — KEINE Messwerte aus der PDF
+ * (siehe Klassen-Kopf). Grundlage sind übliche Möbel- und Sanitärmaße; die
+ * Quelle steht je Zeile.
  */
-const HOEHE_CM: Record<AusstattungTyp, number> = {
+const OBERKANTE_CM: Record<AusstattungTyp, number> = {
   // Feste Arbeitshöhe nach DIN EN 527-1 (Büroarbeitstisch).
   tisch: 74,
   // Gleiche Arbeitshöhe — die Loggia-Tische sind Sitz-, keine Stehtische.
@@ -62,6 +63,25 @@ const HOEHE_CM: Record<AusstattungTyp, number> = {
   aufzug: 300,
   // Untergrund (Loggien-Belag, Kiesbett) — eine Lage, kein Möbel.
   flaeche: 2
+}
+
+/**
+ * Körperhöhe in cm, wo sie NICHT bis zum Boden reicht.
+ *
+ * Ein Grundriss zeigt vom Tisch die PLATTE — ihre Fläche ist das, was
+ * gemessen wurde. Ein Vollkörper vom Boden bis 74 cm würde darüber hinaus
+ * behaupten, das Volumen darunter sei belegt; das steht so nicht im Plan, und
+ * bei einem 290 × 350 cm großen Konferenztisch wird aus dieser Behauptung ein
+ * massiver Klotz, der den halben Raum optisch zustellt. Gezeichnet wird
+ * deshalb die Platte auf ihrer Arbeitshöhe.
+ *
+ * Beine bleiben bewusst weg: ihre Zahl, Lage und Form sind nicht gemessen,
+ * jedes Bein wäre erfunden. Alle übrigen Typen stehen auf dem Boden und
+ * brauchen keinen Eintrag — ihre Körperhöhe IST ihre Oberkante.
+ */
+const KOERPER_CM: Partial<Record<AusstattungTyp, number>> = {
+  tisch: 6,
+  rundtisch: 6
 }
 
 /**
@@ -138,8 +158,10 @@ export class AusstattungThree {
 
   /** Alle Körper EINES Typs als eine InstancedMesh. */
   private baueTyp(typ: AusstattungTyp, liste: AusstattungElement[]): THREE.InstancedMesh | null {
-    const hoehe = HOEHE_CM[typ]
-    if (hoehe === undefined) {
+    const oberkante = OBERKANTE_CM[typ]
+    // Ohne eigenen Eintrag reicht der Körper vom Boden bis zur Oberkante.
+    const dicke = KOERPER_CM[typ] ?? oberkante
+    if (oberkante === undefined) {
       // Unbekannter Typ: lieber nichts zeichnen als einen erfundenen Körper.
       // Die Datenprüfung in tools/export_blueprint.py bricht bei so etwas
       // ohnehin schon fail-closed ab.
@@ -174,7 +196,10 @@ export class AusstattungThree {
       // wird zur z-Achse und y ist die Höhe. Genau diese Zuordnung erzeugt
       // Floor.buildFloor über rotation.set(PI/2, 0, 0) — hier steht sie
       // ausgeschrieben, statt sie über eine zweite Drehung nachzuahmen.
-      position.set(el.x, hoehe / 2, el.y)
+      // Der Ursprung der Geometrie liegt mittig, deshalb hängt der Körper
+      // unter seiner Oberkante: eine Tischplatte schwebt auf Arbeitshöhe,
+      // alles Bodenständige sitzt wegen dicke === oberkante auf y = 0.
+      position.set(el.x, oberkante - dicke / 2, el.y)
 
       // Die 2D-Drehung ist mathematisch positiv in der (x, y)-Ebene
       // (floorplanner_view.ausPunkt: x·cos − y·sin / x·sin + y·cos). Eine
