@@ -351,57 +351,37 @@ export class Main {
    * bis die Halle nur noch ein Fleck war. Ein Faktor, der für ein
    * Seitenverhältnis passt, ist für das andere falsch.
    *
-   * Deshalb wird die Einpassung stattdessen gemessen: die acht Ecken des
-   * umschließenden Quaders werden mit einer Probekamera projiziert, und der
-   * Abstand wird so lange nachgezogen, bis alle innerhalb des Bildes liegen.
-   * Das gilt für jedes Seitenverhältnis und jede Grundrissform, ohne dass
-   * irgendwo eine an DIESER Halle kalibrierte Zahl steht.
+   * Eingepasst wird deshalb die KUGEL, die den Grundriss umschließt, nicht
+   * der Quader. Der Grund ist die Eigendrehung: die Ansicht dreht sich beim
+   * Öffnen von allein weiter (siehe spin), und bei einer 78 × 15 m langen
+   * Halle ändert sich der Platzbedarf mit dem Blickwinkel dramatisch — quer
+   * gesehen braucht sie ein Vielfaches der Breite, die sie längs einnimmt.
+   * Eine auf den Startwinkel eingepasste Ansicht schneidet nach wenigen
+   * Sekunden Drehung wieder ab (am Sicht-Gate beobachtet). Eine Kugel sieht
+   * aus jeder Richtung gleich aus, damit gilt die Einpassung für JEDEN
+   * Drehwinkel.
+   *
+   * Für eine Kugel um den Blickpunkt ist der Abstand exakt herleitbar —
+   * r / sin(halber Öffnungswinkel) —, es bleibt kein geschätzter Anteil. Der
+   * engere der beiden Öffnungswinkel entscheidet, damit die Einpassung im
+   * Hoch- wie im Querformat hält.
    */
   private abstandFuerGanzenGrundriss(): number {
     const size = this.model.floorplan.getSize()
-    const center = this.model.floorplan.getCenter()
-    const groesste = Math.max(size.x, size.z)
-    if (!(groesste > 0)) return 1500
+    if (!(Math.max(size.x, size.z) > 0)) return 1500
 
-    // Wandhöhe als Obergrenze — sie ist eine gesetzte Angabe (Projekt-DNA
-    // Punkt 4), kein Messwert, und dient hier nur dazu, dass die Oberkanten
-    // der Wände nicht oben aus dem Bild ragen.
+    // Wandhöhe als Obergrenze — eine gesetzte Angabe (Projekt-DNA Punkt 4),
+    // kein Messwert; sie sorgt nur dafür, dass die Wandoberkanten mit
+    // hineinpassen.
     const wandHoehe = 300
-    const ecken: THREE.Vector3[] = []
-    for (const dx of [-size.x / 2, size.x / 2]) {
-      for (const dz of [-size.z / 2, size.z / 2]) {
-        for (const y of [0, wandHoehe]) {
-          ecken.push(new THREE.Vector3(center.x + dx, y, center.z + dz))
-        }
-      }
-    }
+    const radius = Math.hypot(size.x / 2, size.z / 2, wandHoehe / 2)
 
-    const probe = this.camera.clone()
-    const ziel = new THREE.Vector3(center.x, 150, center.z)
-    let abstand = groesste * 1.5
+    const halbSenkrecht = (this.camera.fov / 2) * (Math.PI / 180)
+    const halbWaagerecht = Math.atan(Math.tan(halbSenkrecht) * this.camera.aspect)
+    const enger = Math.min(halbSenkrecht, halbWaagerecht)
 
-    // Vier Durchgänge genügen: die Projektion ist nicht linear im Abstand,
-    // konvergiert aber schnell.
-    for (let i = 0; i < 4; i++) {
-      probe.position.copy(ziel).addScaledVector(Main.BLICK, abstand)
-      probe.lookAt(ziel)
-      probe.far = (abstand + groesste) * 4
-      probe.updateProjectionMatrix()
-      probe.updateMatrixWorld(true)
-
-      // Grösster Betrag in Gerätekoordinaten: 1.0 heisst "genau am Bildrand",
-      // darüber ragt die Ecke hinaus.
-      let aussen = 0
-      ecken.forEach((ecke) => {
-        const p = ecke.clone().project(probe)
-        aussen = Math.max(aussen, Math.abs(p.x), Math.abs(p.y))
-      })
-      if (!(aussen > 0)) break
-      // 8 % Luft, damit die Aussenwand nicht am Rand klebt.
-      abstand = abstand * aussen * 1.08
-    }
-
-    return abstand
+    // 5 % Luft, damit die Außenwand nicht am Bildrand klebt.
+    return (radius / Math.sin(enger)) * 1.05
   }
 
   public centerCamera(): void {
