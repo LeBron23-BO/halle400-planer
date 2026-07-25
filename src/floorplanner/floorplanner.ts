@@ -44,6 +44,21 @@ const WINKEL_RASTER = Math.PI / 4
 const WINKEL_TOLERANZ = (5 * Math.PI) / 180
 
 /**
+ * Wie lange ein Finger liegen bleiben muss, bis das Loeschen vorgeschlagen wird
+ * (E3). Kuerzer als das Verweilen der Maus (700 ms): Aufsetzen und Halten ist
+ * schon eine bewusste Handlung, waehrend die Maus auch beim blossen
+ * Hinueberfahren über einem Objekt zur Ruhe kommen kann.
+ */
+const LANGDRUCK_MS = 500
+
+/**
+ * Wie weit ein Finger wandern darf, ohne dass daraus ein Wischen wird (E3).
+ * Grosszuegiger als die Maus-Toleranz (4 px), weil eine Fingerkuppe breit ist
+ * und beim Aufsetzen fast immer ein paar Pixel rutscht.
+ */
+const FINGER_WACKEL_PX = 10
+
+/**
  * Was gerade zum Löschen vorgeschlagen wird (E1). Bewusst die Objektreferenz
  * und nicht ein Index oder eine ID: zwischen Vorschlag und Bestätigung liegt
  * eine Rückfrage, und in dieser Zeit darf sich die Liste verschieben, ohne dass
@@ -611,17 +626,71 @@ export class Floorplanner {
     }
   }
 
+  /**
+   * Zeigerposition setzen — aus Bildschirm- werden Weltkoordinaten (E3).
+   * Herausgezogen, damit FINGER und MAUS denselben Weg nehmen. Zwei eigene
+   * Umrechnungen waeren zwei Wahrheiten, die auseinanderlaufen, sobald jemand
+   * am Zoom oder am Ursprung etwas aendert.
+   */
+  private zeigerSetzen(clientX: number, clientY: number): void {
+    this.rawMouseX = clientX
+    this.rawMouseY = clientY
+    const rect = this.canvasElement.getBoundingClientRect()
+    this.mouseX = (clientX - rect.left) * this.cmPerPixel + this.originX * this.cmPerPixel
+    this.mouseY = (clientY - rect.top) * this.cmPerPixel + this.originY * this.cmPerPixel
+  }
+
+  /**
+   * Was liegt unter dem Zeiger? Setzt activeCorner/activeWall/activeAusstattung
+   * und meldet, ob sich dabei etwas geaendert hat (E3, aus `mousemove`
+   * herausgezogen — der Finger braucht dieselbe Trefferlogik).
+   */
+  private trefferBestimmen(): boolean {
+    // Greifzone in Weltkoordinaten umrechnen, damit sie auf dem Bildschirm
+    // bei jedem Zoom gleich gross bleibt (T7).
+    const toleranz = GREIF_TOLERANZ_PX * this.cmPerPixel
+    const hoverCorner = this.floorplan.overlappedCorner(this.mouseX, this.mouseY, toleranz)
+    const hoverWall = this.floorplan.overlappedWall(this.mouseX, this.mouseY, toleranz)
+
+    let draw = false
+    if (hoverCorner != this.activeCorner) {
+      this.activeCorner = hoverCorner
+      draw = true
+    }
+    // corner takes precendence
+    if (this.activeCorner == null) {
+      if (hoverWall != this.activeWall) {
+        this.activeWall = hoverWall
+        draw = true
+      }
+    } else {
+      this.activeWall = null
+    }
+
+    // Ausstattung greifen (E1) — nur im Löschen-Werkzeug und nur, solange sie
+    // auch GEZEICHNET wird (sonst liesse sich Unsichtbares löschen).
+    if (this.mode == floorplannerModes.DELETE) {
+      const sichtbar = this.pixelProCm() >= AUSSTATTUNG_UMRISS_AB
+      const hoverAusstattung =
+        sichtbar && this.activeCorner == null && this.activeWall == null
+          ? this.floorplan.overlappedAusstattung(this.mouseX, this.mouseY, toleranz)
+          : null
+      if (hoverAusstattung != this.activeAusstattung) {
+        this.activeAusstattung = hoverAusstattung
+        draw = true
+      }
+    } else if (this.activeAusstattung != null) {
+      this.activeAusstattung = null
+      draw = true
+    }
+
+    return draw
+  }
+
   /** */
   private mousemove(event: MouseEvent): void {
     this.mouseMoved = true
-
-    // update mouse
-    this.rawMouseX = event.clientX
-    this.rawMouseY = event.clientY
-
-    const rect = this.canvasElement.getBoundingClientRect()
-    this.mouseX = (event.clientX - rect.left) * this.cmPerPixel + this.originX * this.cmPerPixel
-    this.mouseY = (event.clientY - rect.top) * this.cmPerPixel + this.originY * this.cmPerPixel
+    this.zeigerSetzen(event.clientX, event.clientY)
 
     // update target (snapped position of actual mouse)
     if (
@@ -633,58 +702,7 @@ export class Floorplanner {
 
     // update object target
     if (this.mode != floorplannerModes.DRAW && !this.mouseDown) {
-      // Greifzone in Weltkoordinaten umrechnen, damit sie auf dem Bildschirm
-      // bei jedem Zoom gleich gross bleibt (T7).
-      const toleranz = GREIF_TOLERANZ_PX * this.cmPerPixel
-      const hoverCorner: Corner | null = this.floorplan.overlappedCorner(
-        this.mouseX,
-        this.mouseY,
-        toleranz
-      )
-      const hoverWall: Wall | null = this.floorplan.overlappedWall(
-        this.mouseX,
-        this.mouseY,
-        toleranz
-      )
-      let draw = false
-      if (hoverCorner != this.activeCorner) {
-        this.activeCorner = hoverCorner
-        draw = true
-      }
-      // corner takes precendence
-      if (this.activeCorner == null) {
-        if (hoverWall != this.activeWall) {
-          this.activeWall = hoverWall
-          draw = true
-        }
-      } else {
-        this.activeWall = null
-      }
-
-      // Ausstattung greifen (E1) — BEWUSST nur im Löschen-Werkzeug. Im
-      // Verschieben-Modus würde ein hervorgehobenes Möbel nur verwirren, denn
-      // bewegen lässt es sich (noch) nicht; und Zeile "panning" unten prüft
-      // ausschliesslich Ecke/Wand, bliebe davon also unberührt.
-      if (this.mode == floorplannerModes.DELETE) {
-        // Nur greifbar, solange die Ausstattung auch GEZEICHNET wird. Ohne
-        // diese Kopplung liesse sich beim weit herausgezoomten Blick ein Möbel
-        // löschen, das dort gar nicht zu sehen ist — die Rückfrage benennte
-        // dann einen „Stuhl", den der Nutzer nirgends findet.
-        const sichtbar = this.pixelProCm() >= AUSSTATTUNG_UMRISS_AB
-        const hoverAusstattung =
-          sichtbar && this.activeCorner == null && this.activeWall == null
-            ? this.floorplan.overlappedAusstattung(this.mouseX, this.mouseY, toleranz)
-            : null
-        if (hoverAusstattung != this.activeAusstattung) {
-          this.activeAusstattung = hoverAusstattung
-          draw = true
-        }
-      } else if (this.activeAusstattung != null) {
-        this.activeAusstattung = null
-        draw = true
-      }
-
-      if (draw) {
+      if (this.trefferBestimmen()) {
         this.view.draw()
       }
 
@@ -879,14 +897,64 @@ export class Floorplanner {
   private fingerX = 0
   private fingerY = 0
 
+  /** Mitte des Zwei-Finger-Griffs — zum Mitschieben beim Zoomen (E3). */
+  private fingerMitteX = 0
+  private fingerMitteY = 0
+
+  /** Wo der Finger AUFGESETZT hat — Bezug fuer "wurde gewischt?" (E3). */
+  private fingerStartX = 0
+  private fingerStartY = 0
+
+  /**
+   * Hat der Finger seit dem Aufsetzen mehr als die Wackel-Toleranz zurueckgelegt?
+   * Trennt Tippen (setzt einen Punkt) von Wischen (schiebt die Ansicht) und
+   * bricht den Langdruck ab.
+   */
+  private fingerHatGeschoben = false
+
+  /** Laeuft, solange ein Finger auf einem loeschbaren Objekt ruht (E3). */
+  private langdruckTimer: ReturnType<typeof setTimeout> | null = null
+
   /** */
   private fingerStart(e: TouchEvent): void {
     e.preventDefault()
     if (e.touches.length === 1) {
       this.fingerX = e.touches[0].clientX
       this.fingerY = e.touches[0].clientY
+      this.fingerStartX = this.fingerX
+      this.fingerStartY = this.fingerY
+      this.fingerHatGeschoben = false
+
+      if (this.bearbeitetMitEinemFinger()) {
+        // Der Finger arbeitet: Zeiger dorthin setzen, damit Treffer und
+        // Zeichen-Vorschau dieselbe Grundlage haben wie bei der Maus.
+        this.zeigerSetzen(this.fingerX, this.fingerY)
+        if (this.mode == floorplannerModes.DELETE) {
+          if (this.trefferBestimmen()) {
+            this.view.draw()
+          }
+          // Langdruck statt Verweilen (E3): am Handy gibt es kein Schweben,
+          // ein Finger liegt entweder auf oder nicht. Kuerzer als das
+          // Verweilen der Maus (700 ms), weil Aufsetzen und Halten schon eine
+          // bewusste Handlung ist — Hinueberfahren dagegen nicht.
+          this.langdruckAbbrechen()
+          this.langdruckTimer = setTimeout(() => {
+            this.langdruckTimer = null
+            if (!this.fingerHatGeschoben) {
+              this.loeschVorschlagen()
+            }
+          }, LANGDRUCK_MS)
+        } else {
+          this.updateTarget()
+        }
+      }
     } else if (e.touches.length === 2) {
+      // Zweiter Finger: das ist Navigation, keine Bearbeitung. Ein angefangener
+      // Langdruck wird damit hinfaellig.
+      this.langdruckAbbrechen()
       this.fingerAbstand = this.abstandZwischen(e)
+      this.fingerMitteX = (e.touches[0].clientX + e.touches[1].clientX) / 2
+      this.fingerMitteY = (e.touches[0].clientY + e.touches[1].clientY) / 2
     }
   }
 
@@ -894,30 +962,106 @@ export class Floorplanner {
   private fingerBewegt(e: TouchEvent): void {
     e.preventDefault()
     if (e.touches.length === 1) {
+      const x = e.touches[0].clientX
+      const y = e.touches[0].clientY
+
+      if (
+        Math.hypot(x - this.fingerStartX, y - this.fingerStartY) > FINGER_WACKEL_PX
+      ) {
+        this.fingerHatGeschoben = true
+        this.langdruckAbbrechen()
+      }
+
+      if (this.bearbeitetMitEinemFinger()) {
+        // Im Zeichnen-Werkzeug zieht der Finger die Vorschau, statt die Ansicht
+        // zu schieben. Verschoben wird dort mit ZWEI Fingern — sonst gaebe es
+        // keine Geste mehr fuers Zeichnen, und beides auf einen Finger zu
+        // legen hiesse raten, was gemeint war.
+        this.zeigerSetzen(x, y)
+        if (this.mode == floorplannerModes.DRAW) {
+          this.updateTarget()
+        } else if (this.trefferBestimmen()) {
+          this.view.draw()
+        }
+        this.fingerX = x
+        this.fingerY = y
+        return
+      }
+
       // Schieben: die Ansicht folgt dem Finger.
-      const dx = e.touches[0].clientX - this.fingerX
-      const dy = e.touches[0].clientY - this.fingerY
+      const dx = x - this.fingerX
+      const dy = y - this.fingerY
       this.originX -= dx
       this.originY -= dy
-      this.fingerX = e.touches[0].clientX
-      this.fingerY = e.touches[0].clientY
+      this.fingerX = x
+      this.fingerY = y
       this.view.draw()
     } else if (e.touches.length === 2) {
       const abstand = this.abstandZwischen(e)
+      const rect = this.canvasElement.getBoundingClientRect()
+      const mitteX = (e.touches[0].clientX + e.touches[1].clientX) / 2
+      const mitteY = (e.touches[0].clientY + e.touches[1].clientY) / 2
+
       if (this.fingerAbstand > 0 && abstand > 0) {
-        const rect = this.canvasElement.getBoundingClientRect()
         // Zwischen den beiden Fingern zoomen — dort schaut der Nutzer hin.
-        const mitteX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left
-        const mitteY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top
-        this.zoomeAufPunkt(this.zoom * (abstand / this.fingerAbstand), mitteX, mitteY)
+        this.zoomeAufPunkt(
+          this.zoom * (abstand / this.fingerAbstand),
+          mitteX - rect.left,
+          mitteY - rect.top
+        )
+        // ...und mit der Mitte mitschieben (E3). Ohne das liesse sich im
+        // Zeichnen- und Loeschen-Werkzeug die Ansicht ueberhaupt nicht mehr
+        // verschieben, seit der eine Finger dort bearbeitet.
+        this.originX -= mitteX - this.fingerMitteX
+        this.originY -= mitteY - this.fingerMitteY
+        this.view.draw()
       }
       this.fingerAbstand = abstand
+      this.fingerMitteX = mitteX
+      this.fingerMitteY = mitteY
     }
   }
 
   /** */
   private fingerEnde(): void {
     this.fingerAbstand = 0
+    this.langdruckAbbrechen()
+
+    // Kurzes Tippen im Zeichnen-Werkzeug setzt einen Punkt (E3) — das
+    // Gegenstueck zum Klick. Bei der Maus erledigt das `mouseup`, das am Handy
+    // nicht zuverlaessig kommt.
+    if (this.mode == floorplannerModes.DRAW && !this.fingerHatGeschoben) {
+      this.undoManager?.snapshot()
+      const corner = this.floorplan.newCorner(this.targetX, this.targetY)
+      if (this.lastNode != null) {
+        this.floorplan.newWall(this.lastNode, corner)
+      }
+      if (corner.mergeWithIntersected() && this.lastNode != null) {
+        this.setMode(floorplannerModes.MOVE)
+      } else {
+        this.lastNode = corner
+      }
+      this.view.draw()
+    }
+
+    this.fingerHatGeschoben = false
+  }
+
+  /**
+   * Arbeitet der EINE Finger gerade, statt die Ansicht zu schieben? Im
+   * Verschieben-Werkzeug bleibt es beim Schieben (dort gibt es nichts zu
+   * tippen), in Zeichnen und Loeschen bearbeitet er.
+   */
+  private bearbeitetMitEinemFinger(): boolean {
+    return this.mode == floorplannerModes.DRAW || this.mode == floorplannerModes.DELETE
+  }
+
+  /** */
+  private langdruckAbbrechen(): void {
+    if (this.langdruckTimer !== null) {
+      clearTimeout(this.langdruckTimer)
+      this.langdruckTimer = null
+    }
   }
 
   /** */
