@@ -5,9 +5,19 @@ export class Skybox {
   private readonly topColor: number
   private readonly bottomColor: number
   private readonly verticalOffset = 500
+  /**
+   * Grundradius der Himmelskugel. Sie umschließt die Szene von innen
+   * (BackSide) — steht die Kamera weiter draußen als dieser Radius, blickt
+   * man von AUSSEN auf eine rückseitig gezeichnete Kugel und der Himmel wird
+   * schwarz. Bei einer 78 m langen Halle passiert genau das, sobald man weit
+   * genug herauszoomt, um das Ganze zu sehen. Der Wert bleibt deshalb nur
+   * der Ausgangspunkt; `passeAn` zieht die Kugel auf die Größe, die der
+   * jeweilige Grundriss braucht.
+   */
   private readonly sphereRadius = 4000
   private readonly widthSegments = 32
   private readonly heightSegments = 15
+  private sky!: THREE.Mesh
 
   private readonly vertexShader = [
     'varying vec3 vWorldPosition;',
@@ -69,7 +79,23 @@ export class Skybox {
       side: THREE.BackSide
     })
 
-    const sky = new THREE.Mesh(skyGeo, skyMat)
-    this.scene.add(sky)
+    this.sky = new THREE.Mesh(skyGeo, skyMat)
+    this.scene.add(this.sky)
+  }
+
+  /**
+   * Sorgt dafür, dass die Himmelskugel den geforderten Radius mindestens
+   * erreicht. Skaliert wird das vorhandene Mesh, statt die Geometrie neu zu
+   * bauen — der Verlauf im Shader rechnet mit der normalisierten Weltposition
+   * und bleibt dadurch unverändert. Verkleinert wird nie: ein kleiner
+   * Grundriss soll den Himmel nicht enger ziehen als der Ausgangswert.
+   */
+  public passeAn(mindestRadius: number): number {
+    if (!this.sky) return this.sphereRadius
+    const faktor = Math.max(1, mindestRadius / this.sphereRadius)
+    if (faktor > this.sky.scale.x) this.sky.scale.setScalar(faktor)
+    // Gibt den EFFEKTIVEN Radius zurück, damit der Aufrufer seine Sichtweite
+    // darauf abstimmen kann — er kann grösser sein als der verlangte.
+    return this.sphereRadius * this.sky.scale.x
   }
 }

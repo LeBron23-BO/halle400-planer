@@ -47,6 +47,7 @@ export class Main {
   private controller!: Controller
   // @ts-ignore - floorplan is declared but not used, keeping for future use
   private floorplan!: FloorplanThree
+  private skybox!: Skybox
   private _needsUpdate = false
   private lastRender = Date.now()
   private mouseOver = false
@@ -101,8 +102,9 @@ export class Main {
 
     // Get skybox colors from CSS variables (if available)
     const { topColor, bottomColor } = this.getSkyboxColors()
-    // @ts-ignore - Item is imported but not used, keeping for future use
-    const skybox = new Skybox(this.scene.getScene(), topColor, bottomColor)
+    // Als Feld gehalten, weil centerCamera die Kugel auf die Grundriss-Größe
+    // nachzieht — beim Erzeugen hier ist der Plan noch gar nicht geladen.
+    this.skybox = new Skybox(this.scene.getScene(), topColor, bottomColor)
 
     this.controls = new Controls(this.camera, this.domElement, this.options.enableWheelZoom)
 
@@ -334,6 +336,74 @@ export class Main {
     this._needsUpdate = true
   }
 
+  /** Blickrichtung der Startansicht: schräg von oben aus +z. */
+  private static readonly BLICK = new THREE.Vector3(0, 1, 1).normalize()
+
+  /**
+   * Abstand, bei dem der GANZE Grundriss ins Bild passt (T7-3D).
+   *
+   * GEMESSEN, nicht geschätzt. Der naheliegende Weg wäre, aus dem
+   * Öffnungswinkel eine Formel abzuleiten und einen Zuschlag draufzuschlagen.
+   * Beides ist hier schiefgegangen: die Formel gilt für einen senkrechten
+   * Blick, von schräg oben erscheint die nähere Hallenhälfte größer und ragte
+   * unten aus dem Bild — und der nachgebesserte Zuschlag stimmte dann am
+   * Rechner (Querformat) und schoss am Handy (Hochformat) weit über das Ziel,
+   * bis die Halle nur noch ein Fleck war. Ein Faktor, der für ein
+   * Seitenverhältnis passt, ist für das andere falsch.
+   *
+   * Deshalb wird die Einpassung stattdessen gemessen: die acht Ecken des
+   * umschließenden Quaders werden mit einer Probekamera projiziert, und der
+   * Abstand wird so lange nachgezogen, bis alle innerhalb des Bildes liegen.
+   * Das gilt für jedes Seitenverhältnis und jede Grundrissform, ohne dass
+   * irgendwo eine an DIESER Halle kalibrierte Zahl steht.
+   */
+  private abstandFuerGanzenGrundriss(): number {
+    const size = this.model.floorplan.getSize()
+    const center = this.model.floorplan.getCenter()
+    const groesste = Math.max(size.x, size.z)
+    if (!(groesste > 0)) return 1500
+
+    // Wandhöhe als Obergrenze — sie ist eine gesetzte Angabe (Projekt-DNA
+    // Punkt 4), kein Messwert, und dient hier nur dazu, dass die Oberkanten
+    // der Wände nicht oben aus dem Bild ragen.
+    const wandHoehe = 300
+    const ecken: THREE.Vector3[] = []
+    for (const dx of [-size.x / 2, size.x / 2]) {
+      for (const dz of [-size.z / 2, size.z / 2]) {
+        for (const y of [0, wandHoehe]) {
+          ecken.push(new THREE.Vector3(center.x + dx, y, center.z + dz))
+        }
+      }
+    }
+
+    const probe = this.camera.clone()
+    const ziel = new THREE.Vector3(center.x, 150, center.z)
+    let abstand = groesste * 1.5
+
+    // Vier Durchgänge genügen: die Projektion ist nicht linear im Abstand,
+    // konvergiert aber schnell.
+    for (let i = 0; i < 4; i++) {
+      probe.position.copy(ziel).addScaledVector(Main.BLICK, abstand)
+      probe.lookAt(ziel)
+      probe.far = (abstand + groesste) * 4
+      probe.updateProjectionMatrix()
+      probe.updateMatrixWorld(true)
+
+      // Grösster Betrag in Gerätekoordinaten: 1.0 heisst "genau am Bildrand",
+      // darüber ragt die Ecke hinaus.
+      let aussen = 0
+      ecken.forEach((ecke) => {
+        const p = ecke.clone().project(probe)
+        aussen = Math.max(aussen, Math.abs(p.x), Math.abs(p.y))
+      })
+      if (!(aussen > 0)) break
+      // 8 % Luft, damit die Aussenwand nicht am Rand klebt.
+      abstand = abstand * aussen * 1.08
+    }
+
+    return abstand
+  }
+
   public centerCamera(): void {
     const yOffset = 150.0
 
@@ -342,9 +412,38 @@ export class Main {
 
     this.controls.target = pan
 
-    const distance = this.model.floorplan.getSize().z * 1.5
+    const distance = this.abstandFuerGanzenGrundriss()
 
-    const offset = pan.clone().add(new THREE.Vector3(0, distance, distance))
+    // Die Zoom-Obergrenze MUSS mitwachsen. Sie stand fest auf 1500 cm — bei
+    // einer 78 m langen Halle ließ sich damit nie mehr als ein Abschnitt
+    // sehen, und das Herauszoomen endete wortlos an einer unsichtbaren Wand.
+    // Der Wert wird bewusst NICHT auf eine neue feste Zahl gesetzt: die wäre
+    // wieder nur an DIESER Halle kalibriert und bei der nächsten falsch
+    // (dieselbe Lehre wie bei den Lesbarkeitsschwellen in T7). Der Zuschlag
+    // lässt Luft, sich den Grundriss auch von weiter außen anzusehen.
+    this.controls.maxDistance = Math.max(distance * 1.8, 1500)
+
+    // Zwei weitere feste Zahlen mussten mitwachsen, sonst wird der größere
+    // Abstand mit Bildfehlern bezahlt statt mit Übersicht:
+    //
+    // 1. Die Himmelskugel hatte Radius 4000 cm. Wer weiter herauszoomt, steht
+    //    AUSSERHALB und sieht statt Himmel eine schwarze Fläche.
+    // 2. Die Kamera endete bei 10000 cm. Bei 78 m Halle liegt das ferne Ende
+    //    dahinter und verschwindet — ausgerechnet beim Blick aufs Ganze.
+    //
+    // Beide fielen erst beim ANSEHEN des Bildes auf; jede Kennzahl war grün.
+    // Die Sichtweite muss die Himmelskugel GANZ umschliessen, nicht nur den
+    // Grundriss: sonst wird ausgerechnet die ferne Kugelhälfte weggeschnitten
+    // und mitten im Bild klafft ein schwarzes Loch (am Handy beobachtet, wo
+    // der nötige Abstand am grössten ist). Deshalb rechnet die Sichtweite mit
+    // dem EFFEKTIVEN Kugelradius, den passeAn zurückmeldet — die Kugel wird
+    // nie verkleinert, ein früherer Aufruf kann sie also grösser gemacht
+    // haben als der hier verlangte Wert.
+    const himmelRadius = this.skybox.passeAn(this.controls.maxDistance * 1.3)
+    this.camera.far = Math.max(10000, (this.controls.maxDistance + himmelRadius) * 1.1)
+    this.camera.updateProjectionMatrix()
+
+    const offset = pan.clone().addScaledVector(Main.BLICK, distance)
     this.camera.position.copy(offset)
 
     this.controls.update()
