@@ -68,8 +68,12 @@ async function oeffne(browser) {
   await page.goto(`http://localhost:${PORT}/?plan=${PLAN}`, { waitUntil: 'domcontentloaded' })
   await page.waitForTimeout(9000)
 
-  // Eigendrehung anhalten (Main.stopSpin ueber hasClicked)
-  await page.mouse.click(60, HOEHE - 60)
+  // Eigendrehung anhalten. Main.spin() laeuft nur, solange die Maus NICHT
+  // ueber der Ansicht ist — ein blosses Hineinfahren genuegt also. Ein Klick
+  // waere der naheliegende Weg und ist trotzdem falsch: er trifft einen Raum
+  // und oeffnet das Panel "Boden anpassen", das anschliessend Messflaeche
+  // verdeckt. Die Maus bleibt fuer den Rest des Laufs ueber der Ansicht.
+  await page.mouse.move(MITTE_X, MITTE_Y)
   await page.waitForTimeout(400)
 
   await page.evaluate(() => {
@@ -205,8 +209,15 @@ try {
   log(`  Moebelumriss x ${oben.moebel.minX}..${oben.moebel.maxX}, y ${oben.moebel.minY}..${oben.moebel.maxY}`)
 
   pruefe('Ausstattung auch von oben sichtbar', oben.moebel.n > 2000, `${oben.moebel.n} Pixel`)
-  // Der eigentliche Lagebeweis. Bei vertauschten Achsen laege die Ausstattung
-  // neben dem Gebaeude und dieser Anteil fiele gegen null.
+  // Lagebeweis gegen den GROBEN Fehler: waeren x und z vertauscht, laege die
+  // Ausstattung weit neben der Halle und dieser Anteil fiele gegen null.
+  //
+  // EHRLICHE EINORDNUNG DER AUSSAGEKRAFT: controls.maxDistance ist 1500 cm,
+  // die Halle aber 7800 cm lang — die ganze Halle passt NIE ins Bild. Der
+  // Boden fuellt dadurch fast den ganzen Rahmen, und ein Anteil nahe 100 %
+  // ist hier leichter zu erreichen als es aussieht. Dieser Test faengt den
+  // Achsentausch, er ist KEIN Nachweis zentimetergenauer Lage. Den fuehren
+  // die 2D-Pruefung (gegen die Bausubstanz gemessen) und das Sicht-Gate.
   pruefe(
     'Ausstattung liegt auf dem Hallenboden, nicht daneben',
     anteil >= 0.97,

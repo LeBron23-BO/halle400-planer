@@ -28,6 +28,7 @@ node tools/serve-local.mjs         # Auslieferung: PC http://localhost:3301/?pla
 node tools/pruefe-undo.mjs         # T5a: Rueckgaengig/Wiederholen am gerenderten Canvas (Exit 0 = bestanden)
 node tools/pruefe-ansicht.mjs      # T7: ganzer Grundriss im Bild + Zoom (Rechner UND Handy)
 node tools/pruefe-ausstattung.mjs  # A1: Ausstattung gezeichnet, an der richtigen Stelle, Stufen schalten
+node tools/pruefe-ausstattung-3d.mjs # A6: Koerper in 3D — auf dem Boden, im Gebaeude, undo-fest
 ```
 
 E2E-Beweis (der einzige, der die Auslieferung wirklich prüft):

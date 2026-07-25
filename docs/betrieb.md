@@ -77,7 +77,7 @@ Nachprüfbar bei laufendem Server: **`node tools/pruefe-ansicht.mjs`**
 (Exit 0 = bestanden) — misst am echten Bild, ob der Grundriss vollständig und
 mit Rand im Fenster liegt, und ob Mausrad, Finger und Schaltflächen zoomen.
 
-## Ausstattung: was in den Räumen steht (A1)
+## Ausstattung: was in den Räumen steht (A1, A6)
 
 Der Grundriss zeigt nicht nur die Bausubstanz, sondern auch die **Einrichtung** —
 als Grundriss-Zeichen, wie ein Architekturplan sie führt: Tische als Rechtecke,
@@ -85,7 +85,7 @@ Stühle als kleine Rechtecke mit Lehne, Treppen als Stufenband, dazu Rundtisch,
 Schrank (Rechteck mit Diagonale), WC, Waschbecken, Kochfeld, Pflanze, Aufzug
 und Fläche (Loggia/Kiesbett).
 
-**Warum als Zeichen und nicht als 3D-Möbel.** Das Datenmodell kennt zwar
+**Warum als Zeichen und nicht als fertige Möbelmodelle.** Das Datenmodell kennt zwar
 `items` mit `model_url` — aber der 2D-Editor zeichnet sie überhaupt nicht
 (`floorplanner_view.draw()` kennt nur Raster, Räume, Wände, Ecken, Maße). Eine
 als Item eingepflegte Einrichtung wäre also ausgerechnet im Grundriss
@@ -127,6 +127,46 @@ ihr weder für das Auge noch für eine Messung sicher zu trennen. Die erste
 Fassung von `pruefe-ausstattung.mjs` hielt prompt jede Wandkante für
 Ausstattung und meldete trotzdem „bestanden" (10.980 statt 695 Pixel). Der
 Blaustich macht den Unterschied eindeutig.
+
+### In der 3D-Ansicht (A6)
+
+Die Ausstattung steht seit A6 auch **dreidimensional** im Raum — als einfache
+Körper aus denselben gemessenen Daten (`src/three/ausstattung.ts`). Sie hängt
+im selben Redraw wie Böden und Wände und übersteht dadurch ein Rückgängig
+genauso wie die 2D-Zeichen. Je Typ entsteht eine `InstancedMesh`, damit die
+289 Körper rund zehn statt 289 Zeichenaufrufe kosten — das zählt am Handy.
+
+**Die Grundfläche ist gemessen, die Höhe ist gesetzt.** `x`, `y`, `breite`,
+`tiefe` und `drehung` stammen unverändert aus der PDF. Eine Höhe steht in
+keinem Grundriss: er ist ein waagerechter Schnitt und sagt, *wo* ein Tisch
+steht, nicht *wie hoch* er ist. Jede Höhe in `OBERKANTE_CM` ist deshalb eine
+gesetzte Angabe nach üblichen Möbelmaßen mit ihrer Quelle im Kommentar —
+dieselbe Sorte Wert wie `wallHeight = 300 cm` und ausdrücklich **kein**
+Messwert (Projekt-DNA Punkt 4).
+
+Zwei Stellen, an denen bewusst *nichts* erfunden wird: **Tischplatten**
+schweben auf Arbeitshöhe statt als Vollklotz vom Boden aufzusteigen (der Plan
+zeigt die Platte; Beine sind nicht gemessen, und ein 290 × 350 cm großer
+Konferenztisch als Vollkörper stellt den halben Raum zu). Und die **Treppe**
+ist nur ein flacher Antritt: Geschosshöhe und Stufenzahl stehen nicht im
+Grundriss, eine ansteigende Treppe wäre gerechnet, nicht gemessen.
+
+```
+node tools/pruefe-ausstattung-3d.mjs   # Beweis am gerenderten WebGL-Bild
+```
+
+Die Prüfung misst, was 3D-**spezifisch** schiefgehen kann: Erscheinen die
+Körper, sitzen sie auf dem Boden statt daneben, ragt nichts durchs Gebäude,
+überleben sie ein Rückgängig? Die Vollständigkeit prüft sie bewusst **nicht**
+noch einmal — beide Ansichten lesen dieselbe Quelle, das wäre dieselbe Zahl
+zweimal statt einer unabhängigen Gegenprobe.
+
+**Bekannte Grenze:** `controls.maxDistance` ist 1500 cm, die Halle aber
+7800 cm lang — die **ganze** Halle passt in 3D nie ins Bild, man sieht immer
+nur einen Abschnitt. Das ist das 3D-Gegenstück zu dem Problem, das T7 für den
+2D-Editor gelöst hat, und es ist bislang **offen**. Es begrenzt auch die
+Aussagekraft der 3D-Lageprüfung (der Boden füllt fast den ganzen Rahmen);
+der zentimetergenaue Lagebeweis bleibt deshalb bei der 2D-Prüfung.
 
 ## Rückgängig / Wiederholen (T5a)
 
