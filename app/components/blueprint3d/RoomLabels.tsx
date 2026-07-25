@@ -106,6 +106,7 @@ export function RoomLabels({
     if (!container) return
 
     const ndc = new THREE.Vector3()
+    const welt = new THREE.Vector3()
     const tick = () => {
       const w = container.clientWidth
       const h = container.clientHeight
@@ -118,11 +119,20 @@ export function RoomLabels({
         let x: number
         let y: number
         let behind = false
+        // Massstab am Ort DIESES Labels, in Bildschirmpixeln pro cm — das
+        // 3D-Gegenstueck zu floorplanner.pixelProCm(). In 3D haengt er an der
+        // Entfernung zur Kamera, ist also je Label verschieden: die halbe
+        // Bildhoehe deckt in Entfernung d genau d*tan(fov/2) Zentimeter ab.
+        let pixelProCm3d = Infinity
         if (viewMode === '3d') {
           // Boden-Punkt an der PDF-Ankerposition (Floorplan-y → three-z).
           // NDC→Pixel wie main.ts:projectVector, plus z fuer den "hinter der
           // Kamera"-Test.
-          ndc.set(ax, 0, ay).project(three.camera)
+          welt.set(ax, 0, ay)
+          const abstand = three.camera.position.distanceTo(welt)
+          const halbFov = ((three.camera.fov ?? 45) / 2) * (Math.PI / 180)
+          pixelProCm3d = abstand > 0 ? h / 2 / (abstand * Math.tan(halbFov)) : Infinity
+          ndc.copy(welt).project(three.camera)
           behind = ndc.z > 1
           x = ndc.x * (w / 2) + w / 2
           y = -(ndc.y * (h / 2)) + h / 2
@@ -134,14 +144,23 @@ export function RoomLabels({
           y = -9999
         }
 
-        // Bei weit herausgezogener 2D-Ansicht die Namen weglassen (T7): die
+        // Bei weit herausgezogener Ansicht die Namen weglassen (T7): die
         // Etiketten behalten ihre Groesse, der Plan schrumpft — auf dem Handy
         // legten sich beim Einpassen der ganzen 78-m-Halle alle 18 Namen
         // uebereinander und ergaben unlesbaren Buchstabensalat. Ein sauberer
         // Umriss sagt dort mehr; beim Hineinzoomen kommen die Namen zurueck.
         // Schwelle: rund 90 px Etikettenbreite brauchen etwa 7 m Raumbreite.
+        //
+        // Gilt seit T7-3D fuer BEIDE Ansichten. Vorher konnte die 3D-Kamera
+        // gar nicht weit genug heraus, um das Problem zu erzeugen; seit sie
+        // die ganze Halle einpasst, trat exakt derselbe Buchstabensalat dort
+        // wieder auf. Bewusst DIESELBE Schwelle: sie beschreibt, wie viel
+        // Bildflaeche ein Etikett braucht, und das haengt nicht daran, welche
+        // Ansicht es zeichnet.
         const zuKleinFuerNamen =
-          viewMode === '2d' && !!fp2d && fp2d.pixelProCm() < LABEL_MIN_PIXEL_PRO_CM
+          viewMode === '2d'
+            ? !!fp2d && fp2d.pixelProCm() < LABEL_MIN_PIXEL_PRO_CM
+            : pixelProCm3d < LABEL_MIN_PIXEL_PRO_CM
 
         const onscreen = !behind && !zuKleinFuerNamen && x >= 0 && x <= w && y >= 0 && y <= h
         const want = onscreen
