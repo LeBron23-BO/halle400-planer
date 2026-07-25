@@ -156,6 +156,13 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
       setCanRedo(blueprint3d.undo.canRedo())
     })
 
+    // Loesch-Rueckfrage -> React spiegeln (E1). Der Floorplanner meldet mit
+    // `null`, wenn der Vorschlag hinfaellig ist — die Rueckfrage muss also nie
+    // selbst raten, wann sie wieder verschwindet.
+    blueprint3d.floorplanner?.addLoeschAnfrageCallback((ziel) => {
+      setLoeschAnfrage(ziel)
+    })
+
     blueprint3d.three.itemSelectedCallbacks.add((item) => {
       setSelectedItem(item)
       setTextureType(null)
@@ -547,6 +554,18 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
     blueprint3dRef.current.floorplanner?.setMode(modeMap[mode])
   }, [])
 
+  // Loeschen bestaetigen/abbrechen (E1). Der Floorplanner meldet ueber den
+  // Callback selbst zurueck, dass die Rueckfrage zu schliessen ist — hier wird
+  // der Zustand deshalb bewusst NICHT zusaetzlich genullt, sonst gaebe es zwei
+  // Wahrheiten darueber, ob die Rueckfrage noch offen ist.
+  const handleLoeschenBestaetigen = useCallback(() => {
+    blueprint3dRef.current?.floorplanner?.loeschungBestaetigen()
+  }, [])
+
+  const handleLoeschenAbbrechen = useCallback(() => {
+    blueprint3dRef.current?.floorplanner?.loeschungAbbrechen()
+  }, [])
+
   const handleFloorplannerDone = useCallback(() => {
     setViewMode('3d')
     if (blueprint3dRef.current) {
@@ -802,6 +821,13 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
           </span>
         </div>
       )}
+
+      {/* Rueckfrage vor dem Loeschen (E1) */}
+      <LoeschRueckfrage
+        ziel={loeschAnfrage}
+        onBestaetigen={handleLoeschenBestaetigen}
+        onAbbrechen={handleLoeschenAbbrechen}
+      />
 
       {/* Items Drawer */}
       <ItemsDrawer
