@@ -29,6 +29,13 @@ node tools/pruefe-undo.mjs         # T5a: Rueckgaengig/Wiederholen am gerenderte
 node tools/pruefe-ansicht.mjs      # T7: ganzer Grundriss im Bild + Zoom (Rechner UND Handy)
 node tools/pruefe-ausstattung.mjs  # A1: Ausstattung gezeichnet, an der richtigen Stelle, Stufen schalten
 node tools/pruefe-ausstattung-3d.mjs # A6: Koerper in 3D — auf dem Boden, im Gebaeude, undo-fest
+node tools/pruefe-loeschen.mjs     # E1: Loeschen per Verweilen + Rueckfrage, Moebel-Fall richtungsgeprueft
+node tools/pruefe-zeichnen.mjs     # E2: Ecken-Fang, Winkel-Raster (mit Gegenprobe 20 Grad), Escape
+node tools/pruefe-touch.mjs        # E3: Langdruck + Tippen am Handy, echte TouchEvents, 2 Gegenproben
+
+# Bank-Ansicht fuer den Businessplan (E4) — eine Datei, Doppelklick, kein Netz
+node tools/baue-bank-ansicht.mjs   # -> Halle400-Modell.html (~2 MB, alles inline)
+node tools/pruefe-bank-ansicht.mjs # prueft unter file:// mit GESPERRTEM Netz + erzeugt bank-export/*.png
 ```
 
 E2E-Beweis (der einzige, der die Auslieferung wirklich prüft):
