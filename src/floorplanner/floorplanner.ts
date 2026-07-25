@@ -251,7 +251,15 @@ export class Floorplanner {
     if (this.mode != floorplannerModes.DELETE || this.mouseDown) {
       return
     }
+    this.loeschVorschlagen()
+  }
 
+  /**
+   * Schlägt das Objekt unter dem Zeiger zum Löschen vor. Gemeinsamer Weg für
+   * das Verweilen und den direkten Klick — beide müssen dieselbe Rückfrage
+   * auslösen, sonst gäbe es einen Pfad, der ohne Nachfrage löscht.
+   */
+  private loeschVorschlagen(): boolean {
     let ziel: LoeschZiel | null = null
     if (this.activeCorner) {
       ziel = { art: 'ecke', ecke: this.activeCorner, beschreibung: 'diese Ecke mit allen Wänden daran' }
@@ -266,11 +274,13 @@ export class Floorplanner {
       }
     }
 
-    if (ziel) {
-      this.loeschKandidat = ziel
-      this.view.draw()
-      this.loeschAnfrageCallbacks.forEach((cb) => cb(ziel))
+    if (!ziel) {
+      return false
     }
+    this.loeschKandidat = ziel
+    this.view.draw()
+    this.loeschAnfrageCallbacks.forEach((cb) => cb(ziel))
+    return true
   }
 
   /**
@@ -484,15 +494,15 @@ export class Floorplanner {
 
     // delete
     if (this.mode == floorplannerModes.DELETE) {
-      if (this.activeCorner) {
-        // Sichern nur, wenn wirklich geloescht wird — ein Klick ins Leere
-        // wechselt bloss den Modus und darf keinen Undo-Schritt erzeugen.
-        this.undoManager?.snapshot()
-        this.activeCorner.removeAll()
-      } else if (this.activeWall) {
-        this.undoManager?.snapshot()
-        this.activeWall.remove()
-      } else {
+      // Seit E1 löscht der Klick NICHT mehr sofort, sondern schlägt dasselbe
+      // vor wie das Verweilen. Vorher war ein Fehlklick unwiederbringlich
+      // schnell: ein Griff daneben, und die Wand war weg — der Undo-Schritt
+      // rettete zwar die Daten, aber niemand sah, was gerade verschwand.
+      this.verweilAbbrechen()
+      if (!this.loeschVorschlagen()) {
+        // Klick ins Leere: Werkzeug zurücklegen (wie bisher) und einen etwaigen
+        // offenen Vorschlag zurücknehmen.
+        this.loeschungAbbrechen()
         this.setMode(floorplannerModes.MOVE)
       }
     }
