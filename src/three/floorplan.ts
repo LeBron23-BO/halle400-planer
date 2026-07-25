@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { Floor } from './floor'
 import { Edge } from './edge'
+import { AusstattungThree } from './ausstattung'
 import type { Floorplan as FloorplanModel } from '../model/floorplan'
 import type { Controls } from './controls'
 
@@ -11,12 +12,15 @@ export class FloorplanThree {
   public readonly renderer: THREE.WebGLRenderer
   public floors: Floor[] = []
   public edges: Edge[] = []
+  /** A6: die gemessene Ausstattung als einfache Körper. */
+  public readonly ausstattung: AusstattungThree
 
   constructor(scene: THREE.Scene, floorplan: FloorplanModel, controls: Controls, renderer: THREE.WebGLRenderer) {
     this.scene = scene
     this.floorplan = floorplan
     this.controls = controls
     this.renderer = renderer
+    this.ausstattung = new AusstattungThree(scene, floorplan)
 
     this.floorplan.fireOnUpdatedRooms(this.redraw.bind(this))
   }
@@ -45,5 +49,9 @@ export class FloorplanThree {
       const threeEdge = new Edge(this.scene, edge, this.controls, this.renderer)
       this.edges.push(threeEdge)
     })
+
+    // draw ausstattung (A6) — bewusst im selben Redraw wie Böden und Wände,
+    // damit sie denselben Lebenszyklus hat und ein Rückgängig sie mitnimmt.
+    this.ausstattung.redraw()
   }
 }
