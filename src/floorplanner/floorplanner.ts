@@ -460,6 +460,13 @@ export class Floorplanner {
 
   /** */
   private escapeKey(): void {
+    // Escape nimmt zuerst die Rückfrage zurück, nicht gleich das Werkzeug (E1).
+    // Sonst hätte ein Abbrechen zwei Wirkungen auf einmal, und wer nur „doch
+    // nicht löschen" meinte, müsste das Löschen-Werkzeug neu greifen.
+    if (this.loeschKandidat) {
+      this.loeschungAbbrechen()
+      return
+    }
     this.setMode(floorplannerModes.MOVE)
   }
 
@@ -581,22 +588,25 @@ export class Floorplanner {
       }
 
       // --- Verweilen (E1)
-      // Jede echte Bewegung nimmt einen offenen Vorschlag zurück und setzt die
-      // Uhr neu. Die Wackel-Toleranz ist nötig, weil eine ruhende Hand trotzdem
-      // einzelne Pixel-Ereignisse erzeugt — ohne sie liefe die Uhr nie ab.
-      const wackel = Math.hypot(this.rawMouseX - this.verweilX, this.rawMouseY - this.verweilY)
-      if (wackel > VERWEIL_WACKEL_PX) {
-        if (this.loeschKandidat) {
-          this.loeschungAbbrechen()
-        }
-        const etwasUnterDemZeiger =
-          this.activeCorner != null || this.activeWall != null || this.activeAusstattung != null
-        if (this.mode == floorplannerModes.DELETE && etwasUnterDemZeiger) {
-          this.verweilenNeuStarten(this.rawMouseX, this.rawMouseY)
-        } else {
-          this.verweilAbbrechen()
-          this.verweilX = this.rawMouseX
-          this.verweilY = this.rawMouseY
+      // Steht bereits eine Rückfrage, bleibt sie stehen, bis entschieden ist.
+      // Sie bei Mausbewegung zurückzunehmen wäre naheliegend und FALSCH: der
+      // Weg zum Ja-Knopf führt über den Zeichenbereich, die Rückfrage löste
+      // sich also genau dann auf, wenn man sie bestätigen will. Weg von ihr
+      // kommt man über Escape, einen Klick ins Leere oder das Werkzeug.
+      if (this.loeschKandidat === null) {
+        // Die Wackel-Toleranz ist nötig, weil eine ruhende Hand trotzdem
+        // einzelne Pixel-Ereignisse erzeugt — ohne sie liefe die Uhr nie ab.
+        const wackel = Math.hypot(this.rawMouseX - this.verweilX, this.rawMouseY - this.verweilY)
+        if (wackel > VERWEIL_WACKEL_PX) {
+          const etwasUnterDemZeiger =
+            this.activeCorner != null || this.activeWall != null || this.activeAusstattung != null
+          if (this.mode == floorplannerModes.DELETE && etwasUnterDemZeiger) {
+            this.verweilenNeuStarten(this.rawMouseX, this.rawMouseY)
+          } else {
+            this.verweilAbbrechen()
+            this.verweilX = this.rawMouseX
+            this.verweilY = this.rawMouseY
+          }
         }
       }
     }
@@ -658,6 +668,10 @@ export class Floorplanner {
   /** */
   private mouseleave(): void {
     this.mouseDown = false
+    // Das laufende Verweilen endet mit dem Zeichenbereich — ein OFFENER
+    // Vorschlag aber nicht: die Rückfrage liegt ausserhalb des Canvas, der Weg
+    // dorthin löst zwangsläufig mouseleave aus und würde sie sonst schliessen.
+    this.verweilAbbrechen()
     //scope.setMode(scope.modes.MOVE);
   }
 
@@ -829,6 +843,11 @@ export class Floorplanner {
   /** Sets the interaction mode */
   public setMode(mode: FloorplannerMode): void {
     this.lastNode = null
+    // Ein Werkzeugwechsel nimmt jeden offenen Lösch-Vorschlag zurück (E1):
+    // eine Rückfrage, die das Löschen-Werkzeug überlebt, würde nach dem
+    // Wechsel etwas anbieten, das der Nutzer gar nicht mehr im Sinn hat.
+    this.loeschungAbbrechen()
+    this.activeAusstattung = null
     this.mode = mode
     this.modeResetCallbacks.forEach((callback) => callback(mode))
     this.updateTarget()

@@ -33,6 +33,13 @@ const edgeWidth = 1
 
 const deleteColor = '#ff0000'
 
+/**
+ * Füllung des zum Löschen vorgeschlagenen Ausstattungs-Zeichens (E1).
+ * Durchscheinend, damit die Signatur darunter erkennbar bleibt — wer bestätigen
+ * soll, muss ja noch sehen, WAS da verschwindet.
+ */
+const loeschFuellung = 'rgba(255, 0, 0, 0.22)'
+
 // Ausstattung (A1) — bewusst zurückhaltend: die Bausubstanz muss die
 // kräftigste Linie im Bild bleiben, die Möblierung ist Beiwerk.
 // Bewusst ein BLAUGRAU, kein neutrales Grau: die Wand-Kante ist #888888
@@ -285,9 +292,46 @@ export class FloorplannerView {
       return
     }
     const detail = proCm >= AUSSTATTUNG_DETAIL_AB
+    const kandidat =
+      this.viewmodel.loeschKandidat?.art === 'ausstattung'
+        ? this.viewmodel.loeschKandidat.element
+        : null
     this.floorplan.getAusstattung().forEach((el) => {
       this.zeichneAusstattung(el, detail)
+      // Markierung NACH dem Zeichen, damit sie darüber liegt — und bewusst als
+      // Rahmen um den Umriss statt als Farbwechsel in jeder der elf
+      // Zeichenvorschriften: eine Stelle, die für jede Signatur gilt, kann
+      // nicht bei der zwölften vergessen werden.
+      if (el === kandidat) {
+        this.markiereAusstattung(el, true)
+      } else if (el === this.viewmodel.activeAusstattung) {
+        this.markiereAusstattung(el, false)
+      }
     })
+  }
+
+  /**
+   * Roter Rahmen um ein Ausstattungs-Zeichen (E1). `fest` = es steht zur
+   * Löschung an (kräftig, gefüllt), sonst nur der Zeiger darüber (dünn).
+   */
+  private markiereAusstattung(el: AusstattungElement, fest: boolean) {
+    const hb = el.breite / 2
+    const ht = el.tiefe / 2
+    const ecken: Array<[number, number]> = [
+      this.ausPunkt(el, -hb, -ht),
+      this.ausPunkt(el, hb, -ht),
+      this.ausPunkt(el, hb, ht),
+      this.ausPunkt(el, -hb, ht)
+    ]
+    this.drawPolygon(
+      ecken.map((p) => p[0]),
+      ecken.map((p) => p[1]),
+      fest,
+      loeschFuellung,
+      true,
+      deleteColor,
+      fest ? 3 : 2
+    )
   }
 
   /**
