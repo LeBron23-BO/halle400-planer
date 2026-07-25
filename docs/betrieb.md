@@ -161,12 +161,41 @@ Körper, sitzen sie auf dem Boden statt daneben, ragt nichts durchs Gebäude,
 noch einmal — beide Ansichten lesen dieselbe Quelle, das wäre dieselbe Zahl
 zweimal statt einer unabhängigen Gegenprobe.
 
-**Bekannte Grenze:** `controls.maxDistance` ist 1500 cm, die Halle aber
-7800 cm lang — die **ganze** Halle passt in 3D nie ins Bild, man sieht immer
-nur einen Abschnitt. Das ist das 3D-Gegenstück zu dem Problem, das T7 für den
-2D-Editor gelöst hat, und es ist bislang **offen**. Es begrenzt auch die
-Aussagekraft der 3D-Lageprüfung (der Boden füllt fast den ganzen Rahmen);
-der zentimetergenaue Lagebeweis bleibt deshalb bei der 2D-Prüfung.
+Der zentimetergenaue Lagebeweis bleibt bei der 2D-Prüfung, die gegen die
+Bausubstanz misst; die 3D-Prüfung fängt den groben Fehler (Achsentausch).
+
+## Ganze Halle in 3D sichtbar (T7-3D)
+
+Beim Bauen von A6 fiel auf, dass die 3D-Ansicht die Halle **nie ganz** zeigen
+konnte: `controls.maxDistance` endete bei 1500 cm, die Halle ist 7800 cm lang.
+Das Herauszoomen lief wortlos gegen eine unsichtbare Wand — das 3D-Gegenstück
+zu dem Problem, das T7 für den 2D-Editor gelöst hat.
+
+**Drei feste Zahlen mussten mitwachsen, nicht eine.** Nur die erste war
+offensichtlich; die anderen beiden bezahlten den größeren Abstand mit
+Bildfehlern und fielen erst beim ANSEHEN auf, während jede Kennzahl grün war:
+
+| Wert | war | Symptom |
+|---|---|---|
+| `controls.maxDistance` | 1500 cm | Herauszoomen endet mittendrin |
+| `Skybox.sphereRadius` | 4000 cm | Kamera steht außerhalb der Himmelskugel → **schwarzer** Hintergrund |
+| `camera.far` | 10000 cm | ferne Himmelshälfte weggeschnitten → **schwarzes Loch** in der Bildmitte |
+
+**Eingepasst wird eine Kugel, kein Quader.** Die Ansicht dreht sich beim
+Öffnen von allein weiter, und bei 78 × 15 m ändert sich der Platzbedarf mit
+dem Blickwinkel dramatisch — eine auf den Startwinkel gerechnete Einpassung
+schneidet nach wenigen Sekunden Drehung wieder ab. Eine Kugel sieht aus jeder
+Richtung gleich aus, damit gilt die Einpassung für jeden Drehwinkel. Der
+Abstand ist exakt herleitbar (`radius / sin(halber Öffnungswinkel)`), es
+bleibt kein geschätzter Anteil und keine an dieser Halle kalibrierte Zahl.
+
+**Raumnamen folgen jetzt in BEIDEN Ansichten derselben Regel.** Die
+Ausblendschwelle (`LABEL_MIN_PIXEL_PRO_CM = 0,12`) galt bisher nur in 2D,
+weil die 3D-Kamera gar nicht weit genug herauskonnte, um das Problem zu
+erzeugen. Seit sie die ganze Halle einpasst, legten sich dort exakt dieselben
+18 Namen übereinander. Beim vollen Überblick stehen deshalb keine Namen —
+beim Hineinzoomen kommen sie zurück, die näheren zuerst, weil der Maßstab je
+Etikett aus seiner eigenen Entfernung zur Kamera folgt.
 
 ## Rückgängig / Wiederholen (T5a)
 

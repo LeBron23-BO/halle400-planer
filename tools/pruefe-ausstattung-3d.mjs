@@ -146,16 +146,6 @@ async function oeffne(browser) {
 
 const messe = (page) => page.evaluate(async () => await window.__messe3d())
 
-/** Kamera weit rausziehen (bis an controls.maxDistance). */
-async function zoomeRaus(page, schritte = 25) {
-  for (let i = 0; i < schritte; i++) {
-    await page.mouse.move(MITTE_X, MITTE_Y)
-    await page.mouse.wheel(0, 240)
-    await page.waitForTimeout(50)
-  }
-  await page.waitForTimeout(700)
-}
-
 /** Kamera in die Draufsicht schwenken (senkrecht von oben auf den Boden). */
 async function schwenkeNachOben(page) {
   await page.mouse.move(MITTE_X, MITTE_Y)
@@ -178,15 +168,29 @@ const browser = await chromium.launch()
 try {
   const page = await oeffne(browser)
 
-  // ---- Schraegsicht: erscheinen die Koerper ueberhaupt? -----------------
-  await zoomeRaus(page)
+  // ---- Startansicht: erscheinen die Koerper, passt die Halle? -----------
   const schraeg = await messe(page)
-  await page.screenshot({ path: `${DIR}/1-schraegsicht.png` })
-  log(`Schraegsicht: Moebel ${schraeg.moebel.n} Pixel, Boden ${schraeg.boden.n} Pixel`)
+  await page.screenshot({ path: `${DIR}/1-startansicht.png` })
+  log(`Startansicht: Moebel ${schraeg.moebel.n} Pixel, Boden ${schraeg.boden.n} Pixel`)
+  log(`  Bodenumriss x ${schraeg.boden.minX}..${schraeg.boden.maxX} (Bild 0..${schraeg.cw - 1})`)
+  log(`             y ${schraeg.boden.minY}..${schraeg.boden.maxY} (Bild 0..${schraeg.ch - 1})`)
   pruefe(
     'Ausstattung erscheint in der 3D-Ansicht',
     schraeg.moebel.n > 2000,
     `${schraeg.moebel.n} Pixel`
+  )
+
+  // T7-3D: die GANZE Halle muss beim Oeffnen ins Bild passen. Beruehrt der
+  // Boden einen Bildrand, ist sie abgeschnitten — genau der Zustand vor
+  // T7-3D, als controls.maxDistance bei 1500 cm endete und von 7800 cm Halle
+  // immer nur ein Abschnitt zu sehen war.
+  const b0 = schraeg.boden
+  const ganzImBild =
+    b0.n > 0 && b0.minX > 0 && b0.maxX < schraeg.cw - 1 && b0.minY > 0 && b0.maxY < schraeg.ch - 1
+  pruefe(
+    'Die ganze Halle passt beim Oeffnen ins Bild',
+    ganzImBild,
+    ganzImBild ? 'ringsum Rand frei' : 'Boden stoesst an einen Bildrand'
   )
 
   // Nichts darf durch das Gebaeude nach oben durchstossen: der hoechste
@@ -209,15 +213,15 @@ try {
   log(`  Moebelumriss x ${oben.moebel.minX}..${oben.moebel.maxX}, y ${oben.moebel.minY}..${oben.moebel.maxY}`)
 
   pruefe('Ausstattung auch von oben sichtbar', oben.moebel.n > 2000, `${oben.moebel.n} Pixel`)
-  // Lagebeweis gegen den GROBEN Fehler: waeren x und z vertauscht, laege die
-  // Ausstattung weit neben der Halle und dieser Anteil fiele gegen null.
+  // Lagebeweis: waeren x und z vertauscht, laege die Ausstattung weit neben
+  // der Halle und dieser Anteil fiele gegen null.
   //
-  // EHRLICHE EINORDNUNG DER AUSSAGEKRAFT: controls.maxDistance ist 1500 cm,
-  // die Halle aber 7800 cm lang — die ganze Halle passt NIE ins Bild. Der
-  // Boden fuellt dadurch fast den ganzen Rahmen, und ein Anteil nahe 100 %
-  // ist hier leichter zu erreichen als es aussieht. Dieser Test faengt den
-  // Achsentausch, er ist KEIN Nachweis zentimetergenauer Lage. Den fuehren
-  // die 2D-Pruefung (gegen die Bausubstanz gemessen) und das Sicht-Gate.
+  // EHRLICHE EINORDNUNG: seit T7-3D fuellt der Boden nicht mehr den ganzen
+  // Rahmen, sondern liegt mit freiem Rand darin — ein Moebel neben der Halle
+  // faellt dadurch wirklich heraus. Vorher war der Test schwach, weil der
+  // Bezugsrahmen praktisch das ganze Bild war. Ein Nachweis ZENTIMETER-genauer
+  // Lage ist er trotzdem nicht; den fuehren die 2D-Pruefung (gegen die
+  // Bausubstanz gemessen) und das Sicht-Gate.
   pruefe(
     'Ausstattung liegt auf dem Hallenboden, nicht daneben',
     anteil >= 0.97,
