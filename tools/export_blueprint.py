@@ -38,16 +38,28 @@ corner1/corner2 und Texturen. Beide Werte muessen daher ueber
 Die Hoehe ist aus einem Grundriss ohnehin nicht zu gewinnen; sie bleibt offen,
 statt geraten zu werden.
 
+Die Bearbeitung des Nutzers (W5)
+--------------------------------
+Der Export erzeugt die Zieldatei NEU. Damit er die Bearbeitung des Nutzers
+nicht ueberschreibt, gilt zweierlei: ein WAECHTER liest die vorhandene
+Zieldatei und bricht ab, wenn darin ungedeckte Setzungen stehen
+(`pruefe_zieldatei`), und `data/gesetzt.json` wird ganz zuletzt ADDITIV
+aufgelegt (`wende_gesetzt_an`). Die gemessenen Quellen — walls.json,
+ausstattung.json, plan-geometry.json — bleiben dabei unberuehrt.
+
 Aufruf
 ------
     python tools/export_blueprint.py
     python tools/export_blueprint.py --walls data/walls.json --out data/x.json
+    python tools/export_blueprint.py --ohne-gesetzt        # rein gemessener Stand
+    python tools/export_blueprint.py --verwerfe-setzungen  # Waechter uebergehen
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path
 
 METER_ZU_CM = 100.0
@@ -64,6 +76,28 @@ def ecken_id(x_cm: float, y_cm: float) -> str:
 
 def _raste(wert: float) -> float:
     return round(wert / RASTER_CM) * RASTER_CM
+
+
+def _js_runde(wert: float) -> int:
+    """Rundet wie `Math.round` in Javascript (halbe Werte AUFWAERTS).
+
+    Pythons `round` rundet kaufmaennisch zur geraden Zahl (`round(196.5)` = 196,
+    `Math.round(196.5)` = 197). Die Kennungen unten entstehen im Browser — hier
+    muss dieselbe Rechnung stehen, sonst hiesse dasselbe Moebel in den beiden
+    Welten anders.
+    """
+    return math.floor(wert + 0.5)
+
+
+def kennung_aus_ausstattung(el: dict) -> str:
+    """Spiegel von `kennungAusAusstattung` (src/model/floorplan.ts:371).
+
+    Die Kennung eines Ausstattungs-Zeichens wird aus Art und Ort abgeleitet, und
+    zwar EINMAL beim Laden. Ein verschobenes Stueck traegt darum weiterhin die
+    Kennung seines MESSORTES — das ist die Bruecke, ueber die eine Verschiebung
+    ihr Messstueck wiederfindet.
+    """
+    return f"a-{el['typ']}-{_js_runde(float(el['x']))}-{_js_runde(float(el['y']))}"
 
 
 def teile_an_schnittpunkten(segmente: list[dict]) -> list[tuple[tuple, tuple, dict]]:
@@ -360,6 +394,109 @@ def ungedeckte_setzungen(plan: dict, gesetzt: dict) -> list[str]:
     return offen
 
 
+def wende_gesetzt_an(plan: dict, gesetzt: dict) -> dict:
+    """Legt die Setzungs-Schicht ZULETZT auf den fertigen Plan (W5, Schritt 4).
+
+    Additiv und in dieser Reihenfolge: verschieben, entfernen, anhaengen,
+    Oeffnungen, Raumnamen. `lade_ausstattung` bleibt dabei UNANGETASTET — sie
+    darf `id` und `quelle` weiter wegschneiden. Flosse der Rueckweg durch sie
+    hindurch, machte der naechste Lauf aus jeder Setzung still ein Aufmass (beim
+    Laden ist der Standard `'gemessen'`, src/model/floorplan.ts:829), und die
+    Trennung zwischen Messung und Annahme waere dahin.
+
+    Jede Verschiebung traegt ihren Messort als `erwartet` mit. Passt der nicht
+    mehr zur Quelle, wird sie NICHT angewendet, sondern gemeldet: die Messung
+    hat sich geaendert, und eine Setzung auf ein Stueck zu schieben, das
+    woanders steht, waere eine stille Falschaussage.
+    """
+    bericht = {"verschoben": 0, "entfernt": 0, "neu": 0,
+               "oeffnungen": 0, "raumnamen": 0, "warnungen": []}
+    ausstattung = plan["floorplan"]["ausstattung"]
+
+    # Die Kennung entsteht beim Laden aus Art und MESSORT (kennungAusAusstattung,
+    # src/model/floorplan.ts:371). Genau darum findet eine Verschiebung ihr
+    # Stueck wieder, obwohl es laengst woanders steht.
+    nach_id: dict[str, dict] = {}
+    for e in ausstattung:
+        nach_id.setdefault(kennung_aus_ausstattung(e), e)
+
+    for v in gesetzt["verschiebungen"]:
+        el = nach_id.get(v.get("id"))
+        erwartet = v.get("erwartet") or {}
+        if el is None:
+            bericht["warnungen"].append(
+                f"Verschiebung {v.get('id')}: dieses Messstueck gibt es nicht "
+                f"mehr — nicht angewendet")
+            continue
+        if (el["typ"] != erwartet.get("typ")
+                or abs(el["x"] - float(erwartet.get("x0", 1e9))) > 0.5
+                or abs(el["y"] - float(erwartet.get("y0", 1e9))) > 0.5):
+            bericht["warnungen"].append(
+                f"Verschiebung {v.get('id')}: die Messung steht jetzt bei "
+                f"{el['x']:.0f}/{el['y']:.0f} statt {erwartet.get('x0')}/"
+                f"{erwartet.get('y0')} — nicht angewendet")
+            continue
+        # Die Kennung wird AUSDRUECKLICH mitgeschrieben. Ohne sie leitete der
+        # Planer sie beim Laden aus dem NEUEN Ort ab, und beim naechsten
+        # Rueckweg faende die Verschiebung ihr Messstueck nicht mehr wieder.
+        el["id"] = v["id"]
+        el["x"], el["y"] = _raste(float(v["x"])), _raste(float(v["y"]))
+        if v.get("drehung") is not None:
+            el["drehung"] = round(float(v["drehung"]), 4)
+        el["quelle"] = "gesetzt"
+        bericht["verschoben"] += 1
+
+    if gesetzt["entfernt"]:
+        # Verschobene Stuecke tragen ihre Kennung jetzt AUSDRUECKLICH (oben
+        # gesetzt) — sie werden hier also an ihrer Herkunfts-Kennung erkannt und
+        # nicht versehentlich an der eines fremden Stuecks, das zufaellig an
+        # ihrem neuen Ort steht.
+        weg = set(gesetzt["entfernt"])
+        behalten = [e for e in ausstattung
+                    if (e.get("id") or kennung_aus_ausstattung(e)) not in weg]
+        bericht["entfernt"] = len(ausstattung) - len(behalten)
+        plan["floorplan"]["ausstattung"] = ausstattung = behalten
+
+    for neu in gesetzt["neue_stuecke"]:
+        typ = neu.get("typ")
+        if typ not in ERLAUBTE_TYPEN:
+            raise SystemExit(f"gesetzt.json/neue_stuecke: unbekannter Typ {typ!r}")
+        for feld in ("x", "y", "breite", "tiefe"):
+            if not isinstance(neu.get(feld), (int, float)):
+                raise SystemExit(f"gesetzt.json/neue_stuecke ({typ}): {feld} fehlt")
+        eintrag = {"id": neu.get("id") or kennung_aus_ausstattung(neu),
+                   "quelle": "gesetzt", "typ": typ,
+                   "x": _raste(neu["x"]), "y": _raste(neu["y"]),
+                   "breite": _raste(neu["breite"]), "tiefe": _raste(neu["tiefe"])}
+        if neu.get("drehung"):
+            eintrag["drehung"] = round(float(neu["drehung"]), 4)
+        if neu.get("text"):
+            eintrag["text"] = neu["text"]
+        ausstattung.append(eintrag)
+        bericht["neu"] += 1
+
+    if gesetzt["oeffnungen"]:
+        # Mit `anker`, sonst stirbt die Versoehnung: in dieser Pipeline
+        # ueberlebt keine Wand-Kennung ein Nachmessen (sie wird aus dem
+        # Eckenpaar abgeleitet, die Ecken aus der Koordinate). Der Anker ist die
+        # einzige dauerhafte Spur zum gesetzten Ort.
+        plan["floorplan"]["oeffnungen"] = gesetzt["oeffnungen"]
+        bericht["oeffnungen"] = len(gesetzt["oeffnungen"])
+    if gesetzt["raumnamen"]:
+        plan["floorplan"]["roomMeta"] = gesetzt["raumnamen"]
+        bericht["raumnamen"] = len(gesetzt["raumnamen"])
+
+    # Die Fassung wird NUR geschrieben, wenn die Schicht wirklich etwas
+    # hineingelegt hat. Ohne Setzungen ist die Datei genau das, was sie seit T3
+    # ist — und bleibt byte-identisch, was das Gate misst. Mit Setzungen traegt
+    # sie Kennungen, `quelle` und womoeglich Oeffnungen und IST damit eine
+    # Fassung-3-Datei; das zu verschweigen hiesse, einen aelteren Planer die
+    # Tueren still wegwerfen zu lassen (src/model/floorplan.ts, PLAN_FASSUNG).
+    if any(bericht[k] for k in ("verschoben", "neu", "oeffnungen", "raumnamen")):
+        plan["floorplan"]["formatVersion"] = 3
+    return bericht
+
+
 def pruefe_zieldatei(out: Path, gesetzt: dict, verwerfen: bool) -> None:
     """DER WAECHTER (W5, Schritt 1) — fail-closed vor dem Schreiben.
 
@@ -469,6 +606,19 @@ def main() -> int:
     # gedeckt ist. Was in gesetzt.json steht, ist wiederherstellbar — der
     # Waechter darf deswegen nicht darauf bestehen.
     gesetzt = lade_gesetzt(args.gesetzt)
+
+    # DIE EINZIGE NAHT (W5). Hier, ganz zuletzt, kommt die Bearbeitung des
+    # Nutzers auf den fertigen gemessenen Plan — nach labels und ausstattung,
+    # additiv, ohne eine der Quellen zu beruehren.
+    if not args.ohne_gesetzt:
+        b = wende_gesetzt_an(plan, gesetzt)
+        if any(b[k] for k in ("verschoben", "entfernt", "neu", "oeffnungen", "raumnamen")):
+            print(f"Setzungen aus {args.gesetzt}: {b['verschoben']} verschoben · "
+                  f"{b['entfernt']} entfernt · {b['neu']} neu · "
+                  f"{b['oeffnungen']} Oeffnung(en) · {b['raumnamen']} Raumname(n)")
+        for w in b["warnungen"]:
+            print(f"  WARNUNG: {w}")
+
     pruefe_zieldatei(args.out, gesetzt, args.verwerfe_setzungen)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
