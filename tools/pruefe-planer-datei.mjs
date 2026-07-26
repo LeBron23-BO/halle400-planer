@@ -168,26 +168,128 @@ pruefe(
   `G8: GEGENPROBE — ohne Aenderung bleibt das Blatt identisch (Pruefsumme ${blattVorher.summe} -> ${blattOhneAenderung.summe})`
 )
 
-/* ══ G2 — im Auslieferungszustand sieht die Bank ein ruhiges Blatt ═════ */
+/* ══ G2 — der Bearbeiten-Schalter LAESST DIE ANSICHT STEHEN ════════════
+   W7, auf ausdruecklichen Wunsch des Nutzers: „wenn ich bearbeiten klicke soll
+   die ansicht dieselbe sein wie die zuletzt angesehene". Bis dahin sprang der
+   Schalter in den Grundriss — genau das hat dieses Gate frueher VERLANGT. Es
+   verlangt jetzt das Gegenteil, und zwar aus BEIDEN Ansichten heraus, damit
+   die Kopplung nicht bloss die Richtung wechselt.
+
+   Der zweite Teil ist der wichtigere: was der Schalter NICHT anfasst. Ohne
+   „Bearbeiten" bleibt die Zeichenflaeche taub (K3) — gemessen mit
+   \`page.mouse\`, denn nur die geht durch die Treffer-Ermittlung des Browsers.
+   \`dispatchEvent\` ruft die Zuhoerer direkt auf und uebersaehe genau das. */
 const werkzeugeVorherApi = await page.evaluate(() => window.__planerDatei.werkzeugeSichtbar())
 const werkzeugeVorherAuge = await sichtbar(page, '#werkzeuge')
 pruefe(
   werkzeugeVorherApi === false && werkzeugeVorherAuge === false,
   'G2: die Werkzeuge sind im Auslieferungszustand NICHT sichtbar'
 )
+
+// --- aus der AXONOMETRIE heraus einschalten (hier steht die Datei gerade).
+const vorSchalter = await page.evaluate(() => window.__planerDatei.ansicht())
 await klick(page, 'btnBearbeiten')
 await page.waitForTimeout(400)
-const werkzeugeNachher = await page.evaluate(() => ({
-  api: window.__planerDatei.werkzeugeSichtbar(),
-  ansicht: window.__planerDatei.ansicht()
+const inAxo = await page.evaluate(() => ({
+  ansicht: window.__planerDatei.ansicht(),
+  bearbeitet: window.__planerDatei.bearbeitet(),
+  werkzeuge: window.__planerDatei.werkzeugeSichtbar(),
+  hinweis: window.__planerDatei.arbeitshinweisText()
 }))
-const werkzeugeNachherAuge = await sichtbar(page, '#werkzeuge')
 pruefe(
-  werkzeugeNachher.api === true && werkzeugeNachherAuge === true,
-  'G2: nach dem Bearbeiten-Schalter sind sie sichtbar'
+  vorSchalter === 'axo' && inAxo.ansicht === 'axo',
+  `G2: aus der Axonometrie heraus bleibt die Axonometrie stehen (${vorSchalter} -> ${inAxo.ansicht})`
 )
-pruefe(werkzeugeNachher.ansicht === 'plan', `G2: der Schalter fuehrt in den Grundriss (${werkzeugeNachher.ansicht})`)
-await page.screenshot({ path: path.join(DIR, 'B_bearbeiten.png') })
+pruefe(inAxo.bearbeitet === true, 'G2: der Bearbeiten-Zustand ist trotzdem an')
+/* KEINE toten Knoepfe: die Werkzeugleiste liegt im Grundriss-Umschlag und ist
+   hier gar nicht zu sehen — an ihrer Stelle steht die ruhige Zeile. */
+pruefe(
+  inAxo.werkzeuge === false && (await sichtbar(page, '#werkzeuge')) === false,
+  'G2: in der Axonometrie ist die Werkzeugleiste NICHT zu sehen (dort wird nicht bearbeitet)'
+)
+pruefe(
+  !!inAxo.hinweis && inAxo.hinweis.indexOf('Grundriss') !== -1,
+  `G2: stattdessen sagt eine ruhige Zeile, wo gezeichnet wird ("${inAxo.hinweis}")`
+)
+await page.screenshot({ path: path.join(DIR, 'B1_bearbeiten_axonometrie.png') })
+
+// --- jetzt in den Grundriss: DA sind die Werkzeuge.
+await klick(page, 'btnAnsichtPlan')
+await page.waitForTimeout(400)
+const imPlan = await page.evaluate(() => ({
+  api: window.__planerDatei.werkzeugeSichtbar(),
+  ansicht: window.__planerDatei.ansicht(),
+  hinweis: window.__planerDatei.arbeitshinweisSichtbar()
+}))
+pruefe(
+  imPlan.api === true && (await sichtbar(page, '#werkzeuge')) === true,
+  'G2: im Grundriss sind sie sichtbar'
+)
+pruefe(imPlan.hinweis === false, 'G2: und die ruhige Zeile ist dort weg — sie gehoert dem Blatt')
+
+// --- GEGENPROBE 1: aus dem GRUNDRISS heraus ausschalten laesst ihn ebenso stehen.
+await klick(page, 'btnBearbeiten')
+await page.waitForTimeout(400)
+const ausImPlan = await page.evaluate(() => ({
+  ansicht: window.__planerDatei.ansicht(),
+  bearbeitet: window.__planerDatei.bearbeitet(),
+  werkzeuge: window.__planerDatei.werkzeugeSichtbar(),
+  scharf: window.__planerDatei.zeichenflaecheScharf()
+}))
+pruefe(
+  ausImPlan.ansicht === 'plan' && ausImPlan.bearbeitet === false && ausImPlan.werkzeuge === false,
+  `G2: GEGENPROBE — Ausschalten im Grundriss laesst den Grundriss stehen (${JSON.stringify(ausImPlan)})`
+)
+
+/* --- GEGENPROBE 2 (K3, die wichtigste): ohne „Bearbeiten" bewegt ein ECHTER
+   Mauszug im Grundriss NICHTS am Modell. Dass die Hand wirklich aufs Blatt
+   getroffen hat, wird mitgemessen — das Blatt WANDERT (Lese-Navigation), die
+   Weltkoordinate bleibt. Eine Gegenprobe, in der gar nichts ankommt, waere
+   auch dann gruen, wenn die Maus ins Leere zeigte. */
+pruefe(ausImPlan.scharf === false, 'G2: die Zeichenflaeche nimmt ohne „Bearbeiten" keine Zeiger-Ereignisse an')
+const vorZug = await page.evaluate(() => {
+  const ecken = window.__planerDatei.ecken()
+  const passend = ecken.filter((e) => e.bx > 300 && e.bx < 1300 && e.by > 200 && e.by < 780)
+  return passend[0] || null
+})
+pruefe(vorZug !== null, 'G2: eine Ecke im Bild gefunden, an der gezogen werden kann')
+if (vorZug) {
+  await page.mouse.move(vorZug.bx, vorZug.by)
+  await page.mouse.down()
+  for (let i = 1; i <= 10; i++) await page.mouse.move(vorZug.bx + i * 6, vorZug.by + i * 5)
+  await page.mouse.up()
+  await page.waitForTimeout(400)
+  const nachZug = await page.evaluate((id) => {
+    const e = window.__planerDatei.ecken().find((k) => k.id === id)
+    return e ? { x: e.x, y: e.y, bx: e.bx, by: e.by } : null
+  }, vorZug.id)
+  pruefe(
+    nachZug && nachZug.x === vorZug.x && nachZug.y === vorZug.y,
+    `G2: GEGENPROBE — ohne „Bearbeiten" verschiebt ein Mauszug im Grundriss NICHTS (Welt ${vorZug.x},${vorZug.y} -> ${nachZug?.x},${nachZug?.y})`
+  )
+  pruefe(
+    nachZug && Math.hypot(nachZug.bx - vorZug.bx, nachZug.by - vorZug.by) > 20,
+    `G2: die Hand kam wirklich an — das Blatt ist mitgewandert (Bild ${vorZug.bx.toFixed(0)},${vorZug.by.toFixed(0)} -> ${nachZug?.bx.toFixed(0)},${nachZug?.by.toFixed(0)})`
+  )
+}
+
+// --- wieder scharf stellen: alles Weitere prueft das Bearbeiten.
+await klick(page, 'btnBearbeiten')
+await page.waitForTimeout(400)
+// Die Lese-Navigation hat die Ansicht verschoben; die ganze Halle wieder ins
+// Bild, sonst sucht G4 gleich eine Ecke an einer Stelle, die es nicht mehr gibt.
+await klick(page, 'btnEinpassen')
+await page.waitForTimeout(400)
+const wiederAn = await page.evaluate(() => ({
+  bearbeitet: window.__planerDatei.bearbeitet(),
+  ansicht: window.__planerDatei.ansicht(),
+  scharf: window.__planerDatei.zeichenflaecheScharf()
+}))
+pruefe(
+  wiederAn.bearbeitet === true && wiederAn.ansicht === 'plan' && wiederAn.scharf === true,
+  `G2: mit „Bearbeiten" ist sie scharf, und der Grundriss steht weiter (${JSON.stringify(wiederAn)})`
+)
+await page.screenshot({ path: path.join(DIR, 'B2_bearbeiten_grundriss.png') })
 
 /* ══ G3 — dasselbe Modell wie im Planer ═══════════════════════════════ */
 const zahlen = await page.evaluate(() => window.__planerDatei.zahlen())
@@ -408,12 +510,45 @@ pruefe(
 )
 pruefe(nachNeuladen.stand === true, `G6: der Hinweis auf den eigenen Stand ist sichtbar ("${nachNeuladen.text}")`)
 
+/* W7 — DIE BEIDEN GEMERKTEN ANGABEN PASSEN ZUSAMMEN. Vor dem Neuladen stand
+   der bearbeitbare Grundriss da; genau der muss wiederkommen. Sie liegen seit
+   W7 in ZWEI Schluesseln (der Schalter zieht die Ansicht nicht mehr mit) —
+   gerade deshalb wird hier gemessen, dass sie nicht auseinanderlaufen. */
+const gemerkt = await page.evaluate(() => ({
+  bearbeitet: window.__planerDatei.bearbeitet(),
+  ansicht: window.__planerDatei.ansicht(),
+  werkzeuge: window.__planerDatei.werkzeugeSichtbar()
+}))
+pruefe(
+  gemerkt.bearbeitet === true && gemerkt.ansicht === 'plan' && gemerkt.werkzeuge === true,
+  `G6: der Neustart bringt Bearbeiten-Zustand UND zuletzt angesehene Ansicht zurueck (${JSON.stringify(gemerkt)})`
+)
+
+/* Und der obere Rand traegt beides nebeneinander: der Arbeitshinweis steht in
+   der Axonometrie ueber der Standleiste, die hier gerade den eigenen Stand
+   meldet. GEMESSEN an den Rechtecken, nicht am Standbild geschaetzt — zwei
+   feste Leisten an derselben Stelle liegen sonst uebereinander, und das faellt
+   erst dem Nutzer auf. */
+await klick(page, 'btnAnsichtAxo')
+await page.waitForTimeout(700)
+const oben = await page.evaluate(() => {
+  const r = (id) => {
+    const e = document.getElementById(id)
+    if (!e || !e.checkVisibility({ contentVisibilityAuto: true, opacityProperty: true, visibilityProperty: true })) return null
+    const k = e.getBoundingClientRect()
+    return { oben: Math.round(k.top), unten: Math.round(k.bottom) }
+  }
+  return { hinweis: r('arbeitshinweis'), stand: r('standleiste') }
+})
+pruefe(
+  oben.hinweis !== null && oben.stand !== null && oben.hinweis.unten <= oben.stand.oben,
+  `G6: Arbeitshinweis und Standleiste stehen untereinander, nicht uebereinander (${JSON.stringify(oben)})`
+)
+await page.screenshot({ path: path.join(DIR, 'B3_hinweis_und_standleiste.png') })
+await klick(page, 'btnAnsichtPlan')
+await page.waitForTimeout(400)
+
 // --- GEGENPROBE: zuruecksetzen bringt den gemessenen Plan zurueck.
-await klick(page, 'btnBearbeiten')
-await page.waitForTimeout(300)
-const werkzeugeDa = await page.evaluate(() => window.__planerDatei.werkzeugeSichtbar())
-if (!werkzeugeDa) await klick(page, 'btnBearbeiten')
-await page.waitForTimeout(200)
 await klick(page, 'btnZurueck')
 await page.waitForTimeout(250)
 await klick(page, 'btnZurueckJa')
@@ -448,7 +583,9 @@ fs.copyFileSync(DATEI, path.join(ordnerB, 'Halle400-Modell.html'))
 const seiteA = beobachte(await ctx.newPage())
 await seiteA.goto(pathToFileURL(path.join(ordnerA, 'Halle400-Modell.html')).href, { waitUntil: 'domcontentloaded' })
 await warteBereit(seiteA)
+// Werkzeuge EIN und in den Grundriss — seit W7 zwei getrennte Griffe (G2).
 await klick(seiteA, 'btnBearbeiten')
+await klick(seiteA, 'btnAnsichtPlan')
 await seiteA.waitForTimeout(500)
 await seiteA.evaluate((p) => {
   const m = window.__planerDatei.maus
@@ -498,8 +635,15 @@ pruefe(
    Sie laeuft auf der unberuehrten Kopie B, damit sie den Zug aus A nicht
    stoert. Zwei Wege werden gemessen, nicht einer: Abbrechen darf NICHTS
    loeschen — ein Gate, das nur "Entfernen entfernt" prueft, bestuende auch
-   dann, wenn beide Knoepfe dasselbe taeten. */
+   dann, wenn beide Knoepfe dasselbe taeten.
+
+   Der Wechsel in den Grundriss ist hier nicht Zierat: die Rueckfrage
+   `#rueckfrage` liegt IM Grundriss-Umschlag. Seit W7 zieht der
+   Bearbeiten-Schalter die Ansicht nicht mehr mit — ohne die zweite Zeile fragte
+   hier etwas Unsichtbares, und genau das hat dieses Gate beim ersten Lauf
+   gemeldet. */
 await klick(seiteB, 'btnBearbeiten')
+await klick(seiteB, 'btnAnsichtPlan')
 await seiteB.waitForTimeout(500)
 const wand = await seiteB.evaluate(() => {
   const ecken = window.__planerDatei.ecken()
@@ -571,5 +715,5 @@ log('')
 log(fehler.length === 0 ? 'ALLE PRUEFUNGEN BESTANDEN' : `DURCHGEFALLEN: ${fehler.length}`)
 fehler.forEach((f) => log('  - ' + f))
 log(`Bilder + Bericht: ${DIR}`)
-log('  A_startansicht.png · B_bearbeiten.png · C_nach_dem_zug.png · D_blatt_folgt.png · E_loesch_rueckfrage.png')
+log('  A_startansicht.png · B1_bearbeiten_axonometrie.png · B2_bearbeiten_grundriss.png · B3_hinweis_und_standleiste.png · C_nach_dem_zug.png · D_blatt_folgt.png · E_loesch_rueckfrage.png')
 process.exit(fehler.length === 0 ? 0 : 1)

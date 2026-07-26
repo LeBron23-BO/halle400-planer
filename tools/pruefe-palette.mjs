@@ -248,14 +248,30 @@ await page.waitForFunction(() => window.__bereit === true, { timeout: 25000 })
 const vorBearbeiten = await page.evaluate(() => window.__planerDatei.paletteSichtbar())
 pruefe(vorBearbeiten === false, `A) im Auslieferungszustand ist die Palette WEG (sichtbar=${vorBearbeiten})`)
 
+/* ZWEI Klicks seit W7: der Bearbeiten-Schalter laesst die Ansicht stehen
+   (ausdruecklicher Nutzerwunsch), und die Palette liegt IM Grundriss — in der
+   Axonometrie waere sie nutzlos, dort trifft ein Klick keinen Punkt, sondern
+   einen Sehstrahl. Erst beides zusammen ergibt "Palette da". */
 await page.evaluate(() => {
   document.getElementById('btnBearbeiten').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+})
+await page.waitForTimeout(400)
+const inDerAxo = await page.evaluate(() => ({
+  ansicht: window.__planerDatei.ansicht(),
+  palette: window.__planerDatei.paletteSichtbar()
+}))
+pruefe(
+  inDerAxo.ansicht === 'axo' && inDerAxo.palette === false,
+  `A) GEGENPROBE — der Schalter allein wechselt die Ansicht nicht, und in der Axonometrie gibt es keine Palette (${JSON.stringify(inDerAxo)})`
+)
+await page.evaluate(() => {
+  document.getElementById('btnAnsichtPlan').dispatchEvent(new MouseEvent('click', { bubbles: true }))
 })
 await page.waitForTimeout(900)
 await page.evaluate(MESSZUGANG)
 
 const sichtbar = await page.evaluate(() => window.__planerDatei.paletteSichtbar())
-pruefe(sichtbar === true, `A) mit dem Bearbeiten-Schalter ist sie da (sichtbar=${sichtbar})`)
+pruefe(sichtbar === true, `A) im bearbeitbaren Grundriss ist sie da (sichtbar=${sichtbar})`)
 
 /* Heranzoomen: bei eingepasster Halle ist eine 60 cm tiefe Matte zehn Bildpunkte
    hoch — ein Tintenschwerpunkt daraus waere Rauschen. 1,2 ist derselbe Massstab,
@@ -663,10 +679,14 @@ if (exportPfad && fs.existsSync(exportPfad)) {
   /* „Zuruecksetzen" heisst seit M7 wirklich AUSLIEFERUNGSZUSTAND: ruhiges
      Blatt, keine Werkzeuge — und die Zeichenflaeche nimmt dann keine
      Zeiger-Ereignisse mehr an (K3). Wer danach weiterarbeiten will, greift den
-     Schalter noch einmal. Genau das tut hier auch der Nutzer. */
+     Schalter noch einmal UND geht in den Grundriss zurueck (seit W7 zwei
+     getrennte Griffe). Genau das tut hier auch der Nutzer. */
   await page.evaluate(() => {
     if (!window.__planerDatei.bearbeitet()) {
       document.getElementById('btnBearbeiten').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    }
+    if (window.__planerDatei.ansicht() !== 'plan') {
+      document.getElementById('btnAnsichtPlan').dispatchEvent(new MouseEvent('click', { bubbles: true }))
     }
   })
   await page.waitForTimeout(400)

@@ -1139,8 +1139,12 @@ if (NUR !== 'planer') {
     log(`\n═══ WELT 2: die Doppelklick-Datei — ${url} (Netz GESPERRT) ═══`)
     await page.goto(url, { waitUntil: 'domcontentloaded' })
     await page.waitForFunction(() => window.__bereit === true, { timeout: 25000 })
+    /* Werkzeuge EIN und in den Grundriss — seit W7 zwei getrennte Griffe: der
+       Bearbeiten-Schalter laesst die Ansicht stehen (ausdruecklicher
+       Nutzerwunsch), und Oeffnungen werden im Grundriss gesetzt. */
     await page.evaluate(() => {
       document.getElementById('btnBearbeiten').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      document.getElementById('btnAnsichtPlan').dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     await page.waitForTimeout(800)
     await page.evaluate(ADAPTER_DATEI)

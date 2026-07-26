@@ -150,6 +150,36 @@ weil `file://` kein Nachladen erlaubt. Drei Dinge muss man dazu wissen:
 **Messzugang:** `window.__planerDatei` (nur in dieser Datei) — Modellzahlen, Ecken
 in Welt- UND Bildkoordinaten, Bild-Pruefsummen, Zeiger-Ereignisse.
 
+### „Bearbeiten" wechselt die Ansicht NICHT (W7, 2026-07-27)
+
+Nutzerwunsch, woertlich: *„wenn ich bearbeiten klicke soll die ansicht dieselbe
+sein wie die zuletzt angesehene"*. Bis W6 sprang der Schalter in den Grundriss
+und beim Ausschalten zurueck aufs Blatt — eine Annahme aus W1. Seither schaltet
+er **nur** die Werkzeuge; welche Ansicht vorn ist, entscheiden allein
+„Grundriss" und „Axonometrie". Vier Folgen:
+
+1. **In der Axonometrie sind die Werkzeuge nicht zu sehen** — nicht, weil jemand
+   sie ausblendet, sondern weil Werkzeugleiste und Palette IM Grundriss-Umschlag
+   liegen und dessen Sichtbarkeit erben. Ein toter Knopf kann so gar nicht
+   entstehen. An ihrer Stelle steht `#arbeitshinweis`: *„Bearbeiten ist an —
+   gezeichnet wird im Grundriss."* Er liegt im Blatt und erbt dessen
+   Sichtbarkeit ebenso.
+2. **Drei Speicher-Schluessel statt zwei:** `…:plan:`, `…:bearbeiten:` und neu
+   `…:ansicht:`. Zwei unabhaengige Angaben brauchen zwei Schluessel — sie in
+   einen zu legen hiesse, die abgeschaffte Kopplung durch die Hintertuer wieder
+   einzufuehren. „Zuruecksetzen" loescht **alle drei** (M7 bleibt gueltig).
+3. **Wer eine Rueckfrage aus dem Grundriss-Umschlag zeigt, muss dorthin
+   wechseln.** `btnStandZurueck` sitzt in der Standleiste und ist auch in der
+   Axonometrie erreichbar; ohne den ausdruecklichen Wechsel fragte etwas
+   Unsichtbares. Derselbe Fallstrick traf `pruefe-planer-datei.mjs` G10.
+4. **Jede Pruefung, die bearbeiten will, braucht seither ZWEI Griffe**
+   (Schalter + Grundriss) — genau wie eine Hand. `pruefe-haertung.mjs` buendelt
+   das in `bearbeitenAn`.
+
+K3 bleibt unberuehrt: `body.bearbeitet` allein macht die Zeichenflaeche scharf.
+Dass sie das nun auch tut, waehrend das Blatt vorn ist, aendert nichts — die
+ruhende Ansicht ist `visibility:hidden` und nimmt keinen Zeiger an.
+
 ## Moebel ziehen (W2, 2026-07-26)
 
 Im Werkzeug **Verschieben** wird ein Moebel unter dem Zeiger gegriffen, folgt der
