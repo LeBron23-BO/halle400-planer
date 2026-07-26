@@ -210,6 +210,34 @@ const html = `<!DOCTYPE html>
   .standleiste.warnt{border-color:var(--rot);color:var(--rot)}
   .standleiste button{padding:7px 9px;min-height:34px;font-size:9.5px}
 
+  /* ── W7: was „Bearbeiten" in der Axonometrie heisst ───────────────────
+     Der Schalter wechselt die Ansicht nicht mehr (s. \`setzeBearbeiten\`). In
+     der Axonometrie wird aber NICHT bearbeitet — dort traefe ein Klick keinen
+     Punkt, sondern einen Sehstrahl. Werkzeugleiste und Palette liegen im
+     Grundriss-Umschlag und sind hier darum gar nicht da; ein toter Knopf kann
+     also nicht entstehen. Was fehlte, war die AUSKUNFT darueber. Diese Zeile
+     gibt sie, ruhig und im Farbklima des Blattes.
+
+     Sie liegt IM Blatt und erbt dessen Sichtbarkeit (dieselbe Bauart wie die
+     Palette im Grundriss): eine zweite Regel, die man beim Umschalten
+     vergessen koennte, gibt es damit nicht. */
+  .arbeitshinweis{position:fixed;top:60px;left:50%;transform:translateX(-50%);
+       max-width:calc(100vw - 24px);padding:7px 13px;background:var(--panel);
+       border:1px solid var(--panel-line);backdrop-filter:blur(9px);
+       -webkit-backdrop-filter:blur(9px);z-index:19;font-family:var(--mono);
+       font-size:10px;letter-spacing:.06em;color:var(--ink-mute);line-height:1.6;
+       text-align:center;pointer-events:none}
+  .arbeitshinweis b{color:var(--ink-dim);font-weight:500}
+  .arbeitshinweis .warum{display:block;opacity:.82}
+  /* Der obere Rand ist eine STAPEL-Bahn: Kopfleiste (10) · Standleiste (60) ·
+     Meldung (104). Steht der Arbeitshinweis dort, muessen die beiden darunter
+     nachruecken, sonst laegen sie uebereinander — am Standbild gemessen, nicht
+     geschaetzt. Rein aus dem CSS: das Blatt ist vorn, wenn der Grundriss \`weg\`
+     ist, und \`#standleiste\`/\`#meldung\` folgen \`#plan\` im Dokument. Eine zweite
+     Zustandsangabe in JS, die man vergessen koennte, gibt es so nicht. */
+  body.bearbeitet #plan.weg ~ .standleiste{top:118px}
+  body.bearbeitet #plan.weg ~ .meldung{top:162px}
+
   .meldung{position:fixed;top:104px;left:50%;transform:translateX(-50%);
        max-width:min(60ch,calc(100vw - 24px));padding:9px 14px;z-index:30;
        background:var(--panel);border:1px solid var(--panel-line);
@@ -332,7 +360,7 @@ const html = `<!DOCTYPE html>
     /* Bedienelemente gehoeren nicht aufs Papier. Ein gedruckter Knopf ist eine
        Aufforderung, die das Blatt nicht einloesen kann. */
     .kopfleiste,.leiste,.palette,.standleiste,.meldung,.frage,.geist,
-    #hinweisBedienung{display:none!important}
+    .arbeitshinweis,#hinweisBedienung{display:none!important}
     /* Die Saeulen-Tafel ist ein Bildschirm-Aufsteller mit eigenem Schalter und
        Weichzeichner: auf Papier verdeckte sie ein Viertel des Grundrisses, und
        der Weichzeichner druckt ohnehin nicht. Ihr Inhalt steht als Beschriftung
@@ -391,6 +419,16 @@ const html = `<!DOCTYPE html>
          unten, zu dem Satz über die Höhen — siehe „hinweisOeffnung". -->
     <div class="gesetzt" id="oeffnungZaehler" hidden></div>
   </header>
+
+  <!-- W7: „Bearbeiten" lässt die Ansicht stehen. Wer den Schalter hier drückt,
+       hat die Werkzeuge an — nur liegen sie im Grundriss, weil in einer
+       schrägen Parallelprojektion ein Klick keinen Punkt trifft, sondern einen
+       Sehstrahl. Diese Zeile sagt genau das. Sie steht IM Blatt und ist damit
+       nur zu sehen, solange das Blatt vorn ist. -->
+  <div class="arbeitshinweis" id="arbeitshinweis" role="status" hidden>
+    <b>Bearbeiten ist an</b> — gezeichnet wird im Grundriss.
+    <span class="warum">In der Axonometrie trifft ein Klick keinen Punkt, sondern einen Sehstrahl.</span>
+  </div>
 
   <aside class="tafel" id="tafel">
     <div class="tafel-kopf"><b>Die neun Säulen</b><span id="zaehler"></span></div>
@@ -627,6 +665,16 @@ function kurzHash(text){
 const ORT_ABDRUCK = kurzHash(decodeURIComponent(location.pathname).toLowerCase());
 const SCHLUESSEL = 'halle400-planer-datei:plan:' + PLAN_ABDRUCK + ':' + ORT_ABDRUCK;
 const SCHLUESSEL_BEARBEITEN = 'halle400-planer-datei:bearbeiten:' + ORT_ABDRUCK;
+/* W7 — EIGENER Schluessel fuer die zuletzt angesehene Ansicht. Bis hierher
+   brauchte es ihn nicht: der Bearbeiten-Schalter WAR die Ansichtswahl (an =
+   Grundriss, aus = Blatt), ein Wert trug also beides. Seit er die Ansicht
+   stehen laesst, sind es zwei unabhaengige Angaben — und zwei unabhaengige
+   Angaben brauchen zwei Schluessel. Sie zusammen in einen zu legen hiesse, die
+   gerade abgeschaffte Kopplung durch die Hintertuer wieder einzufuehren.
+   „Zuruecksetzen" loescht beide (M7). Der Praefix bleibt derselbe, damit das
+   Aufraeumen weiter EINE Regel ist: alles, was so beginnt, gehoert dieser
+   Datei. */
+const SCHLUESSEL_ANSICHT = 'halle400-planer-datei:ansicht:' + ORT_ABDRUCK;
 
 const speicher = (function(){
   try {
@@ -652,6 +700,7 @@ const blattEl = el('blatt');
 const planEl = el('plan');
 const werkzeuge = el('werkzeuge');
 const palette = el('palette');
+const arbeitshinweis = el('arbeitshinweis');
 const tafel = el('tafel');
 const rueckfrage = el('rueckfrage');
 const zurueckFrage = el('zurueckFrage');
@@ -1060,7 +1109,7 @@ function tafelZeichnen(){
 /* ── Ansicht umschalten ─────────────────────────────────────────────
    Beide Ansichten bleiben im Dokument und behalten ihre Groesse; nur die
    ruhende ist unsichtbar und nimmt keine Eingaben an. */
-function zeigeAnsicht(name){
+function zeigeAnsicht(name, merken){
   ansicht = name;
   blattEl.classList.toggle('weg', name !== 'axo');
   planEl.classList.toggle('weg', name !== 'plan');
@@ -1073,12 +1122,41 @@ function zeigeAnsicht(name){
   } else {
     axoAnsicht.passeAn();
   }
+  /* W7: die zuletzt angesehene Ansicht wird gemerkt. Vorher trug der
+     Bearbeiten-Schluessel sie stillschweigend mit — seit der Schalter die
+     Ansicht stehen laesst, muss sie sich selbst merken, sonst passten die
+     gespeicherten Angaben beim naechsten OEffnen nicht mehr zusammen. */
+  if (merken && speicher) {
+    try { speicher.setItem(SCHLUESSEL_ANSICHT, name); } catch (e) { /* Platz ist knapp; die Ansicht ist es nicht wert */ }
+  }
 }
 
 /* ── Bearbeiten ─────────────────────────────────────────────────────
    Im Auslieferungszustand sieht die Bank ein ruhiges Blatt: keine Werkzeuge.
    Der Schalter merkt sich seinen Zustand, damit man ihn nicht bei jedem
-   OEffnen neu greifen muss. */
+   OEffnen neu greifen muss.
+
+   W7 — ER WECHSELT DIE ANSICHT NICHT MEHR. Bis hierher sprang er in den
+   Grundriss und beim Ausschalten zurueck aufs Blatt. Das war eine Annahme aus
+   W1, und der Nutzer hat ihr widersprochen: „wenn ich bearbeiten klicke soll
+   die ansicht dieselbe sein wie die zuletzt angesehene". Er schaltet seither
+   NUR die Werkzeuge; welche Ansicht vorn ist, entscheiden allein „Grundriss"
+   und „Axonometrie".
+
+   Was daraus in der AXONOMETRIE wird, ist keine Nebensache. Dort wird nicht
+   bearbeitet (Projekt-DNA: in einer schraegen Parallelprojektion trifft ein
+   Klick keinen Punkt, sondern einen Sehstrahl — die Zielhoehe waere geraten).
+   Werkzeugleiste und Palette liegen im Grundriss-Umschlag und erben dessen
+   Sichtbarkeit; in der Axonometrie sind sie darum GAR NICHT DA. Ein toter
+   Knopf kann so nicht entstehen — nicht, weil hier jemand daran denkt,
+   sondern weil das Haus so gebaut ist. An ihrer Stelle steht \`#arbeitshinweis\`
+   und sagt ruhig, wo gezeichnet wird.
+
+   Die K3-Zeile bleibt die tragende: \`body.bearbeitet\` allein macht die
+   Zeichenflaeche scharf. Dass sie das jetzt auch tut, waehrend das Blatt vorn
+   ist, aendert nichts — die ruhende Ansicht ist \`visibility:hidden\` und nimmt
+   ohnehin keinen Zeiger an; beim Wechsel in den Grundriss ist dafuer sofort
+   alles bereit. */
 function setzeBearbeiten(an, merken){
   bearbeiten = an;
   /* DIE tragende Zeile aus K3: an ihr haengt \`pointer-events\` der
@@ -1095,14 +1173,13 @@ function setzeBearbeiten(an, merken){
   // bestellt hat.
   palette.hidden = !an;
   if (!an) paletteZugAbbrechen();
+  /* Nur der Bearbeiten-Zustand steht hier — dass der Hinweis ausschliesslich
+     in der Axonometrie zu sehen ist, entscheidet seine Lage im Blatt, nicht
+     diese Zeile. */
+  arbeitshinweis.hidden = !an;
   el('btnBearbeiten').setAttribute('aria-pressed', String(an));
-  if (an) {
-    zeigeAnsicht('plan');
-  } else {
-    // Ein ruhendes Loeschen-Werkzeug waere eine Falle beim naechsten OEffnen.
-    zeichner.setMode(floorplannerModes.MOVE);
-    zeigeAnsicht('axo');
-  }
+  // Ein ruhendes Loeschen-Werkzeug waere eine Falle beim naechsten OEffnen.
+  if (!an) zeichner.setMode(floorplannerModes.MOVE);
   if (merken && speicher) {
     try { speicher.setItem(SCHLUESSEL_BEARBEITEN, an ? '1' : '0'); } catch (e) { /* Platz ist knapp; der Schalter ist es nicht wert */ }
   }
@@ -1293,24 +1370,31 @@ function ladeGrundriss(fp, neueLabels, alsEigenerStand){
 }
 
 function zuruecksetzen(){
-  /* M7 — BEIDE Schluessel, nicht nur einer. Gemessen: „Zurücksetzen" loeschte
+  /* M7 — ALLE Schluessel, nicht nur einer. Gemessen: „Zurücksetzen" loeschte
      den Plan-Schluessel und liess den Bearbeiten-Schluessel stehen; nach einem
      Neuladen standen wieder Grundriss und Werkzeuge da. Ein einziger
      Neugier-Klick machte damit den Werkzeugkasten dauerhaft zur Begruessung —
      das Gegenteil dessen, was dieser Knopf verspricht. „Zuruecksetzen" heisst
-     AUSLIEFERUNGSZUSTAND: ruhiges Blatt, keine Werkzeuge, gemessener Plan. */
+     AUSLIEFERUNGSZUSTAND: ruhiges Blatt, keine Werkzeuge, gemessener Plan.
+     Seit W7 gehoert der Ansichts-Schluessel dazu — er ist die dritte Angabe,
+     die diesen Zustand verstellen koennte. */
   if (speicher) {
     try { speicher.removeItem(SCHLUESSEL); } catch (e) { /* egal */ }
     try { speicher.removeItem(SCHLUESSEL_BEARBEITEN); } catch (e) { /* egal */ }
+    try { speicher.removeItem(SCHLUESSEL_ANSICHT); } catch (e) { /* egal */ }
   }
   clearTimeout(sicherUhr);
   labels = PLAN.labels || [];
   items = PLAN.items || [];
   speicherFehler = speicher ? null : 'merkt-nichts';
   ladeGrundriss(PLAN.floorplan, PLAN.labels || [], false);
-  // \`merken: false\` — der Schluessel ist eben geloescht worden, ihn hier wieder
-  // zu schreiben machte das Loeschen zur Geste.
+  // \`merken: false\` — die Schluessel sind eben geloescht worden, sie hier
+  // wieder zu schreiben machte das Loeschen zur Geste.
   setzeBearbeiten(false, false);
+  /* Und ausdruecklich zurueck aufs Blatt: seit W7 folgt die Ansicht dem
+     Schalter nicht mehr: ohne diese Zeile bliebe nach dem „Zuruecksetzen" der
+     Grundriss stehen — der Auslieferungszustand ist aber das ruhige Blatt. */
+  zeigeAnsicht('axo', false);
   ungesichert = false;
   meldung('Der gemessene Plan aus der PDF ist wieder hergestellt — die Datei ist wie am ersten Tag.', false);
 }
@@ -1765,6 +1849,13 @@ el('btnZurueck').addEventListener('click', function(){ frageZeigen(zurueckFrage)
 el('btnZurueckNein').addEventListener('click', function(){ zurueckFrage.hidden = true; });
 el('btnZurueckJa').addEventListener('click', function(){ zurueckFrage.hidden = true; zuruecksetzen(); });
 el('btnStandZurueck').addEventListener('click', function(){
+  /* Die Rueckfrage \`#zurueckFrage\` liegt IM Grundriss-Umschlag und erbt dessen
+     Sichtbarkeit. Bis W7 kam sie mit \`setzeBearbeiten(true)\` nach vorn, weil
+     der Schalter die Ansicht mitzog; seit er das nicht mehr tut, muss dieser
+     Weg es ausdruecklich tun — sonst fragte hier etwas Unsichtbares. Dieser
+     Knopf sitzt in der Standleiste und ist auch in der Axonometrie zu
+     erreichen, der Fall ist also echt und nicht theoretisch. */
+  zeigeAnsicht('plan', true);
   // Der Hinweis liegt oben, die Rueckfrage unten: dazwischen muss die
   // Werkzeugleiste sichtbar sein, sonst fragt etwas Unsichtbares.
   if (!bearbeiten) setzeBearbeiten(true, true);
@@ -1822,8 +1913,8 @@ el('btnTafel').addEventListener('click', function(){
 });
 
 /* ── Bedienung: Umschalter + Bearbeiten ────────────────────────────── */
-el('btnAnsichtAxo').addEventListener('click', function(){ zeigeAnsicht('axo'); });
-el('btnAnsichtPlan').addEventListener('click', function(){ zeigeAnsicht('plan'); });
+el('btnAnsichtAxo').addEventListener('click', function(){ zeigeAnsicht('axo', true); });
+el('btnAnsichtPlan').addEventListener('click', function(){ zeigeAnsicht('plan', true); });
 el('btnBearbeiten').addEventListener('click', function(){ setzeBearbeiten(!bearbeiten, true); });
 
 /* ── Zwei Fenster: die Wahl (K4) ────────────────────────────────────── */
@@ -1961,8 +2052,20 @@ if (!start && !standFragt && speicher) {
 // Erst JETZT darf gesichert werden: das blosse OEffnen ist keine Aenderung.
 sichernGesperrt = false;
 
+/* Beide Angaben zusammen und in EINEM Griff (W7): der Bearbeiten-Zustand und
+   die zuletzt angesehene Ansicht. Sie sind seit W7 unabhaengig voneinander —
+   beim OEffnen muessen sie trotzdem zusammen ergeben, was der Nutzer zuletzt
+   vor sich hatte. \`merken: false\` bei beiden: Lesen ist kein Zug, und ein
+   Schreiben beim Start ueberschriebe im Fehlerfall genau das, was es
+   herstellen soll. */
 if (speicher) {
   try { if (speicher.getItem(SCHLUESSEL_BEARBEITEN) === '1') setzeBearbeiten(true, false); } catch (e) { /* egal */ }
+  try {
+    const zuletzt = speicher.getItem(SCHLUESSEL_ANSICHT);
+    // Nur die zwei Namen, die es gibt: ein zugemuellter Speicher darf die
+    // Datei nicht in eine dritte, leere Ansicht schalten.
+    if (zuletzt === 'plan' || zuletzt === 'axo') zeigeAnsicht(zuletzt, false);
+  } catch (e) { /* egal */ }
 }
 
 /* ── Selbstauskunft fuer tools/pruefe-planer-datei.mjs ───────────────
@@ -2031,6 +2134,11 @@ window.__planerDatei = {
   ansicht: function(){ return ansicht; },
   bearbeitet: function(){ return bearbeiten; },
   werkzeugeSichtbar: function(){ return sichtbar(werkzeuge); },
+  /* W7 — die ruhige Zeile in der Axonometrie. GEMESSEN wie alles Sichtbare
+     ueber \`checkVisibility\`: \`hidden\` allein saehe nicht, dass sie im ruhenden
+     Blatt liegt, und meldete sie im Grundriss faelschlich als sichtbar. */
+  arbeitshinweisSichtbar: function(){ return sichtbar(arbeitshinweis); },
+  arbeitshinweisText: function(){ return sichtbar(arbeitshinweis) ? arbeitshinweis.textContent.replace(/\\s+/g, ' ').trim() : null; },
   /* K3 — nimmt die Zeichenflaeche ueberhaupt Zeiger-Ereignisse an? GERECHNET
      und nicht aus der Klasse geraten: die Klasse ist das, was wir gesetzt
      haben, der gerechnete Stil ist das, was der Browser daraus macht. */

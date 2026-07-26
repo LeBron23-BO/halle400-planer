@@ -112,10 +112,21 @@ async function fenster(url, opt = {}) {
   return { ctx, page, konsole, draussen }
 }
 
+/** Bearbeiten an UND in den Grundriss.
+ *
+ *  ZWEI Klicks, seit W7 unvermeidlich: der Bearbeiten-Schalter laesst die
+ *  Ansicht stehen (ausdruecklicher Nutzerwunsch), und in der Axonometrie wird
+ *  nicht bearbeitet. Wer hier ziehen will, muss also beides sagen — genau wie
+ *  eine Hand es tun muesste. Das Zusammenziehen in EINEN Helfer ist Absicht:
+ *  jede der folgenden Pruefungen will "bearbeitbarer Grundriss", keine will
+ *  "Schalter gedrueckt". */
 const bearbeitenAn = async (page) => {
   await page.evaluate(() => {
     if (!window.__planerDatei.bearbeitet()) {
       document.getElementById('btnBearbeiten').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    }
+    if (window.__planerDatei.ansicht() !== 'plan') {
+      document.getElementById('btnAnsichtPlan').dispatchEvent(new MouseEvent('click', { bubbles: true }))
     }
   })
   await page.waitForTimeout(500)
@@ -657,6 +668,22 @@ log('\n── M5: das Papier ──')
     `M5: Datum und Massstabs-Aussage stehen dabei ("${imDruck.druckzeile}")`
   )
 
+  /* W7 — der Arbeitshinweis ist ein BEDIENELEMENT und gehoert damit unter
+     dieselbe Regel. Er kann nur hier auffallen: er steht ausschliesslich in
+     der Axonometrie, und seit W7 bleibt die Axonometrie beim Einschalten
+     stehen — genau der Fall, in dem jemand druckt. Der Druck-Modus laeuft
+     noch, die Messung oben ist genommen; dieser Klick stoert sie nicht. */
+  await page.evaluate(() => document.getElementById('btnBearbeiten').dispatchEvent(new MouseEvent('click', { bubbles: true })))
+  await page.waitForTimeout(400)
+  const beimDrucken = await page.evaluate(() => ({
+    ansicht: window.__planerDatei.ansicht(),
+    hinweis: document.getElementById('arbeitshinweis').checkVisibility({ contentVisibilityAuto: true, opacityProperty: true, visibilityProperty: true })
+  }))
+  pruefe(
+    beimDrucken.ansicht === 'axo' && beimDrucken.hinweis === false,
+    `M5: auch der Arbeitshinweis („gezeichnet wird im Grundriss") steht NICHT auf dem Papier (${JSON.stringify(beimDrucken)})`
+  )
+
   // GEGENPROBE: am BILDSCHIRM sind die Bedienelemente wieder da.
   await page.emulateMedia({ media: 'screen' })
   await page.waitForTimeout(400)
@@ -759,7 +786,12 @@ log('\n── M7: zurueck auf Anfang ──')
 
   /* GEGENPROBE ZUERST: OHNE Zuruecksetzen bringt ein Neustart die Werkzeuge
      wieder — genau das war der Fund („ein Neugier-Klick macht den
-     Werkzeugkasten dauerhaft zur Begruessung"). */
+     Werkzeugkasten dauerhaft zur Begruessung").
+
+     Seit W7 misst diese Zeile ZWEI getrennte Angaben: der Bearbeiten-Zustand
+     liegt im einen Schluessel, die zuletzt angesehene Ansicht im anderen. Sie
+     muessen beim OEffnen zusammen ergeben, was der Nutzer zuletzt vor sich
+     hatte — hier: Werkzeuge an, Grundriss vorn. */
   await page.reload({ waitUntil: 'domcontentloaded' })
   await page.waitForFunction(() => window.__bereit === true, { timeout: 30000 })
   const ohneReset = await page.evaluate(() => ({
@@ -768,7 +800,7 @@ log('\n── M7: zurueck auf Anfang ──')
   }))
   pruefe(
     ohneReset.bearbeitet === true && ohneReset.ansicht === 'plan',
-    `M7: GEGENPROBE — ohne Zuruecksetzen merkt sich die Datei den Bearbeiten-Zustand (${JSON.stringify(ohneReset)})`
+    `M7: GEGENPROBE — ohne Zuruecksetzen kommen Bearbeiten-Zustand UND zuletzt angesehene Ansicht wieder (${JSON.stringify(ohneReset)})`
   )
 
   await page.evaluate(() => document.getElementById('btnZurueck').dispatchEvent(new MouseEvent('click', { bubbles: true })))
