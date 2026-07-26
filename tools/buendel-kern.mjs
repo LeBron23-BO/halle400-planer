@@ -40,8 +40,14 @@ export const WURZEL = path.resolve(HIER, '..')
 const KERN = [
   'core/utils.js',
   'core/events.js',
-  'core/configuration.js',
+  // dimensioning VOR configuration: die beiden verweisen wechselseitig
+  // aufeinander, und `configuration` greift schon beim EINLESEN auf `dimMeter`
+  // zu (sein Standardwert für die Maßeinheit). Andersherum bricht die Datei mit
+  // „Cannot access 'dimMeter' before initialization" — gemessen, nicht vermutet.
+  // `dimensioning` selbst benutzt `Configuration` nur in Funktionen, also erst
+  // zur Laufzeit; die Richtung ist damit die einzig tragfähige.
   'core/dimensioning.js',
+  'core/configuration.js',
   'core/undo.js',
   'model/corner.js',
   'model/wall.js',
