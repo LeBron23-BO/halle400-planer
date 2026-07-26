@@ -356,8 +356,16 @@ export class FloorplannerView {
   }
 
   /**
-   * Roter Rahmen um ein Ausstattungs-Zeichen (E1). `fest` = es steht zur
-   * Löschung an (kräftig, gefüllt), sonst nur der Zeiger darüber (dünn).
+   * Rahmen um ein Ausstattungs-Zeichen. `fest` = es steht zur Löschung an
+   * (kräftig, rot gefüllt), sonst liegt nur der Zeiger darüber (dünn).
+   *
+   * Die FARBE des blossen Überfahrens richtet sich nach dem Werkzeug (W2). Rot
+   * heisst in dieser Oberfläche „das verschwindet gleich" — im Löschen-Werkzeug
+   * genau richtig, im Verschieben-Werkzeug aber eine Drohung, die nicht stimmt:
+   * dort wird gegriffen, nicht gelöscht. Seit ein Möbel auch im Verschieben
+   * greifbar ist, bekäme man beim blossen Zielen auf einen Stuhl einen roten
+   * Rahmen zu sehen und zöge lieber die Hand zurück. Also dieselbe Hover-Farbe
+   * wie bei Wand und Ecke (`#008cba`) — „das könntest du greifen".
    */
   private markiereAusstattung(el: AusstattungElement, fest: boolean) {
     const hb = el.breite / 2
@@ -368,13 +376,14 @@ export class FloorplannerView {
       this.ausPunkt(el, hb, ht),
       this.ausPunkt(el, -hb, ht)
     ]
+    const greifbar = this.viewmodel.mode == floorplannerModes.MOVE
     this.drawPolygon(
       ecken.map((p) => p[0]),
       ecken.map((p) => p[1]),
       fest,
       loeschFuellung,
       true,
-      deleteColor,
+      fest || !greifbar ? deleteColor : wallColorHover,
       fest ? 3 : 2
     )
   }
