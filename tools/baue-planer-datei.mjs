@@ -1468,9 +1468,20 @@ window.__planerDatei = {
      mit dem verschmelzen lassen, was darunter liegt. Kein Sonderweg fuers
      Pruefen, sondern der Produktionspfad ohne die Zeiger-Umrechnung davor. */
   wandTeilenAn: function(x, y){
+    /* Der Schnappschuss gehoert DAZU: \`mouseup\` im Zeichnen-Werkzeug zieht ihn
+       vor dem Setzen des Punktes. Ohne ihn naehme ein Rueckgaengig im Gate den
+       vorigen Zug zurueck statt der Teilung — und die Gegenprobe maesse
+       anschliessend einen Zustand, den sie fuer den Ausgangszustand haelt.
+       Genau das ist beim ersten Lauf passiert. */
+    undo.snapshot();
     const c = grundriss.newCorner(x, y);
     return { geteilt: c.mergeWithIntersected(), waende: grundriss.getWalls().length };
   },
+  /* Zeichnet den Grundriss neu. \`relativeMove\` und \`remove\` aendern das Modell,
+     loesen aber KEIN Neuzeichnen aus — der Zeichner malt bei Zeiger-Ereignissen.
+     Ein Gate, das gleich danach die Bild-Pruefsumme liest, maesse sonst das
+     Bild von VORHER und meldete "nichts geaendert". */
+  neuZeichnen: function(){ zeichner.resizeView(); },
   /* Eine Wand VERSCHIEBEN — derselbe Aufruf, den das Verschieben-Werkzeug bei
      gedrueckter Taste macht (floorplanner.ts, \`activeWall.relativeMove\`). */
   wandVerschieben: function(id, dx, dy){
@@ -1482,6 +1493,7 @@ window.__planerDatei = {
   wandLoeschen: function(id){
     const w = grundriss.getWalls().find(function(v){ return v.id === id; });
     if (!w) return false;
+    undo.snapshot();
     w.remove();
     grundriss.update();
     return true;

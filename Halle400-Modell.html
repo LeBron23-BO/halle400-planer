@@ -3986,7 +3986,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "c8051b95fb22";
-const BAU_STEMPEL = "2026-07-26 16:57";
+const BAU_STEMPEL = "2026-07-26 17:07";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -11848,6 +11848,14 @@ window.__planerDatei = {
     const c = grundriss.newCorner(x, y);
     return { geteilt: c.mergeWithIntersected(), waende: grundriss.getWalls().length };
   },
+  /* Eine Wand VERSCHIEBEN — derselbe Aufruf, den das Verschieben-Werkzeug bei
+     gedrueckter Taste macht (floorplanner.ts, `activeWall.relativeMove`). */
+  wandVerschieben: function(id, dx, dy){
+    const w = grundriss.getWalls().find(function(v){ return v.id === id; });
+    if (!w) return false;
+    w.relativeMove(dx, dy);
+    return true;
+  },
   wandLoeschen: function(id){
     const w = grundriss.getWalls().find(function(v){ return v.id === id; });
     if (!w) return false;
@@ -11904,6 +11912,24 @@ window.__planerDatei = {
      OBERKANTE_CM liefert `bauformFuer` null und das Stueck fehlt hier, waehrend
      es im Grundriss weiterhin sichtbar ist. */
   szeneMoebel: function(){ return szene ? szene.moebel.length : null; },
+  /* Wie viel WAND die Axonometrie wirklich baut (W4). Die blosse ANZAHL der
+     Kacheln taugt nicht als Mass: eine Oeffnung in der Mitte einer 10-m-Wand
+     zerlegt [0,10] in [0,4.5] und [5.5,10] — bei 3,2 m Kachelbreite sind das
+     zweimal zwei Kacheln, also genau so viele wie vorher. Die FLAECHE der
+     Grundrisse sinkt dagegen zwingend um lichte Weite mal Wanddicke. */
+  szeneWaende: function(){
+    if (!szene) return null;
+    let flaeche = 0;
+    for (const k of szene.waende) {
+      let a = 0;
+      for (let i = 0; i < k.punkte.length; i++) {
+        const p = k.punkte[i], q = k.punkte[(i + 1) % k.punkte.length];
+        a += p.x * q.z - q.x * p.z;
+      }
+      flaeche += Math.abs(a) / 2;
+    }
+    return { n: szene.waende.length, flaeche: flaeche };
+  },
   /* Baut die Axonometrie neu — dieselbe Funktion, die die Huelle selbst ruft.
      Noetig, weil `setzeAusstattung` (Strichprobe) bewusst KEINE Aenderung
      meldet und die Ansicht sonst veraltet bliebe: das Gate maesse dann die
@@ -11927,6 +11953,21 @@ window.__planerDatei = {
   zoomeAufPunkt: function(z, bx, by){ zeichner.zoomeAufPunkt(z, bx, by); },
   proCm: function(){ return zeichner.pixelProCm(); },
   undoJetzt: function(){ undo.undo(); },
+  redoJetzt: function(){ undo.redo(); },
+  /* Loeschen wie der Nutzer es sieht: der Kern schlaegt vor, die Huelle fragt,
+     der Kern fuehrt aus. Das Gate misst genau diese drei Schritte. */
+  loeschKandidat: function(){
+    const k = zeichner.loeschKandidat;
+    return k ? { art: k.art, beschreibung: k.beschreibung, kennung: k.kennung || null } : null;
+  },
+  loeschungBestaetigen: function(){ return zeichner.loeschungBestaetigen(); },
+  loeschungAbbrechen: function(){ zeichner.loeschungAbbrechen(); },
+  /* Nur fuer Gate g: DIESELBE Vorschrift, die `fuegeOeffnungHinzu` und der
+     Geist benutzen — an der Grenze auf den Zentimeter genau messbar, was ein
+     Zeiger nie waere. */
+  oeffnungPasst: function(wandId, lage, breite){
+    return grundriss.oeffnungPasst(wandId, lage, breite);
+  },
   /* Nur fuer die Strichprobe: dieselbe Liste einmal mit anderer Herkunft
      einspielen, um am GLEICHEN Stueck an der GLEICHEN Stelle zu messen, ob
      "gesetzt" wirklich anders gezeichnet wird. Zieht bewusst KEINEN

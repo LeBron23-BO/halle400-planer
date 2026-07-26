@@ -23,7 +23,13 @@
       "deleteWalls": "删除墙体",
       "done": "完成",
       "escHint": "按\"Esc\"键停止绘制墙体",
-      "snap": "对齐 — 让家具贴齐墙面与 5 厘米网格"
+      "snap": "对齐 — 让家具贴齐墙面与 5 厘米网格",
+      "openings": "门与窗",
+      "openingDoor": "门",
+      "openingDoubleDoor": "双开门",
+      "openingWindow": "窗",
+      "openingPassage": "通道",
+      "openingHint": "指向墙面 — 点击即可放置。Q 切换铰链侧，E 切换开启方向。"
     },
     "viewToggle": {
       "3d": "3D",

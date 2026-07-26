@@ -31,7 +31,13 @@
       "zoomIn": "Näher heran",
       "zoomOut": "Weiter weg",
       "fitAll": "Ganze Halle zeigen",
-      "snap": "Einrasten — Möbel an Wände und aufs 5-cm-Raster legen"
+      "snap": "Einrasten — Möbel an Wände und aufs 5-cm-Raster legen",
+      "openings": "Türen & Fenster",
+      "openingDoor": "Tür",
+      "openingDoubleDoor": "Doppeltür",
+      "openingWindow": "Fenster",
+      "openingPassage": "Durchgang",
+      "openingHint": "Auf eine Wand zeigen — Klick setzt. Q wendet den Anschlag, E die Aufschlagseite."
     },
     "viewToggle": {
       "3d": "3D",

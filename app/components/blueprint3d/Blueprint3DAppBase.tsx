@@ -20,6 +20,7 @@ import { TouchHelp } from './TouchHelp'
 import { ControlsHelp } from './ControlsHelp'
 import { LoeschRueckfrage } from './LoeschRueckfrage'
 import type { LoeschZiel } from '@blueprint3d/floorplanner/floorplanner'
+import type { OeffnungsArt } from '@blueprint3d/model/floorplan'
 import DefaultFloorplan from '@blueprint3d/templates/default.json'
 import { blueprintStorage } from '@/services/storage'
 
@@ -82,7 +83,9 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
   )
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
-  const [floorplannerMode, setFloorplannerMode] = useState<'move' | 'draw' | 'delete'>('move')
+  const [floorplannerMode, setFloorplannerMode] = useState<'move' | 'draw' | 'delete' | 'oeffnung'>(
+    'move'
+  )
   const [textureType, setTextureType] = useState<'floor' | 'wall' | null>(null)
   const [currentTarget, setCurrentTarget] = useState<HalfEdge | Room | null>(null)
   const [itemsLoading, setItemsLoading] = useState(0)
@@ -99,6 +102,9 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
   // Einrasten gezogener Moebel (W2) — gespiegelt aus dem Floorplanner, der die
   // Wahrheit haelt. Die Leiste haelt NIE ihren eigenen Zustand fuer wahr.
   const [einrasten, setEinrasten] = useState(true)
+  // Welche Oeffnung das Werkzeug gerade setzt (W4) — ebenfalls gespiegelt,
+  // nicht gehalten. Die Leiste haelt NIE ihren eigenen Zustand fuer wahr.
+  const [oeffnungsArt, setOeffnungsArt] = useState<OeffnungsArt>('tuer')
   // Was gerade zum Loeschen vorgeschlagen ist (E1) — gespiegelt aus dem
   // Floorplanner, damit die Rueckfrage im React-Baum leben kann.
   const [loeschAnfrage, setLoeschAnfrage] = useState<LoeschZiel | null>(null)
@@ -174,7 +180,13 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
     // das Verschieben aktiv war — die Anzeige log ueber den Zustand.
     blueprint3dRef.current.floorplanner?.addModeResetCallback((m) => {
       setFloorplannerMode(
-        m === floorplannerModes.DRAW ? 'draw' : m === floorplannerModes.DELETE ? 'delete' : 'move'
+        m === floorplannerModes.DRAW
+          ? 'draw'
+          : m === floorplannerModes.DELETE
+            ? 'delete'
+            : m === floorplannerModes.OEFFNUNG
+              ? 'oeffnung'
+              : 'move'
       )
     })
 
@@ -185,6 +197,12 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
       setEinrasten(an)
     })
     setEinrasten(blueprint3d.floorplanner?.istEinrasten() ?? true)
+
+    // Oeffnungs-Art -> React spiegeln (W4), aus demselben Grund.
+    blueprint3d.floorplanner?.addOeffnungsCallback((art) => {
+      setOeffnungsArt(art)
+    })
+    setOeffnungsArt(blueprint3d.floorplanner?.oeffnungsArt ?? 'tuer')
 
     // Loesch-Rueckfrage -> React spiegeln (E1). Der Floorplanner meldet mit
     // `null`, wenn der Vorschlag hinfaellig ist — die Rueckfrage muss also nie
@@ -581,15 +599,27 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
     [viewMode]
   )
 
-  const handleFloorplannerModeChange = useCallback((mode: 'move' | 'draw' | 'delete') => {
-    setFloorplannerMode(mode)
-    if (!blueprint3dRef.current) return
-    const modeMap = {
-      move: floorplannerModes.MOVE,
-      draw: floorplannerModes.DRAW,
-      delete: floorplannerModes.DELETE
-    }
-    blueprint3dRef.current.floorplanner?.setMode(modeMap[mode])
+  const handleFloorplannerModeChange = useCallback(
+    (mode: 'move' | 'draw' | 'delete' | 'oeffnung') => {
+      setFloorplannerMode(mode)
+      if (!blueprint3dRef.current) return
+      const modeMap = {
+        move: floorplannerModes.MOVE,
+        draw: floorplannerModes.DRAW,
+        delete: floorplannerModes.DELETE,
+        oeffnung: floorplannerModes.OEFFNUNG
+      }
+      blueprint3dRef.current.floorplanner?.setMode(modeMap[mode])
+    },
+    []
+  )
+
+  // Art der naechsten Oeffnung (W4). Nur MELDEN, nicht selbst setzen — der
+  // Zustand kommt ueber `addOeffnungsCallback` zurueck, genau wie beim
+  // Einrasten. Zwei Wahrheiten liefen auseinander, sobald der Kern die Art
+  // von sich aus wechselte.
+  const handleOeffnungsArtChange = useCallback((art: OeffnungsArt) => {
+    blueprint3dRef.current?.floorplanner?.setzeOeffnungsArt(art)
   }, [])
 
   // Loeschen bestaetigen/abbrechen (E1). Der Floorplanner meldet ueber den
@@ -808,6 +838,8 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
                   onFitAll={handleFitAll}
                   einrasten={einrasten}
                   onEinrastenChange={handleEinrastenChange}
+                  oeffnungsArt={oeffnungsArt}
+                  onOeffnungsArtChange={handleOeffnungsArtChange}
                 />
                 {floorplannerMode === 'draw' && (
                   <div className="absolute left-5 bottom-5 bg-black/50 text-primary-foreground px-2.5 py-1.5 rounded text-sm">

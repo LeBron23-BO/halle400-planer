@@ -929,7 +929,11 @@ export class Floorplanner {
       ? null
       : this.floorplan.overlappedCorner(this.mouseX, this.mouseY, toleranz)
     const hoverWall =
-      drauf || hoverCorner // corner takes precendence
+      // `hoverOeffnung` MUSS hier stehen, nicht nur bei der Ecke: eine Öffnung
+      // liegt IN einer Wand, und ohne diese Zeile gewinnt die Wand jedes Mal.
+      // Gemessen, nicht vermutet — genau das meldete das Gate beim ersten Lauf:
+      // der Zeiger fand die Tür, die Rückfrage bot trotzdem „diese Wand" an.
+      hoverOeffnung || drauf || hoverCorner // corner takes precendence
         ? null
         : this.floorplan.overlappedWall(this.mouseX, this.mouseY, toleranz)
     // Ausserhalb jedes Möbels gilt die alte Reihenfolge: erst Ecke, dann Wand,

@@ -31,7 +31,13 @@
       "zoomIn": "Zoom in",
       "zoomOut": "Zoom out",
       "fitAll": "Fit whole plan",
-      "snap": "Snap — align furniture to walls and the 5 cm grid"
+      "snap": "Snap — align furniture to walls and the 5 cm grid",
+      "openings": "Doors & Windows",
+      "openingDoor": "Door",
+      "openingDoubleDoor": "Double door",
+      "openingWindow": "Window",
+      "openingPassage": "Passage",
+      "openingHint": "Point at a wall — click places it. Q flips the hinge, E the swing side."
     },
     "viewToggle": {
       "3d": "3D",
