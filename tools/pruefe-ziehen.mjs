@@ -137,6 +137,23 @@ const MESSZUGANG = `(function(){
     return { n: n, cx: n ? sx / n : null, cy: n ? sy / n : null, leer: false };
   };
 
+  /** Wie oft kommt eine bestimmte Farbe in einem Ausschnitt vor? Damit laesst
+   *  sich beweisen, WELCHE Hervorhebung gezeichnet wird — rot heisst in dieser
+   *  Oberflaeche "das verschwindet gleich", blau "das koenntest du greifen". */
+  window.__zg.zaehleFarbe = function(k, farbe, tol){
+    const c = window.__zg.canvas();
+    const x0 = Math.max(0, Math.round(k.x0)), y0 = Math.max(0, Math.round(k.y0));
+    const x1 = Math.min(c.width, Math.round(k.x1)), y1 = Math.min(c.height, Math.round(k.y1));
+    if (x1 - x0 < 4 || y1 - y0 < 4) return 0;
+    const d = c.getContext('2d').getImageData(x0, y0, x1 - x0, y1 - y0).data;
+    let n = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] <= 10) continue;
+      if (Math.abs(d[i] - farbe[0]) <= tol && Math.abs(d[i+1] - farbe[1]) <= tol && Math.abs(d[i+2] - farbe[2]) <= tol) n++;
+    }
+    return n;
+  };
+
   /** Kasten von +- randCm um einen WELT-Punkt, in Bildkoordinaten. */
   window.__zg.kasten = function(x, y, randCm){
     const p = window.__zg.aufBild(x, y);
@@ -190,7 +207,8 @@ const ADAPTER_PLANER = `(function(){
       document.dispatchEvent(new KeyboardEvent('keyup', { key: k, bubbles: true }));
     },
     ausstattungRoh: function(){ return JSON.parse(JSON.stringify(b.model.floorplan.getAusstattung())); },
-    setzeAusstattung: function(l){ b.model.floorplan.setAusstattung(l); b.floorplanner.resizeView(); }
+    setzeAusstattung: function(l){ b.model.floorplan.setAusstattung(l); b.floorplanner.resizeView(); },
+    setzeWerkzeug: function(m){ b.floorplanner.setMode(m); }
   };
 })();`
 
@@ -203,7 +221,7 @@ const ADAPTER_DATEI = `(function(){
     aufBild: d.aufBild, treffer: d.treffer, proCm: d.proCm,
     zoomeAufPunkt: d.zoomeAufPunkt, einrasten: d.einrasten, setzeEinrasten: d.setzeEinrasten,
     undoJetzt: d.undoJetzt, kannZurueck: d.kannZurueck, taste: d.taste,
-    zeigerStil: d.zeigerStil,
+    zeigerStil: d.zeigerStil, setzeWerkzeug: d.setzeWerkzeug,
     ausstattungRoh: d.ausstattungRoh, setzeAusstattung: d.setzeAusstattung
   };
 })();`
