@@ -37,6 +37,13 @@ node tools/pruefe-kennungen.mjs   # W2-Fundament: Kennungen an Wand+Ausstattung,
 node tools/pruefe-ziehen.mjs      # W2: das MOEBELZIEHEN — 70 Pruefungen in BEIDEN Welten
                                   #        (Planer auf 3301 UND Doppelklick-Datei unter file://)
                                   #        --nur planer | --nur datei grenzt ein
+node tools/pruefe-tueren.mjs      # W4: TUEREN, FENSTER, DURCHGAENGE — 123 Pruefungen in
+                                  #        BEIDEN Welten. Haerteste Probe: Wand teilen, die
+                                  #        Oeffnung muss auf der richtigen Haelfte landen —
+                                  #        mit abgeschalteter Versoehnung MUSS dieselbe
+                                  #        Pruefung FEHLSCHLAGEN.
+sh tools/alle-gates.sh            # alle Pruefwerkzeuge nacheinander, je ein Ergebnis
+                                  #        (SEQUENTIELL — nebeneinander stoeren sie sich)
 node tools/pruefe-palette.mjs     # W3: die PALETTE — 66 Pruefungen in der Doppelklick-Datei
                                   #        (Stueck hineinziehen, gestrichelt, EIN Undo, Sichern/Laden)
                                   #        mit GEGENPROBE des Waechters: eine halbe Typ-Kette
@@ -232,6 +239,56 @@ aus. Die Standardmasse sind verbreitete Handelsmasse (`AUSSTATTUNG_VORLAGEN` in
 **Diese drei Arten kommen in KEINEM gemessenen Plan vor.** Sie entstehen
 ausschliesslich dadurch, dass der Nutzer sie hinstellt, und tragen darum immer
 `quelle: 'gesetzt'`. `app/public/plaene/halle400.json` bleibt unangetastet.
+
+## Tueren, Fenster, Durchgaenge (W4, 2026-07-26)
+
+Im Werkzeug **Tueren & Fenster** zeigt der Zeiger auf eine Wand, eine
+Geister-Oeffnung erscheint auf ihrer Achse, ein Klick setzt sie. Ziehen
+verschiebt sie ENTLANG ihrer Wand — nie quer, nie auf eine andere; ein
+Wandwechsel ist ein Loeschen plus ein Setzen und sieht auch so aus. **Q** wendet
+den Anschlag, **E** die Aufschlagseite (dieselben Tasten wie das Moebeldrehen —
+welche Bedeutung sie haben, entscheidet das Werkzeug). Geloescht wird ueber das
+vorhandene Loeschen-Werkzeug mit seiner Rueckfrage („diese Tuer (0,88 m breit)").
+Sechs Festlegungen:
+
+1. **`wandId` ist der Primaerschluessel, nie eine Objektreferenz** — wie ueberall
+   in diesem Planer, seit ein Rueckgaengig den Grundriss komplett neu laedt.
+2. **`lage` ist ein absolutes Mass in cm** von der START-Ecke bis zur MITTE, kein
+   Bruchteil. Wird die Wand verlaengert, bleibt das Mass, nicht das Verhaeltnis.
+3. **`anker` ist eine ABLEITUNG**, bei jedem Schreiben neu gerechnet und NUR in
+   der Versoehnung gelesen. Ohne ihn waeren Wand-Teilung, Wand-Entfernung und
+   Neu-Export unrettbar: **in dieser Pipeline ueberlebt keine Kennung ein
+   Nachmessen — die einzige dauerhafte Identitaet einer Wand ist ihre Geometrie.**
+4. **`Floorplan.versoehneOeffnungen()` laeuft am Ende jedes `update()`** und ist
+   damit genau dann da, wenn eine Kennung kippt. Findet sie keine Ersatzwand,
+   gilt die Oeffnung als `verwaist`: nicht gezeichnet, aber auch **nicht still
+   entsorgt** — der Blattkopf sagt es.
+5. **Ueberlappung zweier Oeffnungen ist VERBOTEN.** Das kehrt die Regel aus W2
+   („keine Kollisionspruefung fuer Moebel") bewusst um, und zwar aus einem
+   anderen Grund: ein Stuhl unter einem Tisch ist eine echte Aufstellung, zwei
+   ineinander liegende Tueren sind keine Bauaussage, sondern ein Fehlgriff — die
+   Wand liesse sich daraus auch nicht mehr zeichnen.
+6. **Keine Hoehe.** Ein Grundriss enthaelt keine (Projekt-DNA Punkt 4). Die
+   Axonometrie schneidet die Waende auf 1,16 m und **sagt das** im Blattkopf,
+   sobald mindestens eine Oeffnung gesetzt ist.
+
+In der **Axonometrie** ist eine Oeffnung schlicht: die Wandkacheln ueber ihrem
+Intervall entstehen gar nicht erst (`axo-szene.js`, `wandStuecke`). Kein Eingriff
+in `axo-zeichnen.js`, keiner in die Raumableitung. Ein `fenster` mit `bruestung`
+laesst darunter einen Bruestungsblock stehen — sonst saehe es aus wie ein
+Durchgang. **Gemessen wird das ueber die FLAECHE und das VOLUMEN der Wandkacheln,
+nicht ueber ihre ANZAHL:** eine Oeffnung in der Mitte einer 10-m-Wand zerlegt
+[0,10] in [0,4.5] und [5.5,10] — bei 3,2 m Kachelbreite sind das zweimal zwei
+Kacheln, die Zahl bleibt also gleich.
+
+**Standardmasse** (`OEFFNUNGS_VORLAGEN` in `src/model/floorplan.ts`): Tuer 87,5 ·
+Doppeltuer 175 · Fenster 125 (Bruestung 90) · Durchgang 100 cm. Alles GESETZTE
+Annahmen — die PDF zeigt Waende, keine Tuerblaetter. 87,5 cm ist das verbreitete
+Baurichtmass einer Tueroeffnung (Reihe 62,5 / 75 / 87,5 / 100 / 112,5 cm); eine
+DIN-Nummer steht bewusst NICHT dabei, eine erfundene Norm saehe belegt aus.
+
+**Fassung 3** des Speicherformats. Eine Datei aus Fassung 1 oder 2 laedt weiter,
+eine aus Fassung 4 wird ehrlich abgelehnt statt halb geoeffnet.
 
 ## Hintergrund
 

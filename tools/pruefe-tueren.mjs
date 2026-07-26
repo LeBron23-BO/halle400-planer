@@ -162,6 +162,33 @@ const MESSZUGANG = `(function(){
     return n;
   };
 
+  /**
+   * Bildpunkte mit GRUENSTICH in einem Ausschnitt — die Handschrift der
+   * Oeffnungsfarbe #3f6757.
+   *
+   * Warum nicht auf die exakte Farbe gemessen wird: Blatt und Aufschlagbogen
+   * sind EIN Bildpunkt breit und laufen schraeg. Ein schraeger 1-px-Strich
+   * besteht fast nur aus Mischfarben zwischen Linie und Untergrund — der
+   * dritte Lauf dieses Gates fand von rund 110 gezeichneten Bildpunkten ganze
+   * 6 in der reinen Farbe und meldete den Zeichner zu Unrecht rot. Der
+   * FARBSTICH ueberlebt die Mischung dagegen: Wandgrau ist r=g=b, die
+   * Ausstattung blaustichig (b > r), die Oeffnung gruenstichig (g > r UND
+   * g > b). Das ist genau der Unterschied, fuer den die Farbe gewaehlt wurde.
+   */
+  window.__tf.zaehleGruenstich = function(k){
+    const c = window.__tf.canvas();
+    const x0 = Math.max(0, Math.round(k.x0)), y0 = Math.max(0, Math.round(k.y0));
+    const x1 = Math.min(c.width, Math.round(k.x1)), y1 = Math.min(c.height, Math.round(k.y1));
+    if (x1 - x0 < 3 || y1 - y0 < 3) return -1;
+    const d = c.getContext('2d').getImageData(x0, y0, x1 - x0, y1 - y0).data;
+    var n = 0;
+    for (var i = 0; i < d.length; i += 4) {
+      if (d[i + 3] <= 10) continue;
+      if (d[i + 1] - d[i] >= 12 && d[i + 1] - d[i + 2] >= 5) n++;
+    }
+    return n;
+  };
+
   /** Einheitsvektor einer Wand. */
   window.__tf.richtung = function(w){
     const l = window.__tf.laenge(w);
@@ -472,11 +499,25 @@ async function pruefeWelt(page, name, hilfen) {
   await page.evaluate(() => window.__tf.setzeOeffnungsArt('tuer'))
   const mitte = await page.evaluate((w) => window.__tf.punktAuf(w, 0.5), wand)
 
+  // GESETZT wird bewusst NICHT in der Wandmitte, obwohl der Geist genau dort
+  // einrastet: an der Wandmitte steht die MASSANGABE der Wand, schwarz auf
+  // einem 4 px breiten weissen Halo (`drawEdgeLabel`). Der Halo loescht die
+  // Wandlinie dort, und die Schrift liefert antialiasierte Graustufen, die von
+  // #dddddd nicht zu trennen sind — der zweite und dritte Lauf dieses Gates
+  // massen genau das und meldeten den Zeichner zu Unrecht rot. Gemessen wird
+  // deshalb bei 30 % der Wandlaenge, weit weg von der Beschriftung.
+  const setzOrt = await page.evaluate((w) => window.__tf.punktAuf(w, 0.3), wand)
+
   // ZWEI Messungen mit zwei Kaesten, und zwar bewusst verschieden gross:
   //
   //   Wandlinie  ENTLANG der Wand, etwas SCHMALER als die lichte Weite (0,35
   //              der Breite) — sonst zaehlte die heile Wand jenseits der
-  //              Laibung mit und der Rueckgang verschwaende im Rauschen.
+  //              Laibung mit und der Rueckgang verschwaende im Rauschen. QUER
+  //              nur ein SCHMALES Band um die Achse: die Massangabe der Wand
+  //              steht rund 6 cm daneben, ist schwarz auf weiss und liefert
+  //              antialiasierte Graustufen, die von #dddddd nicht zu trennen
+  //              sind. Der zweite Lauf dieses Gates meldete deshalb "29 -> 15
+  //              statt 0" — die 15 waren Schrift, nicht Wand.
   //   Blatt      ein WEITER Kasten (1,2 mal die Breite): das Blatt steht
   //              senkrecht zur Wand und der Aufschlagbogen reicht eine volle
   //              lichte Weite hinaus. Im schmalen Kasten laege von der Tuer
@@ -485,19 +526,19 @@ async function pruefeWelt(page, name, hilfen) {
     const r = window.__tf.richtung(w);
     return {
       wand: window.__tf.tinteEntlang(m.x, m.y, r.ex, r.ey, breite * 0.35,
-              Math.max(w.dicke, 4 / window.__tf.proCm()), window.__tf.FARBE.wand, 12),
-      oeffnung: window.__tf.zaehleFarbe(window.__tf.kasten(m.x, m.y, breite * 1.2),
-              window.__tf.FARBE.oeffnung, 20)
+              Math.max(2, 1.5 / window.__tf.proCm()), window.__tf.FARBE.wand, 12),
+      oeffnung: window.__tf.zaehleGruenstich(window.__tf.kasten(m.x, m.y, breite * 1.2))
     };
   })`
   await zeigerWeg(page)
   const tinteVor = await page.evaluate(
     (a) => eval(a.fn)(a.w, a.m, a.breite),
-    { fn: messung, w: wand, m: mitte, breite: 87.5 }
+    { fn: messung, w: wand, m: setzOrt, breite: 87.5 }
   )
   await page.screenshot({ path: bild('A_vor_der_tuer') })
 
-  // Zeiger auf die Wandmitte: der Geist muss DIESE Wand anbieten.
+  // Zeiger auf die Wandmitte: der Geist muss DIESE Wand anbieten und dort
+  // einrasten — das ist die Einrast-Zusage, gemessen ohne etwas zu setzen.
   await page.evaluate((m) => {
     const p = window.__tf.aufBild(m.x, m.y)
     window.__tf.maus('mousemove', p.x, p.y)
@@ -513,7 +554,7 @@ async function pruefeWelt(page, name, hilfen) {
     `a) und rastet auf die Wandmitte ein (${geist ? geist.lage.toFixed(1) : '?'} cm von ${(wand.laenge / 2).toFixed(1)})`
   )
 
-  await klickeAuf(page, mitte)
+  await klickeAuf(page, setzOrt)
   const gesetzt = await page.evaluate(() => window.__tf.oeffnungen())
   const tuer = gesetzt.find((o) => o.wandId === wand.id) || null
   pruefe(tuer !== null, `a) im MODELL steht jetzt eine Oeffnung an dieser Wand (${gesetzt.length} gesamt)`)
@@ -530,20 +571,23 @@ async function pruefeWelt(page, name, hilfen) {
   await zeigerWeg(page)
   const tinteNach = await page.evaluate(
     (a) => eval(a.fn)(a.w, a.m, a.breite),
-    { fn: messung, w: wand, m: mitte, breite: tuer.breite }
+    { fn: messung, w: wand, m: { x: tuer.wx, y: tuer.wy }, breite: tuer.breite }
   )
   await page.screenshot({ path: bild('B_mit_tuer') })
   log(
-    `     Bild an der Wandmitte: Wandlinie ${tinteVor.wand} -> ${tinteNach.wand} Bildpunkte, ` +
+    `     Bild an der Tuer: Wandlinie ${tinteVor.wand} -> ${tinteNach.wand} Bildpunkte, ` +
       `Oeffnungsfarbe ${tinteVor.oeffnung} -> ${tinteNach.oeffnung}`
   )
   pruefe(
     tinteVor.wand > 20 && tinteNach.wand === 0,
     `a) im BILD ist die Wandlinie VOLLSTAENDIG unterbrochen (${tinteVor.wand} -> ${tinteNach.wand} Bildpunkte)`
   )
+  // Der Zuwachs zaehlt, nicht der absolute Wert: im Kasten koennte eine
+  // Pflanze stehen (auch gruenstichig). Ein ZUWACHS um mehr als 40 Bildpunkte
+  // kann von nichts anderem kommen als von dem, was gerade entstanden ist.
   pruefe(
-    tinteVor.oeffnung === 0 && tinteNach.oeffnung > 20,
-    `a) und Blatt + Bogen sind wirklich gezeichnet (${tinteVor.oeffnung} -> ${tinteNach.oeffnung} Bildpunkte)`
+    tinteNach.oeffnung - tinteVor.oeffnung > 40,
+    `a) und Blatt + Bogen sind wirklich gezeichnet (${tinteVor.oeffnung} -> ${tinteNach.oeffnung} gruenstichige Bildpunkte)`
   )
 
   /* ══ Q und E wenden ══════════════════════════════════════════════ */
@@ -558,7 +602,7 @@ async function pruefeWelt(page, name, hilfen) {
     window.__tf.taste('x')
     const nachX = window.__tf.oeffnung(a.id)
     return { vorher, nachQ, nachE, nachX }
-  }, { m: mitte, id: tuer.id })
+  }, { m: { x: tuer.wx, y: tuer.wy }, id: tuer.id })
   pruefe(
     gewendet.nachQ.anschlag !== gewendet.vorher.anschlag,
     `a) „Q" wendet den Anschlag (${gewendet.vorher.anschlag} -> ${gewendet.nachQ.anschlag})`
@@ -607,7 +651,7 @@ async function pruefeWelt(page, name, hilfen) {
     window.__tf.maus('mousedown', p.x, p.y)
     window.__tf.maus('mouseup', p.x, p.y)
     return { geist, vorher, nachher: window.__tf.oeffnungen().length }
-  }, mitte)
+  }, { x: tuer.wx, y: tuer.wy })
   pruefe(
     zweiterKlick.geist !== null && zweiterKlick.geist.passt === false,
     `g) der Geist zeigt an dieser Stelle „passt nicht" (${JSON.stringify(zweiterKlick.geist && zweiterKlick.geist.passt)})`
@@ -721,7 +765,8 @@ async function pruefeWelt(page, name, hilfen) {
       const ziel = l * 0.78
       // Ueber den Zeiger, nicht ueber das Modell: das ist der Weg des Nutzers.
       const punktAuf = function(t){ return window.__tf.punktAuf(w, t); };
-      const von = punktAuf(0.5), nach = punktAuf(0.78)
+      const jetzt = window.__tf.oeffnung(a.id)
+      const von = { x: jetzt.wx, y: jetzt.wy }, nach = punktAuf(0.78)
       const pv = window.__tf.aufBild(von.x, von.y), pn = window.__tf.aufBild(nach.x, nach.y)
       window.__tf.maus('mousemove', pv.x, pv.y)
       window.__tf.maus('mousedown', pv.x, pv.y)
@@ -995,6 +1040,13 @@ async function pruefeWelt(page, name, hilfen) {
     `h) und der offene Plan bleibt dabei unversehrt (${fassungen.vorher.ecken}/${fassungen.vorher.waende} -> ${fassungen.nachher.ecken}/${fassungen.nachher.waende})`
   )
 
+  // Das Laden hat den Grundriss ERSETZT und damit auch das Werkzeug
+  // zurueckgelegt (`loadFloorplan` -> `roomLoadedCallbacks` -> `reset()` ->
+  // `setMode(MOVE)`). Wer danach weitermisst, klickt sonst mit dem
+  // Verschieben-Werkzeug und wundert sich, dass nichts entsteht.
+  await page.evaluate(() => window.__tf.setzeWerkzeug(3))
+  await schlaf(page, 200)
+
   await hilfen.abschluss(page, wand)
 }
 
@@ -1175,6 +1227,65 @@ if (NUR !== 'planer') {
             Math.abs(wirklich - erwartet) < 0.01,
             `f) die Axonometrie laesst GENAU die lichte Weite weg (${wirklich.toFixed(3)} m² statt ${erwartet.toFixed(3)})`
           )
+
+          /* ══ Die BRUESTUNG (W4, Schritt 8) ═══════════════════════════
+             Ein Fenster ist kein Durchgang: unter ihm bleibt Mauerwerk
+             stehen. Das ist an der FLAECHE nicht zu sehen (der Bruestungs-
+             block hat denselben Grundriss wie das fehlende Stueck Wand) —
+             wohl aber am VOLUMEN. Genau diese beiden Zahlen zusammen sind
+             der Beweis: Grundriss unveraendert UND Hoehe gesunken. */
+          const fenster = await p.evaluate((w) => {
+            // Erst die Tuer wieder wegnehmen, damit nur EINE Aenderung wirkt.
+            window.__tf.undoJetzt()
+            window.__tf.setzeWerkzeug(3)
+            window.__tf.setzeOeffnungsArt('fenster')
+            window.__tf.axoNeuBauen()
+            const vorher = window.__tf.szeneWaende()
+            const m = window.__tf.punktAuf(w, 0.5)
+            const q = window.__tf.aufBild(m.x, m.y)
+            window.__tf.maus('mousemove', q.x, q.y)
+            window.__tf.maus('mousedown', q.x, q.y)
+            window.__tf.maus('mouseup', q.x, q.y)
+            const neu = window.__tf.oeffnungen().filter(function (o) { return o.wandId === w.id })
+            window.__tf.axoNeuBauen()
+            return { vorher, nachher: window.__tf.szeneWaende(), oeffnung: neu[0] || null }
+          }, w2)
+          await schlaf(p, 500)
+          const flaechenVerlust = fenster.vorher.flaeche - fenster.nachher.flaeche
+          const volumenVerlust = fenster.vorher.volumen - fenster.nachher.volumen
+          log(
+            `     Bruestung: Flaeche ${fenster.vorher.flaeche.toFixed(3)} -> ${fenster.nachher.flaeche.toFixed(3)} m² ` +
+              `(Verlust ${flaechenVerlust.toFixed(4)}), Volumen ${fenster.vorher.volumen.toFixed(3)} -> ` +
+              `${fenster.nachher.volumen.toFixed(3)} m³ (Verlust ${volumenVerlust.toFixed(4)})`
+          )
+          pruefe(
+            fenster.oeffnung !== null && fenster.oeffnung.art === 'fenster' && fenster.oeffnung.bruestung > 0,
+            `f) ein Fenster mit Bruestung ist gesetzt (${fenster.oeffnung ? fenster.oeffnung.bruestung : '?'} cm)`
+          )
+          pruefe(
+            Math.abs(flaechenVerlust) < 0.001,
+            `f) unter dem Fenster bleibt Mauerwerk stehen — der Grundriss der Wand ist UNVERAENDERT (${flaechenVerlust.toFixed(4)} m²)`
+          )
+          pruefe(
+            volumenVerlust > 0.005,
+            `f) GEGENPROBE: die HOEHE sinkt trotzdem — das Fenster schneidet wirklich (${volumenVerlust.toFixed(4)} m³)`
+          )
+
+          /* Ein Standbild der Axonometrie MIT der Oeffnung — zum ANSEHEN.
+             Nach Projekt-DNA Punkt 2 ist kein Geometrie-Gate bestanden, bevor
+             jemand das Bild wirklich angesehen hat: eine Tuer, die an der
+             falschen Stelle sitzt, besteht jede Zahlenpruefung. Es entsteht
+             HIER und nicht am Ende, weil Gate j gleich alle Oeffnungen
+             zuruecknimmt und das Blatt dann keine mehr zeigte. */
+          await p.evaluate(() => {
+            document.getElementById('btnAnsichtAxo').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+          })
+          await schlaf(p, 1200)
+          await p.screenshot({ path: path.join(DIR, 'Datei_E_axo_mit_oeffnung.png') })
+          await p.evaluate(() => {
+            document.getElementById('btnAnsichtPlan').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+          })
+          await schlaf(p, 500)
         }
 
         /* ══ j) Die Blattkopf-Zeile ════════════════════════════════════ */

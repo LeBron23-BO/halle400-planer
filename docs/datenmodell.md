@@ -105,10 +105,89 @@ Item-Typen (`src/items/factory.ts:25`):
 
 ### Wichtig für T2/T3: Türen sind keine Wand-Eigenschaft
 
-Eine Wand hat **kein** Öffnungs-Array. Eine Türöffnung entsteht dadurch, dass ein
-Item vom Typ 7 an der richtigen Stelle in der Wand platziert wird. Die aus dem PDF
-extrahierten Türöffnungen (T2) landen also **nicht** im `walls`-Zweig, sondern als
-Einträge in `items` — mit `model_url` auf ein Tür-Modell des Katalogs.
+Eine Wand hat **kein** Öffnungs-Array. Eine Türöffnung entsteht **im Upstream**
+dadurch, dass ein Item vom Typ 7 an der richtigen Stelle in der Wand platziert wird
+— mit `model_url` auf ein Tür-Modell des Katalogs.
+
+### W4 (2026-07-26): dieser Planer geht einen anderen Weg — `oeffnungen[]`
+
+**Der Item-Weg wurde verworfen, und zwar aus vier gemessenen Gründen:**
+
+1. Der 2D-Zeichner malt `items` **überhaupt nicht** (`FloorplannerView.draw` kennt
+   Raster, Räume, Wände, Ecken, Maße — sonst nichts). Eine als Item gepflegte Tür
+   wäre im Grundriss unsichtbar, also genau in der Ansicht, in der der Nutzer sie
+   setzt. Dasselbe Argument hat schon in A1 gegen Items als Ausstattung entschieden.
+2. Ein Item hängt an einer **Objektreferenz** auf seine Wand. Ein Rückgängig lädt
+   den Grundriss komplett neu — danach ist jedes Wand-Objekt ein neues, und die
+   Referenz zeigt auf eine Leiche (`src/core/undo.ts` sagt das seit T5a im Text
+   voraus: „mit T3a muss die Wand-Bindung nach dem Zurückspielen neu aufgelöst
+   werden").
+3. Jedes Katalog-Modell wiegt Megabytes auf einem fremden CDN. Die
+   Doppelklick-Datei hat **kein Netz**.
+4. Ein Item trägt eine **Höhe**. Ein Grundriss enthält keine (Projekt-DNA Punkt 4).
+
+Öffnungen liegen deshalb als eigener Zweig **auf derselben Achse wie
+`ausstattung`** — und erben damit Speichern, Laden, Rückgängig, Datei-Export und
+die Axonometrie-Szene ohne eine weitere Zeile:
+
+```jsonc
+"formatVersion": 3,
+"oeffnungen": [
+  {
+    "id": "o-tuer-w-a844d8-210",
+    "wandId": "w-a844d8a1-47353fa6",   // PRIMÄRSCHLÜSSEL: Wall.id
+    "lage": 210,                        // cm von der START-Ecke bis zur MITTE
+    "breite": 87.5,                     // lichte Weite in cm
+    "art": "tuer",                      // tuer | doppeltuer | fenster | durchgang
+    "seite": 1,                         // Aufschlagseite: Vorzeichen der Normalen
+    "anschlag": "anfang",               // wo das Band sitzt
+    "bruestung": 90,                    // NUR fenster; fehlt = bodentief
+    "quelle": "gesetzt",                // nie 'gemessen' — die PDF zeigt keine
+    "anker": { "x": 3402, "y": 814 },   // ABGELEITETER Weltpunkt, s. u.
+    "verwaist": false
+  }
+]
+```
+
+**Drei Festlegungen mit Begründung:**
+
+- **`lage` absolut in cm, nicht als Bruchteil.** Eine Tür sitzt 12 cm von der Ecke,
+  nicht bei 4 % der Wandlänge. Wird die Wand verlängert, bleibt das MASS erhalten,
+  nicht das Verhältnis.
+- **`anker` ist eine ABLEITUNG, keine zweite Wahrheit.** Er wird bei jedem
+  Schreiben aus (`wandId`, `lage`) neu gerechnet und ausschliesslich in
+  `versoehneOeffnungen()` gelesen.
+- **Keine `hoehe`.** Die Axonometrie schneidet die Wände auf 1,16 m und sagt das in
+  ihrer Legende.
+
+### Warum es die Versöhnung geben MUSS
+
+`Wall.id` wird einmal beim Erzeugen gesetzt (`wall.ts:83`) und nie neu gerechnet;
+`Corner.move` fasst nur `x`/`y` an. Eine **verschobene** Wand behält ihre Kennung,
+und eine Tür daran ebenso. **Drei Fälle kippen sie trotzdem:**
+
+| Fall | Was passiert | Wo |
+|---|---|---|
+| **Wand-Teilung** | `newWall(this, wall.getEnd())` erzeugt die zweite Hälfte OHNE `id`, die alte Wand behält ihre und wird KÜRZER | `corner.ts:326-331` |
+| **Wand-Entfernung** | die Kennung verschwindet mit der Wand | `corner.ts:341-362`, `:296` |
+| **Neu-Export** | eine um 3 cm nachgemessene Wand bekommt neue Ecken-Prüfsummen und damit eine neue abgeleitete Kennung | `tools/export_blueprint.py` |
+
+Daraus folgt die tragende Einsicht dieser Welle: **in dieser Pipeline überlebt
+keine Kennung ein Nachmessen. Die einzige dauerhafte Identität einer Wand ist ihre
+Geometrie.** Genau dafür ist der Anker da.
+
+`Floorplan.versoehneOeffnungen()` läuft am Ende **jedes** `update()` — und das
+läuft bei neuer Wand, entfernter Wand, verschmolzenen Ecken und nach jedem Laden,
+also in allen drei Fällen. Je Öffnung: fehlt die Wand ODER liegt `lage ± breite/2`
+ausserhalb ihrer Länge, wird über den Anker die nächste Wand innerhalb
+`Wanddicke/2 + 25 cm` gesucht. Findet sich keine, gilt die Öffnung als `verwaist` —
+sie wird **nicht** gelöscht, sondern nur nicht gezeichnet, und die Blattkopf-Zeile
+sagt es.
+
+Abschaltbar ist die Versöhnung **nur für die Gegenprobe des Gates**
+(`Floorplan.versoehnungAn`). `tools/pruefe-tueren.mjs` Schritt d teilt dieselbe
+Wand zweimal: einmal mit abgeschalteter Versöhnung — dann MUSS die Tür im Nichts
+liegen — und einmal mit. Ein Wächter, der nie rot wird, ist kein Wächter.
 
 ## 4. Räume: abgeleitet, nicht gespeichert
 

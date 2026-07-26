@@ -1554,16 +1554,22 @@ window.__planerDatei = {
      Grundrisse sinkt dagegen zwingend um lichte Weite mal Wanddicke. */
   szeneWaende: function(){
     if (!szene) return null;
-    let flaeche = 0;
+    let flaeche = 0, volumen = 0;
     for (const k of szene.waende) {
       let a = 0;
       for (let i = 0; i < k.punkte.length; i++) {
         const p = k.punkte[i], q = k.punkte[(i + 1) % k.punkte.length];
         a += p.x * q.z - q.x * p.z;
       }
-      flaeche += Math.abs(a) / 2;
+      const f = Math.abs(a) / 2;
+      flaeche += f;
+      /* Das VOLUMEN trennt die Bruestung von der Tuer: ein Fenster mit
+         Bruestung laesst Mauerwerk stehen, sein GRUNDRISS bleibt also
+         unveraendert — nur seine HOEHE sinkt. Ohne diese Zahl waere die
+         Bruestung nicht von "gar nichts passiert" zu unterscheiden. */
+      volumen += f * (k.y1 - k.y0);
     }
-    return { n: szene.waende.length, flaeche: flaeche };
+    return { n: szene.waende.length, flaeche: flaeche, volumen: volumen };
   },
   /* Baut die Axonometrie neu — dieselbe Funktion, die die Huelle selbst ruft.
      Noetig, weil \`setzeAusstattung\` (Strichprobe) bewusst KEINE Aenderung
@@ -1579,6 +1585,10 @@ window.__planerDatei = {
   treffer: function(){
     return {
       ausstattung: zeichner.activeAusstattung,
+      // W4: ohne dieses Feld maesse ein Gate den Oeffnungs-Treffer als
+      // "undefined" und haette ihn fuer "nicht getroffen" gehalten — die
+      // Messung waere blind fuer genau das, was sie pruefen soll.
+      oeffnung: zeichner.activeOeffnung,
       wand: zeichner.activeWall ? zeichner.activeWall.id : null,
       ecke: zeichner.activeCorner ? zeichner.activeCorner.id : null
     };

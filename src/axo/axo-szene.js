@@ -57,18 +57,18 @@ function rund(cx, cz, breite, tiefe, ecken = 12) {
  * 78 m lange Nordwand EINEN Tiefenwert (den ihrer Mitte) und verdeckte alles,
  * was hinter diesem Punkt liegt (uebersicht.html:412).
  */
-function wandStuecke(a, b, dicke, y1, material, normale) {
+function wandStuecke(a, b, dicke, y1, material, normale, oeffnungen = []) {
   const laenge = Math.hypot(b.x - a.x, b.z - a.z)
   if (laenge < 1e-6) return []
-  const n = Math.max(1, Math.ceil(laenge / DARSTELLUNG.kachel))
   const ex = (b.x - a.x) / laenge
   const ez = (b.z - a.z) / laenge
   const px = (-ez * dicke) / 2
   const pz = (ex * dicke) / 2
   const stuecke = []
-  for (let i = 0; i < n; i++) {
-    const t0 = (laenge * i) / n
-    const t1 = (laenge * (i + 1)) / n
+
+  /** Ein Wandstueck von t0 bis t1 (Meter entlang der Wand), von y0 bis yTop. */
+  const legeAn = (t0, t1, yTop) => {
+    if (t1 - t0 < 1e-6 || yTop <= 0) return
     const p0 = { x: a.x + ex * t0, z: a.z + ez * t0 }
     const p1 = { x: a.x + ex * t1, z: a.z + ez * t1 }
     stuecke.push({
@@ -79,11 +79,52 @@ function wandStuecke(a, b, dicke, y1, material, normale) {
         { x: p0.x - px, z: p0.z - pz }
       ],
       y0: 0,
-      y1,
+      y1: yTop,
       material,
       normale
     })
   }
+
+  /** Ein Stueck in Kacheln von hoechstens `DARSTELLUNG.kachel` zerlegen. */
+  const kacheln = (t0, t1, yTop) => {
+    const l = t1 - t0
+    if (l < 1e-6) return
+    const n = Math.max(1, Math.ceil(l / DARSTELLUNG.kachel))
+    for (let i = 0; i < n; i++) {
+      legeAn(t0 + (l * i) / n, t0 + (l * (i + 1)) / n, yTop)
+    }
+  }
+
+  /* ── Die Oeffnungen aus der Wand herausschneiden (W4) ──────────────────
+     EINE Oeffnung ist hier schlicht: die Kacheln ueber ihrem Intervall gar
+     nicht erst erzeugen. Kein Eingriff in `axo-zeichnen.js`, keiner in die
+     Raumableitung — genau deshalb kostet diese Welle in der Ansicht so wenig.
+
+     Erst die vollen Stuecke bestimmen, dann kacheln (und nicht umgekehrt):
+     kachelte man zuerst und schnitte danach, entstuenden an jeder Laibung
+     Reststuecke von wenigen Zentimetern, die der Maler-Algorithmus als eigene
+     Flaechen sortieren muesste. */
+  const luecken = oeffnungen
+    .map((o) => ({
+      von: Math.max(0, Math.min(laenge, o.von)),
+      bis: Math.max(0, Math.min(laenge, o.bis)),
+      bruestung: o.bruestung || 0
+    }))
+    .filter((o) => o.bis - o.von > 1e-6)
+    .sort((p, q) => p.von - q.von)
+
+  let cursor = 0
+  for (const l of luecken) {
+    if (l.von > cursor) kacheln(cursor, l.von, y1)
+    // Ein Fenster mit Bruestung laesst unter sich Mauerwerk stehen — sonst
+    // saehe es aus wie ein Durchgang. Die Bruestung wird auf die Schnitthoehe
+    // begrenzt: die Ansicht schneidet die Waende ohnehin auf 1,16 m, ein
+    // hoeherer Block waere eine Hoehenaussage, die dieses Bild nicht trifft.
+    if (l.bruestung > 0) kacheln(l.von, l.bis, Math.min(l.bruestung, y1))
+    cursor = Math.max(cursor, l.bis)
+  }
+  if (cursor < laenge) kacheln(cursor, laenge, y1)
+
   return stuecke
 }
 
@@ -212,6 +253,25 @@ export function baueSzene(plan, opt = {}) {
   const inIrgendeinemRaum = (x, z) => alsPolygone.some((poly) => liegtIn({ x, y: z }, poly))
   const tastAbstand = Math.max(dicke, 0.1) * 1.6
 
+  /* ── Oeffnungen je Wand (W4) ─────────────────────────────────────────
+     Sie haengen an `Wall.id`. Eine Wand OHNE Kennung kann darum keine tragen —
+     und das ist kein Mangel: der gemessene Plan (`app/public/plaene/*.json`)
+     fuehrt keine Wand-Kennungen und keine Oeffnungen. Beide entstehen erst,
+     wenn ein Nutzer etwas setzt, und dann laeuft der Plan ueber
+     `saveFloorplan()`, das die Kennung mitschreibt. Hier deshalb bewusst KEINE
+     nachgebaute Kennungs-Ableitung: eine zweite Ableitung liefe von der im
+     Modell (`kennungAusWand`) irgendwann ab, und niemand merkte es. */
+  const oeffnungenJeWand = new Map()
+  for (const o of fp.oeffnungen || []) {
+    if (!o.wandId || o.verwaist) continue
+    if (!oeffnungenJeWand.has(o.wandId)) oeffnungenJeWand.set(o.wandId, [])
+    oeffnungenJeWand.get(o.wandId).push({
+      von: (o.lage - o.breite / 2) * CM,
+      bis: (o.lage + o.breite / 2) * CM,
+      bruestung: o.art === 'fenster' && o.bruestung ? o.bruestung * CM : 0
+    })
+  }
+
   const waende = []
   for (const w of fp.walls) {
     const a = fp.corners[w.corner1]
@@ -244,7 +304,8 @@ export function baueSzene(plan, opt = {}) {
         dicke,
         aussen ? DARSTELLUNGSHOEHE.wandAussen : DARSTELLUNGSHOEHE.wandInnen,
         aussen ? 'wandAussen' : 'wand',
-        normale
+        normale,
+        oeffnungenJeWand.get(w.id) || []
       )
     )
   }
