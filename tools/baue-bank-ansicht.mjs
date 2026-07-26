@@ -1,587 +1,381 @@
-// Baut die BANK-ANSICHT (E4): EINE einzelne HTML-Datei zum Doppelklick.
+// Baut die BANK-ANSICHT (E4/X4) — EINE Datei zum Doppelklick, ohne Netz.
 //
-//   node tools/baue-bank-ansicht.mjs [--plan halle400] [--ziel "Halle400-Modell.html"]
+//   node tools/baue-bank-ansicht.mjs        # -> Halle400-Modell.html
+//   node tools/pruefe-bank-ansicht.mjs      # prueft sie unter file:// + gesperrtem Netz
 //
-// WOZU: Das Modell kommt in einen Businessplan. Eine Bank soll es OHNE
-// Werkzeuge oeffnen koennen — kein Node, kein Server, kein Netz, keine
-// Installation. Doppelklick, Browser, drehen.
+// WARUM DIESE DATEI SEIT X4 EIN VIELFACHES KLEINER IST
+// Bis hierher trug sie ein graues three.js-Modell und musste dafuer die
+// WebGL-Bibliothek einbetten: three.core.js und three.module.js zu einem
+// klassischen Skript verweben, weil three.module.js kein selbstaendiges Modul
+// ist, sondern ein duenner Aufsatz auf three.core.js — mit DREI Export-Bloecken,
+// von denen der mittlere leicht zu uebersehen war. Rund 2,0 MB, deren
+// Zusammenbau bei jedem three-Update kippen konnte.
 //
-// WARUM NICHT der vorhandene Export: `app/out/` ist ein Dateiordner, den Next
-// mit ABSOLUTEN Asset-Pfaden (/_next/static/…) schreibt. Ueber file:// zeigen
-// die ins Laufwerks-Root — gemessen 11x ERR_FILE_NOT_FOUND und eine weisse
-// Seite (docs/betrieb.md). Deshalb liefert `tools/serve-local.mjs` den Ordner
-// per HTTP aus; das setzt aber eine Node-Installation voraus, die eine Bank
-// nicht hat.
+// Nichts davon wird noch gebraucht. Die Axonometrie ist reines Canvas-2D
+// (src/axo/), also faellt three.js ersatzlos weg. Uebrig bleiben vier kleine
+// Module, der gemessene Plan und eine schlichte Huelle.
 //
-// DREI HARTE OFFLINE-BLOCKER lagen im Renderpfad, alle auf einem FREMDEN CDN
-// (cdn-images.lumenfeng.com): Bodentextur (src/model/room.ts), Wandtextur
-// (src/model/wall.ts) und Wand-Lichtkarte (src/three/edge.ts). Sie werden hier
-// nicht eingebettet, sondern IM BROWSER ERZEUGT — eine gerechnete Maserung
-// wiegt nichts und kann nicht verschwinden, wenn ein fremder Anbieter seine
-// URLs aendert.
+// EINE WAHRHEIT FUER BEIDE AUSLIEFERUNGEN
+// Die eingebetteten Module sind DIESELBEN, die die dritte Ansicht im Planer
+// benutzt — hier nur ohne Modulgrenzen aneinandergesetzt, weil eine Datei, die
+// per Doppelklick von der Festplatte startet, keine ES-Module nachladen darf
+// (file:// verbietet es). Planer und Bank koennen darum nicht auseinander
+// laufen; `tools/pruefe-axonometrie.mjs` G1 misst das zusaetzlich gegen den
+// Modellkern des Planers.
 //
-// EHRLICHE EINSCHRAENKUNG: Diese Datei ist ein BETRACHTER, kein Editor. Sie
-// zeichnet die Geometrie eigenstaendig aus dem Grundriss-JSON und teilt sich
-// den Code NICHT mit src/three/. Das ist ein bewusster Verzicht: den ganzen
-// Editor-Graphen ohne Buendler in eine Datei zu pressen waere fragiler als
-// 200 Zeilen Betrachter. Damit die beiden nicht auseinanderlaufen, werden die
-// Ausstattungs-Hoehen NICHT abgeschrieben, sondern zur Bauzeit aus
-// src/three/ausstattung.ts GELESEN — ein zweiter Wahrheitsort waere genau die
-// Art Drift, die man erst bemerkt, wenn die Bank etwas anderes sieht als du.
+// Die Ausstattungs-Hoehen werden weiterhin aus `src/three/ausstattung.ts`
+// GELESEN statt abgeschrieben (jetzt ueber tools/lies-hoehen.mjs). Aendert
+// jemand dort eine Hoehe, aendert sich die Bank-Ansicht mit.
+
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { liesHoehen } from './lies-hoehen.mjs'
 
 const HIER = path.dirname(fileURLToPath(import.meta.url))
 const WURZEL = path.resolve(HIER, '..')
 
 const arg = (name, standard) => {
   const i = process.argv.indexOf(name)
-  return i !== -1 && process.argv[i + 1] ? process.argv[i + 1] : standard
+  return i > -1 && process.argv[i + 1] ? process.argv[i + 1] : standard
 }
 const PLAN = arg('--plan', 'halle400')
 const ZIEL = path.resolve(WURZEL, arg('--ziel', 'Halle400-Modell.html'))
 
-// ---------------------------------------------------------------- Bausteine
-
 const planPfad = path.join(WURZEL, 'app/public/plaene', `${PLAN}.json`)
 if (!fs.existsSync(planPfad)) {
-  console.error(`Grundriss nicht gefunden: ${planPfad}`)
+  console.error(`Plan nicht gefunden: ${planPfad}`)
   process.exit(1)
 }
-const planRoh = JSON.parse(fs.readFileSync(planPfad, 'utf8'))
-const floorplan = planRoh.floorplan ?? planRoh
+const planRoh = fs.readFileSync(planPfad, 'utf8')
+const plan = JSON.parse(planRoh)
+const HOEHEN = liesHoehen()
 
-/**
- * three.js als KLASSISCHES Skript zusammensetzen.
- *
- * Warum nicht <script type="module">: Modul-Skripte unterliegen den CORS-Regeln,
- * und unter file:// gilt jede Datei als eigener Ursprung. Ein klassisches
- * Skript hat diese Beschraenkung nicht — und genau file:// ist der Zielfall.
- *
- * three.module.js ist NICHT selbstaendig, sondern ein duenner Aufsatz auf
- * three.core.js (erst beim Laufenlassen aufgefallen: "Cannot use import
- * statement outside a module"). Beide werden hintereinandergelegt, die
- * Modul-Klammern fallen weg.
- *
- * BEWUSST die unminifizierten Fassungen, obwohl sie dreimal so gross sind:
- * die minifizierten benennen beim Ex- und Import um (`Zi as log`), ihre
- * Symbole laegen danach nur unter Kuerzeln im Scope, und die Kuerzel beider
- * Dateien kollidieren miteinander. Das liesse sich mit Kapselung aufloesen —
- * waere aber eine trickreiche Textverarbeitung an fremdem Code, die bei jedem
- * three-Update kippen kann. Die unminifizierten exportieren unter IDENTISCHEN
- * Namen und lassen sich schlicht aneinanderfuegen. 1,4 MB Mehrgewicht in einer
- * Datei, die einmal per Mail geht, ist der bessere Handel.
- */
-const leseTeil = (name) => {
-  const p = path.join(WURZEL, 'node_modules/three/build', name)
-  if (!fs.existsSync(p)) {
-    console.error(`three.js nicht gefunden: ${p} — erst "pnpm install".`)
+// Wanddicke wie im Planer gesetzt (Blueprint3DAppBase.tsx:133). Beides sind
+// gesetzte Nutzer-Angaben, keine Messwerte — ein Grundriss enthaelt weder
+// Hoehe noch Dicke (Projekt-DNA Punkt 4).
+const WAND_DICKE_CM = 12.5
+
+/* ── Module einsammeln ────────────────────────────────────────────────
+   Reihenfolge = Abhaengigkeitsreihenfolge. `import`-Zeilen und das
+   `export`-Schluesselwort fallen weg; alles landet in EINEM Gueltigkeits-
+   bereich. Das geht nur, solange kein Name doppelt vorkommt — genau das wird
+   unten geprueft, statt es zu hoffen: zwei gleichnamige `const` im selben
+   Bereich sind ein harter Syntaxfehler, und zwar erst im Browser, also dort,
+   wo niemand mehr nachbessert. */
+const MODULE = ['axo-kontrakt.js', 'axo-zyklen.js', 'axo-szene.js', 'axo-zeichnen.js']
+
+const IMPORT_ZEILE = /^import\s*\{[^}]*\}\s*from\s*['"][^'"]+['"];?[ \t]*$/gm
+const EXPORT_WORT = /^export\s+/gm
+
+const teile = []
+const namen = new Map()
+for (const datei of MODULE) {
+  const pfad = path.join(WURZEL, 'src/axo', datei)
+  if (!fs.existsSync(pfad)) {
+    console.error(`Modul fehlt: ${pfad} — Abbruch.`)
     process.exit(1)
   }
-  return fs.readFileSync(p, 'utf8')
-}
+  const ohne = fs.readFileSync(pfad, 'utf8').replace(IMPORT_ZEILE, '').replace(EXPORT_WORT, '')
 
-/**
- * Nimmt die Modul-Klammern ab: ALLE `import {...} from '...'` und ALLE
- * `export {...}`.
- *
- * Der Plural ist hier die eigentliche Lehre. Zuerst wurde nur der
- * ABSCHLIESSENDE export-Block entfernt — three.module.js hat aber zwei: einen
- * am Ende mit den eigenen Namen und gleich hinter dem Import einen zweiten,
- * der die Namen aus three.core.js weiterreicht. Die Datei sah danach richtig
- * aus und der Browser meldete "Unexpected token 'export'".
- *
- * Sicher ist das, weil beide Dateien im selben Skript-Scope landen: was
- * exportiert oder importiert wuerde, ist ohnehin schon deklariert. Die
- * Klammern sind reine Modul-Buchhaltung.
- */
-const EXPORT_MUSTER = /^export\s*\{([^}]*)\}(?:\s*from\s*['"][^'"]+['"])?;?[ \t]*$/gm
-const IMPORT_MUSTER = /^import\s*\{([^}]*)\}\s*from\s*['"][^'"]+['"];?[ \t]*$/gm
-
-/** "A as B, C" -> [{ von: 'A', als: 'B' }, { von: 'C', als: 'C' }] */
-const nameListe = (roh) =>
-  roh
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((s) => {
-      const teile = s.split(/\s+as\s+/)
-      return { von: teile[0].trim(), als: (teile[1] ?? teile[0]).trim() }
-    })
-
-/**
- * Nimmt einer Modul-Datei die Klammern ab und meldet, welche Namen sie
- * hereinholt und welche sie herausgibt.
- *
- * ZWEI Fallen lagen hier, beide erst beim Laufenlassen sichtbar:
- *
- * 1. three.module.js hat DREI Bloecke, nicht einen: den Import aus
- *    three.core.js, gleich dahinter einen Re-Export derselben Namen
- *    (`export {...} from './three.core.js'`) und am Ende die eigenen. Wer nur
- *    den letzten entfernt, bekommt "Unexpected token 'export'".
- *
- * 2. Ein Re-Export MIT from-Klausel reicht fremde Namen weiter, die im eigenen
- *    Scope gar nicht existieren. Er wird deshalb uebersprungen — die Namen
- *    stehen laengst im gemeinsamen Beutel.
- */
-const zerlege = (quelle, name) => {
-  const gibtHeraus = []
-  const holtHerein = []
-
-  for (const m of quelle.matchAll(EXPORT_MUSTER)) {
-    // Mit from-Klausel = Weiterreichen fremder Namen -> nicht aus DIESEM Scope.
-    if (/from\s*['"]/.test(m[0])) continue
-    gibtHeraus.push(...nameListe(m[1]))
-  }
-  for (const m of quelle.matchAll(IMPORT_MUSTER)) {
-    holtHerein.push(...nameListe(m[1]))
+  for (const m of ohne.matchAll(/^(?:const|let|function|class)\s+([A-Za-z_$][\w$]*)/gm)) {
+    if (namen.has(m[1])) {
+      console.error(`Namenskollision beim Zusammenlegen: "${m[1]}" in ${datei} und ${namen.get(m[1])} — Abbruch.`)
+      process.exit(1)
+    }
+    namen.set(m[1], datei)
   }
 
-  if (gibtHeraus.length === 0) {
-    console.error(`Unerwartetes Format: ${name} gibt keine Namen heraus.`)
-    console.error('Abbruch statt Raten — ein halb entschaerftes Modul ergaebe eine weisse Seite.')
+  const rest = ohne.match(/^[ \t]*(export|import)[\s{'"*]/m)
+  if (rest) {
+    const zeile = ohne.slice(0, ohne.indexOf(rest[0])).split('\n').length
+    console.error(`${datei}:${zeile} — Modul-Syntax uebrig: ${rest[0].trim()} — Abbruch.`)
     process.exit(1)
   }
 
-  const rest = quelle.replace(EXPORT_MUSTER, '').replace(IMPORT_MUSTER, '')
+  teile.push(`/* ══════ ${datei} ══════ */\n${ohne.trim()}`)
+}
 
-  // GEGENPROBE: nichts darf uebrig bleiben. Ohne sie faellt ein uebersehener
-  // Rest erst im Browser auf — und zwar bei der Bank, wo niemand mehr
-  // nachbessern kann.
-  const uebrig = rest.match(/^[ \t]*(export|import)[\s{'"*]/m)
-  if (uebrig) {
-    const zeile = rest.slice(0, rest.indexOf(uebrig[0])).split('\n').length
-    console.error(`${name}: in Zeile ${zeile} steht noch "${uebrig[0].trim()}" — Abbruch.`)
-    process.exit(1)
+const buendel = teile.join('\n\n')
+
+/* ── Die Huelle ───────────────────────────────────────────────────────
+   Blattkopf, Saeulen-Tafel und Bedienleiste. Im Planer macht das React, hier
+   reicht schlichtes HTML; die Farb- und Schriftwerte stammen aus demselben
+   Kontrakt wie der Renderer. */
+const html = `<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Halle 400 — Büro, Axonometrie</title>
+<style>
+  :root{
+    --paper:#F2ECDE; --paper-deep:#DED5C0; --ink:#1E2A25; --ink-dim:#46514A;
+    --ink-mute:#6B7570; --hair-strong:#BAB09C; --amber:#C8703A; --sage-deep:#3F6757;
+    --panel:rgba(242,236,222,.92); --panel-line:#C9C0AA;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+    --sans:"Avenir Next","Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;
+    --mono:"Roboto Mono","Cascadia Mono",Consolas,"SF Mono",ui-monospace,monospace;
   }
-
-  console.log(`  ${name}: ${holtHerein.length} Namen herein, ${gibtHeraus.length} heraus`)
-  return { rest, gibtHeraus, holtHerein }
-}
-
-const core = zerlege(leseTeil('three.core.js'), 'three.core.js')
-const modul = zerlege(leseTeil('three.module.js'), 'three.module.js')
-
-/**
- * Beide Dateien bekommen einen EIGENEN Scope.
- *
- * Sie einfach aneinanderzuhaengen scheiterte an
- * "Identifier '_m1$1' has already been declared": beide benutzen intern
- * gleichnamige Hilfsgroessen. Als Module stoerte das nie, denn jedes Modul hat
- * seinen eigenen Raum. Zwei Funktionen stellen genau das wieder her — und der
- * gemeinsame Beutel `T` tritt an die Stelle der Modul-Bindungen.
- */
-const beutelFuellen = (namen) =>
-  `Object.assign(T, {${namen.map((n) => `${n.als}: ${n.von}`).join(', ')}});`
-const beutelLeeren = (namen) =>
-  namen.length ? `const {${namen.map((n) => `${n.von}: ${n.als}`).join(', ')}} = T;` : ''
-
-const three = `
-const T = {};
-(function () {
-${core.rest}
-${beutelFuellen(core.gibtHeraus)}
-})();
-(function () {
-${beutelLeeren(modul.holtHerein)}
-${modul.rest}
-${beutelFuellen(modul.gibtHeraus)}
-})();
-`
-
-/**
- * Ausstattungs-Hoehen aus src/three/ausstattung.ts LESEN statt abschreiben.
- * Aendert jemand dort eine Hoehe, aendert sich die Bank-Ansicht mit.
- */
-const leseHoehen = (name) => {
-  const quelle = fs.readFileSync(path.join(WURZEL, 'src/three/ausstattung.ts'), 'utf8')
-  const block = quelle.match(new RegExp(`${name}[^=]*=\\s*\\{([\\s\\S]*?)\\n\\}`))
-  if (!block) {
-    console.error(`${name} nicht in src/three/ausstattung.ts gefunden — Abbruch.`)
-    console.error('Lieber laut scheitern als die Bank ein anderes Modell sehen lassen.')
-    process.exit(1)
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+       -webkit-font-smoothing:antialiased;overflow:hidden}
+  #buehne{position:fixed;inset:0}
+  canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+  canvas.zieht{cursor:grabbing}
+  .kopf{position:fixed;top:0;left:0;padding:22px 26px;pointer-events:none;max-width:min(46ch,72vw)}
+  .kopf h1{font-family:var(--serif);font-weight:600;font-size:clamp(19px,2.5vw,27px);
+       margin:0 0 3px;line-height:1.15}
+  .kopf .sub{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;
+       text-transform:uppercase;color:var(--ink-mute);line-height:1.7}
+  .strich{height:1px;background:var(--hair-strong);margin:9px 0 8px;max-width:270px}
+  .leiste{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
+       display:flex;flex-wrap:wrap;justify-content:center;gap:5px;padding:6px;
+       background:var(--panel);border:1px solid var(--panel-line);
+       backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
+       max-width:calc(100vw - 24px);z-index:5}
+  .grp{display:flex;gap:2px;align-items:center}
+  .grp + .grp{border-left:1px solid var(--panel-line);padding-left:5px;margin-left:2px}
+  button{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+       color:var(--ink-dim);background:transparent;border:1px solid transparent;
+       padding:9px 11px;min-height:38px;cursor:pointer;white-space:nowrap;
+       transition:background .15s,color .15s,border-color .15s}
+  button:hover{background:var(--paper-deep);color:var(--ink)}
+  button[aria-pressed="true"]{color:var(--paper);background:var(--sage-deep);border-color:var(--sage-deep)}
+  button:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+  .lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+       color:var(--ink-mute);padding:0 7px 0 3px;user-select:none}
+  .tafel{position:fixed;top:20px;right:20px;width:270px;max-height:calc(100vh - 140px);
+       background:var(--panel);border:1px solid var(--panel-line);
+       backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
+       display:flex;flex-direction:column;z-index:6;transition:transform .28s ease,opacity .28s ease}
+  .tafel.weg{transform:translateX(calc(100% + 24px));opacity:0}
+  .tafel-kopf{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+       padding:13px 14px 9px;border-bottom:1px solid var(--panel-line)}
+  .tafel-kopf b{font-family:var(--mono);font-size:10px;letter-spacing:.15em;
+       text-transform:uppercase;font-weight:500;color:var(--ink-dim)}
+  .tafel-kopf span{font-family:var(--mono);font-size:10px;color:var(--ink-mute);
+       font-variant-numeric:tabular-nums}
+  .tafel-leib{overflow-y:auto;padding:4px 0 8px}
+  .zeile{display:grid;grid-template-columns:26px 1fr;gap:9px;padding:8px 14px;
+       align-items:start;border-left:2px solid transparent}
+  .zeile.an{border-left-color:var(--amber);background:rgba(200,112,58,.09)}
+  .zeile .n{font-family:var(--mono);font-size:10px;color:var(--ink-mute);
+       padding-top:2px;font-variant-numeric:tabular-nums}
+  .zeile.an .n{color:var(--amber)}
+  .zeile .nm{font-family:var(--serif);font-size:15px;line-height:1.25;color:var(--ink)}
+  .zeile .rm{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
+       color:var(--amber);margin-top:3px;line-height:1.5}
+  .zeile .src{font-size:11.5px;color:var(--ink-mute);margin-top:2px;line-height:1.4}
+  .tafel-fuss{padding:9px 14px 11px;border-top:1px solid var(--panel-line);
+       font-size:11px;line-height:1.5;color:var(--ink-mute)}
+  .hinweis{position:fixed;left:26px;bottom:18px;max-width:44ch;font-family:var(--mono);
+       font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-mute);
+       pointer-events:none;opacity:.85;line-height:1.7}
+  @media (max-width:900px){
+    .tafel{top:auto;bottom:112px;right:10px;left:10px;width:auto;max-height:38vh}
+    .hinweis{display:none}
+    .kopf{padding:12px 14px;max-width:none}
+    .kopf .sub{font-size:9px;letter-spacing:.11em;line-height:1.6}
+    .strich{margin:7px 0 6px;max-width:180px}
+    .leiste{bottom:10px;padding:5px;gap:4px}
+    button{padding:8px 9px;font-size:10px}
+    .lbl{padding:0 4px 0 2px;font-size:9px}
   }
-  const werte = {}
-  for (const m of block[1].matchAll(/^\s*(\w+)\s*:\s*(\d+(?:\.\d+)?)\s*,?\s*$/gm)) {
-    werte[m[1]] = Number(m[2])
-  }
-  return werte
+  @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<div id="buehne"><canvas id="c"></canvas></div>
+
+<header class="kopf">
+  <h1>Halle&nbsp;400 &middot; Büro</h1>
+  <div class="strich"></div>
+  <div class="sub" id="unterzeile">Axonometrie</div>
+</header>
+
+<aside class="tafel" id="tafel">
+  <div class="tafel-kopf"><b>Die neun Säulen</b><span id="zaehler"></span></div>
+  <div class="tafel-leib" id="tafelLeib"></div>
+  <div class="tafel-fuss" id="tafelFuss"></div>
+</aside>
+
+<div class="leiste" role="toolbar" aria-label="Ansicht steuern">
+  <div class="grp">
+    <span class="lbl">Blick</span>
+    <button type="button" data-blick="0">Nord</button>
+    <button type="button" data-blick="1">West</button>
+    <button type="button" data-blick="2">Süd</button>
+    <button type="button" data-blick="3">Plan</button>
+  </div>
+  <div class="grp">
+    <span class="lbl">Namen</span>
+    <button type="button" data-namen="alle">Alle</button>
+    <button type="button" data-namen="saeulen">Säulen</button>
+    <button type="button" data-namen="aus">Aus</button>
+  </div>
+  <div class="grp">
+    <button type="button" id="btnAusbau" aria-pressed="false">9&nbsp;Säulen</button>
+    <button type="button" id="btnTafel" aria-pressed="true">Legende</button>
+  </div>
+</div>
+
+<div class="hinweis">
+  Ziehen dreht &middot; Rad zoomt &middot; zwei Finger zoomen<br>
+  Grundriss und Ausstattung sind gemessen. Höhen sind gesetzte Annahmen —
+  ein Grundriss enthält keine.
+</div>
+
+<script>
+"use strict";
+(function(){
+
+/* ══════════════════════════════════════════════════════════════════
+   DER GEMESSENE PLAN — aus app/public/plaene/${PLAN}.json
+   ══════════════════════════════════════════════════════════════════ */
+const PLAN = ${planRoh};
+
+/* Hoehen aus src/three/ausstattung.ts, zur Bauzeit gelesen. */
+const HOEHEN = ${JSON.stringify(HOEHEN)};
+
+${buendel}
+
+/* ══════════════════════════════════════════════════════════════════
+   HUELLE
+   ══════════════════════════════════════════════════════════════════ */
+const cv = document.getElementById('c');
+const tafel = document.getElementById('tafel');
+let vollausbau = false, tafelAn = true, namenModus = 'alle', axo = null, szene = null;
+
+function tafelRand(){ return (tafelAn && innerWidth > 900) ? 294 : 0; }
+
+function bauen(){
+  szene = baueSzene(PLAN, {
+    wandDicke: ${WAND_DICKE_CM},
+    nurKernSaeulen: !vollausbau,
+    hoehen: HOEHEN
+  });
+  axo = erzeugeAxonometrie(cv, szene, { namen: namenModus, randRechts: tafelRand() });
+  axo.passeAn();
+  tafelZeichnen();
 }
 
-const OBERKANTE_CM = leseHoehen('OBERKANTE_CM')
-const KOERPER_CM = leseHoehen('KOERPER_CM')
-
-if (Object.keys(OBERKANTE_CM).length < 5) {
-  console.error(`OBERKANTE_CM nur ${Object.keys(OBERKANTE_CM).length} Eintraege — Abbruch.`)
-  process.exit(1)
+function verortete(){
+  const m = {};
+  for (const k of szene.marken) if (k.hervor && k.saeule != null) m[k.saeule] = k.text;
+  return m;
 }
 
-// Wandhoehe ist eine GESETZTE Nutzer-Angabe, kein Messwert aus der PDF
-// (Projekt-DNA Punkt 4) — ein Grundriss enthaelt keine Hoehe.
-const WAND_HOEHE_CM = 300
-const WAND_DICKE_CM = 10
-
-const daten = {
-  corners: floorplan.corners ?? {},
-  walls: floorplan.walls ?? [],
-  ausstattung: floorplan.ausstattung ?? [],
-  roomMeta: floorplan.roomMeta ?? {},
-  oberkante: OBERKANTE_CM,
-  koerper: KOERPER_CM,
-  wandHoehe: WAND_HOEHE_CM,
-  wandDicke: WAND_DICKE_CM
+function tafelZeichnen(){
+  const belegt = verortete();
+  const anzahl = Object.keys(belegt).length;
+  const leib = document.getElementById('tafelLeib');
+  leib.innerHTML = '';
+  SAEULEN.forEach(function(s, i){
+    const raum = belegt[i];
+    const el = document.createElement('div');
+    el.className = 'zeile' + (raum ? ' an' : '');
+    el.innerHTML = '<div class="n">' + s.n + '</div><div>' +
+      '<div class="nm">' + s.rolle + '</div>' +
+      (raum ? '<div class="rm">' + raum + '</div>' : '') +
+      '<div class="src">' + s.name + '</div></div>';
+    leib.appendChild(el);
+  });
+  document.getElementById('zaehler').textContent = anzahl + '/9 verortet';
+  document.getElementById('tafelFuss').textContent = vollausbau
+    ? 'Vollausbau — auch Teamtable, Konferenz, Workshop, Videokonf und Break out tragen eine Säule.'
+    : 'Die vier Räume, die im Plan Workspace, Einzelbüro oder Doppelbüro heißen.';
+  const b = (szene.grenzen.x1 - szene.grenzen.x0).toFixed(0);
+  const t = (szene.grenzen.z1 - szene.grenzen.z0).toFixed(0);
+  document.getElementById('unterzeile').innerHTML =
+    'Axonometrie &middot; ' + b + ' &times; ' + t + ' m<br>' +
+    anzahl + ' Räume nach den Säulen benannt';
 }
 
-// ------------------------------------------------------------ Betrachter-Code
-
-const betrachter = `
-// Die three.js-Klassen aus dem gemeinsamen Beutel holen (siehe oben: beide
-// Modul-Dateien liegen in eigenen Scopes, T ist ihre Verbindung).
-const {
-  Scene, Color, PerspectiveCamera, WebGLRenderer, PCFSoftShadowMap,
-  CanvasTexture, RepeatWrapping, SRGBColorSpace, PlaneGeometry,
-  MeshStandardMaterial, Mesh, BoxGeometry, Group, HemisphereLight,
-  DirectionalLight, Vector3
-} = T;
-
-// ---- Daten (zur Bauzeit eingebettet) ----
-const D = __DATEN__;
-
-const wrap = document.getElementById('buehne');
-const szene = new Scene();
-szene.background = new Color(0xdfe6ee);
-
-const kamera = new PerspectiveCamera(50, wrap.clientWidth / wrap.clientHeight, 10, 200000);
-const maler = new WebGLRenderer({ antialias: true });
-maler.setPixelRatio(Math.min(devicePixelRatio, 2));
-maler.setSize(wrap.clientWidth, wrap.clientHeight);
-maler.shadowMap.enabled = true;
-maler.shadowMap.type = PCFSoftShadowMap;
-wrap.appendChild(maler.domElement);
-
-// ---- Texturen RECHNEN statt laden -------------------------------------------
-// Die Vorlage lud Boden, Wand und Lichtkarte von cdn-images.lumenfeng.com.
-// Fuer eine Datei, die offline laufen muss, ist ein fremdes CDN ein harter
-// Blocker. Eine gerechnete Maserung wiegt nichts und faellt nie aus.
-function holzTextur() {
-  const c = document.createElement('canvas');
-  c.width = c.height = 256;
-  const g = c.getContext('2d');
-  g.fillStyle = '#c8a578';
-  g.fillRect(0, 0, 256, 256);
-  for (let i = 0; i < 260; i++) {
-    const y = Math.random() * 256;
-    g.strokeStyle = 'rgba(150,110,70,' + (0.05 + Math.random() * 0.13).toFixed(3) + ')';
-    g.lineWidth = 0.5 + Math.random() * 1.6;
-    g.beginPath();
-    g.moveTo(0, y);
-    g.bezierCurveTo(85, y + (Math.random() * 7 - 3.5), 170, y + (Math.random() * 7 - 3.5), 256, y);
-    g.stroke();
-  }
-  const t = new CanvasTexture(c);
-  t.wrapS = t.wrapT = RepeatWrapping;
-  t.colorSpace = SRGBColorSpace;
-  return t;
+function markiere(auswahl, wert){
+  document.querySelectorAll(auswahl).forEach(function(b){
+    const schluessel = Object.keys(b.dataset)[0];
+    b.setAttribute('aria-pressed', String(b.dataset[schluessel] === wert));
+  });
 }
 
-const bodenTextur = holzTextur();
-
-// ---- Grundriss auswerten ----------------------------------------------------
-const ecken = D.corners;
-const punkte = Object.values(ecken);
-const minX = Math.min(...punkte.map(p => p.x));
-const maxX = Math.max(...punkte.map(p => p.x));
-const minY = Math.min(...punkte.map(p => p.y));
-const maxY = Math.max(...punkte.map(p => p.y));
-const mitteX = (minX + maxX) / 2;
-const mitteY = (minY + maxY) / 2;
-const breite = maxX - minX;
-const tiefe = maxY - minY;
-
-// Welt: x nach rechts, y nach oben, z = Grundriss-y. Der Ursprung wandert in
-// die Mitte der Halle, damit sich die Ansicht um ihren Schwerpunkt dreht.
-const wx = x => x - mitteX;
-const wz = y => y - mitteY;
-
-// ---- Boden ------------------------------------------------------------------
-bodenTextur.repeat.set(breite / 300, tiefe / 300);
-const boden = new Mesh(
-  new PlaneGeometry(breite + 400, tiefe + 400),
-  new MeshStandardMaterial({ map: bodenTextur, roughness: 0.85 })
-);
-boden.rotation.x = -Math.PI / 2;
-boden.receiveShadow = true;
-szene.add(boden);
-
-// ---- Waende -----------------------------------------------------------------
-const wandStoff = new MeshStandardMaterial({ color: 0xf2f2ef, roughness: 0.92 });
-const wandGruppe = new Group();
-let wandZahl = 0;
-for (const w of D.walls) {
-  const a = ecken[w.corner1];
-  const b = ecken[w.corner2];
-  if (!a || !b) continue;
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const laenge = Math.hypot(dx, dy);
-  if (laenge < 1) continue;
-  const m = new Mesh(new BoxGeometry(laenge, D.wandHoehe, D.wandDicke), wandStoff);
-  m.position.set(wx((a.x + b.x) / 2), D.wandHoehe / 2, wz((a.y + b.y) / 2));
-  // Minus, weil eine Drehung um die y-Achse in der (x,z)-Ebene andersherum
-  // laeuft als der mathematisch positive Sinn in der (x,y)-Ebene des Plans.
-  m.rotation.y = -Math.atan2(dy, dx);
-  m.castShadow = true;
-  m.receiveShadow = true;
-  wandGruppe.add(m);
-  wandZahl++;
-}
-szene.add(wandGruppe);
-
-// ---- Ausstattung ------------------------------------------------------------
-// Farben mit Blaustich wie im 2D-Plan, damit beide Ansichten dieselbe Sprache
-// sprechen.
-const moebelStoff = new MeshStandardMaterial({ color: 0xdfe3ea, roughness: 0.7 });
-const flaechenStoff = new MeshStandardMaterial({ color: 0xefe7dd, roughness: 0.95 });
-const gruenStoff = new MeshStandardMaterial({ color: 0xa8c49a, roughness: 0.8 });
-let moebelZahl = 0;
-for (const el of D.ausstattung) {
-  const oberkante = D.oberkante[el.typ];
-  // Unbekannter Typ: lieber nichts zeichnen als einen erfundenen Koerper.
-  if (oberkante === undefined) continue;
-  const dicke = D.koerper[el.typ] ?? oberkante;
-  const stoff = el.typ === 'flaeche' ? flaechenStoff : el.typ === 'pflanze' ? gruenStoff : moebelStoff;
-  const m = new Mesh(new BoxGeometry(el.breite, dicke, el.tiefe), stoff);
-  m.position.set(wx(el.x), oberkante - dicke / 2, wz(el.y));
-  m.rotation.y = -(el.drehung ?? 0);
-  if (el.typ !== 'flaeche') {
-    m.castShadow = true;
-  }
-  m.receiveShadow = true;
-  szene.add(m);
-  moebelZahl++;
-}
-
-// ---- Licht ------------------------------------------------------------------
-szene.add(new HemisphereLight(0xffffff, 0x9aa5b1, 2.1));
-const sonne = new DirectionalLight(0xffffff, 1.5);
-sonne.position.set(breite * 0.3, 2600, tiefe * 0.8);
-sonne.castShadow = true;
-sonne.shadow.mapSize.set(2048, 2048);
-const s = Math.max(breite, tiefe) * 0.6;
-sonne.shadow.camera.left = -s;
-sonne.shadow.camera.right = s;
-sonne.shadow.camera.top = s;
-sonne.shadow.camera.bottom = -s;
-sonne.shadow.camera.far = 12000;
-szene.add(sonne);
-
-// ---- Kamera: die GANZE Halle einpassen --------------------------------------
-// Eingepasst wird die UMSCHLIESSENDE KUGEL, nicht die Bounding-Box. Ein
-// geschaetzter Zuschlag stimmt immer nur bei EINEM Seitenverhaeltnis: am
-// Rechner sass er, am Handy schoss er vorbei. Der Kugelradius ist dagegen
-// exakt herleitbar und bleibt beim Drehen gueltig.
-const radius = Math.hypot(breite / 2, tiefe / 2, D.wandHoehe / 2);
-function abstandFuerGanzeHalle() {
-  const halbSenkrecht = (kamera.fov * Math.PI) / 360;
-  const halbWaagerecht = Math.atan(Math.tan(halbSenkrecht) * kamera.aspect);
-  const enger = Math.min(halbSenkrecht, halbWaagerecht);
-  return (radius / Math.sin(enger)) * 1.05;
-}
-
-let drehung = -Math.PI / 4;
-let neigung = 0.62;
-let abstand = abstandFuerGanzeHalle();
-const ziel = new Vector3(0, D.wandHoehe / 2, 0);
-
-function kameraSetzen() {
-  const y = Math.max(60, Math.sin(neigung) * abstand);
-  kamera.position.set(
-    ziel.x + Math.cos(drehung) * Math.cos(neigung) * abstand,
-    ziel.y + y,
-    ziel.z + Math.sin(drehung) * Math.cos(neigung) * abstand
-  );
-  kamera.lookAt(ziel);
-  kamera.far = abstand * 4 + radius * 2;
-  kamera.updateProjectionMatrix();
-}
-kameraSetzen();
-
-// ---- Steuerung (eigen, statt OrbitControls) ---------------------------------
-// OrbitControls liegt als ES-Modul mit eigenen Imports vor und liesse sich
-// ohne Buendler nur mit Basteln einbetten. Drehen, Zoomen und Schieben sind
-// hier 60 Zeilen — das ist robuster als ein halb umgebautes Fremdmodul.
-let zieht = false;
-let letzteX = 0;
-let letzteY = 0;
-let fingerAbstand = 0;
-
-const leinwand = maler.domElement;
-leinwand.addEventListener('pointerdown', e => {
-  zieht = true;
-  letzteX = e.clientX;
-  letzteY = e.clientY;
-  leinwand.setPointerCapture(e.pointerId);
+document.querySelectorAll('[data-blick]').forEach(function(b){
+  b.addEventListener('click', function(){
+    const v = BLICKE[+b.dataset.blick];
+    axo.setzeBlick(v.az, v.el);
+    markiere('[data-blick]', b.dataset.blick);
+  });
 });
-leinwand.addEventListener('pointerup', e => {
-  zieht = false;
-  try { leinwand.releasePointerCapture(e.pointerId); } catch (_) {}
+document.querySelectorAll('[data-namen]').forEach(function(b){
+  b.addEventListener('click', function(){
+    namenModus = b.dataset.namen;
+    axo.setzeNamen(namenModus);
+    markiere('[data-namen]', namenModus);
+  });
 });
-leinwand.addEventListener('pointermove', e => {
-  if (!zieht) return;
-  drehung += (e.clientX - letzteX) * 0.005;
-  neigung = Math.max(0.05, Math.min(1.5, neigung + (e.clientY - letzteY) * 0.005));
-  letzteX = e.clientX;
-  letzteY = e.clientY;
-  kameraSetzen();
+const btnAusbau = document.getElementById('btnAusbau');
+btnAusbau.addEventListener('click', function(){
+  vollausbau = !vollausbau;
+  btnAusbau.setAttribute('aria-pressed', String(vollausbau));
+  bauen();
 });
-leinwand.addEventListener('wheel', e => {
-  e.preventDefault();
-  abstand = Math.max(radius * 0.15, Math.min(radius * 8, abstand * (e.deltaY < 0 ? 0.9 : 1.1)));
-  kameraSetzen();
-}, { passive: false });
-
-leinwand.addEventListener('touchstart', e => {
-  if (e.touches.length === 2) {
-    fingerAbstand = Math.hypot(
-      e.touches[0].clientX - e.touches[1].clientX,
-      e.touches[0].clientY - e.touches[1].clientY
-    );
-  }
-}, { passive: true });
-leinwand.addEventListener('touchmove', e => {
-  if (e.touches.length === 2 && fingerAbstand > 0) {
-    e.preventDefault();
-    const jetzt = Math.hypot(
-      e.touches[0].clientX - e.touches[1].clientX,
-      e.touches[0].clientY - e.touches[1].clientY
-    );
-    abstand = Math.max(radius * 0.15, Math.min(radius * 8, abstand * (fingerAbstand / jetzt)));
-    fingerAbstand = jetzt;
-    kameraSetzen();
-  }
-}, { passive: false });
-
-document.getElementById('einpassen').addEventListener('click', () => {
-  drehung = -Math.PI / 4;
-  neigung = 0.62;
-  abstand = abstandFuerGanzeHalle();
-  kameraSetzen();
+const btnTafel = document.getElementById('btnTafel');
+btnTafel.addEventListener('click', function(){
+  tafelAn = !tafelAn;
+  tafel.classList.toggle('weg', !tafelAn);
+  btnTafel.setAttribute('aria-pressed', String(tafelAn));
+  axo.setzeRandRechts(tafelRand());
 });
 
-let vogel = false;
-document.getElementById('draufsicht').addEventListener('click', () => {
-  vogel = !vogel;
-  neigung = vogel ? 1.5 : 0.62;
-  abstand = abstandFuerGanzeHalle();
-  kameraSetzen();
+cv.addEventListener('pointerdown', function(){ cv.classList.add('zieht'); });
+['pointerup','pointercancel'].forEach(function(t){
+  cv.addEventListener(t, function(){ cv.classList.remove('zieht'); });
 });
+addEventListener('resize', function(){ if (axo) axo.passeAn(); });
 
-addEventListener('resize', () => {
-  kamera.aspect = wrap.clientWidth / wrap.clientHeight;
-  abstand = Math.max(abstand, abstandFuerGanzeHalle() * 0.35);
-  kamera.updateProjectionMatrix();
-  maler.setSize(wrap.clientWidth, wrap.clientHeight);
-  kameraSetzen();
-});
-
-document.getElementById('zahlen').textContent =
-  wandZahl + ' Wände · ' + moebelZahl + ' Einrichtungsgegenstände · ' +
-  (breite / 100).toFixed(1).replace('.', ',') + ' m × ' +
-  (tiefe / 100).toFixed(1).replace('.', ',') + ' m';
-
-function bild() {
-  requestAnimationFrame(bild);
-  maler.render(szene, kamera);
+/* ── Start ──────────────────────────────────────────────────────────
+   Auf schmalen Anzeigen laengs statt quer blicken: der 78-m-Riegel laeuft
+   dann in die Tiefe statt ueber die Breite und wird gut doppelt so gross.
+   Legende zu, nur die Saeulen beschriftet — sonst erschlaegt es das Bild. */
+let startBlick = '0';
+if (innerWidth < 900) {
+  startBlick = '1';
+  tafelAn = false;
+  tafel.classList.add('weg');
+  btnTafel.setAttribute('aria-pressed','false');
+  namenModus = 'saeulen';
 }
-bild();
+bauen();
+if (startBlick === '1') axo.setzeBlick(BLICKE[1].az, 0.54);
+markiere('[data-blick]', startBlick);
+markiere('[data-namen]', namenModus);
 
-// Fuer die Standbild-Erzeugung (tools/baue-bank-bilder.mjs) und als ehrliche
-// Selbstauskunft: was wurde wirklich gebaut?
+/* ── Selbstauskunft fuer tools/pruefe-bank-ansicht.mjs ───────────────
+   Das Pruefwerkzeug misst am fertigen Bild statt Behauptungen zu glauben.
+   farbtoene() liest jetzt schlicht aus dem 2D-Canvas — der Umweg ueber
+   gl.readPixels, den die frueher hier eingebettete WebGL-Fassung brauchte
+   (ohne preserveDrawingBuffer ist ihr Zeichenpuffer nach dem Anzeigen leer),
+   ist mit three.js entfallen. */
 window.__modell = {
-  wandZahl, moebelZahl, breite, tiefe,
-  blick: (d, n) => {
-    drehung = d; neigung = n; abstand = abstandFuerGanzeHalle(); kameraSetzen();
-  },
-  /**
-   * Wie viele verschiedene Farbtoene stehen gerade im Bild? Beweist, dass
-   * wirklich etwas zu sehen ist — ein leerer Betrachter meldet sich genauso
-   * bereit wie ein voller.
-   *
-   * Gelesen wird DIREKT aus WebGL und unmittelbar nach einem render(). Der
-   * naheliegende Weg (das Canvas per drawImage auf ein 2D-Canvas kopieren)
-   * liefert ein LEERES Bild: ohne preserveDrawingBuffer ist der Zeichenpuffer
-   * nach dem Anzeigen dahin. Genau daran scheiterte die erste Messung — sie
-   * meldete "1 Farbton", waehrend das Standbild die ganze Halle zeigte.
-   */
-  farbtoene: () => {
-    maler.render(szene, kamera);
-    const gl = maler.getContext();
-    const b = gl.drawingBufferWidth;
-    const h = gl.drawingBufferHeight;
-    const px = new Uint8Array(b * h * 4);
-    gl.readPixels(0, 0, b, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+  wandZahl: PLAN.floorplan.walls.length,
+  moebelZahl: (PLAN.floorplan.ausstattung || []).length,
+  raumZahl: szene.raeume.length,
+  breite: (szene.grenzen.x1 - szene.grenzen.x0) * 100,
+  tiefe: (szene.grenzen.z1 - szene.grenzen.z0) * 100,
+  blick: function(drehung, neigung){ axo.setzeBlick(drehung, neigung); },
+  farbtoene: function(){
+    const g = cv.getContext('2d');
+    const d = g.getImageData(0, 0, cv.width, cv.height).data;
     const toene = new Set();
-    for (let i = 0; i < px.length; i += 4 * 37) {
-      toene.add((px[i] >> 4) + ',' + (px[i + 1] >> 4) + ',' + (px[i + 2] >> 4));
+    for (let i = 0; i < d.length; i += 4 * 37) {
+      toene.add((d[i] >> 4) + ',' + (d[i+1] >> 4) + ',' + (d[i+2] >> 4));
     }
     return toene.size;
   }
 };
 window.__bereit = true;
-`
-
-// ------------------------------------------------------------------ HTML
-
-const html = `<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Halle 400 — Büroflächen, räumliches Modell</title>
-<style>
-  * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
-  body { display: flex; flex-direction: column; background: #eef2f6; color: #1d2733; }
-  header { padding: 14px 20px; background: #fff; border-bottom: 1px solid #d7dee6; }
-  h1 { margin: 0; font-size: 17px; font-weight: 600; }
-  #zahlen { margin-top: 3px; font-size: 13px; color: #5b6875; }
-  #buehne { flex: 1; min-height: 0; position: relative; }
-  #buehne canvas { display: block; touch-action: none; }
-  #leiste { position: absolute; left: 14px; bottom: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
-  button {
-    font: inherit; font-size: 14px; padding: 10px 15px; min-height: 44px;
-    border: 1px solid #c3ccd6; border-radius: 7px; background: rgba(255,255,255,.94);
-    cursor: pointer; color: #1d2733;
-  }
-  button:hover { background: #fff; border-color: #97a4b2; }
-  #hinweis {
-    position: absolute; right: 14px; bottom: 14px; max-width: 46ch;
-    font-size: 12px; line-height: 1.45; color: #5b6875;
-    background: rgba(255,255,255,.9); padding: 8px 11px; border-radius: 7px;
-  }
-  @media (max-width: 620px) { #hinweis { display: none; } }
-</style>
-</head>
-<body>
-<header>
-  <h1>Halle 400 — Büroflächen, räumliches Modell</h1>
-  <div id="zahlen">wird geladen …</div>
-</header>
-<div id="buehne">
-  <div id="leiste">
-    <button id="einpassen" type="button">Ganze Halle zeigen</button>
-    <button id="draufsicht" type="button">Draufsicht</button>
-  </div>
-  <div id="hinweis">
-    Ziehen dreht die Ansicht, Mausrad zoomt (am Handy zwei Finger).
-    Maße stammen aus dem Grundriss; die Wandhöhe von 3,00 m ist eine gesetzte
-    Annahme, da ein Grundriss keine Höhen enthält.
-  </div>
-</div>
-<script>
-${three}
-${betrachter.replace('__DATEN__', JSON.stringify(daten))}
+})();
 </script>
 </body>
 </html>
@@ -589,9 +383,11 @@ ${betrachter.replace('__DATEN__', JSON.stringify(daten))}
 
 fs.writeFileSync(ZIEL, html, 'utf8')
 
-const groesseMB = (fs.statSync(ZIEL).size / 1024 / 1024).toFixed(2)
+const kb = fs.statSync(ZIEL).size / 1024
 console.log(`Bank-Ansicht geschrieben: ${ZIEL}`)
-console.log(`  Groesse:      ${groesseMB} MB (eine Datei, keine Begleitdateien)`)
-console.log(`  Waende:       ${daten.walls.length}`)
-console.log(`  Ausstattung:  ${daten.ausstattung.length}`)
-console.log(`  Hoehen aus:   src/three/ausstattung.ts (${Object.keys(OBERKANTE_CM).length} Typen, gelesen statt abgeschrieben)`)
+console.log(`  Groesse:      ${kb.toFixed(0)} KB (eine Datei, keine Begleitdateien, kein three.js)`)
+console.log(`  Waende:       ${plan.floorplan.walls.length}`)
+console.log(`  Ausstattung:  ${(plan.floorplan.ausstattung || []).length}`)
+console.log(`  Namen:        ${(plan.labels || []).length}`)
+console.log(`  Module:       ${MODULE.join(', ')} (dieselben wie die Planer-Ansicht)`)
+console.log(`  Hoehen aus:   src/three/ausstattung.ts (${Object.keys(HOEHEN.oberkante).length} Typen, gelesen statt abgeschrieben)`)
