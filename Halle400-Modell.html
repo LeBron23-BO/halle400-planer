@@ -251,7 +251,15 @@
     .hinweis{display:block!important;position:fixed;left:0;right:0;bottom:0;
          max-width:none;padding:0 6mm;opacity:1;color:#1E2A25;
          font-size:8.5pt;letter-spacing:.06em;line-height:1.5}
-    .kopf{position:fixed;top:0;left:0;padding:4mm 6mm;max-width:none}
+    /* Der Blattkopf muss ENGER stehen als am Bildschirm. Auf A4 quer beginnt
+       die oberste Reihe der Raumnamen bei rund 133 px (der Zeichner rechnet
+       seinen oberen Rand aus der Silhouette, nicht aus diesem Kopf) — mit der
+       Bildschirm-Zeilenhoehe schob sich „3 Stück frei gesetzt" in „Empfang"
+       hinein. Am Ausdruck gemessen, nicht geschaetzt. */
+    .kopf{position:fixed;top:0;left:0;padding:3mm 6mm;max-width:none}
+    .kopf h1{font-size:15pt;margin:0 0 2px}
+    .kopf .strich{margin:5px 0 4px}
+    .kopf .sub,.kopf .gesetzt{font-size:7pt;line-height:1.45;margin-top:0}
     .kopf .gesetzt{color:#A33A2A}
     .nurDruck{display:block}
   }
@@ -4104,7 +4112,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "c8051b95fb22";
-const BAU_STEMPEL = "2026-07-26 20:09";
+const BAU_STEMPEL = "2026-07-26 20:22";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -12592,6 +12600,24 @@ function sichtbar(e){
   return !!(e.offsetWidth || e.offsetHeight || e.getClientRects().length);
 }
 
+/**
+ * IST DIESE ZEILE UEBERHAUPT GESETZT? — die zweite, engere Frage.
+ *
+ * Fuer die Zeilen des BLATTKOPFS taugt `sichtbar` nicht: sie liegen im Blatt,
+ * und das Blatt RUHT, solange der Grundriss vorn ist (`.ansicht.weg`). Ein Gate,
+ * das im Grundriss misst, bekaeme dann `null` und schloesse daraus, der Kopf
+ * schweige — waehrend er in Wahrheit vollstaendig dasteht, nur eben auf der
+ * anderen Ansicht.
+ *
+ * Gefragt wird deshalb nach der GERECHNETEN Darstellung des Elements selbst:
+ * `display:none` faengt das `hidden`-Attribut UND jede Medienabfrage (der
+ * eigentliche blinde Fleck des alten Masses), ohne von der ruhenden Ansicht
+ * abzuhaengen.
+ */
+function angezeigt(e){
+  return !!e && getComputedStyle(e).display !== 'none';
+}
+
 function bildmass(canvas){
   const g = canvas.getContext('2d');
   const d = g.getImageData(0, 0, canvas.width, canvas.height).data;
@@ -12624,7 +12650,7 @@ window.__planerDatei = {
      was der Speicher gerade tut. Alles lesend. */
   grundrissText: function(){
     const z = el('grundrissZaehler');
-    return sichtbar(z) ? z.textContent : null;
+    return angezeigt(z) ? z.textContent : null;
   },
   abweichung: function(){ return grundrissAbweichung(); },
   ungesichert: function(){ return ungesichert; },
@@ -12730,8 +12756,9 @@ window.__planerDatei = {
   setzeOeffnungsArt: function(a){ zeichner.setzeOeffnungsArt(a); },
   oeffnungText: function(){
     const z = el('oeffnungZaehler');
-    // Gemessen statt aus dem Attribut geraten (s. `sichtbar`).
-    return sichtbar(z) ? z.textContent : null;
+    // Gemessen statt geraten — und mit `angezeigt`, weil diese Zeile im
+    // ruhenden Blatt stehen darf (s. dort).
+    return angezeigt(z) ? z.textContent : null;
   },
   hinweisOeffnung: function(){ return el('hinweisOeffnung').textContent; },
   /* Der KILL-SCHALTER der Versoehnung — nur fuer die Gegenprobe des Gates.
@@ -12855,8 +12882,9 @@ window.__planerDatei = {
   axoNeuBauen: function(){ axoNeuBauen(); },
   gesetztText: function(){
     const z = el('gesetztZaehler');
-    // Gemessen statt aus dem Attribut geraten (s. `sichtbar`).
-    return sichtbar(z) ? z.textContent : null;
+    // Gemessen statt geraten — und mit `angezeigt`, weil diese Zeile im
+    // ruhenden Blatt stehen darf (s. dort).
+    return angezeigt(z) ? z.textContent : null;
   },
   hinweisHerkunft: function(){ return el('hinweisHerkunft').textContent; },
   aufBild: function(x, y){ return { x: zeichner.convertX(x), y: zeichner.convertY(y) }; },
