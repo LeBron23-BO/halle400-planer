@@ -18,9 +18,18 @@ const defaultWallTexture = {
  * Walls consists of two half edges.
  */
 export class Wall {
-  /** The unique id of each wall. */
-  // @ts-ignore - id is declared but not used, keeping for future use
-  private id: string
+  /**
+   * Kennung der Wand — DAUERHAFT und unabhängig von den Ecken (T3a-Fundament).
+   *
+   * Vorher war sie aus den beiden Ecken-Kennungen zusammengesetzt und stand
+   * nirgends im Speicherformat. Beides war für eine Tür tödlich: sie muss an
+   * IHRER Wand hängen bleiben, auch wenn die Wand gezogen wird (dann wechselt
+   * sie beim Verschmelzen ihre Ecke) und auch über ein Rückgängig hinweg (das
+   * lädt den Grundriss komplett neu, jedes Wand-Objekt ist danach ein neues).
+   * Eine aus den Ecken abgeleitete Kennung wäre bei jedem dieser Vorgänge eine
+   * andere gewesen — die Tür hinge an einer Wand, die es nicht mehr gibt.
+   */
+  public id: string
 
   /** Front is the plane from start to end. */
   public frontEdge: HalfEdge | null = null
@@ -62,16 +71,19 @@ export class Wall {
    * Constructs a new wall.
    * @param start Start corner.
    * @param end End corner.
+   * @param id Vorhandene Kennung aus einer Datei. Fehlt sie, entsteht eine neue
+   *           — eine FRISCH gezeichnete Wand hat noch keine Vergangenheit, an
+   *           die sich etwas binden könnte.
    */
-  constructor(private start: Corner, private end: Corner) {
-    this.id = this.getUuid()
+  constructor(
+    private start: Corner,
+    private end: Corner,
+    id?: string
+  ) {
+    this.id = id || Utils.guid()
 
     this.start.attachStart(this)
     this.end.attachEnd(this)
-  }
-
-  private getUuid(): string {
-    return [this.start.id, this.end.id].join()
   }
 
   public resetFrontBack() {

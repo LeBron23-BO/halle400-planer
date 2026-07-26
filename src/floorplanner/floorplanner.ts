@@ -1,5 +1,4 @@
 import { Floorplan } from '../model/floorplan'
-import type { AusstattungElement } from '../model/floorplan'
 import { Wall } from '../model/wall'
 import { Corner } from '../model/corner'
 import { FloorplannerView, floorplannerModes, AUSSTATTUNG_UMRISS_AB } from './floorplanner_view'
@@ -59,15 +58,19 @@ const LANGDRUCK_MS = 500
 const FINGER_WACKEL_PX = 10
 
 /**
- * Was gerade zum Löschen vorgeschlagen wird (E1). Bewusst die Objektreferenz
- * und nicht ein Index oder eine ID: zwischen Vorschlag und Bestätigung liegt
- * eine Rückfrage, und in dieser Zeit darf sich die Liste verschieben, ohne dass
- * am Ende das Falsche verschwindet.
+ * Was gerade zum Löschen vorgeschlagen wird (E1).
+ *
+ * Die Ausstattung hängt hier an ihrer KENNUNG, nicht mehr an der Objektreferenz:
+ * zwischen Vorschlag und Bestätigung darf ein Rückgängig liegen, und das lädt
+ * den Grundriss neu (`src/core/undo.ts`). Eine gemerkte Referenz zeigte danach
+ * auf ein Objekt, das in keiner Liste mehr steht — das Entfernen täte still
+ * nichts. Ecke und Wand bleiben vorerst Referenzen; sie tragen ihre eigene
+ * Lösch-Kaskade (`removeAll`/`remove`) und werden gesondert behandelt.
  */
 export type LoeschZiel =
   | { art: 'ecke'; ecke: Corner; beschreibung: string }
   | { art: 'wand'; wand: Wall; beschreibung: string }
-  | { art: 'ausstattung'; element: AusstattungElement; beschreibung: string }
+  | { art: 'ausstattung'; kennung: string; beschreibung: string }
 
 /** Deutsche Namen der Ausstattungs-Zeichen für die Rückfrage (E1). */
 const AUSSTATTUNG_NAME: Record<string, string> = {
@@ -233,8 +236,15 @@ export class Floorplanner {
   /** Was gerade zum Löschen vorgeschlagen ist — `null` heisst: keine Rückfrage. */
   public loeschKandidat: LoeschZiel | null = null
 
-  /** Was der Zeiger gerade überdeckt, auch ohne dass schon verweilt wurde. */
-  public activeAusstattung: AusstattungElement | null = null
+  /**
+   * KENNUNG des Ausstattungs-Zeichens, das der Zeiger gerade überdeckt — auch
+   * ohne dass schon verweilt wurde. `null` heisst: keines.
+   *
+   * Bewusst die Kennung und nicht das Objekt: ein Rückgängig baut die Liste neu
+   * auf, eine gehaltene Referenz wäre danach eine Leiche, und jede Handlung
+   * daran ginge still ins Leere.
+   */
+  public activeAusstattung: string | null = null
 
   /**
    * Die vorhandene Ecke, auf die der nächste Punkt gerade einrastet (E2), oder
@@ -309,11 +319,16 @@ export class Floorplanner {
     } else if (this.activeWall) {
       ziel = { art: 'wand', wand: this.activeWall, beschreibung: this.wandBeschreibung(this.activeWall) }
     } else if (this.activeAusstattung) {
-      const el = this.activeAusstattung
-      ziel = {
-        art: 'ausstattung',
-        element: el,
-        beschreibung: AUSSTATTUNG_NAME[el.typ] ?? el.typ
+      // Nachschlagen statt Merken: die Kennung ist beständig, das Objekt nicht.
+      // Findet sich nichts, ist das Stück inzwischen weg — dann gibt es auch
+      // nichts vorzuschlagen.
+      const el = this.floorplan.findeAusstattung(this.activeAusstattung)
+      if (el) {
+        ziel = {
+          art: 'ausstattung',
+          kennung: el.id,
+          beschreibung: AUSSTATTUNG_NAME[el.typ] ?? el.typ
+        }
       }
     }
 
@@ -377,7 +392,7 @@ export class Floorplanner {
       ziel.wand.remove()
       entfernt = true
     } else {
-      entfernt = this.floorplan.entferneAusstattung(ziel.element)
+      entfernt = this.floorplan.entferneAusstattung(ziel.kennung)
     }
 
     // Der Vorschlag ist verbraucht, und was gelöscht wurde, kann der Zeiger
@@ -649,38 +664,61 @@ export class Floorplanner {
     // Greifzone in Weltkoordinaten umrechnen, damit sie auf dem Bildschirm
     // bei jedem Zoom gleich gross bleibt (T7).
     const toleranz = GREIF_TOLERANZ_PX * this.cmPerPixel
-    const hoverCorner = this.floorplan.overlappedCorner(this.mouseX, this.mouseY, toleranz)
-    const hoverWall = this.floorplan.overlappedWall(this.mouseX, this.mouseY, toleranz)
+
+    // Ausstattung ist greifbar, solange sie auch GEZEICHNET wird (sonst liesse
+    // sich Unsichtbares anfassen) — und bisher nur im Löschen-Werkzeug. Das
+    // Ziehen im Verschieben-Werkzeug kommt in Welle 2; bis dahin wäre ein
+    // gegriffenes Möbel dort ein Griff, der nichts bewirkt, und würde nur das
+    // Schwenken der Ansicht blockieren.
+    const ausstattungGreifbar =
+      this.mode == floorplannerModes.DELETE && this.pixelProCm() >= AUSSTATTUNG_UMRISS_AB
+
+    // --- VORRANG: steht der Zeiger WIRKLICH auf einem Möbel? (Toleranz 0)
+    //
+    // Warum das die alte Reihenfolge (Ecke -> Wand -> Ausstattung) umdreht:
+    // die Greifzone von 8 BILDSCHIRM-Pixeln ist in Weltmaß nur bei starkem
+    // Zoom klein. In der Übersicht (78 m auf 1400 px) sind es 45 cm, am Handy
+    // über 60 cm — gegen die 289 gemessenen Stücke gerechnet greifen dort 18
+    // bis 28 % der Möbel die WAND statt sich selbst. Der Nutzer will den Stuhl
+    // anfassen und verschiebt gemessene Bausubstanz.
+    //
+    // Toleranz 0 ist der springende Punkt: der Vorrang gilt nur INNERHALB des
+    // (gedrehten) Möbel-Rechtecks. Wer knapp daneben zielt, trifft weiterhin
+    // zuerst Ecke und Wand — die Wand bleibt also unverändert gut greifbar,
+    // solange kein Möbel im Weg steht.
+    const drauf = ausstattungGreifbar
+      ? this.floorplan.overlappedAusstattung(this.mouseX, this.mouseY, 0)
+      : null
+
+    const hoverCorner = drauf
+      ? null
+      : this.floorplan.overlappedCorner(this.mouseX, this.mouseY, toleranz)
+    const hoverWall =
+      drauf || hoverCorner // corner takes precendence
+        ? null
+        : this.floorplan.overlappedWall(this.mouseX, this.mouseY, toleranz)
+    // Ausserhalb jedes Möbels gilt die alte Reihenfolge: erst Ecke, dann Wand,
+    // und die Ausstattung nur, wenn beides frei ist — dann aber mit der vollen
+    // Greifzone, damit ein Möbel auch knapp daneben noch anzufassen ist.
+    const hoverAusstattung = drauf
+      ? drauf
+      : ausstattungGreifbar && !hoverCorner && !hoverWall
+        ? this.floorplan.overlappedAusstattung(this.mouseX, this.mouseY, toleranz)
+        : null
 
     let draw = false
     if (hoverCorner != this.activeCorner) {
       this.activeCorner = hoverCorner
       draw = true
     }
-    // corner takes precendence
-    if (this.activeCorner == null) {
-      if (hoverWall != this.activeWall) {
-        this.activeWall = hoverWall
-        draw = true
-      }
-    } else {
-      this.activeWall = null
+    if (hoverWall != this.activeWall) {
+      this.activeWall = hoverWall
+      draw = true
     }
-
-    // Ausstattung greifen (E1) — nur im Löschen-Werkzeug und nur, solange sie
-    // auch GEZEICHNET wird (sonst liesse sich Unsichtbares löschen).
-    if (this.mode == floorplannerModes.DELETE) {
-      const sichtbar = this.pixelProCm() >= AUSSTATTUNG_UMRISS_AB
-      const hoverAusstattung =
-        sichtbar && this.activeCorner == null && this.activeWall == null
-          ? this.floorplan.overlappedAusstattung(this.mouseX, this.mouseY, toleranz)
-          : null
-      if (hoverAusstattung != this.activeAusstattung) {
-        this.activeAusstattung = hoverAusstattung
-        draw = true
-      }
-    } else if (this.activeAusstattung != null) {
-      this.activeAusstattung = null
+    // Gemerkt wird die KENNUNG, nicht das Objekt (siehe `activeAusstattung`).
+    const kennung = hoverAusstattung ? hoverAusstattung.id : null
+    if (kennung != this.activeAusstattung) {
+      this.activeAusstattung = kennung
       draw = true
     }
 
@@ -731,7 +769,15 @@ export class Floorplanner {
     }
 
     // panning
-    if (this.mouseDown && !this.activeCorner && !this.activeWall) {
+    //
+    // `!this.activeAusstattung` gehört zwingend dazu, sobald ein Möbel gezogen
+    // werden kann (Welle 2): sonst wanderte das Möbel UND der Plan unter ihm
+    // gleich mit — der Zeiger führte zwei Bewegungen auf einmal aus, und das
+    // Stück landete nie dort, wo man es hinzieht. Heute ist die Bedingung noch
+    // wirkungslos (die Ausstattung ist nur im Löschen-Werkzeug greifbar), aber
+    // sie hier erst mit dem Ziehen nachzureichen hiesse, den Fehler zuerst zu
+    // bauen.
+    if (this.mouseDown && !this.activeCorner && !this.activeWall && !this.activeAusstattung) {
       this.originX += this.lastX - this.rawMouseX
       this.originY += this.lastY - this.rawMouseY
       this.lastX = this.rawMouseX
@@ -1074,6 +1120,14 @@ export class Floorplanner {
   /** Resets the view - centers and resizes the floorplan */
   public reset(): void {
     this.resizeView()
+    // Was der Zeiger überdeckte, gibt es so nicht mehr: `reset()` hängt an
+    // `roomLoadedCallbacks`, läuft also nach JEDEM Laden — und nach einem
+    // Rückgängig sind Ecken und Wände neue Objekte. `activeCorner`/`activeWall`
+    // zeigten sonst auf entfernte Vorgänger, und der nächste Zug bewegte einen
+    // Geist: sichtbar passiert nichts, gemeldet wird auch nichts.
+    // (`activeAusstattung` und der Löschvorschlag räumt `setMode` gleich mit.)
+    this.activeCorner = null
+    this.activeWall = null
     this.setMode(floorplannerModes.MOVE)
     // Beim Oeffnen den ganzen Grundriss zeigen statt eines mittigen
     // Ausschnitts im Ausgangsmassstab (T7).

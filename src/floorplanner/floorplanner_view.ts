@@ -62,6 +62,16 @@ const ausstattungGruen = '#cfdcc8' // Bepflanzung
 const ausstattungLinienBreite = 1
 
 /**
+ * Strichelung für GESETZTE Ausstattung (Herkunft `'gesetzt'`) — 4 px Strich,
+ * 3 px Lücke, in BILDSCHIRM-Pixeln wie die Linienbreite selbst. Die Zahlen sind
+ * die kleinsten, bei denen die Lücke bei 1 px Linienbreite noch als Lücke zu
+ * sehen ist; grösser gewählt löste sich der Umriss eines 40-cm-Stuhls auf.
+ * Gestrichelt heisst in jeder Bauzeichnung „nicht gesichert" — genau das ist
+ * gemeint: hier steht eine Annahme, kein Aufmaß aus der PDF.
+ */
+const GESETZT_STRICH = [4, 3]
+
+/**
  * Ab wann die Ausstattung DETAILS zeigt (Treppenstufen, Kochfeld-Platten,
  * Stuhl-Lehnen) und ab wann nur noch ihren Umriss. Beides sind Schwellen in
  * BILDSCHIRM-Pixeln pro cm, nicht in Weltmaß — dieselbe Lehre wie bei den
@@ -308,17 +318,30 @@ export class FloorplannerView {
     const detail = proCm >= AUSSTATTUNG_DETAIL_AB
     const kandidat =
       this.viewmodel.loeschKandidat?.art === 'ausstattung'
-        ? this.viewmodel.loeschKandidat.element
+        ? this.viewmodel.loeschKandidat.kennung
         : null
     this.floorplan.getAusstattung().forEach((el) => {
+      // GESETZT wird gestrichelt gezeichnet, GEMESSEN durchgezogen (Projekt-DNA:
+      // die PDF ist die Grundwahrheit). Ein frei hingestelltes Stück sieht sonst
+      // aus wie ein Aufmaß — und dann liest die Bank eine Annahme als Messung.
+      // Der Strich sitzt hier am Aufruf und nicht in `zeichneAusstattung`: die
+      // hat elf Zweige mit eigenem `return`, das Zurücksetzen wäre dort in
+      // jedem einzelnen zu wiederholen und beim zwölften vergessen.
+      const gesetzt = el.quelle === 'gesetzt'
+      if (gesetzt) {
+        this.context.setLineDash(GESETZT_STRICH)
+      }
       this.zeichneAusstattung(el, detail)
+      if (gesetzt) {
+        this.context.setLineDash([])
+      }
       // Markierung NACH dem Zeichen, damit sie darüber liegt — und bewusst als
       // Rahmen um den Umriss statt als Farbwechsel in jeder der elf
       // Zeichenvorschriften: eine Stelle, die für jede Signatur gilt, kann
       // nicht bei der zwölften vergessen werden.
-      if (el === kandidat) {
+      if (el.id === kandidat) {
         this.markiereAusstattung(el, true)
-      } else if (el === this.viewmodel.activeAusstattung) {
+      } else if (el.id === this.viewmodel.activeAusstattung) {
         this.markiereAusstattung(el, false)
       }
     })

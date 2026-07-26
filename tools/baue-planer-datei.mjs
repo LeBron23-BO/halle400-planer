@@ -532,7 +532,20 @@ function bemerkeAenderung(){
 
 grundriss.fireOnUpdatedRooms(bemerkeAenderung);
 
-grundriss.loadFloorplan(abschrift(start ? start.floorplan : PLAN.floorplan));
+/* Der eigene Stand kann aus einer NEUEREN Fassung stammen (jemand hat eine
+   aeltere Kopie dieser Datei geoeffnet). Der Kern lehnt ihn dann ab — was hier
+   keine weisse Seite ergeben darf: lieber der gemessene Plan und eine ehrliche
+   Meldung. Der Stand bleibt liegen, damit die neuere Kopie ihn wiederfindet. */
+let standFehler = null;
+try {
+  grundriss.loadFloorplan(abschrift(start ? start.floorplan : PLAN.floorplan));
+} catch (e) {
+  standFehler = (e && e.message) ? e.message : String(e);
+  start = null;
+  gesichertAm = null;
+  labels = PLAN.labels || [];
+  grundriss.loadFloorplan(abschrift(PLAN.floorplan));
+}
 letzterStand = JSON.stringify(grundriss.saveFloorplan());
 
 const zeichner = new Floorplanner('grundriss-canvas', grundriss);
@@ -794,6 +807,15 @@ function pruefePlan(roh){
   if (!fp || typeof fp !== 'object' || !fp.corners || typeof fp.corners !== 'object' || !Array.isArray(fp.walls)) {
     return { fehler: 'Diese Datei ist kein Grundriss — es fehlen „corners“ und „walls“.' };
   }
+  /* Eine Datei aus einer NEUEREN Fassung wird abgelehnt, nicht halb geoeffnet:
+     sie traegt Felder, die dieser Stand nicht kennt (etwa Tueren an einer Wand),
+     und beim naechsten Sichern waeren sie still verschwunden. Der Kern wuerfe
+     hier ohnehin — die Meldung ist nur hier lesbar. */
+  const fassung = fp.formatVersion || 1;
+  if (fassung > PLAN_FASSUNG) {
+    return { fehler: 'Diese Datei stammt aus einer neueren Fassung des Planers (Format ' +
+      fassung + ', hier: ' + PLAN_FASSUNG + '). Sie wird nicht geöffnet, damit keine Angaben still verloren gehen.' };
+  }
   const eckenZahl = Object.keys(fp.corners).length;
   if (eckenZahl === 0 || fp.walls.length === 0) {
     return { fehler: 'Dieser Grundriss ist leer (' + eckenZahl + ' Ecken, ' + fp.walls.length + ' Wände).' };
@@ -957,6 +979,10 @@ markiere('[data-blick]', startBlick);
 markiere('[data-namen]', namenModus);
 
 standZeigen();
+
+/* Ein abgelehnter eigener Stand wird GESAGT — still den gemessenen Plan zu
+   zeigen sähe aus, als wäre die Arbeit verloren. */
+if (standFehler) meldung(standFehler, true);
 
 if (standFragt) {
   const d = standFragt.gesichertAm ? new Date(standFragt.gesichertAm) : null;

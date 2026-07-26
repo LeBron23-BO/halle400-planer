@@ -33,12 +33,35 @@ export type AusstattungTyp =
   | 'flaeche' // gefüllte Fläche — Loggia, Kiesbett
 
 /**
- * EIN Ausstattungs-Zeichen, GEMESSEN aus `Nur Büro.pdf` (Projekt-DNA: die PDF
- * ist die Grundwahrheit). Koordinaten in cm im selben Bezugsrahmen wie
+ * Woher ein Ausstattungs-Zeichen kommt — das WICHTIGSTE Feld dieser Struktur.
+ *
+ * Die PDF ist die alleinige Grundwahrheit (Projekt-DNA, oberstes Prinzip). Ein
+ * frei hingestelltes oder verschobenes Stück ist KEIN Aufmaß, sieht aber im
+ * Bild genauso aus wie eines. Ohne dieses Feld könnte die Bank ein gezogenes
+ * Blatt für eine Messung halten — genau der Fehler, den das ganze Vorhaben
+ * nicht machen darf. Darum Pflichtfeld und nicht `optional`: wer ein Stück
+ * erzeugt, MUSS sich entscheiden, was es ist.
+ */
+export type AusstattungQuelle =
+  | 'gemessen' // aus `Nur Büro.pdf` abgegriffen, mit `beleg`
+  | 'gesetzt' // vom Nutzer hingestellt oder verschoben — eine Annahme, kein Maß
+
+/**
+ * EIN Ausstattungs-Zeichen. Koordinaten in cm im selben Bezugsrahmen wie
  * `corners` — dadurch wandert die Ausstattung beim Zoomen automatisch mit der
  * Bausubstanz mit und kann nie gegen sie verrutschen.
  */
 export type AusstattungElement = {
+  /**
+   * Dauerhafte Kennung. Pflichtfeld, weil jede Handlung am Möbel sie braucht:
+   * ein Rückgängig lädt den Grundriss komplett neu (`src/core/undo.ts`), danach
+   * ist JEDES Element ein neues Objekt. Wer sich eine Objektreferenz gemerkt
+   * hat — der Löschvorschlag, das gerade gezogene Stück — hielte danach eine
+   * Leiche in der Hand, und Löschen/Verschieben täte still nichts.
+   */
+  id: string
+  /** Aufmaß oder Annahme? Siehe `AusstattungQuelle`. */
+  quelle: AusstattungQuelle
   typ: AusstattungTyp
   /** Mittelpunkt in cm. */
   x: number
@@ -58,9 +81,42 @@ export type AusstattungElement = {
   text?: string
 }
 
+/**
+ * So darf ein Ausstattungs-Zeichen in einer DATEI liegen: Kennung und Herkunft
+ * dürfen fehlen. `app/public/plaene/halle400.json` ist genau so eine Datei —
+ * 289 gemessene Stücke ohne Kennung, geschrieben von `tools/export_blueprint.py`,
+ * und die ist die Grundwahrheit und wird nicht angefasst. Beim Laden werden
+ * beide Felder ergänzt (siehe `loadFloorplan`), im Speicher gibt es sie danach
+ * immer.
+ */
+export type GespeichertesAusstattungElement = Omit<AusstattungElement, 'id' | 'quelle'> & {
+  id?: string
+  quelle?: AusstattungQuelle
+}
+
+/**
+ * Fassung des Speicherformats. Erhöhen, sobald ein Feld dazukommt, auf das sich
+ * etwas VERLÄSST — nicht bei jeder Kleinigkeit.
+ *
+ *   1  bis W1: Ecken, Wände (nur über ihre Ecken), Texturen, roomMeta,
+ *      Ausstattung ohne Kennung
+ *   2  ab W2-Fundament: Wände und Ausstattung tragen `id`, Ausstattung `quelle`
+ *
+ * WOZU: eine Datei aus einer NEUEREN Fassung enthält Felder, die dieser Planer
+ * nicht kennt. Er würde sie klaglos öffnen und beim nächsten Sichern still
+ * wegwerfen — der Nutzer verlöre seine Türen und merkte es erst Wochen später.
+ * Lieber ehrlich ablehnen (siehe `loadFloorplan`).
+ */
+export const PLAN_FASSUNG = 2
+
 export interface SavedFloorplan {
+  /** Fassung des Formats; fehlt in allen Dateien bis W1 und heisst dann 1. */
+  formatVersion?: number
   corners: Record<string, { x: number; y: number }>
   walls: Array<{
+    /** Dauerhafte Kennung der Wand. Fehlt in Dateien bis W1 — dann wird sie
+     *  beim Laden stabil vergeben. Woran eine Tür sich bindet (T3a). */
+    id?: string
     corner1: string
     corner2: string
     frontTexture?: WallTexture
@@ -71,8 +127,51 @@ export interface SavedFloorplan {
   newFloorTextures?: Record<string, FloorTexture>
   /** User room/label names keyed by a stable label key (see app/lib/roomNaming). */
   roomMeta?: Record<string, RoomMeta>
-  /** Aus der PDF gemessene Ausstattungs-Zeichen (A1). */
-  ausstattung?: AusstattungElement[]
+  /** Ausstattungs-Zeichen (A1) — gemessene wie gesetzte. */
+  ausstattung?: GespeichertesAusstattungElement[]
+}
+
+/**
+ * Sorgt dafür, dass eine Kennung im Grundriss nur EINMAL vorkommt.
+ *
+ * Nötig, weil die Kennungen fehlender Angaben aus dem INHALT abgeleitet werden
+ * (siehe unten) und zwei gleiche Stühle an derselben Stelle denselben Vorschlag
+ * ergäben. Der Zusatz ist zählend und nicht zufällig, damit die Ableitung
+ * wiederholbar bleibt: dieselbe Datei ergibt dieselben Kennungen.
+ */
+function eindeutigeKennung(vorschlag: string, vergeben: Set<string>): string {
+  let kennung = vorschlag
+  let n = 2
+  while (vergeben.has(kennung)) {
+    kennung = `${vorschlag}#${n}`
+    n++
+  }
+  vergeben.add(kennung)
+  return kennung
+}
+
+/**
+ * Kennung für ein Ausstattungs-Zeichen ohne eigene — aus dem INHALT abgeleitet,
+ * nicht aus einem Zufallswert und nicht aus der Position in der Liste.
+ *
+ * WARUM NICHT `Utils.guid()`: dieselbe Datei ergäbe bei jedem Öffnen andere
+ * Kennungen. Alles, was sich daran bindet (ein Löschvorschlag, später eine
+ * Tür), zeigte nach einem Neustart ins Leere. WARUM NICHT der Listen-Index:
+ * käme in der PDF-Auswertung ein Stück hinzu, verschöbe sich jede folgende
+ * Kennung — dasselbe Möbel hiesse dann anders. Ort und Art verschieben sich
+ * nicht. (Ecken bekommen ihre Kennung genauso aus der Datei statt neu erzeugt,
+ * siehe `newCorner`.)
+ */
+function kennungAusAusstattung(el: GespeichertesAusstattungElement): string {
+  return `a-${el.typ}-${Math.round(el.x)}-${Math.round(el.y)}`
+}
+
+/** Kennung für eine Wand ohne eigene — aus dem Eckenpaar, das sie beim Laden
+ *  verbindet. Ab dann bleibt sie fest, auch wenn die Wand später an anderen
+ *  Ecken hängt: genau darum geht es. Die ersten acht Zeichen der Ecken-UUIDs
+ *  reichen zur Unterscheidung; auf Gleichheit prüft `eindeutigeKennung`. */
+function kennungAusWand(corner1: string, corner2: string): string {
+  return `w-${corner1.slice(0, 8)}-${corner2.slice(0, 8)}`
 }
 
 /** */
@@ -194,10 +293,11 @@ export class Floorplan {
    * Creates a new wall.
    * @param start The start corner.
    * @param end he end corner.
+   * @param id Vorhandene Kennung (nur beim Laden), sonst entsteht eine neue.
    * @returns The new wall.
    */
-  public newWall(start: Corner, end: Corner): Wall {
-    const wall = new Wall(start, end)
+  public newWall(start: Corner, end: Corner, id?: string): Wall {
+    const wall = new Wall(start, end, id)
     this.walls.push(wall)
     const scope = this
     wall.fireOnDelete(() => {
@@ -279,6 +379,7 @@ export class Floorplan {
 
   public saveFloorplan(): SavedFloorplan {
     const floorplan: SavedFloorplan = {
+      formatVersion: PLAN_FASSUNG,
       corners: {},
       walls: [],
       wallTextures: [],
@@ -297,6 +398,10 @@ export class Floorplan {
 
     this.walls.forEach((wall) => {
       floorplan.walls.push({
+        // Die Kennung MUSS mitgeschrieben werden, sonst nützt sie nichts: das
+        // Rückgängig fährt über genau diesen Weg (saveFloorplan -> JSON ->
+        // loadFloorplan), und was hier fehlt, ist danach für immer weg.
+        id: wall.id,
         corner1: wall.getStart().id,
         corner2: wall.getEnd().id,
         frontTexture: wall.frontTexture,
@@ -310,6 +415,19 @@ export class Floorplan {
   }
 
   public loadFloorplan(floorplan: SavedFloorplan | null): void {
+    // VOR dem reset() prüfen: eine abgelehnte Datei darf den Grundriss, der
+    // gerade offen ist, nicht mitreissen. Wer eine Datei aus einer neueren
+    // Fassung öffnet, soll seinen Stand behalten und eine Erklärung bekommen.
+    const fassung = floorplan?.formatVersion ?? 1
+    if (fassung > PLAN_FASSUNG) {
+      throw new Error(
+        `Dieser Grundriss stammt aus einer neueren Fassung des Planers ` +
+          `(Format ${fassung}, dieser Planer kennt ${PLAN_FASSUNG}). Er wird ` +
+          `nicht geöffnet, weil dabei Angaben still verloren gingen — etwa ` +
+          `Türen, die an einer Wand hängen. Bitte den Planer aktualisieren.`
+      )
+    }
+
     this.reset()
 
     const corners: Record<string, Corner> = {}
@@ -321,6 +439,9 @@ export class Floorplan {
       corners[id] = this.newCorner(corner.x, corner.y, id)
     }
     const scope = this
+    // Vergebene Kennungen für Wände und Ausstattung getrennt: sie leben in
+    // getrennten Listen, und eine Wand namens wie ein Stuhl stört niemanden.
+    const wandKennungen = new Set<string>()
     floorplan.walls.forEach((wall) => {
       // Eine Wand, deren Ecke im Plan fehlt, ueberspringen statt daran zu
       // zerbrechen: `new Wall(undefined, …)` warf einen TypeError und liess die
@@ -334,7 +455,11 @@ export class Floorplan {
         )
         return
       }
-      const newWall = scope.newWall(corners[wall.corner1], corners[wall.corner2])
+      const kennung = eindeutigeKennung(
+        wall.id || kennungAusWand(wall.corner1, wall.corner2),
+        wandKennungen
+      )
+      const newWall = scope.newWall(corners[wall.corner1], corners[wall.corner2], kennung)
       if (wall.frontTexture) {
         newWall.frontTexture = wall.frontTexture
       }
@@ -347,7 +472,7 @@ export class Floorplan {
       this.floorTextures = floorplan.newFloorTextures
     }
     this.roomMeta = floorplan.roomMeta ?? {}
-    this.ausstattung = floorplan.ausstattung ?? []
+    this.ausstattung = this.uebernehmeAusstattung(floorplan.ausstattung ?? [])
 
     this.update()
     this.roomLoadedCallbacks.fire()
@@ -378,13 +503,48 @@ export class Floorplan {
     return this.ausstattung
   }
 
+  /** EIN Stück über seine Kennung — der einzige zulässige Weg, eines
+   *  wiederzufinden. Über eine gemerkte Objektreferenz geht es NICHT: nach
+   *  einem Rückgängig ist die Liste komplett neu aufgebaut. */
+  public findeAusstattung(id: string): AusstattungElement | null {
+    return this.ausstattung.find((el) => el.id === id) ?? null
+  }
+
   /**
-   * Ersetzt die Ausstattung vollständig. Bewusst KEIN Einzel-Setter: die
-   * Ausstattung ist eine zusammenhängende Messung aus der PDF, kein vom Nutzer
-   * Stück für Stück gepflegter Bestand.
+   * Ersetzt die Ausstattung vollständig und ergänzt fehlende Kennungen.
+   *
+   * FRÜHER STAND HIER, die Ausstattung sei „eine zusammenhängende Messung aus
+   * der PDF, kein vom Nutzer Stück für Stück gepflegter Bestand" — als
+   * Begründung dafür, dass es keinen Einzel-Setter gibt. Diese Begründung ist
+   * überholt, seit der Nutzer Möbel verschieben darf. Sie stehen zu lassen
+   * hiesse, eine widerlegte Regel als Wahrheit im Code zu führen.
+   *
+   * Was BLEIBT, ist der wahre Kern: die gemessenen Stücke sind Grundwahrheit
+   * aus der PDF und tragen `quelle: 'gemessen'`. Was der Nutzer anfasst, wird
+   * `'gesetzt'` und ist ab dann eine Annahme — sichtbar getrennt, damit nie
+   * eine Annahme als Aufmaß durchgeht.
    */
-  public setAusstattung(elemente: AusstattungElement[]): void {
-    this.ausstattung = elemente
+  public setAusstattung(elemente: GespeichertesAusstattungElement[]): void {
+    this.ausstattung = this.uebernehmeAusstattung(elemente)
+  }
+
+  /**
+   * Macht aus dem, was in einer Datei stand, vollständige Elemente: jede fehlende
+   * Kennung wird stabil vergeben, jede fehlende Herkunft ist `'gemessen'`.
+   *
+   * Warum 'gemessen' der Standard ist: Dateien ohne dieses Feld stammen aus der
+   * Zeit VOR dieser Welle. Damals konnte der Nutzer nichts hinstellen — alles,
+   * was darin steht, kommt aus `tools/export_blueprint.py` und damit aus der PDF.
+   */
+  private uebernehmeAusstattung(
+    elemente: GespeichertesAusstattungElement[]
+  ): AusstattungElement[] {
+    const vergeben = new Set<string>()
+    return elemente.map((el) => ({
+      ...el,
+      id: eindeutigeKennung(el.id || kennungAusAusstattung(el), vergeben),
+      quelle: el.quelle ?? 'gemessen'
+    }))
   }
 
   /**
@@ -410,7 +570,11 @@ export class Floorplan {
     y: number,
     tolerance?: number
   ): AusstattungElement | null {
-    const toleranz = tolerance || defaultFloorPlanTolerance
+    // `??` und nicht `||`: die Greif-Vorrangkette fragt mit Toleranz 0 („steht
+    // der Zeiger WIRKLICH auf dem Möbel?"), und `0 || 10` wären stillschweigend
+    // 10 cm gewesen — die Vorrangkette hätte nie gegriffen, ohne dass irgendwo
+    // etwas rot geworden wäre.
+    const toleranz = tolerance ?? defaultFloorPlanTolerance
     let treffer: AusstattungElement | null = null
     let kleinsteFlaeche = Infinity
 
@@ -440,21 +604,48 @@ export class Floorplan {
   }
 
   /**
-   * Entfernt EIN Ausstattungs-Zeichen (E1). Bewusst über die Objektreferenz
-   * und nicht über einen Index: zwischen dem Zeigen der Rückfrage und dem
-   * Bestätigen liegt Zeit, in der sich die Liste verschoben haben kann — ein
-   * gemerkter Index würde dann das falsche Möbel löschen.
+   * Entfernt EIN Ausstattungs-Zeichen (E1) über seine KENNUNG.
+   *
+   * Vorher lief das über die Objektreferenz, mit der Begründung, ein gemerkter
+   * Index könne zwischen Rückfrage und Bestätigung veralten. Das stimmt — die
+   * Referenz veraltet aber genauso, nur unauffälliger: `undo.apply()` lädt den
+   * Grundriss neu, und danach ist JEDES Element ein neues Objekt. Ein
+   * Löschvorschlag, der ein Rückgängig überlebt, träfe dann auf `indexOf() < 0`
+   * und täte still gar nichts. Über die Kennung greift er weiterhin.
    *
    * Die PDF bleibt Grundwahrheit: gelöscht wird die ANZEIGE des Nutzers,
    * neu geladen steht wieder alles da. Rückgabe meldet, ob wirklich etwas
    * entfernt wurde (VERIFIED-EFFECT statt stillem No-Op).
    */
-  public entferneAusstattung(element: AusstattungElement): boolean {
-    const index = this.ausstattung.indexOf(element)
+  public entferneAusstattung(id: string): boolean {
+    const index = this.ausstattung.findIndex((el) => el.id === id)
     if (index < 0) {
       return false
     }
     this.ausstattung.splice(index, 1)
+    return true
+  }
+
+  /**
+   * Verschiebt EIN Ausstattungs-Zeichen an einen neuen Mittelpunkt (cm) — und
+   * macht es dabei zu `'gesetzt'`.
+   *
+   * Der Herkunfts-Wechsel ist hier fest verdrahtet und NICHT dem Aufrufer
+   * überlassen: ein gemessenes Stück, das man wegschiebt, steht nicht mehr da,
+   * wo es gemessen wurde. Es weiter als Aufmaß zu führen wäre die eine Lüge,
+   * die dieses Projekt sich nicht leisten kann. Der `beleg` bleibt erhalten —
+   * er sagt, woher das Stück ursprünglich kam, und ist damit die Spur zurück.
+   *
+   * Rückgabe meldet, ob wirklich etwas bewegt wurde.
+   */
+  public verschiebeAusstattung(id: string, x: number, y: number): boolean {
+    const el = this.findeAusstattung(id)
+    if (!el) {
+      return false
+    }
+    el.x = x
+    el.y = y
+    el.quelle = 'gesetzt'
     return true
   }
 
