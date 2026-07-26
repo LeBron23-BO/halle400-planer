@@ -1115,6 +1115,7 @@ window.__planerDatei = {
     return c ? { id: c.id, x: c.x, y: c.y, bx: zeichner.convertX(c.x), by: zeichner.convertY(c.y) } : null;
   },
   werkzeug: function(){ return zeichner.mode; },
+  setzeWerkzeug: function(m){ zeichner.setMode(m); },
   /* --- Moebelziehen (W2). Bewusst dieselben Angaben wie im Planer, damit ein
      Gate beide Welten mit DEMSELBEN Code messen kann: was hier anders hiesse,
      waere ein zweiter Massstab und damit kein Vergleich mehr. */
