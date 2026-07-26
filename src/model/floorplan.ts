@@ -328,6 +328,13 @@ export interface SavedFloorplan {
   roomMeta?: Record<string, RoomMeta>
   /** Ausstattungs-Zeichen (A1) — gemessene wie gesetzte. */
   ausstattung?: GespeichertesAusstattungElement[]
+  /**
+   * Türen, Fenster und Durchgänge (W4). Bewusst auf DERSELBEN Achse wie
+   * `ausstattung` — dadurch erben sie Speichern, Laden, Rückgängig, den
+   * Datei-Export und die Axonometrie-Szene ohne eine weitere Zeile. Das ist der
+   * ganze Architektur-Hebel dieser Welle.
+   */
+  oeffnungen?: GespeicherteOeffnung[]
 }
 
 /**
@@ -363,6 +370,16 @@ function eindeutigeKennung(vorschlag: string, vergeben: Set<string>): string {
  */
 function kennungAusAusstattung(el: GespeichertesAusstattungElement): string {
   return `a-${el.typ}-${Math.round(el.x)}-${Math.round(el.y)}`
+}
+
+/**
+ * Kennung für eine Öffnung ohne eigene — aus Wand, Lage und Art abgeleitet,
+ * aus demselben Grund wie bei `kennungAusAusstattung`: dieselbe Datei muss
+ * dieselben Kennungen ergeben, sonst zeigt nach einem Neustart alles ins Leere,
+ * was sich daran gebunden hat.
+ */
+function kennungAusOeffnung(o: { wandId: string; lage: number; art: string }): string {
+  return `o-${o.art}-${o.wandId.slice(0, 8)}-${Math.round(o.lage)}`
 }
 
 /** Kennung für eine Wand ohne eigene — aus dem Eckenpaar, das sie beim Laden
@@ -428,6 +445,27 @@ export class Floorplan {
    * eigene, daneben laufende Ablage wäre beim ersten Strg+Z verschwunden.
    */
   private ausstattung: AusstattungElement[] = []
+
+  /**
+   * Türen, Fenster und Durchgänge (W4) — auf DERSELBEN Achse wie `ausstattung`
+   * und aus demselben Grund: sie erben damit die erprobte Speicher-/Lade-Mechanik
+   * und überstehen das Rückgängig, das seine Momentaufnahmen über
+   * `saveFloorplan`/`loadFloorplan` zieht.
+   */
+  private oeffnungen: Oeffnung[] = []
+
+  /**
+   * Läuft die Versöhnung? NUR für die Gegenprobe des Gates abschaltbar
+   * (`tools/pruefe-tueren.mjs`, Schritt d).
+   *
+   * Ein Wächter, der nie rot wird, ist kein Wächter: die Prüfung „nach dem
+   * Teilen einer Wand liegt die Öffnung auf der richtigen Hälfte" beweist nur
+   * dann etwas, wenn dieselbe Prüfung OHNE Versöhnung nachweislich fehlschlägt.
+   * Genau diese Art Gegenprobe hat in W3 eine halb verdrahtete Typ-Kette
+   * gefangen. Im Auslieferungszustand steht der Schalter auf `true` und wird
+   * von keiner Oberfläche angefasst.
+   */
+  public versoehnungAn = true
 
   /** Constructs a floorplan. */
   constructor() {}
@@ -610,6 +648,7 @@ export class Floorplan {
     floorplan.newFloorTextures = this.floorTextures
     floorplan.roomMeta = this.roomMeta
     floorplan.ausstattung = this.ausstattung
+    floorplan.oeffnungen = this.oeffnungen
     return floorplan
   }
 
@@ -672,6 +711,12 @@ export class Floorplan {
     }
     this.roomMeta = floorplan.roomMeta ?? {}
     this.ausstattung = this.uebernehmeAusstattung(floorplan.ausstattung ?? [])
+    // ERST HIER, nachdem ALLE Wände stehen: `newWall` ruft `update()` und damit
+    // die Versöhnung. Wären die Öffnungen schon vorher gesetzt, prüfte die
+    // Versöhnung sie gegen einen halb aufgebauten Grundriss und schriebe sie auf
+    // die falsche Wand um — oder erklärte sie für verwaist, weil ihre Wand erst
+    // drei Zeilen später entsteht. `reset()` hat die alte Liste geleert.
+    this.oeffnungen = this.uebernehmeOeffnungen(floorplan.oeffnungen ?? [])
 
     this.update()
     this.roomLoadedCallbacks.fire()
@@ -924,6 +969,395 @@ export class Floorplan {
     return this.ausstattung.filter((el) => el.quelle === 'gesetzt').length
   }
 
+  /* ═══════════════════════════════════════════════════════════════════════
+     ÖFFNUNGEN (W4) — Türen, Fenster, Durchgänge
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  /** Alle Öffnungen — Lesezugriff für Zeichner, Axonometrie und Prüfwerkzeuge. */
+  public getOeffnungen(): Oeffnung[] {
+    return this.oeffnungen
+  }
+
+  /** EINE Öffnung über ihre Kennung — der einzige zulässige Weg. */
+  public findeOeffnung(id: string): Oeffnung | null {
+    return this.oeffnungen.find((o) => o.id === id) ?? null
+  }
+
+  /** Die Wand einer Öffnung, oder `null` wenn es sie nicht mehr gibt. */
+  public findeWand(wandId: string): Wall | null {
+    return this.walls.find((w) => w.id === wandId) ?? null
+  }
+
+  /** Wie viele Öffnungen der Nutzer gesetzt hat — die Zahl für den Blattkopf. */
+  public zaehleOeffnungen(): number {
+    return this.oeffnungen.length
+  }
+
+  /** Wie viele davon ihre Wand verloren haben. Getrennt gezählt, weil die
+   *  Leiste beides sagen muss: „3 Öffnungen, davon 1 ohne Wand". */
+  public zaehleVerwaiste(): number {
+    return this.oeffnungen.filter((o) => o.verwaist).length
+  }
+
+  /**
+   * Weltgeometrie einer Öffnung: Mitte, Richtung, Normale, Wandmaße — alles,
+   * was Zeichner, Treffer-Prüfung und Axonometrie brauchen.
+   *
+   * AN EINER STELLE, nicht dreimal: die Rechnung „Startecke plus `lage` mal
+   * Richtungsvektor" ist trivial und genau deshalb gefährlich — dreimal
+   * geschrieben liefe sie beim ersten Vorzeichenwechsel auseinander, und das
+   * Bild zeigte dann eine Tür, die das Modell woanders führt.
+   *
+   * `null`, wenn die Wand fehlt: eine verwaiste Öffnung hat keine Geometrie und
+   * wird nirgends gezeichnet.
+   */
+  public oeffnungsGeometrie(o: Oeffnung): {
+    mx: number
+    my: number
+    ex: number
+    ey: number
+    nx: number
+    ny: number
+    dicke: number
+    wandLaenge: number
+  } | null {
+    const wand = this.findeWand(o.wandId)
+    if (!wand) {
+      return null
+    }
+    const ax = wand.getStartX()
+    const ay = wand.getStartY()
+    const dx = wand.getEndX() - ax
+    const dy = wand.getEndY() - ay
+    const laenge = Math.hypot(dx, dy)
+    if (laenge < 1e-6) {
+      return null
+    }
+    const ex = dx / laenge
+    const ey = dy / laenge
+    return {
+      mx: ax + ex * o.lage,
+      my: ay + ey * o.lage,
+      ex,
+      ey,
+      // Linke Normale zur Richtung Start->Ende. Ihr Vorzeichen ist die
+      // Bedeutung von `seite` — beides muss dieselbe Konvention benutzen.
+      nx: -ey,
+      ny: ex,
+      dicke: wand.thickness,
+      wandLaenge: laenge
+    }
+  }
+
+  /**
+   * Welche Öffnung liegt unter diesem Punkt? Gegenstück zu
+   * `overlappedAusstattung`, mit demselben Vertrag.
+   *
+   * Geprüft wird gegen das Rechteck der Öffnung: entlang der Wand ihre lichte
+   * Weite, quer dazu die Wanddicke — beides um `toleranz` erweitert. Quer wird
+   * MINDESTENS die Toleranz genommen, denn in der Übersicht ist eine 12,5 cm
+   * dicke Wand ein halber Bildpunkt breit; ohne diese Untergrenze wäre eine Tür
+   * dort nicht zu treffen, obwohl man sie sieht.
+   */
+  public overlappedOeffnung(x: number, y: number, tolerance?: number): Oeffnung | null {
+    const toleranz = tolerance ?? defaultFloorPlanTolerance
+    let treffer: Oeffnung | null = null
+    let kleinste = Infinity
+    this.oeffnungen.forEach((o) => {
+      if (o.verwaist) {
+        return
+      }
+      const g = this.oeffnungsGeometrie(o)
+      if (!g) {
+        return
+      }
+      const laengs = (x - g.mx) * g.ex + (y - g.my) * g.ey
+      const quer = (x - g.mx) * g.nx + (y - g.my) * g.ny
+      if (Math.abs(laengs) > o.breite / 2 + toleranz) {
+        return
+      }
+      if (Math.abs(quer) > Math.max(g.dicke / 2, toleranz)) {
+        return
+      }
+      // Bei Überlappung gewinnt die SCHMALERE — dieselbe Regel wie beim
+      // flächenkleinsten Möbel: sonst wäre eine 88-cm-Tür neben einem 175 cm
+      // breiten Durchgang nie zu greifen.
+      if (o.breite < kleinste) {
+        kleinste = o.breite
+        treffer = o
+      }
+    })
+    return treffer
+  }
+
+  /**
+   * Passt eine Öffnung dieser Breite an diese Stelle? Prüft die Wandlänge und
+   * die Überlappung mit den Öffnungen DERSELBEN Wand.
+   *
+   * ÜBERLAPPUNG IST VERBOTEN — und das kehrt die Regel aus W2 („keine
+   * Kollisionsprüfung für Möbel") bewusst um. Der Grund ist ein anderer: ein
+   * Stuhl unter einem Tisch ist eine echte Aufstellung, zwei ineinander
+   * liegende Türen sind keine Bauaussage, sondern ein Fehlgriff. Die Wand liesse
+   * sich daraus auch nicht mehr zeichnen — es gäbe kein Stück Mauerwerk, an dem
+   * die zweite Zarge sässe.
+   *
+   * @param ausserId Kennung der Öffnung, die gerade GEZOGEN wird — sie darf
+   *                 sich nicht mit sich selbst überlappen.
+   */
+  public oeffnungPasst(
+    wandId: string,
+    lage: number,
+    breite: number,
+    ausserId?: string
+  ): boolean {
+    const wand = this.findeWand(wandId)
+    if (!wand) {
+      return false
+    }
+    const laenge = Math.hypot(wand.getEndX() - wand.getStartX(), wand.getEndY() - wand.getStartY())
+    if (breite <= 0 || laenge < breite) {
+      return false
+    }
+    // Ein halber Bildpunkt Rundung darf nicht zum Ausschluss führen: die
+    // Klemmung in `Floorplanner` liefert genau die Randlage, und `<` statt
+    // `< -0.5` hätte dort je nach Fliesskomma-Rest zufällig abgelehnt.
+    if (lage < breite / 2 - 0.5 || lage > laenge - breite / 2 + 0.5) {
+      return false
+    }
+    return !this.oeffnungen.some((o) => {
+      if (o.wandId !== wandId || o.id === ausserId || o.verwaist) {
+        return false
+      }
+      const abstand = Math.abs(o.lage - lage)
+      return abstand < (o.breite + breite) / 2 + OEFFNUNG_MINDESTABSTAND_CM
+    })
+  }
+
+  /**
+   * Setzt EINE Öffnung — der einzige Weg, eine entstehen zu lassen.
+   *
+   * `quelle: 'gesetzt'` ist FEST VERDRAHTET, aus demselben Grund wie bei
+   * `fuegeAusstattungHinzu`: `Nur Büro.pdf` zeigt Wände, keine Türblätter. Eine
+   * zur Laufzeit entstandene Öffnung kann unmöglich ein Aufmaß sein, und sie als
+   * eines zu führen wäre die eine Lüge, die dieses Projekt sich nicht leisten
+   * kann. `app/public/plaene/halle400.json` bleibt unangetastet.
+   *
+   * Gibt `null` zurück, wenn die Stelle nicht frei ist — der Aufrufer soll das
+   * SAGEN können, statt still nichts zu tun.
+   */
+  public fuegeOeffnungHinzu(
+    neu: Omit<GespeicherteOeffnung, 'quelle' | 'anker' | 'verwaist'>
+  ): Oeffnung | null {
+    if (!this.oeffnungPasst(neu.wandId, neu.lage, neu.breite)) {
+      return null
+    }
+    const vergeben = new Set(this.oeffnungen.map((o) => o.id))
+    const o: Oeffnung = {
+      ...neu,
+      id: eindeutigeKennung(neu.id || kennungAusOeffnung(neu), vergeben),
+      quelle: 'gesetzt',
+      anker: { x: 0, y: 0 }
+    }
+    this.oeffnungen.push(o)
+    this.frischeAnker(o)
+    return o
+  }
+
+  /**
+   * Verschiebt EINE Öffnung ENTLANG IHRER WAND. Quer geht nicht, und auf eine
+   * andere Wand auch nicht: ein Wandwechsel ist ein Löschen plus ein Setzen und
+   * soll auch so aussehen — sonst rutschte eine Tür beim Zielen über die
+   * Zimmerecke und säse plötzlich im Nachbarraum.
+   *
+   * Rückgabe meldet, ob wirklich etwas bewegt wurde (VERIFIED-EFFECT).
+   */
+  public verschiebeOeffnung(id: string, lage: number): boolean {
+    const o = this.findeOeffnung(id)
+    if (!o || !this.oeffnungPasst(o.wandId, lage, o.breite, o.id)) {
+      return false
+    }
+    o.lage = lage
+    o.quelle = 'gesetzt'
+    this.frischeAnker(o)
+    return true
+  }
+
+  /** Wendet den Anschlag (das Band wechselt die Laibung). Q in der Bedienung. */
+  public wendeAnschlag(id: string): boolean {
+    const o = this.findeOeffnung(id)
+    if (!o) {
+      return false
+    }
+    o.anschlag = o.anschlag === 'anfang' ? 'ende' : 'anfang'
+    return true
+  }
+
+  /** Wendet die Aufschlagseite (die Tür schlägt in den anderen Raum). E. */
+  public wendeSeite(id: string): boolean {
+    const o = this.findeOeffnung(id)
+    if (!o) {
+      return false
+    }
+    o.seite = o.seite === 1 ? -1 : 1
+    return true
+  }
+
+  /** Entfernt EINE Öffnung über ihre Kennung. Rückgabe meldet die Wirkung. */
+  public entferneOeffnung(id: string): boolean {
+    const index = this.oeffnungen.findIndex((o) => o.id === id)
+    if (index < 0) {
+      return false
+    }
+    this.oeffnungen.splice(index, 1)
+    return true
+  }
+
+  /** Ersetzt alle Öffnungen auf einmal — für Laden und Zurückspielen. */
+  public setzeOeffnungen(liste: GespeicherteOeffnung[]): void {
+    this.oeffnungen = this.uebernehmeOeffnungen(liste)
+  }
+
+  /** Macht aus dem, was in einer Datei stand, vollständige Öffnungen. */
+  private uebernehmeOeffnungen(liste: GespeicherteOeffnung[]): Oeffnung[] {
+    const vergeben = new Set<string>()
+    return liste.map((o) => {
+      const fertig: Oeffnung = {
+        ...o,
+        id: eindeutigeKennung(o.id || kennungAusOeffnung(o), vergeben),
+        // Anders als bei der Ausstattung ist der Standard hier 'gesetzt' und
+        // nicht 'gemessen': eine Öffnung kann es vor W4 gar nicht gegeben
+        // haben, und der gemessene Plan trägt keine.
+        quelle: o.quelle ?? 'gesetzt',
+        anker: o.anker ? { ...o.anker } : { x: 0, y: 0 }
+      }
+      // Fehlt der Anker, wird er aus (Wand, Lage) abgeleitet — dafür ist er da.
+      if (!o.anker) {
+        this.frischeAnker(fertig)
+      }
+      return fertig
+    })
+  }
+
+  /**
+   * Rechnet den Anker aus (`wandId`, `lage`) neu. Wird bei JEDEM Schreiben
+   * gerufen — das ist die einzige Stelle, an der er entsteht, und genau deshalb
+   * kann er nicht zur zweiten Wahrheit driften.
+   */
+  private frischeAnker(o: Oeffnung): void {
+    const g = this.oeffnungsGeometrie(o)
+    if (g) {
+      o.anker = { x: g.mx, y: g.my }
+      o.verwaist = false
+    }
+  }
+
+  /**
+   * DIE REPARATUR-NAHT (W4). Läuft am Ende jedes `update()`, also genau dann,
+   * wenn eine Wand entsteht, verschwindet, geteilt wird oder ein Plan geladen
+   * ist — die drei Fälle, in denen eine Wand-Kennung kippt.
+   *
+   * Regel je Öffnung: fehlt die Wand ODER liegt `lage ± breite/2` ausserhalb
+   * ihrer Länge, wird über den ANKER die nächste Wand innerhalb
+   * `Wanddicke/2 + VERSOEHNUNG_SUCHWEITE_CM` gesucht. Findet sich eine, die die
+   * Öffnung fasst, wandern `wandId` und `lage` mit. Findet sich keine, gilt die
+   * Öffnung als `verwaist` — sie wird NICHT gelöscht.
+   *
+   * Auf eine Überlappungs-Prüfung wird hier bewusst VERZICHTET, obwohl
+   * `fuegeOeffnungHinzu` sie erzwingt: das Setzen ist eine Handlung des
+   * Nutzers, die man ablehnen kann („1 cm daneben, dann klappt es"), die
+   * Versöhnung ist eine REPARATUR. Eine Tür verschwinden zu lassen, weil beim
+   * Teilen der Wand zwei Öffnungen zu nah aneinander gerieten, wäre der
+   * schlechtere Tausch.
+   *
+   * @returns wie viele Öffnungen WIRKLICH geändert wurden (VERIFIED-EFFECT —
+   *          eine Reparatur, die nur behauptet zu reparieren, ist keine).
+   */
+  public versoehneOeffnungen(): number {
+    if (!this.versoehnungAn || this.oeffnungen.length === 0) {
+      return 0
+    }
+    let geaendert = 0
+    this.oeffnungen.forEach((o) => {
+      const wand = this.findeWand(o.wandId)
+      if (wand) {
+        const laenge = Math.hypot(
+          wand.getEndX() - wand.getStartX(),
+          wand.getEndY() - wand.getStartY()
+        )
+        if (o.lage - o.breite / 2 >= -0.5 && o.lage + o.breite / 2 <= laenge + 0.5) {
+          // Alles in Ordnung — den Anker auffrischen, damit er der Geometrie
+          // folgt, wenn die Wand gezogen wurde. Genau das macht ihn zur
+          // Ableitung statt zur zweiten Wahrheit.
+          const vorherX = o.anker.x
+          const vorherY = o.anker.y
+          const warVerwaist = !!o.verwaist
+          this.frischeAnker(o)
+          if (warVerwaist || Math.abs(o.anker.x - vorherX) > 0.01 || Math.abs(o.anker.y - vorherY) > 0.01) {
+            geaendert++
+          }
+          return
+        }
+      }
+
+      // Die Wand fehlt oder ist zu kurz geworden: über den Anker eine
+      // Ersatzwand suchen.
+      const ersatz = this.wandAmAnker(o)
+      if (!ersatz) {
+        if (!o.verwaist) {
+          o.verwaist = true
+          geaendert++
+        }
+        return
+      }
+      o.wandId = ersatz.wandId
+      o.lage = ersatz.lage
+      o.verwaist = false
+      // NICHT `frischeAnker`: der Anker ist die Erinnerung an den Ort, an den
+      // der Nutzer die Tür gesetzt hat. Nach dem Umzug steht sie auf der
+      // geklemmten Lage — den Anker darauf zu ziehen hiesse, die Erinnerung
+      // durch das Ergebnis der Reparatur zu ersetzen und beim nächsten Umzug
+      // ein Stück weiter zu wandern. Er wird erst wieder aufgefrischt, wenn die
+      // Öffnung gesund ist (Zweig oben) oder der Nutzer sie anfasst.
+      geaendert++
+    })
+    return geaendert
+  }
+
+  /**
+   * Nächste Wand zum Anker, die diese Öffnung fassen kann — samt der Lage, an
+   * der sie dort sässe. `null`, wenn in Reichweite keine passt.
+   */
+  private wandAmAnker(o: Oeffnung): { wandId: string; lage: number } | null {
+    let beste: { wandId: string; lage: number; abstand: number } | null = null
+    this.walls.forEach((wand) => {
+      const ax = wand.getStartX()
+      const ay = wand.getStartY()
+      const dx = wand.getEndX() - ax
+      const dy = wand.getEndY() - ay
+      const laenge = Math.hypot(dx, dy)
+      // Eine Wand, die kürzer ist als die Öffnung, kann sie nicht tragen.
+      if (laenge < o.breite) {
+        return
+      }
+      const t = ((o.anker.x - ax) * dx + (o.anker.y - ay) * dy) / (laenge * laenge)
+      const geklemmt = Math.max(0, Math.min(1, t))
+      const fx = ax + dx * geklemmt
+      const fy = ay + dy * geklemmt
+      const abstand = Math.hypot(o.anker.x - fx, o.anker.y - fy)
+      if (abstand > wand.thickness / 2 + VERSOEHNUNG_SUCHWEITE_CM) {
+        return
+      }
+      if (beste && beste.abstand <= abstand) {
+        return
+      }
+      // In die Wand hinein klemmen: eine Öffnung ragt nie über eine Laibung
+      // hinaus, und an der Ecke sitzt sie bündig.
+      const lage = Math.max(o.breite / 2, Math.min(laenge - o.breite / 2, laenge * t))
+      beste = { wandId: wand.id, lage, abstand }
+    })
+    return beste ? { wandId: beste.wandId, lage: beste.lage } : null
+  }
+
   /**
    * Sets a user-defined name for a label key. A blank name clears the override,
    * so the PDF-derived default name shows again.
@@ -959,6 +1393,12 @@ export class Floorplan {
     })
     this.corners = []
     this.walls = []
+    // Die Öffnungen MÜSSEN hier mit: sie hängen an Wand-Kennungen, und die sind
+    // gleich alle weg. Bleiben sie liegen, läuft die Versöhnung während des
+    // Ladens gegen einen halb aufgebauten Grundriss und erklärt reihenweise
+    // Türen für verwaist, die drei Zeilen später ihre Wand zurückbekommen.
+    // `loadFloorplan` setzt die Liste neu, nachdem alle Wände stehen.
+    this.oeffnungen = []
   }
 
   /**

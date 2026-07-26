@@ -10,8 +10,11 @@ for g in $GATES; do
   [ -f "tools/$g.mjs" ] || { echo "FEHLT   $g"; gesamt=1; continue; }
   aus=$(node "tools/$g.mjs" 2>&1)
   code=$?
-  ok=$(printf '%s' "$aus" | grep -c '^OK  \|^✓ ')
-  fehl=$(printf '%s' "$aus" | grep -c '^FEHL\|^✗ ')
+  # Drei Ausgabeformate sind historisch gewachsen (OK/FEHL, ✓/✗, BESTANDEN/
+  # DURCHGEFALLEN). Alle drei zaehlen, sonst meldete das Sammelwerkzeug "0
+  # Pruefungen" fuer ein Gate, das in Wahrheit ein Dutzend gefahren hat.
+  ok=$(printf '%s' "$aus" | grep -c '^OK  \|^✓ \|^BESTANDEN')
+  fehl=$(printf '%s' "$aus" | grep -c '^FEHL\|^✗ \|^DURCHGEFALLEN ')
   if [ "$code" -eq 0 ]; then
     echo "GRUEN   $g — $ok Pruefungen"
   else
