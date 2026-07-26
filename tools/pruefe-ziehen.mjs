@@ -857,6 +857,7 @@ if (NUR !== 'planer') {
        dort und meldete falsch rot. */
     const zaehlerAmAnfang = await page.evaluate(() => ({
       text: window.__planerDatei.gesetztText(),
+      hinweis: window.__planerDatei.hinweisHerkunft(),
       gesetzt: window.__planerDatei.gesetzte()
     }))
 
@@ -882,6 +883,7 @@ if (NUR !== 'planer') {
     await page.waitForTimeout(400)
     const zaehlerNach = await page.evaluate(() => ({
       text: window.__planerDatei.gesetztText(),
+      hinweis: window.__planerDatei.hinweisHerkunft(),
       gesetzt: window.__planerDatei.gesetzte()
     }))
     pruefe(
@@ -891,6 +893,14 @@ if (NUR !== 'planer') {
     pruefe(
       zaehlerNach.text === `${zaehlerNach.gesetzt} Stück frei gesetzt — kein Aufmaß`,
       `Blattkopf: er nennt die frei gesetzten Stuecke ("${zaehlerNach.text}")`
+    )
+    // Dasselbe Blatt darf sich nicht selbst widersprechen: der Fusshinweis
+    // behauptete bisher immer, die Ausstattung sei gemessen.
+    pruefe(
+      /Ausstattung sind gemessen/.test(zaehlerAmAnfang.hinweis) &&
+        !/Ausstattung sind gemessen/.test(zaehlerNach.hinweis) &&
+        zaehlerNach.hinweis.includes('frei gesetzt'),
+      `Blatt: der Fusshinweis widerspricht dem Kopf NICHT ("${zaehlerNach.hinweis}")`
     )
     await page.evaluate(() => {
       document.getElementById('btnAnsichtAxo').dispatchEvent(new MouseEvent('click', { bubbles: true }))

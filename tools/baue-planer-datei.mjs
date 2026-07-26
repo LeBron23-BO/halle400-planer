@@ -287,8 +287,8 @@ const html = `<!DOCTYPE html>
 
   <div class="hinweis">
     Ziehen dreht &middot; Rad zoomt &middot; zwei Finger zoomen<br>
-    Grundriss und Ausstattung sind gemessen. Höhen sind gesetzte Annahmen —
-    ein Grundriss enthält keine.
+    <span id="hinweisHerkunft">Grundriss und Ausstattung sind gemessen.</span> Höhen sind
+    gesetzte Annahmen — ein Grundriss enthält keine.
   </div>
 </div>
 
@@ -553,6 +553,12 @@ function gesetztZeigen(){
   const z = el('gesetztZaehler');
   z.textContent = n + ' Stück frei gesetzt — kein Aufmaß';
   z.hidden = n === 0;
+  /* Der Fusshinweis MUSS mitgehen, sonst widerspricht dasselbe Blatt sich
+     selbst: oben "1 Stück frei gesetzt", unten "Ausstattung ist gemessen".
+     Wer das liest, glaubt am Ende der bequemeren Zeile. */
+  el('hinweisHerkunft').textContent = n === 0
+    ? 'Grundriss und Ausstattung sind gemessen.'
+    : 'Der Grundriss ist gemessen; ' + n + ' Stück der Ausstattung sind frei gesetzt (im Grundriss gestrichelt).';
 }
 
 grundriss.fireOnUpdatedRooms(bemerkeAenderung);
@@ -1135,6 +1141,7 @@ window.__planerDatei = {
     const z = el('gesetztZaehler');
     return z.hidden ? null : z.textContent;
   },
+  hinweisHerkunft: function(){ return el('hinweisHerkunft').textContent; },
   aufBild: function(x, y){ return { x: zeichner.convertX(x), y: zeichner.convertY(y) }; },
   treffer: function(){
     return {

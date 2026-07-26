@@ -34,6 +34,9 @@ node tools/pruefe-zeichnen.mjs     # E2: Ecken-Fang, Winkel-Raster (mit Gegenpro
 node tools/pruefe-touch.mjs        # E3: Langdruck + Tippen am Handy, echte TouchEvents, 2 Gegenproben
 node tools/pruefe-kennungen.mjs   # W2-Fundament: Kennungen an Wand+Ausstattung, undo-fest,
                                   #        Moebel-Vorrang vor der Wand (mit Gegenprobe), gemessen/gesetzt
+node tools/pruefe-ziehen.mjs      # W2: das MOEBELZIEHEN — 70 Pruefungen in BEIDEN Welten
+                                  #        (Planer auf 3301 UND Doppelklick-Datei unter file://)
+                                  #        --nur planer | --nur datei grenzt ein
 node tools/pruefe-axonometrie.mjs  # X2/X3: 6 Gates — Raumableitung == Planer-Kern, Szene vollstaendig,
                                    #        Bild gezeichnet (mit Gegenprobe), Ansicht folgt dem Grundriss
 
@@ -110,14 +113,51 @@ weil `file://` kein Nachladen erlaubt. Drei Dinge muss man dazu wissen:
 3. **`fireOnUpdatedRooms` sieht ein Verschieben NICHT.** `Floorplan.update()` laeuft
    nur bei neuer/entfernter Wand, beim Verschmelzen von Ecken und beim Laden
    (`floorplan.ts:207,216,352` · `corner.ts:298,329`); `Corner.move()` benachrichtigt
-   nur seine Waende. Wer eine Ansicht oder ein Sichern daran haengt, verliert genau
-   das Ziehen. Die Doppelklick-Datei vergleicht deshalb nach jedem Zeigerende den
-   ausgeschriebenen Grundriss. **Offen:** `AxonometrieAnsicht.tsx` im Planer haengt
-   noch allein an `fireOnUpdatedRooms` und folgt einem reinen Verschieben erst beim
-   naechsten Ereignis.
+   nur seine Waende, und `verschiebeAusstattung`/`dreheAusstattung` niemanden. Wer
+   eine Ansicht oder ein Sichern daran haengt, verliert genau das Ziehen. Die
+   Doppelklick-Datei vergleicht deshalb nach jedem Zeigerende UND jedem Tastenende
+   (Q/E drehen) den ausgeschriebenen Grundriss. Im PLANER ist die Luecke anders
+   geschlossen — gemessen, nicht vermutet: `handleViewChange` ruft beim Wechsel auf
+   3D wie auf Axonometrie `model.floorplan.update()`
+   (`Blueprint3DAppBase.tsx:350,367`), und beide Ansichten sind dort mit dem
+   2D-Zeichner nie gleichzeitig sichtbar. Ein Zug ist also spaetestens beim
+   Hinsehen angekommen (`pruefe-ziehen.mjs` Gate g misst genau das, mit Gegenprobe).
 
 **Messzugang:** `window.__planerDatei` (nur in dieser Datei) — Modellzahlen, Ecken
 in Welt- UND Bildkoordinaten, Bild-Pruefsummen, Zeiger-Ereignisse.
+
+## Moebel ziehen (W2, 2026-07-26)
+
+Im Werkzeug **Verschieben** wird ein Moebel unter dem Zeiger gegriffen, folgt der
+Bewegung und wird beim Loslassen abgelegt — im Planer wie in der Doppelklick-Datei,
+beide aus derselben Quelle (`src/floorplanner/floorplanner.ts`). Fuenf Festlegungen:
+
+1. **Alles laeuft ueber die KENNUNG, nie ueber eine Objektreferenz.** Ein
+   Rueckgaengig laedt den Grundriss komplett neu; eine gemerkte Referenz waere
+   danach eine Leiche, und jeder Zug daran ginge still ins Leere.
+2. **Der Griff-Versatz wird beim Druecken festgehalten.** Ohne ihn spraenge das
+   Stueck mit seiner Mitte unter den Zeiger — bei einer 3-m-Tischplatte um
+   anderthalb Meter.
+3. **Ein Zug = EIN Rueckgaengig-Schritt.** Den Schnappschuss zieht der KERN bei
+   Zieh-Beginn (`zugGesichert`), genau wie beim Wand-Ziehen. Huellen ziehen KEINE
+   eigenen.
+4. **Einrasten** (`EINRAST_WAND_CM = 15`, `EINRAST_RASTER_CM = 5`): naeher als 15 cm
+   an einer Wand legt sich der RAND buendig an und die Drehung uebernimmt den
+   Wandwinkel — und zwar die der jetzigen am naechsten liegende der vier
+   rechtwinkligen Lagen, damit ein laengs gestellter Tisch sich nicht quer dreht.
+   Sonst wird auf 5 cm gerundet, immer auf ganze Zentimeter (Projekt-DNA Punkt 3).
+   Abschaltbar ueber den Knopf „Einrasten". **KEINE Kollisionspruefung** — Moebel
+   duerfen sich ueberlappen, in einer echten Planung tun sie das auch.
+5. **Gedreht wird mit Q/E** (15°-Schritte, am Stueck UNTER DEM ZEIGER, auch mitten
+   im Ziehen). Begruendung im Code (`dreheAktives`): es gibt in diesem Planer keine
+   Auswahl, die einen Klick ueberdauert — ein Knopf in der Leiste braeuchte eine,
+   denn auf dem Weg dorthin verlaesst der Zeiger das Moebel. Am Handy gibt es
+   deshalb (noch) kein Drehen; dort ist auch das Ziehen von Moebeln offen.
+
+Jedes gezogene oder gedrehte Stueck wird `quelle: 'gesetzt'`, wird im Grundriss
+GESTRICHELT gezeichnet, und das Blatt sagt es im Kopf: „N Stueck frei gesetzt —
+kein Aufmass" (nur wenn N > 0; der Fusshinweis zieht mit, sonst widerspraeche das
+Blatt sich selbst).
 
 ## Hintergrund
 
