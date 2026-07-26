@@ -513,6 +513,7 @@ if (wand) {
   const frageDa = await sichtbar(seiteB, '#rueckfrage')
   const frageText = await seiteB.evaluate(() => document.getElementById('rueckfrageZiel').textContent)
   pruefe(frageDa && /m lang/.test(frageText), `G10: die Rueckfrage benennt, was verschwindet ("${frageText}")`)
+  await seiteB.screenshot({ path: path.join(DIR, 'E_loesch_rueckfrage.png') })
 
   await klick(seiteB, 'btnAbbrechen')
   await seiteB.waitForTimeout(300)
@@ -539,7 +540,6 @@ if (wand) {
     nachUndo2.waende === 100 && nachUndo2.raeume === 25,
     `G10: Rueckgaengig bringt sie zurueck (${nachUndo2.waende} Waende, ${nachUndo2.raeume} Raeume)`
   )
-  await seiteB.screenshot({ path: path.join(DIR, 'E_loesch_rueckfrage.png') })
 }
 
 pruefe(
@@ -554,5 +554,5 @@ log('')
 log(fehler.length === 0 ? 'ALLE PRUEFUNGEN BESTANDEN' : `DURCHGEFALLEN: ${fehler.length}`)
 fehler.forEach((f) => log('  - ' + f))
 log(`Bilder + Bericht: ${DIR}`)
-log('  A_startansicht.png · B_bearbeiten.png · C_nach_dem_zug.png · D_blatt_folgt.png')
+log('  A_startansicht.png · B_bearbeiten.png · C_nach_dem_zug.png · D_blatt_folgt.png · E_loesch_rueckfrage.png')
 process.exit(fehler.length === 0 ? 0 : 1)
