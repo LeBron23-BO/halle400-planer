@@ -824,12 +824,21 @@ zeichner.addModeResetCallback(function(m){
   document.body.classList.toggle('loescht', m === floorplannerModes.DELETE);
 });
 
+/* Eine Rueckfrage muss UEBER der Werkzeugleiste stehen, nicht auf ihr. Wie hoch
+   die Leiste ist, haengt davon ab, wie oft sie umbricht (Fensterbreite,
+   Schriftgroesse) — ein fester Abstand traefe es also nur zufaellig. Also
+   messen statt schaetzen. */
+function frageZeigen(panel){
+  panel.style.bottom = (werkzeuge.hidden ? 24 : werkzeuge.offsetHeight + 26) + 'px';
+  panel.hidden = false;
+}
+
 /* Die Rueckfrage nullt ihren Zustand NIE selbst — der Kern meldet das
    Schliessen mit \`null\` (E1). */
 zeichner.addLoeschAnfrageCallback(function(ziel){
   if (!ziel) { rueckfrage.hidden = true; return; }
   el('rueckfrageZiel').textContent = ziel.beschreibung;
-  rueckfrage.hidden = false;
+  frageZeigen(rueckfrage);
   el('btnEntfernen').focus();
 });
 el('btnAbbrechen').addEventListener('click', function(){ zeichner.loeschungAbbrechen(); });
@@ -868,10 +877,16 @@ dateiWahl.addEventListener('change', function(){
   leser.readAsText(datei);
 });
 
-el('btnZurueck').addEventListener('click', function(){ zurueckFrage.hidden = false; el('btnZurueckNein').focus(); });
+el('btnZurueck').addEventListener('click', function(){ frageZeigen(zurueckFrage); el('btnZurueckNein').focus(); });
 el('btnZurueckNein').addEventListener('click', function(){ zurueckFrage.hidden = true; });
 el('btnZurueckJa').addEventListener('click', function(){ zurueckFrage.hidden = true; zuruecksetzen(); });
-el('btnStandZurueck').addEventListener('click', function(){ zurueckFrage.hidden = false; el('btnZurueckNein').focus(); });
+el('btnStandZurueck').addEventListener('click', function(){
+  // Der Hinweis liegt oben, die Rueckfrage unten: dazwischen muss die
+  // Werkzeugleiste sichtbar sein, sonst fragt etwas Unsichtbares.
+  if (!bearbeiten) setzeBearbeiten(true, true);
+  frageZeigen(zurueckFrage);
+  el('btnZurueckNein').focus();
+});
 
 /* Tastatur: Rueckgaengig/Wiederholen macht die HUELLE. Escape registriert der
    KERN selbst auf dem Dokument (floorplanner.ts:493-497) — hier waere es
