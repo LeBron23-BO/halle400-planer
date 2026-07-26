@@ -31,6 +31,17 @@ export type AusstattungTyp =
   | 'pflanze' // Kreis mit Zacken — Kübel auf Loggia/in Büros
   | 'aufzug' // Rechteck mit Kreuz (Norm-Zeichen)
   | 'flaeche' // gefüllte Fläche — Loggia, Kiesbett
+  // ── W3: die Ausstattung des Gesundheits- und Bewegungs-Konzepts ──────────
+  // Diese drei stehen in KEINEM gemessenen Plan: die PDF zeigt das Büro, nicht
+  // die Halle im Betrieb. Sie entstehen ausschliesslich dadurch, dass der
+  // Nutzer sie hinstellt, und tragen deshalb immer `quelle: 'gesetzt'`.
+  // Ausgewählt nach den neun Säulen (Reiz, Aktivierung, Regeneration, Balance,
+  // Wissen, Baustoff, Alltag, Vorsorge, Atem) — mehr Arten wären Vorrat auf
+  // Verdacht, und ein Zeichen, das niemand setzt, ist nur eine weitere Stelle,
+  // an der eine Typ-Kette halb verdrahtet bleiben kann.
+  | 'matte' // abgerundetes Rechteck — Gymnastik-/Yogamatte (Atem, Aktivierung)
+  | 'geraet' // Rechteck mit markierter Vorderseite — Trainingsgerät (Aktivierung)
+  | 'liege' // Rechteck mit Kopfende — Behandlungs-/Massageliege (Regeneration, Balance)
 
 /**
  * Woher ein Ausstattungs-Zeichen kommt — das WICHTIGSTE Feld dieser Struktur.
@@ -93,6 +104,44 @@ export type GespeichertesAusstattungElement = Omit<AusstattungElement, 'id' | 'q
   id?: string
   quelle?: AusstattungQuelle
 }
+
+/**
+ * Was aus der Palette in den Grundriss gezogen werden kann (W3), samt seinem
+ * Standardmaß in cm.
+ *
+ * DIE MASSE SIND GESETZTE HANDELSMASSE, KEINE MESSWERTE. Ein neu hingestelltes
+ * Stück ist eine Annahme — es wird `quelle: 'gesetzt'` und im Grundriss
+ * gestrichelt gezeichnet. Die Zahlen sind trotzdem nicht beliebig: sie sind die
+ * verbreiteten Liefermaße der jeweiligen Ware, damit ein Raum, in den vier
+ * Liegen passen sollen, auch wirklich vier fasst.
+ *
+ * HIER UND NICHT IN DER OBERFLÄCHE, weil beide Auslieferungen (Planer und
+ * Doppelklick-Datei) dasselbe hinstellen müssen. Zwei Listen liefen
+ * auseinander, sobald jemand nur eine anfasst — und dann hiesse dieselbe Matte
+ * in der einen Welt 180 cm und in der anderen 200 cm.
+ *
+ * Reihenfolge = Reihenfolge in der Palette: erst das Vertraute (Stuhl, Tisch),
+ * dann das Neue. Der Nutzer hat Stühle und Tische ausdrücklich genannt.
+ */
+export const AUSSTATTUNG_VORLAGEN: ReadonlyArray<{
+  typ: AusstattungTyp
+  breite: number
+  tiefe: number
+}> = [
+  // Deckt sich mit den 144 gemessenen Stühlen der PDF (alle 45 × 45 cm) — ein
+  // neu gesetzter Stuhl soll neben einem gemessenen nicht auffallen.
+  { typ: 'stuhl', breite: 45, tiefe: 45 },
+  // Gängiges Büro-Schreibtischmaß. Die gemessenen Tische reichen von 50 bis
+  // 290 cm Breite; 160 × 80 liegt mittig und ist das, was man bestellt.
+  { typ: 'tisch', breite: 160, tiefe: 80 },
+  // Verbreitetes Handelsmaß einer Yoga-/Gymnastikmatte.
+  { typ: 'matte', breite: 180, tiefe: 60 },
+  // Stellfläche eines einzelnen Kraft-/Ausdauergeräts ohne Bedienfläche
+  // davor — die gehört dem Raum, nicht dem Gerät, und wäre hier erfunden.
+  { typ: 'geraet', breite: 120, tiefe: 80 },
+  // Verbreitetes Handelsmaß einer Massage-/Behandlungsliege.
+  { typ: 'liege', breite: 200, tiefe: 70 }
+]
 
 /**
  * Fassung des Speicherformats. Erhöhen, sobald ein Feld dazukommt, auf das sich
@@ -515,17 +564,56 @@ export class Floorplan {
    *
    * FRÜHER STAND HIER, die Ausstattung sei „eine zusammenhängende Messung aus
    * der PDF, kein vom Nutzer Stück für Stück gepflegter Bestand" — als
-   * Begründung dafür, dass es keinen Einzel-Setter gibt. Diese Begründung ist
-   * überholt, seit der Nutzer Möbel verschieben darf. Sie stehen zu lassen
-   * hiesse, eine widerlegte Regel als Wahrheit im Code zu führen.
+   * Begründung dafür, dass es keinen Einzel-Setter gibt. W1.5 hat diese
+   * Begründung bereits als überholt gekennzeichnet, weil der Nutzer Möbel
+   * verschieben darf. Mit W3 ist sie vollends widerlegt: der Nutzer STELLT
+   * jetzt Stücke hin, einzeln, aus der Palette. Der Einzel-Setter heisst
+   * `fuegeAusstattungHinzu` und steht direkt darunter.
    *
-   * Was BLEIBT, ist der wahre Kern: die gemessenen Stücke sind Grundwahrheit
-   * aus der PDF und tragen `quelle: 'gemessen'`. Was der Nutzer anfasst, wird
-   * `'gesetzt'` und ist ab dann eine Annahme — sichtbar getrennt, damit nie
-   * eine Annahme als Aufmaß durchgeht.
+   * Diese Methode BLEIBT trotzdem, und zwar für das, wofür sie gedacht war:
+   * eine ganze Liste auf einmal übernehmen (Laden, Zurückspielen). Sie ersetzt
+   * den Bestand VOLLSTÄNDIG — wer ein einzelnes Stück hinzufügen will und dafür
+   * die ganze Liste durchreicht, vergibt bei jedem Aufruf alle Kennungen neu.
+   *
+   * Was ebenfalls BLEIBT, ist der wahre Kern der alten Regel: die gemessenen
+   * Stücke sind Grundwahrheit aus der PDF und tragen `quelle: 'gemessen'`. Was
+   * der Nutzer anfasst oder neu hinstellt, ist `'gesetzt'` und damit eine
+   * Annahme — sichtbar getrennt, damit nie eine Annahme als Aufmaß durchgeht.
    */
   public setAusstattung(elemente: GespeichertesAusstattungElement[]): void {
     this.ausstattung = this.uebernehmeAusstattung(elemente)
+  }
+
+  /**
+   * Stellt EIN Stück hin (W3) — der Einzel-Setter, den `setAusstattung` oben
+   * einmal ausdrücklich abgelehnt hat.
+   *
+   * `quelle: 'gesetzt'` ist FEST VERDRAHTET und nicht dem Aufrufer überlassen,
+   * aus demselben Grund wie bei `verschiebeAusstattung`: ein Stück, das zur
+   * Laufzeit entsteht, kann unmöglich aus der PDF stammen — dort steht das Büro,
+   * nicht die Halle im Betrieb. Es als Aufmaß zu führen wäre die eine Lüge, die
+   * dieses Projekt sich nicht leisten kann. Ein `beleg` wird deshalb auch nicht
+   * übernommen: es gibt keinen.
+   *
+   * Die Kennung wird gegen die BEREITS VERGEBENEN geprüft, nicht gegen eine
+   * leere Menge. Zwei gleiche Stühle an derselben Stelle ergäben sonst zweimal
+   * dieselbe Kennung, und ab da zöge, drehte und löschte jeder Griff am zweiten
+   * in Wahrheit den ersten.
+   *
+   * Gibt das fertige Stück zurück — der Aufrufer braucht seine Kennung, um es
+   * gleich einzurasten (`Floorplanner.stueckAblegen`).
+   */
+  public fuegeAusstattungHinzu(
+    neu: Omit<GespeichertesAusstattungElement, 'quelle' | 'beleg'>
+  ): AusstattungElement {
+    const vergeben = new Set(this.ausstattung.map((el) => el.id))
+    const el: AusstattungElement = {
+      ...neu,
+      id: eindeutigeKennung(neu.id || kennungAusAusstattung(neu), vergeben),
+      quelle: 'gesetzt'
+    }
+    this.ausstattung.push(el)
+    return el
   }
 
   /**

@@ -1,4 +1,4 @@
-import { Floorplan, AusstattungElement } from '../model/floorplan'
+import { Floorplan, AusstattungElement, AusstattungTyp } from '../model/floorplan'
 import { Wall } from '../model/wall'
 import { Corner } from '../model/corner'
 import { Room } from '../model/room'
@@ -399,10 +399,99 @@ export class FloorplannerView {
     const w = el.drehung ?? 0
     const cos = Math.cos(w)
     const sin = Math.sin(w)
-    return [
-      this.viewmodel.convertX(el.x + dx * cos - dy * sin),
-      this.viewmodel.convertY(el.y + dx * sin + dy * cos)
-    ]
+    return [this.bildX(el.x + dx * cos - dy * sin), this.bildY(el.y + dx * sin + dy * cos)]
+  }
+
+  /**
+   * Abbildung Welt (cm) → Bild (Pixel) für die Ausstattungs-Zeichen (W3).
+   *
+   * Normalerweise ist das schlicht die des Zeichners. Für die VORSCHAU in der
+   * Palette wird sie kurz ausgetauscht, damit DIESELBE Zeichenvorschrift in ein
+   * kleines Kästchen malt statt in den Grundriss. Der Umweg lohnt genau
+   * deswegen: eine nachgemalte Vorschau wäre eine zweite Wahrheit über das
+   * Aussehen eines Zeichens, und der Nutzer zöge irgendwann ein Stück in den
+   * Plan, das dort anders aussieht als in der Leiste.
+   *
+   * `null` heisst: der Zeichner selbst. Der Zweig kostet einen Vergleich je
+   * Punkt und läuft nur in `ausPunkt`/`ausEllipse` — nicht in der Wand- oder
+   * Raster-Ausgabe, die um Grössenordnungen mehr Punkte hat.
+   */
+  private abbild: {
+    x: (cm: number) => number
+    y: (cm: number) => number
+    proCm: () => number
+  } | null = null
+
+  /** Welt-x (cm) → Bild-x (Pixel), je nach gesetzter Abbildung. */
+  private bildX(cm: number): number {
+    return this.abbild ? this.abbild.x(cm) : this.viewmodel.convertX(cm)
+  }
+
+  /** Welt-y (cm) → Bild-y (Pixel), je nach gesetzter Abbildung. */
+  private bildY(cm: number): number {
+    return this.abbild ? this.abbild.y(cm) : this.viewmodel.convertY(cm)
+  }
+
+  /** Bildpunkte je cm, je nach gesetzter Abbildung. */
+  private bildProCm(): number {
+    return this.abbild ? this.abbild.proCm() : this.viewmodel.pixelProCm()
+  }
+
+  /**
+   * Zeichnet EIN Ausstattungs-Zeichen als Vorschau in ein beliebiges Kästchen
+   * eines beliebigen Canvas (W3) — für die Palette.
+   *
+   * Gezeichnet wird mit `zeichneAusstattung`, also mit exakt der Vorschrift des
+   * Grundrisses; getauscht wird nur die Abbildung. Immer mit `detail = true`:
+   * die Detailstufe des Plans hängt am Zoom, das Kästchen hat keinen — und ohne
+   * Details wären Stuhl, Gerät und Liege drei gleiche Rechtecke.
+   *
+   * GESTRICHELT, weil das hingestellte Stück gestrichelt sein WIRD: die Palette
+   * erzeugt `quelle: 'gesetzt'`, und eine durchgezogene Vorschau verspräche ein
+   * Aufmaß, das sie nicht liefern kann.
+   *
+   * @param ziel   Zeichenkontext des Vorschau-Canvas
+   * @param vorlage Art und Standardmaß in cm (aus `AUSSTATTUNG_VORLAGEN`)
+   * @param kasten Rechteck im Ziel-Canvas, in dem das Zeichen sitzen soll
+   */
+  public zeichneVorschau(
+    ziel: CanvasRenderingContext2D,
+    vorlage: { typ: AusstattungTyp; breite: number; tiefe: number },
+    kasten: { x: number; y: number; breite: number; hoehe: number }
+  ): void {
+    // Einpassen mit Rand: das Zeichen soll im Kästchen stehen, nicht an seinen
+    // Kanten kleben. Der kleinere der beiden Massstäbe gewinnt, sonst ragte eine
+    // 200 cm lange Liege seitlich heraus.
+    const proCm = Math.min(kasten.breite / vorlage.breite, kasten.hoehe / vorlage.tiefe) * 0.82
+    const mx = kasten.x + kasten.breite / 2
+    const my = kasten.y + kasten.hoehe / 2
+
+    const vorherKontext = this.context
+    const vorherAbbild = this.abbild
+    this.context = ziel
+    this.abbild = { x: (cm) => mx + cm * proCm, y: (cm) => my + cm * proCm, proCm: () => proCm }
+    ziel.setLineDash(GESETZT_STRICH)
+    try {
+      this.zeichneAusstattung(
+        {
+          id: 'vorschau',
+          quelle: 'gesetzt',
+          typ: vorlage.typ,
+          x: 0,
+          y: 0,
+          breite: vorlage.breite,
+          tiefe: vorlage.tiefe
+        },
+        true
+      )
+    } finally {
+      // Ohne dieses Zurücksetzen malte der nächste Grundriss-Durchlauf in den
+      // Vorschau-Canvas — ein Fehler, der erst beim nächsten Neuzeichnen
+      // sichtbar würde und dann schwer einer Palette zuzuordnen wäre.
+      ziel.setLineDash([])
+      this.context = vorherKontext
+      this.abbild = vorherAbbild
+    }
   }
 
   /** Umriss-Rechteck des Elements, wahlweise gefüllt. */
@@ -424,6 +513,59 @@ export class FloorplannerView {
       ausstattungLinie,
       ausstattungLinienBreite
     )
+  }
+
+  /**
+   * Umriss mit abgerundeten Ecken (W3) — das Zeichen der Matte.
+   *
+   * Eigene Vorschrift statt `ausRechteck`, weil eine ausgerollte Matte im Plan
+   * genau daran zu erkennen ist: sie hat keine scharfen Ecken. Der Radius ist
+   * RELATIV zur kürzeren Seite und nicht in cm festgelegt — ein fester Radius
+   * verschluckte bei einer schmalen Matte die ganze Kante und wäre bei einer
+   * breiten kaum zu sehen.
+   *
+   * Die Rundung entsteht aus quadratischen Kurven über den Eckpunkt. Auch hier
+   * wird in WELTkoordinaten gedreht (`ausPunkt`) und nicht über `context.rotate`,
+   * damit das Zeichen wie jedes andere über dieselbe Abbildung läuft.
+   */
+  private ausRundRechteck(el: AusstattungElement, fuellung: string | null) {
+    const hb = el.breite / 2
+    const ht = el.tiefe / 2
+    const r = Math.min(hb, ht) * 0.35
+    const p = (dx: number, dy: number) => this.ausPunkt(el, dx, dy)
+
+    // Ein Rundgang, vier Abschnitte: bis kurz vor die Ecke gerade, dann ÜBER
+    // die Ecke hinweg gekrümmt zum Anfang der nächsten Geraden. Ein Zug für
+    // Füllung UND Rand — zwei getrennte Pfade wären zwei Umrisse, die bei
+    // gestricheltem Rand sichtbar auseinanderlägen.
+    const weg: Array<{ bis: [number, number]; ecke: [number, number]; nach: [number, number] }> = [
+      { bis: p(hb - r, -ht), ecke: p(hb, -ht), nach: p(hb, -ht + r) },
+      { bis: p(hb, ht - r), ecke: p(hb, ht), nach: p(hb - r, ht) },
+      { bis: p(-hb + r, ht), ecke: p(-hb, ht), nach: p(-hb, ht - r) },
+      { bis: p(-hb, -ht + r), ecke: p(-hb, -ht), nach: p(-hb + r, -ht) }
+    ]
+
+    const anfang = p(-hb + r, -ht)
+    this.context.beginPath()
+    this.context.moveTo(anfang[0], anfang[1])
+    for (const abschnitt of weg) {
+      this.context.lineTo(abschnitt.bis[0], abschnitt.bis[1])
+      this.context.quadraticCurveTo(
+        abschnitt.ecke[0],
+        abschnitt.ecke[1],
+        abschnitt.nach[0],
+        abschnitt.nach[1]
+      )
+    }
+    this.context.closePath()
+
+    if (fuellung !== null) {
+      this.context.fillStyle = fuellung
+      this.context.fill()
+    }
+    this.context.lineWidth = ausstattungLinienBreite
+    this.context.strokeStyle = ausstattungLinie
+    this.context.stroke()
   }
 
   /** Linie zwischen zwei Punkten im lokalen System des Elements. */
@@ -448,7 +590,7 @@ export class FloorplannerView {
     ry: number,
     fuellung: string | null
   ) {
-    const proCm = this.viewmodel.pixelProCm()
+    const proCm = this.bildProCm()
     const m = this.ausPunkt(el, dx, dy)
     this.context.beginPath()
     this.context.ellipse(m[0], m[1], rx * proCm, ry * proCm, el.drehung ?? 0, 0, 2 * Math.PI)
@@ -551,11 +693,79 @@ export class FloorplannerView {
         }
         return
 
+      // ── W3 ────────────────────────────────────────────────────────────────
+      case 'matte':
+        // Eine Matte ist eine FLÄCHE, kein Polster mit Rand: ein Umriss, sonst
+        // nichts. Abgerundet, weil eine ausgerollte Matte genau daran zu
+        // erkennen ist. Die Rundung gehört NICHT in die Detailstufe — sie ist
+        // das Zeichen selbst und nicht seine Verzierung.
+        this.ausRundRechteck(el, ausstattungFuellung)
+        return
+
+      case 'geraet':
+        this.ausRechteck(el, ausstattungFuellung)
+        // Die Vorderseite ist die Seite, auf die man steigt oder sich setzt.
+        // Sie wird IMMER gezeichnet, auch ohne Detailstufe — anders als die
+        // Stuhllehne. Ein Gerät, dessen Ausrichtung man nicht sieht, ist im
+        // Plan wertlos: dann weiss niemand, ob davor noch der Meter Platz ist,
+        // den man zum Benutzen braucht. Zwei Striche statt einem, damit die
+        // Vorderkante sich vom blossen Umriss abhebt.
+        this.ausLinie(el, -hb, ht, hb, ht)
+        this.ausLinie(el, -hb, ht * 0.72, hb, ht * 0.72)
+        return
+
+      case 'liege':
+        this.ausRechteck(el, ausstattungFuellung)
+        if (detail) {
+          // Kopfende (lokal -x): der Querstrich sagt, wo der Kopf liegt, und
+          // damit auf welcher Seite die Behandlerin steht. Ein Strich, kein
+          // zweiter Körper — die Doktrin gilt hier wie überall.
+          this.ausLinie(el, -hb * 0.66, -ht, -hb * 0.66, ht)
+        }
+        return
+
       case 'tisch':
+        this.ausRechteck(el, ausstattungFuellung)
+        return
+
       default:
+        // FAIL-OPEN, ABER NICHT MEHR STUMM.
+        //
+        // Dieser Zweig war die teuerste Falle des Projekts: ein Typ, dessen
+        // Kette nur halb verdrahtet ist (Union ja, Höhe/Stil nein), sieht hier
+        // völlig richtig aus — ein sauberes Rechteck — und ist in Axonometrie,
+        // 3D und Export unsichtbar, weil die alle fail-closed sind. Man sucht
+        // dann in der Axonometrie nach einem Fehler, der im Grundriss sitzt.
+        //
+        // Gezeichnet wird trotzdem weiter: die Ansicht soll nicht sterben, nur
+        // weil ein Zeichen fehlt. Aber sie sagt es — EINMAL je Typ, sonst füllt
+        // eine Zeichenschleife mit 60 Bildern je Sekunde die Konsole so schnell,
+        // dass die Meldung selbst zum Rauschen wird.
+        this.meldeUnbekanntenTyp(el.typ)
         this.ausRechteck(el, ausstattungFuellung)
         return
     }
+  }
+
+  /**
+   * Schon gemeldete unbekannte Typen (W3). Instanz-gebunden und nicht statisch:
+   * zwei Zeichner nebeneinander (Planer und eine zweite Ansicht) sollen beide
+   * einmal melden — die Meldung gehört zu dem, was DIESE Ansicht zeichnet.
+   */
+  private gemeldeteTypen = new Set<string>()
+
+  /** Meldet einen Typ ohne eigene Zeichenvorschrift genau einmal. */
+  private meldeUnbekanntenTyp(typ: string): void {
+    if (this.gemeldeteTypen.has(typ)) {
+      return
+    }
+    this.gemeldeteTypen.add(typ)
+    console.warn(
+      `Ausstattung: keine Zeichenvorschrift für Typ "${typ}" — als schlichtes Rechteck ` +
+        `gezeichnet. Vollständig wird ein Typ erst mit Eintrag in AusstattungTyp, OBERKANTE_CM, ` +
+        `FARBE, AUSSTATTUNG_NAME, zeichneAusstattung, AUSSTATTUNG_STIL und ERLAUBTE_TYPEN — ` +
+        `fehlt einer davon, ist das Stück hier sichtbar und in der Axonometrie nicht.`
+    )
   }
 
   /** */

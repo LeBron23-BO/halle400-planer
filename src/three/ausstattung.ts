@@ -62,7 +62,28 @@ export const OBERKANTE_CM: Record<AusstattungTyp, number> = {
   // wallHeight, damit kein sichtbarer Spalt entsteht.
   aufzug: 300,
   // Untergrund (Loggien-Belag, Kiesbett) — eine Lage, kein Möbel.
-  flaeche: 2
+  flaeche: 2,
+  // ── W3 · Ausstattung des Bewegungs-Betriebs ──────────────────────────────
+  // Für diese drei gibt es KEINE Norm, die eine Höhe festlegt — anders als beim
+  // Büroarbeitstisch (DIN EN 527-1) oder beim Bürostuhl (DIN EN 1335). Sie
+  // stehen deshalb ehrlich als GESETZTE ANNAHME da, mit Begründung. Eine
+  // erfundene DIN-Nummer wäre schlimmer als eine offene Annahme: sie sähe
+  // belegt aus.
+  //
+  // Gesetzte Annahme: eine ausgerollte Gymnastik-/Yogamatte ist wenige
+  // Millimeter bis rund 2 cm dick. Genauer gibt es der Grundriss nicht her, und
+  // genauer braucht es die Ansicht auch nicht — es ist eine Lage auf dem Boden,
+  // wie `flaeche`.
+  matte: 2,
+  // Gesetzte Annahme: Trainingsgeräte streuen extrem (Hantelbank rund 45 cm,
+  // Seilzugturm über 220 cm). 130 cm ist die Mitte dieses Feldes und bleibt
+  // unter Augenhöhe — ein Feld voller 220-cm-Körper stellte die Axonometrie zu
+  // und behauptete dabei eine Höhe, die nur für einen Teil der Geräte stimmt.
+  geraet: 130,
+  // Gesetzte Annahme: Behandlungs- und Massageliegen sind in der Regel
+  // höhenverstellbar; die Herstellerangaben liegen meist zwischen 60 und 85 cm.
+  // 65 cm ist die übliche Arbeitsstellung. Eine Norm dazu gibt es nicht.
+  liege: 65
 }
 
 /**
@@ -81,7 +102,15 @@ export const OBERKANTE_CM: Record<AusstattungTyp, number> = {
  */
 export const KOERPER_CM: Partial<Record<AusstattungTyp, number>> = {
   tisch: 6,
-  rundtisch: 6
+  rundtisch: 6,
+  // Dieselbe Überlegung wie beim Tisch: der Grundriss zeigt die LIEGEFLÄCHE.
+  // Ein Vollkörper von 0 bis 65 cm behauptete, das Volumen darunter sei belegt —
+  // bei einer 200 × 70 cm grossen Liege ein massiver Block, wo in Wirklichkeit
+  // ein schmales Gestell steht. Das Gestell selbst bleibt weg: seine Form ist
+  // nicht gemessen, jedes Bein wäre erfunden.
+  liege: 8
+  // `matte` und `geraet` stehen auf dem Boden und brauchen keinen Eintrag —
+  // ihre Körperhöhe IST ihre Oberkante.
 }
 
 /**
@@ -110,10 +139,25 @@ const FARBE: Record<AusstattungTyp, number> = {
   kochfeld: 0x27364f,
   pflanze: 0x2f5545, // Grünstich statt Blau — Bewuchs, und weiterhin b ≠ r
   aufzug: 0x27364f,
-  flaeche: 0x33465e
+  flaeche: 0x33465e,
+  // W3 — dieselbe Regel wie oben, nachgerechnet statt nach Gefühl gewählt:
+  // matte  b−r = 0x63−0x2f = 52
+  // geraet b−r = 0x52−0x2a = 40
+  // liege  b−r = 0x6b−0x35 = 54
+  // Alle deutlich über der Schwelle von 12, mit der die Prüfwerkzeuge Möbel von
+  // neutralgrauen Wandkanten trennen.
+  matte: 0x2f4a63,
+  geraet: 0x2a3c52,
+  liege: 0x35496b
 }
 
-/** Typen, die als stehender Zylinder statt als Quader gebaut werden. */
+/**
+ * Typen, die als stehender Zylinder statt als Quader gebaut werden.
+ *
+ * Die drei W3-Typen gehören NICHT dazu: Matte, Trainingsgerät und Liege haben
+ * einen rechteckigen Grundriss. Ein Zylinder wäre hier keine Vereinfachung,
+ * sondern eine falsche Aussage über die Standfläche.
+ */
 const RUND: ReadonlySet<AusstattungTyp> = new Set<AusstattungTyp>(['rundtisch', 'pflanze'])
 
 export class AusstattungThree {

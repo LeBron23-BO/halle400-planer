@@ -73,8 +73,15 @@ export type LoeschZiel =
   | { art: 'wand'; wand: Wall; beschreibung: string }
   | { art: 'ausstattung'; kennung: string; beschreibung: string }
 
-/** Deutsche Namen der Ausstattungs-Zeichen für die Rückfrage (E1). */
-const AUSSTATTUNG_NAME: Record<string, string> = {
+/**
+ * Deutsche Namen der Ausstattungs-Zeichen für die Rückfrage (E1) — und seit W3
+ * auch für die Beschriftung der Palette.
+ *
+ * Ausdrücklich EINE Liste für beides: hiesse dasselbe Zeichen in der Palette
+ * „Gerät" und in der Lösch-Rückfrage „Fitnessgerät", müsste der Nutzer beim
+ * Bestätigen raten, ob er dasselbe wegwirft, das er hingestellt hat.
+ */
+export const AUSSTATTUNG_NAME: Record<string, string> = {
   tisch: 'Tisch',
   rundtisch: 'Runder Tisch',
   stuhl: 'Stuhl',
@@ -85,7 +92,10 @@ const AUSSTATTUNG_NAME: Record<string, string> = {
   kochfeld: 'Kochfeld',
   pflanze: 'Pflanze',
   aufzug: 'Aufzug',
-  flaeche: 'Fläche'
+  flaeche: 'Fläche',
+  matte: 'Matte',
+  geraet: 'Fitnessgerät',
+  liege: 'Liege'
 }
 
 /** how much will we move a corner to make a wall axis aligned (cm) */
