@@ -142,8 +142,12 @@ const auskunft = await page.evaluate(() => ({
   ansicht: window.__planerDatei.ansicht(),
   speicherTraegt: window.__planerDatei.speicherTraegt,
   schluessel: window.__planerDatei.schluessel,
+  bauStempel: window.__planerDatei.bauStempel,
   blatt: window.__planerDatei.bildBlatt()
 }))
+// Den Bau-Zeitpunkt IMMER mitschreiben: ein abgebrochener Bau laesst die alte
+// Datei liegen, und dann prueft dieses Werkzeug in bester Absicht das Gestrige.
+log(`     geprueft wird der Bau vom ${auskunft.bauStempel}`)
 log(`     Speicher traegt: ${auskunft.speicherTraegt} · Schluessel: ${auskunft.schluessel}`)
 pruefe(auskunft.ansicht === 'axo', `G1: die Axonometrie ist die Startansicht (${auskunft.ansicht})`)
 pruefe(auskunft.blatt.tinte > 5000, `G1: das Blatt ist wirklich gezeichnet (${auskunft.blatt.tinte} Bildpunkte Tinte)`)
@@ -261,6 +265,23 @@ pruefe(
 )
 await page.screenshot({ path: path.join(DIR, 'C_nach_dem_zug.png') })
 
+/* ══ G8 — die Axonometrie folgt dem Grundriss ═════════════════════════
+   STEHT HIER und nicht weiter unten: nach dem Zug, aber VOR Rueckgaengig. Ein
+   Undo laedt den Grundriss neu und meldet das dem ganzen Haus — die Ansicht
+   folgte dann also einem Undo und nicht dem Zug, und das Gate waere gruen,
+   obwohl das Verschieben allein nichts bewirkt haette. Genau so war es in der
+   ersten Fassung: falsch gruen. */
+await klick(page, 'btnAnsichtAxo')
+await page.waitForTimeout(700)
+const blattNachZug = await page.evaluate(() => window.__planerDatei.bildBlatt())
+pruefe(
+  blattNachZug.summe !== blattVorher.summe,
+  `G8: das Blatt folgt der verschobenen Wand (Pruefsumme ${blattVorher.summe} -> ${blattNachZug.summe})`
+)
+await page.screenshot({ path: path.join(DIR, 'D_blatt_folgt.png') })
+await klick(page, 'btnAnsichtPlan')
+await page.waitForTimeout(300)
+
 /* ══ G5 — Rueckgaengig, und zwar in EINEM Schritt ══════════════════════
    Ein Zug ueber viele Bewegungen muss GENAU EIN Undo-Schritt sein. Deshalb
    wird nach dem einen Undo geprueft, dass die Historie LEER ist — waere jede
@@ -287,18 +308,6 @@ pruefe(
   nachRedo && Math.abs(nachRedo.x - gezogen.x) < 0.5 && Math.abs(nachRedo.y - gezogen.y) < 0.5,
   `G5: Wiederholen bringt sie erneut (${nachRedo?.x}, ${nachRedo?.y})`
 )
-
-/* ══ G8 — die Axonometrie folgt dem Grundriss ═════════════════════════ */
-await klick(page, 'btnAnsichtAxo')
-await page.waitForTimeout(700)
-const blattNachZug = await page.evaluate(() => window.__planerDatei.bildBlatt())
-pruefe(
-  blattNachZug.summe !== blattVorher.summe,
-  `G8: das Blatt folgt der verschobenen Wand (Pruefsumme ${blattVorher.summe} -> ${blattNachZug.summe})`
-)
-await page.screenshot({ path: path.join(DIR, 'D_blatt_folgt.png') })
-await klick(page, 'btnAnsichtPlan')
-await page.waitForTimeout(300)
 
 /* ══ G7 — Sichern erzeugt eine Datei, die sich wieder laden laesst ═════ */
 let exportPfad = null
@@ -395,8 +404,7 @@ await page.waitForTimeout(800)
 const nachReset = await page.evaluate((id) => ({
   ecke: window.__planerDatei.ecke(id),
   zahlen: window.__planerDatei.zahlen(),
-  stand: window.__planerDatei.speicherStand(),
-  leiste: !!document.getElementById('standleiste').offsetParent
+  stand: window.__planerDatei.speicherStand()
 }), wahl.id)
 pruefe(
   nachReset.ecke && Math.abs(nachReset.ecke.x - wahl.x) < 0.5 && Math.abs(nachReset.ecke.y - wahl.y) < 0.5,
@@ -448,9 +456,9 @@ await seiteB.goto(pathToFileURL(path.join(ordnerB, 'Halle400-Modell.html')).href
 await warteBereit(seiteB)
 const standB = await seiteB.evaluate((id) => ({
   ecke: window.__planerDatei.ecke(id),
-  schluessel: window.__planerDatei.schluessel,
-  leiste: !!document.getElementById('standleiste').offsetParent
+  schluessel: window.__planerDatei.schluessel
 }), wahl.id)
+standB.leiste = await sichtbar(seiteB, '#standleiste')
 log(`     Schluessel A: ${standA.schluessel}`)
 log(`     Schluessel B: ${standB.schluessel}`)
 pruefe(standA.schluessel !== standB.schluessel, 'G9: beide Kopien haben eigene Speicher-Schluessel')
@@ -468,6 +476,71 @@ pruefe(
   standANeu && Math.abs(standANeu.x - standA.ecke.x) < 0.5,
   `G9: Ordner A behaelt seinen eigenen Stand (${standANeu?.x}, ${standANeu?.y})`
 )
+
+/* ══ G10 — die Loesch-Rueckfrage ══════════════════════════════════════
+   Sie laeuft auf der unberuehrten Kopie B, damit sie den Zug aus A nicht
+   stoert. Zwei Wege werden gemessen, nicht einer: Abbrechen darf NICHTS
+   loeschen — ein Gate, das nur "Entfernen entfernt" prueft, bestuende auch
+   dann, wenn beide Knoepfe dasselbe taeten. */
+await klick(seiteB, 'btnBearbeiten')
+await seiteB.waitForTimeout(500)
+const wand = await seiteB.evaluate(() => {
+  const ecken = window.__planerDatei.ecken()
+  const kandidaten = window.__planerDatei.waende()
+    .map((w) => ({ x: (w.ax + w.bx) / 2, y: (w.ay + w.by) / 2, laenge: Math.hypot(w.bx - w.ax, w.by - w.ay) }))
+    .filter((m) =>
+      m.laenge > 60 && m.x > 260 && m.x < 1340 && m.y > 160 && m.y < 800 &&
+      !ecken.some((e) => Math.hypot(e.bx - m.x, e.by - m.y) < 30)
+    )
+  kandidaten.sort((a, b) => b.laenge - a.laenge)
+  return kandidaten[0] || null
+})
+pruefe(wand !== null, 'G10: eine Wand zum Anfassen gefunden')
+
+const tippe = (p, x, y) =>
+  p.evaluate((q) => {
+    const m = window.__planerDatei.maus
+    m('mousemove', q.x, q.y)
+    m('mousedown', q.x, q.y)
+    m('mouseup', q.x, q.y)
+  }, { x, y })
+
+if (wand) {
+  await klick(seiteB, 'wzDelete')
+  await seiteB.waitForTimeout(300)
+  await tippe(seiteB, wand.x, wand.y)
+  await seiteB.waitForTimeout(400)
+  const frageDa = await sichtbar(seiteB, '#rueckfrage')
+  const frageText = await seiteB.evaluate(() => document.getElementById('rueckfrageZiel').textContent)
+  pruefe(frageDa && /m lang/.test(frageText), `G10: die Rueckfrage benennt, was verschwindet ("${frageText}")`)
+
+  await klick(seiteB, 'btnAbbrechen')
+  await seiteB.waitForTimeout(300)
+  const nachAbbruch = await seiteB.evaluate(() => window.__planerDatei.zahlen())
+  pruefe(
+    (await sichtbar(seiteB, '#rueckfrage')) === false && nachAbbruch.waende === 100,
+    `G10: GEGENPROBE — "Abbrechen" loescht NICHTS (${nachAbbruch.waende} Waende)`
+  )
+
+  await tippe(seiteB, wand.x, wand.y)
+  await seiteB.waitForTimeout(400)
+  await klick(seiteB, 'btnEntfernen')
+  await seiteB.waitForTimeout(500)
+  const nachLoeschen = await seiteB.evaluate(() => window.__planerDatei.zahlen())
+  pruefe(
+    (await sichtbar(seiteB, '#rueckfrage')) === false && nachLoeschen.waende === 99,
+    `G10: "Entfernen" nimmt genau eine Wand weg (${nachLoeschen.waende} Waende)`
+  )
+
+  await klick(seiteB, 'btnUndo')
+  await seiteB.waitForTimeout(500)
+  const nachUndo2 = await seiteB.evaluate(() => window.__planerDatei.zahlen())
+  pruefe(
+    nachUndo2.waende === 100 && nachUndo2.raeume === 25,
+    `G10: Rueckgaengig bringt sie zurueck (${nachUndo2.waende} Waende, ${nachUndo2.raeume} Raeume)`
+  )
+  await seiteB.screenshot({ path: path.join(DIR, 'E_loesch_rueckfrage.png') })
+}
 
 pruefe(
   konsolenFehler.length === 0,

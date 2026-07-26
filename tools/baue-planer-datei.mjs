@@ -505,13 +505,13 @@ if (start) {
 }
 
 /* ── Woran erkennt die Huelle eine Aenderung? ───────────────────────
-   GEMESSEN, nicht angenommen: `fireOnUpdatedRooms` reicht NICHT. Es haengt an
-   `Floorplan.update()`, und das ruft der Kern nur bei neuer/entfernter Wand,
+   GEMESSEN, nicht angenommen: \`fireOnUpdatedRooms\` reicht NICHT. Es haengt an
+   \`Floorplan.update()\`, und das ruft der Kern nur bei neuer/entfernter Wand,
    beim Verschmelzen von Ecken und beim Laden (floorplan.ts:207,216,352 ·
-   corner.ts:298,329). Eine VERSCHOBENE Ecke ruft es nicht — `Corner.move()`
+   corner.ts:298,329). Eine VERSCHOBENE Ecke ruft es nicht — \`Corner.move()\`
    benachrichtigt nur seine Waende. Wer sich allein darauf verliesse, haette
    genau den Fall verloren, um den es in dieser Welle geht: das Ziehen. (Der
-   Nachweis war knifflig, weil ein Undo danach doch noch `update()` ausloest —
+   Nachweis war knifflig, weil ein Undo danach doch noch \`update()\` ausloest —
    die Aenderung kam also scheinbar an, nur eine Handlung zu spaet.)
 
    Darum wird der Zustand VERGLICHEN statt geglaubt: nach jedem Zeigerende und
@@ -547,7 +547,7 @@ const undo = new UndoManager(grundriss);
 zeichner.setUndoManager(undo);
 
 /* Das Ende eines Zuges — hier, nicht bei jeder Bewegung: waehrend eines Ziehens
-   feuert `mousemove` hundertfach, und jedes Mal den ganzen Grundriss
+   feuert \`mousemove\` hundertfach, und jedes Mal den ganzen Grundriss
    auszuschreiben waere Arbeit ohne Ertrag. Am DOKUMENT und nicht am Canvas,
    weil die Taste auch ausserhalb der Zeichenflaeche losgelassen werden kann. */
 document.addEventListener('mouseup', bemerkeAenderung);
@@ -1002,6 +1002,15 @@ window.__planerDatei = {
   ecken: function(){
     return grundriss.getCorners().map(function(c){
       return { id: c.id, x: c.x, y: c.y, bx: zeichner.convertX(c.x), by: zeichner.convertY(c.y) };
+    });
+  },
+  waende: function(){
+    return grundriss.getWalls().map(function(w){
+      const a = w.getStart(), b = w.getEnd();
+      return {
+        ax: zeichner.convertX(a.x), ay: zeichner.convertY(a.y),
+        bx: zeichner.convertX(b.x), by: zeichner.convertY(b.y)
+      };
     });
   },
   ecke: function(id){
