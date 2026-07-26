@@ -1,0 +1,85 @@
+{
+  "version": "2.0",
+  "workflow": "deep-execute",
+  "run_id": "deep-execute-20260726-055240",
+  "project": "unnamed",
+  "seal_mode": "STANDARD",
+  "archetyp": "UNKNOWN",
+  "created": "2026-07-26T03:52:40.250340+00:00",
+  "phases": {
+    "de_phase0": {
+      "status": "PENDING",
+      "reason": null,
+      "proofs": [],
+      "timestamp": null
+    },
+    "de_phase1": {
+      "status": "PENDING",
+      "reason": null,
+      "proofs": [],
+      "timestamp": null
+    },
+    "de_phase2": {
+      "status": "PENDING",
+      "reason": null,
+      "proofs": [],
+      "timestamp": null
+    },
+    "de_phase3": {
+      "status": "PENDING",
+      "reason": null,
+      "proofs": [],
+      "timestamp": null
+    },
+    "de_phase4": {
+      "status": "PENDING",
+      "reason": null,
+      "proofs": [],
+      "timestamp": null
+    },
+    "de_phase5": {
+      "status": "PENDING",
+      "reason": null,
+      "proofs": [],
+      "timestamp": null
+    },
+    "de_phase6": {
+      "status": "PENDING",
+      "reason": null,
+      "proofs": [],
+      "timestamp": null
+    }
+  },
+  "dependencies": {
+    "de_phase0": [],
+    "de_phase1": [
+      "de_phase0"
+    ],
+    "de_phase2": [
+      "de_phase1"
+    ],
+    "de_phase3": [
+      "de_phase2"
+    ],
+    "de_phase4": [
+      "de_phase3"
+    ],
+    "de_phase5": [
+      "de_phase4"
+    ],
+    "de_phase6": [
+      "de_phase5"
+    ]
+  },
+  "baseline_metrics": {
+    "ts": "2026-07-26T03:52:40.367889+00:00",
+    "gold_rate": 0.217,
+    "gold_count": 603,
+    "total_tasks": 2776,
+    "meta_composite": 0.802,
+    "verification_quality": 0.873,
+    "rules_coverage": 0.698,
+    "learning_captured": 0.482,
+    "regression_free": 1.0
+  }
+}
