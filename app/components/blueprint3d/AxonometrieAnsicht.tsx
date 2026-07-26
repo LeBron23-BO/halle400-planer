@@ -6,25 +6,28 @@
  *
  * Haengt den Renderer aus `src/axo/` neben den 2D-Zeichner und die 3D-Ansicht.
  *
- * WARUM HIER NICHT BEARBEITET WIRD — eine bewusste Entscheidung
- * Die Editier-Werkzeuge E1-E3 (Zeichnen, Loeschen, Verschieben) wirken in
- * dieser Ansicht NICHT; sie bleiben dem 2D-Zeichner vorbehalten. Grund ist die
- * Genauigkeit, die in diesem Projekt ueber allem steht: in einer schraegen
- * Parallelprojektion trifft ein Mausklick keinen eindeutigen Punkt des
- * Grundrisses, sondern einen Sehstrahl. Ein Klick auf eine Wand landet auf
- * ihrer Krone, nicht auf ihrem Fusspunkt — jede Eingabe braeuchte eine
- * Annahme darueber, in welcher Hoehe der Nutzer gerade zielt. Genau solche
- * stillen Annahmen erzeugen die Abweichungen, die dieses Projekt vermeiden
- * will.
+ * WAS HIER BEARBEITET WIRD — UND WAS NICHT (W7)
+ * Bis W6 stand hier: „in dieser Ansicht wird nicht bearbeitet". Ueber die
+ * PROJEKTION war das nie falsch — ein Klick trifft keinen Punkt, sondern einen
+ * Sehstrahl. Ueber den UMFANG war es zu weit: fuer einen Koerper mit bekannter
+ * Ober- und Unterkante ist dieser Strahl eine ENDLICHE Strecke, und jedes
+ * Ausstattungs-Stueck kennt sein `y0`/`y1`. Es wird also nichts geraten.
  *
- * Die Ansicht ist darum ein FENSTER, kein Werkzeug: sie zeigt jede Aenderung
- * aus dem 2D-Zeichner sofort, weil sie ihre Szene bei jedem `updated_rooms`
- * neu aus dem lebenden Modell baut — nicht aus der Plan-Datei.
+ * MOEBEL lassen sich hier darum ziehen (Q/E drehen, Entf loescht). WAENDE und
+ * OEFFNUNGEN nicht, und das bleibt so: der Klick auf eine Wandkrone landet
+ * 1,63 m neben ihrem Fusspunkt, eine verschobene gemessene Ecke braeche den
+ * Rueckweg ins Projekt (W5) hart ab, und Anschlag wie Aufschlagseite einer Tuer
+ * sind in diesem Bild unsichtbar. Ein frei gesetzter Punkt in der Luft hat
+ * keine bekannte Hoehe — dort gilt der alte Satz woertlich weiter.
+ *
+ * Die Ansicht bleibt im Uebrigen ein FENSTER: sie zeigt jede Aenderung aus dem
+ * 2D-Zeichner sofort, weil sie ihre Szene bei jedem `updated_rooms` neu aus dem
+ * lebenden Modell baut — nicht aus der Plan-Datei.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Configuration, configWallThickness } from '@blueprint3d/core/configuration'
-import { baueSzene } from '@blueprint3d/axo/axo-szene.js'
+import { ausstattungsKoerper, baueSzene } from '@blueprint3d/axo/axo-szene.js'
 import { erzeugeAxonometrie } from '@blueprint3d/axo/axo-zeichnen.js'
 import { BLICKE, SAEULEN } from '@blueprint3d/axo/axo-kontrakt.js'
 import { OBERKANTE_CM, KOERPER_CM } from '@blueprint3d/three/ausstattung'
@@ -61,6 +64,15 @@ export function AxonometrieAnsicht({ blueprint3d, labels, aktiv }: Props) {
   const [tafelOffen, setTafelOffen] = useState(true)
   const [vollausbau, setVollausbau] = useState(false)
   const [verortet, setVerortet] = useState<Record<number, string>>({})
+  /**
+   * „Zu flach zum Ziehen" — EHRLICH SAGEN statt still verweigern (W7).
+   *
+   * Unter einer Neigung von 0,35 bedeutet 1 Bildpunkt ueber 22 cm Tiefe; ein
+   * Zittern der Hand legte das Stueck einen halben Meter weiter hinten ab, ohne
+   * dass man es im Bild saehe. Dort wird nur gedreht — und der Nutzer erfaehrt,
+   * warum.
+   */
+  const [zuFlach, setZuFlach] = useState(false)
 
   /** Szene aus dem LEBENDEN Modell bauen — nicht aus der Plan-Datei. */
   const baue = useCallback(() => {
@@ -102,7 +114,43 @@ export function AxonometrieAnsicht({ blueprint3d, labels, aktiv }: Props) {
     axoRef.current = erzeugeAxonometrie(canvas, szene, {
       namen,
       dunkel: !!dunkel,
-      randRechts: tafelOffen ? TAFEL_BREITE + 24 : 0
+      randRechts: tafelOffen ? TAFEL_BREITE + 24 : 0,
+      /**
+       * BEARBEITEN IM BLATT (W7) — ueber DENSELBEN Kern, der auch den
+       * 2D-Zeichner bedient. Der Renderer meldet nur, WO im Weltmass gegriffen
+       * wird; was daraus wird, entscheidet der Floorplanner mit seiner einen
+       * Einrast-Rechnung. Zwei Zieh-Fassungen waeren zwei Ergebnisse fuer
+       * dieselbe Bewegung.
+       *
+       * Anders als in der Doppelklick-Datei gibt es hier keinen
+       * „Bearbeiten"-Schalter: der Planer IST der Editor, seine Ansichten sind
+       * nur Ansichten desselben Modells. `aktiv` ist deshalb schlicht wahr.
+       */
+      bearbeitung: {
+        aktiv: () => true,
+        greife: (id: string, wx: number, wy: number) =>
+          !!blueprint3d?.floorplanner?.zugBeginnen(id, wx, wy),
+        ziehe: (wx: number, wy: number) => {
+          const fpl = blueprint3d?.floorplanner
+          if (!fpl?.zugSchritt(wx, wy)) return null
+          const stueck = blueprint3d.model.floorplan.findeAusstattung(fpl.zugLaeuft())
+          // NUR dieser eine Koerper, aus DERSELBEN Funktion, aus der
+          // `baueSzene` ihn baut: ein voller Neubau kostet gemessen ueber
+          // 16 ms je Zeigerbewegung.
+          return stueck
+            ? ausstattungsKoerper(stueck, { oberkante: OBERKANTE_CM, koerper: KOERPER_CM })[0] || null
+            : null
+        },
+        lassLos: () => {
+          const fpl = blueprint3d?.floorplanner
+          const lief = fpl?.zugLaeuft()
+          fpl?.zugBeenden()
+          // Erst beim Loslassen der volle Neubau — und ueber `update()`, damit
+          // auch alles andere (3D, Zaehler) den Zug mitbekommt.
+          if (lief) blueprint3d.model.floorplan.update()
+        },
+        zuFlach: () => setZuFlach(true)
+      }
     })
     axoCanvasRef.current = canvas
     axoRef.current.passeAn()
@@ -141,13 +189,67 @@ export function AxonometrieAnsicht({ blueprint3d, labels, aktiv }: Props) {
     return () => globalThis.removeEventListener('resize', beiGroesse)
   }, [aktiv])
 
+  /**
+   * Q, E und Entf wirken auf das Stueck UNTER DEM ZEIGER (W7) — dieselbe Regel
+   * wie im 2D-Zeichner, wo es ebenfalls keine Auswahl gibt, die einen Klick
+   * ueberdauert.
+   *
+   * IN DER FANG-PHASE mit `stopPropagation`: der Floorplanner hoert Q und E
+   * selbst am Dokument ab und wirkt dabei auf `activeAusstattung` — das ist der
+   * letzte Treffer im 2D-ZEICHNER und bleibt liegen, wenn der Zeiger dessen
+   * Flaeche verlaesst. Ohne diesen Riegel drehte ein Q hier ein Stueck, das man
+   * gar nicht sieht.
+   */
+  useEffect(() => {
+    if (!aktiv) return
+    const beiTaste = (e: KeyboardEvent) => {
+      const ziel = e.target as HTMLElement | null
+      if (ziel && (ziel.tagName === 'INPUT' || ziel.tagName === 'TEXTAREA' || ziel.isContentEditable)) return
+      if (e.ctrlKey || e.metaKey || e.altKey) return
+      const taste = (e.key || '').toLowerCase()
+      if (taste !== 'q' && taste !== 'e' && taste !== 'delete') return
+      e.stopPropagation()
+      const id = axoRef.current?.unterZeiger
+      if (!id) return
+      e.preventDefault()
+      const fpl = blueprint3d?.floorplanner
+      if (taste === 'delete') {
+        fpl?.loeschStueckVorschlagen(id)
+        return
+      }
+      if (fpl?.dreheStueck(id, taste === 'q' ? -1 : 1)) {
+        const stueck = blueprint3d.model.floorplan.findeAusstattung(id)
+        if (stueck) {
+          axoRef.current.tauscheKoerper(
+            id,
+            ausstattungsKoerper(stueck, { oberkante: OBERKANTE_CM, koerper: KOERPER_CM })[0]
+          )
+        }
+      }
+    }
+    document.addEventListener('keydown', beiTaste, true)
+    return () => document.removeEventListener('keydown', beiTaste, true)
+  }, [aktiv, blueprint3d])
+
+  // Die Auskunft „zu flach" verschwindet von selbst — sie gehoert zu EINEM
+  // Griff, nicht zum Zustand des Blattes.
+  useEffect(() => {
+    if (!zuFlach) return
+    const uhr = setTimeout(() => setZuFlach(false), 5000)
+    return () => clearTimeout(uhr)
+  }, [zuFlach])
+
   if (!aktiv) return null
 
   const blick = BLICKE[blickIndex]
 
   return (
     <div className="absolute inset-0 overflow-hidden" style={{ background: 'var(--axo-papier, #F2ECDE)' }}>
-      <canvas ref={canvasRef} className="block h-full w-full touch-none" style={{ cursor: 'grab' }} />
+      {/* Der Grund-Zeiger steht in der Stilvorlage, NICHT als Inline-Stil: der
+          Renderer setzt „move" ueber einem greifbaren Moebel inline (W7), und
+          ein Inline-Stil aus React ueberschriebe ihn beim naechsten
+          Neuzeichnen wieder. */}
+      <canvas ref={canvasRef} className="axo-flaeche block h-full w-full touch-none" />
 
       {/* Blattkopf. Beginnt unterhalb der Navigationsleiste des Planers (h-12
           mobil, h-14 breit) — in der Vorlage sass er ganz oben, dort steht hier
@@ -304,14 +406,36 @@ export function AxonometrieAnsicht({ blueprint3d, labels, aktiv }: Props) {
         </button>
       </div>
 
+      {/* W7: die Zeile sagt jetzt auch, was hier BEARBEITET werden kann. Ein
+          Hinweis, der eine Bedienung verschweigt, die es gibt, lehrt den
+          Nutzer, sie nicht zu versuchen. */}
       <div
-        className="pointer-events-none absolute bottom-5 left-6 hidden text-[9.5px] uppercase tracking-[0.11em] opacity-80 md:block"
+        className="pointer-events-none absolute bottom-5 left-6 hidden text-[9.5px] uppercase leading-relaxed tracking-[0.11em] opacity-80 md:block"
         style={{ fontFamily: 'Roboto Mono, monospace', color: '#6B7570' }}
       >
         Ziehen dreht · Rad zoomt · Umschalt+Ziehen verschiebt
+        <br />
+        Möbel lassen sich hier ziehen · Q und E drehen · Entf löscht
       </div>
 
+      {/* Die ehrliche Grenze, und zwar SICHTBAR: unter einer Neigung von 0,35
+          bedeutet ein Bildpunkt über 22 cm Tiefe. Dort wird nur gedreht — und
+          das steht da, statt dass ein Griff wortlos nichts tut. */}
+      {zuFlach && (
+        <div
+          className="pointer-events-none absolute left-1/2 top-20 z-20 max-w-[46ch] -translate-x-1/2 border px-3.5 py-2 text-[11px] leading-snug md:top-24"
+          role="status"
+          style={{ background: 'rgba(242,236,222,.96)', borderColor: '#C8703A', color: '#46514A' }}
+        >
+          Das Blatt liegt zu flach zum Verschieben — ein Bildpunkt wäre hier über 22 cm Tiefe. Blatt
+          aufrichten oder „Plan“ wählen. Drehen mit Q und E geht weiter.
+        </div>
+      )}
+
       <style jsx>{`
+        .axo-flaeche {
+          cursor: grab;
+        }
         .axo-btn {
           font-family: 'Roboto Mono', 'Cascadia Mono', Consolas, monospace;
           font-size: 10.5px;
