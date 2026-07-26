@@ -35,9 +35,14 @@ node tools/pruefe-touch.mjs        # E3: Langdruck + Tippen am Handy, echte Touc
 node tools/pruefe-axonometrie.mjs  # X2/X3: 6 Gates — Raumableitung == Planer-Kern, Szene vollstaendig,
                                    #        Bild gezeichnet (mit Gegenprobe), Ansicht folgt dem Grundriss
 
-# Bank-Ansicht fuer den Businessplan (E4/X4) — eine Datei, Doppelklick, kein Netz
-node tools/baue-bank-ansicht.mjs   # -> Halle400-Modell.html (~138 KB, alles inline)
-node tools/pruefe-bank-ansicht.mjs # prueft unter file:// mit GESPERRTEM Netz + erzeugt bank-export/*.png
+# Die Doppelklick-Datei fuer die Bank — eine Datei, kein Netz, kein Server
+node tools/baue-planer-datei.mjs   # -> Halle400-Modell.html (~670 KB): BEARBEITBAR (W1)
+node tools/pruefe-planer-datei.mjs # 10 Gates unter file:// mit GESPERRTEM Netz + echtem Nutzerprofil
+
+# Die reine ANSICHT (E4/X4) — Vorlaeufer, weiterhin baubar, aber nicht mehr das
+# Auslieferungsziel. Ohne --ziel ueberschriebe sie die bearbeitbare Datei.
+node tools/baue-bank-ansicht.mjs   --ziel /tmp/bank.html   # ~139 KB, nur Axonometrie
+node tools/pruefe-bank-ansicht.mjs --datei /tmp/bank.html
 ```
 
 ## Die drei Ansichten (X1-X4, 2026-07-26)
@@ -84,6 +89,33 @@ E2E-Beweis (der einzige, der die Auslieferung wirklich prüft):
 curl -s http://localhost:3301/plaene/halle400.json | python -c "import sys,json;d=json.load(sys.stdin);f=d['floorplan'];print(len(f['corners']),len(f['walls']))"
 ```
 Stand 2026-07-24 nach T2d: SOLL `76 100`, y-min −352 cm (Aufzug-Vorbau ausgeliefert).
+
+## Die Doppelklick-Datei (W1, 2026-07-26)
+
+`Halle400-Modell.html` ist seit W1 nicht mehr nur Ansicht, sondern **bearbeitbar**:
+sie traegt den uebersetzten 2D-Kern (`tools/buendel-kern.mjs`), den Rechen-Teil von
+three, die vier Axonometrie-Module und den gemessenen Plan — alles in einer Datei,
+weil `file://` kein Nachladen erlaubt. Drei Dinge muss man dazu wissen:
+
+1. **Der eingebaute Plan bleibt unangetastet.** Er ist die Grundwahrheit aus der
+   PDF. Der Arbeitsstand des Nutzers liegt daneben (localStorage) und laesst sich
+   mit einem Knopf verwerfen.
+2. **`file://` ist EIN Ursprung fuer die ganze Festplatte** (gemessen): zwei Kopien
+   der Datei in verschiedenen Ordnern teilten sich sonst einen Speicher. Der
+   Schluessel traegt darum den Abdruck des eingebauten Plans UND den Ablageort.
+   Der Platz ist knapp (~4,8 MB fuer ALLE `file://`-Seiten zusammen) und ein
+   Fehlschlag ist still — die Datei meldet ihn deshalb sichtbar.
+3. **`fireOnUpdatedRooms` sieht ein Verschieben NICHT.** `Floorplan.update()` laeuft
+   nur bei neuer/entfernter Wand, beim Verschmelzen von Ecken und beim Laden
+   (`floorplan.ts:207,216,352` · `corner.ts:298,329`); `Corner.move()` benachrichtigt
+   nur seine Waende. Wer eine Ansicht oder ein Sichern daran haengt, verliert genau
+   das Ziehen. Die Doppelklick-Datei vergleicht deshalb nach jedem Zeigerende den
+   ausgeschriebenen Grundriss. **Offen:** `AxonometrieAnsicht.tsx` im Planer haengt
+   noch allein an `fireOnUpdatedRooms` und folgt einem reinen Verschieben erst beim
+   naechsten Ereignis.
+
+**Messzugang:** `window.__planerDatei` (nur in dieser Datei) — Modellzahlen, Ecken
+in Welt- UND Bildkoordinaten, Bild-Pruefsummen, Zeiger-Ereignisse.
 
 ## Hintergrund
 
