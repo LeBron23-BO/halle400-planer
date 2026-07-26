@@ -3,7 +3,11 @@
 # Prüfungszahl. Sequentiell und nicht parallel: jedes Werkzeug startet einen
 # eigenen Chromium und misst am selben Server — nebeneinander stören sie sich.
 cd "$(dirname "$0")/.." || exit 1
-GATES="pruefe-kennungen pruefe-ziehen pruefe-palette pruefe-undo pruefe-ansicht pruefe-ausstattung pruefe-loeschen pruefe-zeichnen pruefe-axonometrie pruefe-touch pruefe-ausstattung-3d"
+# pruefe-tueren, pruefe-planer-datei und pruefe-haertung standen bis W6 NICHT in
+# dieser Liste — sie liefen also nie mit, obwohl sie zusammen mehr Pruefungen
+# tragen als die Haelfte der uebrigen. Ein Sammelwerkzeug, das Gates auslaesst,
+# meldet gruen fuer etwas, das es gar nicht angesehen hat.
+GATES="pruefe-kennungen pruefe-ziehen pruefe-palette pruefe-undo pruefe-ansicht pruefe-ausstattung pruefe-loeschen pruefe-zeichnen pruefe-axonometrie pruefe-touch pruefe-ausstattung-3d pruefe-tueren pruefe-planer-datei pruefe-haertung"
 if [ -n "$1" ]; then GATES="$*"; fi
 gesamt=0
 for g in $GATES; do
