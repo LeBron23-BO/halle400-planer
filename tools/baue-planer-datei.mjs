@@ -491,21 +491,6 @@ const html = `<!DOCTYPE html>
     <span class="fuss">Rückgängig mit Strg+Z &middot; Abbrechen mit Esc</span>
   </div>
 
-  <!-- Lade-Rückfrage (K1). Sie fehlte, und das war der schwerste Fund des
-       Gegners: „Laden" warf den Stand sofort und unumkehrbar weg (gemessen
-       292 Stück / 100 Wände → 0 / 4, Historie leer, Speicher überschrieben) —
-       während das viel harmlosere „Zurücksetzen" seit jeher fragt. Gleiche
-       Gefahr, gleiche Rückfrage: Abbrechen zuerst, die gefährliche Wahl darf
-       nicht die bequemste sein. -->
-  <div class="frage" id="ladeFrage" role="alertdialog" aria-live="assertive" aria-label="Laden bestätigen" hidden>
-    <span class="txt"><b>Laden:</b> <span id="ladeFrageText"></span></span>
-    <span class="knoepfe">
-      <button type="button" id="btnLadeNein">Abbrechen</button>
-      <button type="button" id="btnLadeJa" class="ernst">Stand ersetzen</button>
-    </span>
-    <span class="fuss">Das ersetzt deinen jetzigen Stand und lässt sich nicht rückgängig machen. Vorher „Sichern“ legt ihn als Datei ab.</span>
-  </div>
-
   <div class="frage" id="zurueckFrage" role="alertdialog" aria-live="assertive" aria-label="Zurücksetzen bestätigen" hidden>
     <span class="txt"><b>Zurücksetzen:</b> alle eigenen Änderungen verwerfen und den gemessenen Plan zeigen?</span>
     <span class="knoepfe">
@@ -549,6 +534,22 @@ const html = `<!DOCTYPE html>
   </span>
   <span class="fuss">Der Stand bleibt am alten Ablageort liegen — hier entsteht eine Kopie.</span>
 </div>
+
+<!-- Lade-Rückfrage (K1). Sie fehlte, und das war der schwerste Fund des
+     Gegners: „Laden" warf den Stand sofort und unumkehrbar weg (gemessen
+     292 Stück / 100 Wände → 0 / 4, Historie leer, Speicher überschrieben) —
+     während das viel harmlosere „Zurücksetzen" seit jeher fragt. Gleiche
+     Gefahr, gleiche Rückfrage: Abbrechen zuerst, die gefährliche Wahl darf
+     nicht die bequemste sein. -->
+<div class="frage" id="ladeFrage" role="alertdialog" aria-live="assertive" aria-label="Laden bestätigen" hidden>
+  <span class="txt"><b>Laden:</b> <span id="ladeFrageText"></span></span>
+  <span class="knoepfe">
+    <button type="button" id="btnLadeNein">Abbrechen</button>
+    <button type="button" id="btnLadeJa" class="ernst">Stand ersetzen</button>
+  </span>
+  <span class="fuss">Das ersetzt deinen jetzigen Stand und lässt sich nicht rückgängig machen. Vorher „Sichern“ legt ihn als Datei ab.</span>
+</div>
+
 
 <div class="frage" id="standFrage" role="alertdialog" aria-live="assertive" aria-label="Gespeicherten Stand prüfen" hidden>
   <span class="txt"><b>Gespeicherter Stand:</b> <span id="standFrageText"></span></span>
@@ -781,18 +782,18 @@ function bemerkeAenderung(){
 
    Zwei Zaehlungen, und beide braucht es:
 
-   1. `gesetzt` kommt aus dem MODELL (`Wall.quelle`). Diese Angabe reist mit
+   1. \`gesetzt\` kommt aus dem MODELL (\`Wall.quelle\`). Diese Angabe reist mit
       der Datei: wer einen Stand sichert und woanders oeffnet, nimmt sie mit.
-   2. `fehlen` wird GEOMETRISCH gegen den eingebauten Plan gemessen — er liegt
+   2. \`fehlen\` wird GEOMETRISCH gegen den eingebauten Plan gemessen — er liegt
       in dieser Datei ohnehin daneben und ist die Grundwahrheit. Eine geloeschte
-      Wand kann kein `quelle` mehr tragen, sie ist weg; nur der Vergleich mit
+      Wand kann kein \`quelle\` mehr tragen, sie ist weg; nur der Vergleich mit
       dem Original bemerkt sie noch. Und geometrisch statt ueber Kennungen,
       weil eine GETEILTE Wand zwei neue Kennungen traegt, obwohl kein
       Zentimeter Mauerwerk verschwunden ist: gefragt wird deshalb, ob an der
       MITTE der gemessenen Wand ueberhaupt noch eine Wand liegt.
 
    Damit ueberlebt die Auskunft auch den Verlust des Feldes: verloere eine
-   aeltere Fassung `quelle` beim Speichern, faende der geometrische Vergleich
+   aeltere Fassung \`quelle\` beim Speichern, faende der geometrische Vergleich
    die Abweichung trotzdem. */
 function grundrissAbweichung(){
   let fehlen = 0;
@@ -1833,8 +1834,8 @@ function druckZeileSetzen(){
 }
 addEventListener('beforeprint', druckZeileSetzen);
 // Ohne diese Zeile bliebe die Zeile leer, wenn der Druck aus einem Werkzeug
-// heraus ausgeloest wird, das `beforeprint` nicht feuert (gemessen: Playwright
-// `page.pdf()` tut das nicht).
+// heraus ausgeloest wird, das \`beforeprint\` nicht feuert (gemessen: Playwright
+// \`page.pdf()\` tut das nicht).
 druckZeileSetzen();
 
 /* ── Schutz beim Schliessen (M6) ────────────────────────────────────
@@ -2117,7 +2118,8 @@ window.__planerDatei = {
   setzeOeffnungsArt: function(a){ zeichner.setzeOeffnungsArt(a); },
   oeffnungText: function(){
     const z = el('oeffnungZaehler');
-    return z.hidden ? null : z.textContent;
+    // Gemessen statt aus dem Attribut geraten (s. \`sichtbar\`).
+    return sichtbar(z) ? z.textContent : null;
   },
   hinweisOeffnung: function(){ return el('hinweisOeffnung').textContent; },
   /* Der KILL-SCHALTER der Versoehnung — nur fuer die Gegenprobe des Gates.
@@ -2177,7 +2179,7 @@ window.__planerDatei = {
      Vorschau-Canvas: ein leeres Kaestchen faellt damit auf, ein nachgemaltes
      Rechteck nicht — deshalb prueft das Gate zusaetzlich, dass sich die
      Vorschauen der Arten UNTERSCHEIDEN. */
-  paletteSichtbar: function(){ return !palette.hidden; },
+  paletteSichtbar: function(){ return sichtbar(palette); },
   paletteEintraege: function(){
     return Array.prototype.map.call(
       document.querySelectorAll('#paletteLeib .pstueck'),
@@ -2241,7 +2243,8 @@ window.__planerDatei = {
   axoNeuBauen: function(){ axoNeuBauen(); },
   gesetztText: function(){
     const z = el('gesetztZaehler');
-    return z.hidden ? null : z.textContent;
+    // Gemessen statt aus dem Attribut geraten (s. \`sichtbar\`).
+    return sichtbar(z) ? z.textContent : null;
   },
   hinweisHerkunft: function(){ return el('hinweisHerkunft').textContent; },
   aufBild: function(x, y){ return { x: zeichner.convertX(x), y: zeichner.convertY(y) }; },

@@ -1162,7 +1162,9 @@ if (NUR !== 'planer') {
       b.dispatchEvent(new MouseEvent('click', { bubbles: true }))
       return {
         modus: window.__tf.werkzeug(),
-        artenSichtbar: !document.getElementById('oeffnungsArten').hidden
+        // GEMESSEN, nicht aus 'hidden' geraten: das Attribut kennt weder
+        // Medienabfragen noch unsichtbare Vorfahren.
+        artenSichtbar: document.getElementById('oeffnungsArten').checkVisibility({ contentVisibilityAuto: true, opacityProperty: true, visibilityProperty: true })
       }
     })
     welt = 'Datei'
@@ -1176,7 +1178,7 @@ if (NUR !== 'planer') {
     )
     const artenWeg = await page.evaluate(() => {
       window.__tf.setzeWerkzeug(0)
-      const weg = document.getElementById('oeffnungsArten').hidden
+      const weg = !document.getElementById('oeffnungsArten').checkVisibility({ contentVisibilityAuto: true, opacityProperty: true, visibilityProperty: true })
       window.__tf.setzeWerkzeug(3)
       return weg
     })

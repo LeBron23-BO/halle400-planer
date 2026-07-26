@@ -340,6 +340,15 @@ if (exportPfad && fs.existsSync(exportPfad)) {
   await klick(page, 'btnZurueckJa')
   await page.waitForTimeout(600)
   await page.setInputFiles('#dateiWahl', exportPfad)
+  await page.waitForTimeout(500)
+  // K1: „Laden" fragt seit der Haertung nach, bevor es den Stand ersetzt —
+  // genau wie „Zuruecksetzen". Ohne diesen Klick bliebe der alte Stand stehen,
+  // und das ist kein Fehler, sondern der Sinn der Rueckfrage.
+  pruefe(
+    await sichtbar(page, '#ladeFrage'),
+    'G7: „Laden" fragt VOR dem Ersetzen nach (K1)'
+  )
+  await klick(page, 'btnLadeJa')
   await page.waitForTimeout(900)
   const nachImport = await page.evaluate((id) => ({
     ecke: window.__planerDatei.ecke(id),
@@ -355,12 +364,20 @@ if (exportPfad && fs.existsSync(exportPfad)) {
   fs.writeFileSync(unsinn, JSON.stringify({ hallo: 'welt' }))
   await page.setInputFiles('#dateiWahl', unsinn)
   await page.waitForTimeout(600)
-  const abgelehnt = await page.evaluate(() => {
-    const m = document.getElementById('meldung')
-    return { sichtbar: !m.hidden, text: m.textContent, ecken: window.__planerDatei.zahlen().ecken }
-  })
+  // GEMESSEN statt aus `hidden` geraten: `element.hidden` sagt nichts ueber
+  // `display:none` aus einer Medienabfrage und nichts ueber einen unsichtbaren
+  // Vorfahren. Genau diese Messgroesse hat einmal `true` fuer etwas gemeldet,
+  // das gar nicht zu sehen war.
+  const abgelehntSichtbar = await sichtbar(page, '#meldung')
+  const abgelehnt = await page.evaluate(() => ({
+    text: document.getElementById('meldung').textContent,
+    ecken: window.__planerDatei.zahlen().ecken,
+    // Und die Rueckfrage darf gar nicht erst kommen: ueber etwas, das ohnehin
+    // abgelehnt wird, fragt man nicht.
+    frage: window.__planerDatei.ladeFrageOffen()
+  }))
   pruefe(
-    abgelehnt.sichtbar && abgelehnt.ecken === 76,
+    abgelehntSichtbar && abgelehnt.ecken === 76 && abgelehnt.frage === false,
     `G7: eine fremde Datei wird abgelehnt statt zu zerbrechen ("${abgelehnt.text}")`
   )
 }

@@ -497,7 +497,12 @@ const nachAustritt = await page.evaluate(() => {
   document.dispatchEvent(
     new MouseEvent('mouseup', { bubbles: true, clientX: rc.left + rc.width / 2, clientY: rc.top + rc.height / 2 })
   )
-  return { zahl: window.__planerDatei.zahlen().ausstattung, geist: !!document.querySelector('.geist:not([hidden])') }
+  return { zahl: window.__planerDatei.zahlen().ausstattung, geist: (function(){
+      // GEMESSEN statt aus dem Attribut geraten: ':not([hidden])' sagt nur, ob
+      // DIESES Attribut fehlt — nicht, ob das Element wirklich zu sehen ist.
+      const g = document.getElementById('geist')
+      return !!g && g.checkVisibility({ contentVisibilityAuto: true, opacityProperty: true, visibilityProperty: true })
+    })() }
 })
 await page.waitForTimeout(250)
 pruefe(
@@ -655,8 +660,28 @@ if (exportPfad && fs.existsSync(exportPfad)) {
   await page.waitForTimeout(800)
   const nachReset = await page.evaluate(() => window.__planerDatei.gesetzte())
   pruefe(nachReset === 0, `f) GEGENPROBE: nach dem Zuruecksetzen ist nichts mehr frei gesetzt (${nachReset})`)
+  /* „Zuruecksetzen" heisst seit M7 wirklich AUSLIEFERUNGSZUSTAND: ruhiges
+     Blatt, keine Werkzeuge — und die Zeichenflaeche nimmt dann keine
+     Zeiger-Ereignisse mehr an (K3). Wer danach weiterarbeiten will, greift den
+     Schalter noch einmal. Genau das tut hier auch der Nutzer. */
+  await page.evaluate(() => {
+    if (!window.__planerDatei.bearbeitet()) {
+      document.getElementById('btnBearbeiten').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    }
+  })
+  await page.waitForTimeout(400)
 
   await page.setInputFiles('#dateiWahl', exportPfad)
+  await page.waitForTimeout(500)
+  // K1: „Laden" fragt seit der Haertung nach, bevor es den Stand ersetzt.
+  // Die Rueckfrage MUSS da sein — sonst waere das Laden wieder unumkehrbar.
+  pruefe(
+    await page.evaluate(() => window.__planerDatei.ladeFrageOffen()),
+    'f) „Laden" fragt VOR dem Ersetzen nach (K1)'
+  )
+  await page.evaluate(() => {
+    document.getElementById('btnLadeJa').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  })
   await page.waitForTimeout(1100)
   const nachLaden = await page.evaluate(
     (ids) => ({
