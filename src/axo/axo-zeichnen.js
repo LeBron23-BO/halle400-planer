@@ -14,6 +14,7 @@
  */
 
 import { PALETTE, SCHRIFT, BLICK_START, LICHT, SCHATTEN, DARSTELLUNG, BESCHRIFTUNG, SAEULEN } from './axo-kontrakt.js'
+import { CM } from './axo-kontrakt.js'
 import { umkehreAuf, koerperUnter, NEIGUNG_MIN_ZIEHEN } from './axo-treffer.js'
 
 /** Flaechenhelligkeit aus dem Winkel zum Streiflicht. [uebersicht.html:560] */
@@ -55,8 +56,20 @@ function toenen(hex, n, zurueck) {
  * Erzeugt eine Axonometrie auf dem uebergebenen Canvas.
  *
  * @param {HTMLCanvasElement} canvas
- * @param {object} szene Ergebnis von `baueSzene`
- * @param {{dunkel?:boolean, namen?:'alle'|'saeulen'|'aus', randRechts?:number, randOben?:number}} [opt]
+ * @param {object} szeneEingang Ergebnis von `baueSzene`
+ * @param {{dunkel?:boolean, namen?:'alle'|'saeulen'|'aus', randRechts?:number,
+ *          randOben?:number, bearbeitung?:{
+ *            aktiv:()=>boolean,
+ *            greife:(id:string,weltX:number,weltY:number)=>boolean,
+ *            ziehe:(weltX:number,weltY:number)=>object|null,
+ *            lassLos:()=>void,
+ *            zuFlach?:(el:number)=>void
+ *          }}} [opt]
+ *        `bearbeitung` ist OPTIONAL (W7). Ohne sie ist das Blatt genau das,
+ *        was es immer war: ein Fenster. Mit ihr laesst sich ein Moebel darin
+ *        greifen — die Huelle sagt, was daraus im Modell wird; der Renderer
+ *        sagt nur, WO im Weltmass gegriffen wurde. Masse in ZENTIMETERN, weil
+ *        das Modell des Planers so rechnet.
  */
 export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
   const ctx = canvas.getContext('2d')
@@ -466,6 +479,24 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     if (namenModus !== 'aus') maleNamen()
   }
 
+  /**
+   * Tauscht GENAU EINEN Ausstattungs-Koerper an Ort und Stelle und zeichnet neu
+   * (W7).
+   *
+   * Der ganze Grund, warum ein Zug in dieser Ansicht fluessig sein kann:
+   * `baueSzene` leitet Raeume ab, zerlegt Waende in Kacheln, versoehnt
+   * Oeffnungen und baut 526 Koerper — gemessen 16,2 ms. Fuer ein verschobenes
+   * Moebel ist davon alles ausser einem Vieleck umsonst.
+   */
+  function tauscheKoerper(id, koerper) {
+    if (!id || !koerper || !szene?.moebel) return false
+    const i = szene.moebel.findIndex((k) => k.id === id)
+    if (i < 0) return false
+    szene.moebel[i] = koerper
+    zeichne()
+    return true
+  }
+
   function passeAn() {
     const dpr = Math.min(globalThis.devicePixelRatio || 1, 2)
     const kasten = canvas.getBoundingClientRect()
@@ -484,11 +515,86 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
   let zeiger = new Map()
   let spanne = 0
 
+  /* ══ MOEBEL GREIFEN (W7) ═══════════════════════════════════════════════
+     Der TREFFER entscheidet, keine Zusatztaste: Druck auf einen Koerper
+     greift, Druck auf Buehne, Boden oder Wand dreht wie bisher. Der
+     Praezedenzfall ist die Schwenk-Sperre im Grundriss
+     (`floorplanner.ts:1036`) — ohne sie wanderte das Moebel UND der Plan, und
+     der Zug legte das Stueck gemessen doppelt so weit.
+
+     Der Renderer kennt das MODELL nicht und soll es nicht kennen. Er meldet
+     nur, WO im Weltmass gegriffen und gezogen wird; was daraus wird,
+     entscheidet die Huelle ueber `opt.bearbeitung`. Ohne dieses Objekt
+     verhaelt sich das Blatt exakt wie vorher — die Bank-Datei im
+     Auslieferungszustand nimmt keinen Griff an. */
+  const bearbeitung = opt.bearbeitung || null
+  let greift = null // Kennung des Stuecks in der Hand
+  let griffHoehe = 0 // Hoehe der ZIEH-EBENE, ueber den ganzen Zug fest
+  let unterZeiger = null
+
+  const bearbeitbar = () => !!bearbeitung && bearbeitung.aktiv()
+
+  /** Bildpunkt in CSS-Pixeln, so wie `projiziere` sie liefert. */
+  function amBild(e) {
+    const r = canvas.getBoundingClientRect()
+    return { x: e.clientX - r.left, y: e.clientY - r.top }
+  }
+
+  /** Weltpunkt in ZENTIMETERN auf der Ziehebene — die Sprache des Planers. */
+  function weltAuf(X, Y, h) {
+    const p = umkehreAuf(kamera(), X, Y, h)
+    return p ? { x: p.x / CM, y: p.z / CM } : null
+  }
+
+  /** Zeiger-Aussage: was liegt unter dem Zeiger, und wie sagt es der Zeiger? */
+  function zeigerPflegen(treffer) {
+    unterZeiger = treffer ? treffer.id : null
+    /* Der Grund-Zeiger des Blattes ist bereits `grab` (Ziehen dreht) — ein
+       zweites `grab` waere also keine Auskunft. `move` sagt, was hier anders
+       ist: dieses Stueck laesst sich VERSETZEN. Inline gesetzt und beim
+       Wegfahren wieder GELEERT, damit die Stilvorlage der Huelle wieder gilt
+       (dieselbe Technik wie `zeigerStilSetzen` im Kern). */
+    const stil = greift ? 'grabbing' : unterZeiger ? 'move' : ''
+    if (canvas.style.cursor !== stil) canvas.style.cursor = stil
+  }
+
   amCanvas('pointerdown', (e) => {
     zeiger.set(e.pointerId, [e.clientX, e.clientY])
     if (zeiger.size > 1) {
       zieht = false
+      // Ein zweiter Finger beendet einen laufenden Griff: zwei Finger heissen
+      // in diesem Blatt „zoomen", und beides zugleich waere keine Geste.
+      if (greift) griffBeenden()
       return
+    }
+    if (bearbeitbar()) {
+      const b = amBild(e)
+      const treffer = koerperUnter(szene, kamera(), b.x, b.y)
+      if (treffer) {
+        /* DIE EHRLICHE GRENZE. Unter `NEIGUNG_MIN_ZIEHEN` bedeutet 1 Bildpunkt
+           ueber 22 cm Tiefe — dort wird NICHT gezogen. Gesagt, nicht still
+           verweigert: eine Bedienung, die manchmal wortlos nichts tut, ist
+           schlimmer als eine, die es gar nicht gibt. */
+        if (blick.el < NEIGUNG_MIN_ZIEHEN) {
+          bearbeitung.zuFlach?.(blick.el)
+        } else {
+          const w = weltAuf(b.x, b.y, treffer.hoehe)
+          if (w && bearbeitung.greife?.(treffer.id, w.x, w.y)) {
+            greift = treffer.id
+            // Die Ziehebene bleibt die des GRIFFS. Liefe sie mit der Hoehe des
+            // Stuecks mit, veraenderte jedes Einrasten zugleich die Abbildung
+            // Bild -> Welt, und das Stueck driftete unter dem Zeiger weg.
+            griffHoehe = treffer.hoehe
+            zeigerPflegen(treffer)
+            try {
+              canvas.setPointerCapture(e.pointerId)
+            } catch (_) {
+              /* aelterer Browser: der Zug endet dann am Rand der Flaeche */
+            }
+            return
+          }
+        }
+      }
     }
     zieht = true
     schnell = true
@@ -501,6 +607,13 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     }
   })
 
+  function griffBeenden() {
+    if (!greift) return
+    greift = null
+    bearbeitung?.lassLos?.()
+    zeigerPflegen(null)
+  }
+
   amCanvas('pointermove', (e) => {
     if (zeiger.has(e.pointerId)) zeiger.set(e.pointerId, [e.clientX, e.clientY])
     if (zeiger.size === 2) {
@@ -512,6 +625,24 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
       }
       spanne = d
       return
+    }
+    // --- Ein Stueck in der Hand: es folgt, das Blatt steht still (W7).
+    if (greift) {
+      const b = amBild(e)
+      const w = weltAuf(b.x, b.y, griffHoehe)
+      if (!w) return
+      const neu = bearbeitung.ziehe?.(w.x, w.y)
+      /* NUR den einen Koerper tauschen und neu zeichnen. `baueSzene` kostet
+         gemessen 16,2 ms — bei jeder Zeigerbewegung waere das ein Ruckeln, das
+         der Nutzer der Bank zurecht als „hakt" liest. Der volle Neubau kommt
+         beim Loslassen. */
+      if (neu) tauscheKoerper(greift, neu)
+      return
+    }
+    // --- Nichts in der Hand: sagen, was greifbar waere.
+    if (!zieht && bearbeitbar()) {
+      const b = amBild(e)
+      zeigerPflegen(koerperUnter(szene, kamera(), b.x, b.y))
     }
     if (!zieht) return
     const dx = e.clientX - lx
@@ -534,6 +665,12 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
   const beenden = (e) => {
     zeiger.delete(e.pointerId)
     if (zeiger.size < 2) spanne = 0
+    // Das Stueck ist abgelegt. ZUERST, denn `lassLos` baut die Szene voll neu
+    // — danach stimmte `zieht` nicht mehr mit dem Bild zusammen.
+    if (greift) {
+      griffBeenden()
+      return
+    }
     if (!zieht) return
     zieht = false
     schnell = false
@@ -579,9 +716,32 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
       szene = neu
       zeichne()
     },
+    tauscheKoerper,
     /** Die aktuelle Szene — der Treffer-Test braucht ihre Koerper. */
     get szene() {
       return szene
+    },
+    /**
+     * KENNUNG des Stuecks unter dem Zeiger (W7) — oder `null`.
+     *
+     * Dieselbe Regel wie im Grundriss: gedreht und geloescht wird IMMER das
+     * Stueck unter dem Zeiger. Es gibt in diesem Planer keine Auswahl, die
+     * einen Klick ueberdauert, und eine einzufuehren waere eine zweite
+     * Bedienidee fuer eine Drehung um 15°.
+     */
+    get unterZeiger() {
+      return unterZeiger
+    },
+    /** Laeuft gerade ein Griff? Die Huelle sperrt daran ihr Sichern. */
+    get greift() {
+      return greift
+    },
+    /**
+     * Ist die Neigung ueberhaupt gutmuetig genug zum Ziehen? Die Huelle
+     * schreibt es auf den Bildschirm, statt es den Nutzer erraten zu lassen.
+     */
+    get ziehbar() {
+      return blick.el >= NEIGUNG_MIN_ZIEHEN
     },
     /**
      * Meldet ALLE Abos ab (B3). Ohne diesen Griff war jeder zweite Renderer auf

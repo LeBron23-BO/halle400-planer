@@ -449,10 +449,15 @@ const html = `<!DOCTYPE html>
          unten, zu dem Satz über die Höhen — siehe „hinweisOeffnung". -->
     <div class="gesetzt" id="oeffnungZaehler" hidden></div>
 
-    <!-- W7: „Bearbeiten" lässt die Ansicht stehen. Wer den Schalter hier drückt,
-         hat die Werkzeuge an — nur liegen sie im Grundriss, weil in einer
-         schrägen Parallelprojektion ein Klick keinen Punkt trifft, sondern einen
-         Sehstrahl. Diese Zeile sagt genau das.
+    <!-- W7: „Bearbeiten" lässt die Ansicht stehen, und im Blatt geht seither
+         etwas. Diese Zeile sagt WAS — und was nicht.
+
+         Ihr erster Wortlaut („gezeichnet wird im Grundriss") stimmte genau so
+         lange, wie hier gar nichts ging. Ein Hinweis, der eine Bedienung
+         verschweigt, die es gibt, ist schlimmer als keiner: er lehrt den Nutzer,
+         es nicht zu versuchen. Möbel ziehen, drehen und löschen geht hier;
+         Wände, Türen und Fenster nicht — ein Punkt in leerer Luft hat keine
+         bekannte Höhe, ein Möbel hat eine.
 
          Sie steht IM Blattkopf, und das ist kein Zufall: am breiten Bildschirm
          hebt \`position:fixed\` sie als eigene Leiste unter den Umschalter (dort
@@ -462,8 +467,8 @@ const html = `<!DOCTYPE html>
          AM STANDBILD GEMESSEN: als schwebende Leiste lag sie bei 390 px quer
          über dem Titel. -->
     <div class="arbeitshinweis" id="arbeitshinweis" role="status" hidden>
-      <b>Bearbeiten ist an</b> — gezeichnet wird im Grundriss.
-      <span class="warum">In der Axonometrie trifft ein Klick keinen Punkt, sondern einen Sehstrahl.</span>
+      <b>Bearbeiten ist an</b> <span id="arbeitshinweisWas">— Möbel ziehen, Q und E drehen, Entf löscht.</span>
+      <span class="warum" id="arbeitshinweisWarum">Wände, Türen und Fenster gehören in den Grundriss.</span>
     </div>
   </header>
 
@@ -563,17 +568,6 @@ const html = `<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- Lösch-Rückfrage (E1): Abbrechen zuerst, die gefährliche Wahl darf nicht
-       die bequemste sein. -->
-  <div class="frage" id="rueckfrage" role="alertdialog" aria-live="assertive" aria-label="Löschen bestätigen" hidden>
-    <span class="txt"><b>Entfernen:</b> <span id="rueckfrageZiel"></span>?</span>
-    <span class="knoepfe">
-      <button type="button" id="btnAbbrechen">Abbrechen</button>
-      <button type="button" id="btnEntfernen" class="ernst">Entfernen</button>
-    </span>
-    <span class="fuss">Rückgängig mit Strg+Z &middot; Abbrechen mit Esc</span>
-  </div>
-
   <div class="frage" id="zurueckFrage" role="alertdialog" aria-live="assertive" aria-label="Zurücksetzen bestätigen" hidden>
     <span class="txt"><b>Zurücksetzen:</b> alle eigenen Änderungen verwerfen und den gemessenen Plan zeigen?</span>
     <span class="knoepfe">
@@ -582,6 +576,26 @@ const html = `<!DOCTYPE html>
     </span>
     <span class="fuss">Das lässt sich nicht rückgängig machen. Vorher „Sichern“ legt den Stand als Datei ab.</span>
   </div>
+</div>
+
+<!-- Lösch-Rückfrage (E1): Abbrechen zuerst, die gefährliche Wahl darf nicht die
+     bequemste sein.
+
+     SIE LIEGT SEIT W7 AUSSERHALB BEIDER ANSICHTEN. Bis dahin stand sie im
+     Grundriss-Umschlag und erbte dessen Sichtbarkeit — richtig, solange nur
+     dort gelöscht wurde. Seit „Entf" auch im Blatt ein Möbel entfernt, fragte
+     dort etwas Unsichtbares: der Kandidat wäre gesetzt, die Frage nicht zu
+     sehen, und der nächste Tastendruck hätte in einen Zustand geführt, den
+     niemand angeboten hat. Derselbe Fallstrick wie bei \`btnStandZurueck\`, nur
+     umgekehrt gelöst: eine Frage, die zu BEIDEN Ansichten gehört, gehört in
+     keine von beiden. -->
+<div class="frage" id="rueckfrage" role="alertdialog" aria-live="assertive" aria-label="Löschen bestätigen" hidden>
+  <span class="txt"><b>Entfernen:</b> <span id="rueckfrageZiel"></span>?</span>
+  <span class="knoepfe">
+    <button type="button" id="btnAbbrechen">Abbrechen</button>
+    <button type="button" id="btnEntfernen" class="ernst">Entfernen</button>
+  </span>
+  <span class="fuss">Rückgängig mit Strg+Z &middot; Abbrechen mit Esc</span>
 </div>
 
 <div class="kopfleiste" role="toolbar" aria-label="Ansicht wählen">
@@ -761,6 +775,10 @@ let szene = null;
 let axoUhr = null;
 let meldungUhr = null;
 let axoVeraltet = true;
+/* Schalter NUR fuer die Gegenprobe des Kosten-Gates (W7) — im Betrieb immer
+   `false`. Er macht aus dem billigen Koerper-Tausch den teuren vollen Neubau
+   und beweist damit, dass das Gate den Unterschied ueberhaupt misst. */
+let vollNeubauImZug = false;
 
 /* ── Aufbau ─────────────────────────────────────────────────────────
    Die Reihenfolge ist zwingend: Configuration VOR dem Laden (Wall liest seine
@@ -1088,6 +1106,61 @@ addEventListener('blur', leseZugBeenden);
    weiterlaufen. */
 function tafelRand(){ return (tafelAn && innerWidth > 900) ? 294 : 0; }
 
+/* ── Bearbeiten IM BLATT (W7) ───────────────────────────────────────
+   Der Renderer meldet nur, WO im Weltmass gegriffen und gezogen wird; was
+   daraus wird, entscheidet allein diese Huelle — und zwar ueber DENSELBEN Kern,
+   der auch den Grundriss bedient (\`zugBeginnen\`/\`zugSchritt\`/\`zugBeenden\`).
+   Zwei Zieh-Fassungen waeren zwei Einrast-Rechnungen fuer dieselbe Bewegung.
+
+   \`aktiv()\` fragt BEIDES ab: den Bearbeiten-Schalter und die vorn stehende
+   Ansicht. Das ruhende Blatt der Bank nimmt damit keinen Griff an — und der
+   Schalter allein macht es auch nicht scharf. */
+const axoBearbeitung = {
+  aktiv: function(){ return bearbeiten && ansicht === 'axo'; },
+  greife: function(id, wx, wy){ return zeichner.zugBeginnen(id, wx, wy); },
+  ziehe: function(wx, wy){
+    if (!zeichner.zugSchritt(wx, wy)) return null;
+    /* NUR fuer die Gegenprobe des Kosten-Gates: derselbe Zug mit dem vollen
+       Szenen-Neubau je Bewegung. Ein Waechter, der nie rot wird, ist keiner —
+       das Gate muss beweisen koennen, dass es 16 ms ueberhaupt bemerkt. */
+    if (vollNeubauImZug) { axoNeuBauen(); return null; }
+    const stueck = grundriss.findeAusstattung(zeichner.zugLaeuft());
+    /* NUR dieser eine Koerper — aus DERSELBEN Funktion, aus der \`baueSzene\` ihn
+       baut. Ein hier nachgebautes Vieleck waere eine zweite Wahrheit ueber das
+       Aussehen eines Stuecks, und sie fiele erst beim Loslassen auf: dann
+       spraenge das Moebel in seine richtige Form zurueck. */
+    return stueck ? (ausstattungsKoerper(stueck, HOEHEN)[0] || null) : null;
+  },
+  lassLos: function(){
+    const id = zeichner.zugLaeuft();
+    zeichner.zugBeenden();
+    /* Erst JETZT der volle Neubau (ueber \`bemerkeAenderung\` -> \`axoBaldNeu\`):
+       waehrend des Zuges kostete er gemessen 16,2 ms je Bewegung. */
+    if (id) bemerkeAenderung();
+  },
+  zuFlach: function(neigung){
+    /* EHRLICH SAGEN statt still verweigern. Unter dieser Neigung bedeutet ein
+       Bildpunkt ueber 22 cm Tiefe — ein Zittern der Hand legte das Stueck einen
+       halben Meter weiter hinten ab, ohne dass man es saehe. */
+    meldung('Das Blatt liegt zu flach zum Verschieben — ein Bildpunkt wäre hier über 22 cm Tiefe. ' +
+      'Blatt aufrichten oder „Plan“ wählen. Drehen mit Q und E geht weiter.', false);
+    arbeitshinweisPflegen();
+  }
+};
+
+/* Was der Hinweis oben gerade sagen MUSS. Er haengt an der Neigung: ein
+   flachgekipptes Blatt kann nicht ziehen, und das soll man lesen koennen,
+   BEVOR man es versucht. */
+function arbeitshinweisPflegen(){
+  const flach = !!axoAnsicht && !axoAnsicht.ziehbar;
+  el('arbeitshinweisWas').textContent = flach
+    ? '— zu flach zum Ziehen. Q und E drehen, Entf löscht.'
+    : '— Möbel ziehen, Q und E drehen, Entf löscht.';
+  el('arbeitshinweisWarum').textContent = flach
+    ? 'Ein Bildpunkt bedeutet hier über 22 cm Tiefe — Blatt aufrichten oder „Plan“ wählen.'
+    : 'Wände, Türen und Fenster gehören in den Grundriss.';
+}
+
 function axoNeuBauen(){
   szene = baueSzene(
     { floorplan: grundriss.saveFloorplan(), labels: labels },
@@ -1096,13 +1169,21 @@ function axoNeuBauen(){
   if (axoAnsicht) {
     axoAnsicht.setzeSzene(szene);
   } else {
-    axoAnsicht = erzeugeAxonometrie(axoCanvas, szene, { namen: namenModus, randRechts: tafelRand() });
+    axoAnsicht = erzeugeAxonometrie(axoCanvas, szene, {
+      namen: namenModus, randRechts: tafelRand(), bearbeitung: axoBearbeitung
+    });
     axoAnsicht.passeAn();
     /* EINMALIG, nicht je Neubau: das Canvas wechselt nicht mehr, also wechseln
        auch seine Zuhoerer nicht. */
     axoCanvas.addEventListener('pointerdown', function(){ axoCanvas.classList.add('zieht'); });
     ['pointerup','pointercancel'].forEach(function(t){
-      axoCanvas.addEventListener(t, function(){ axoCanvas.classList.remove('zieht'); });
+      axoCanvas.addEventListener(t, function(){
+        axoCanvas.classList.remove('zieht');
+        /* Nach einem Dreh-Zug kann die Neigung die Ziehgrenze ueberschritten
+           haben — dann muss der Hinweis oben es sagen, bevor jemand vergeblich
+           greift. */
+        arbeitshinweisPflegen();
+      });
     });
   }
   tafelZeichnen();
@@ -1219,7 +1300,11 @@ function setzeBearbeiten(an, merken){
      in der Axonometrie zu sehen ist, entscheidet seine Lage im Blatt, nicht
      diese Zeile. */
   arbeitshinweis.hidden = !an;
+  if (an) arbeitshinweisPflegen();
   el('btnBearbeiten').setAttribute('aria-pressed', String(an));
+  /* Wer aufhoert zu bearbeiten, laesst auch los: ein Griff, der einen
+     ausgeschalteten Schalter ueberlebte, zoege am naechsten Blatt weiter. */
+  if (!an) zeichner.zugBeenden();
   // Ein ruhendes Loeschen-Werkzeug waere eine Falle beim naechsten OEffnen.
   if (!an) zeichner.setMode(floorplannerModes.MOVE);
   if (merken && speicher) {
@@ -1920,6 +2005,48 @@ addEventListener('keydown', function(e){
   if (taste === 'z' && !e.shiftKey) { e.preventDefault(); undo.undo(); }
   else if (taste === 'y' || (taste === 'z' && e.shiftKey)) { e.preventDefault(); undo.redo(); }
 });
+
+/* ── Drehen und Loeschen IM BLATT (W7) ──────────────────────────────
+   Dieselbe Regel wie im Grundriss: gewirkt wird immer auf das Stueck UNTER DEM
+   ZEIGER. Es gibt in diesem Planer keine Auswahl, die einen Klick ueberdauert
+   — ein Knopf in der Leiste braeuchte eine, denn auf dem Weg dorthin verlaesst
+   der Zeiger das Moebel.
+
+   IN DER FANG-PHASE (\`true\`) und mit \`stopPropagation\`, und das ist kein
+   Feinschliff: der KERN hoert Q und E ebenfalls am Dokument ab und wirkt dabei
+   auf \`activeAusstattung\` — das ist der letzte Treffer im GRUNDRISS und bleibt
+   liegen, wenn der Zeiger die Flaeche verlaesst. Ohne diesen Riegel drehte ein
+   Q im Blatt ein Stueck, das man gar nicht sieht. Solange die Axonometrie vorn
+   ist, gehoeren diese Tasten ihr — auch dann, wenn gerade nichts darunter
+   liegt.
+
+   \`Entf\` ist NEU und die einzige Taste, die dieses Blatt zusaetzlich lernt. Sie
+   loescht nicht, sie FRAGT: \`loeschStueckVorschlagen\` setzt denselben Kandidaten,
+   den das Verweilen im Grundriss setzt, und dieselbe Rueckfrage erscheint.
+   BEKANNTE GRENZE: am Handy gibt es keine Tastatur — dort bleibt das Blatt beim
+   Ziehen. Dieselbe offene Stelle wie Q/E im Grundriss seit W2. */
+document.addEventListener('keydown', function(e){
+  if (ansicht !== 'axo' || !bearbeiten) return;
+  const z = e.target;
+  if (z && (z.tagName === 'INPUT' || z.tagName === 'TEXTAREA' || z.isContentEditable)) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const taste = (e.key || '').toLowerCase();
+  if (taste !== 'q' && taste !== 'e' && taste !== 'delete') return;
+  // Der Riegel gegen den Kern gilt IMMER, auch ohne Treffer.
+  e.stopPropagation();
+  const id = axoAnsicht ? axoAnsicht.unterZeiger : null;
+  if (!id) return;
+  e.preventDefault();
+  if (taste === 'delete') {
+    zeichner.loeschStueckVorschlagen(id);
+    return;
+  }
+  if (zeichner.dreheStueck(id, taste === 'q' ? -1 : 1)) {
+    const stueck = grundriss.findeAusstattung(id);
+    if (stueck) axoAnsicht.tauscheKoerper(id, ausstattungsKoerper(stueck, HOEHEN)[0]);
+    bemerkeAenderung();
+  }
+}, true);
 
 /* ── Bedienung: Blatt ──────────────────────────────────────────────── */
 function markiere(auswahl, wert){
