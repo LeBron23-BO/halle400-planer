@@ -229,6 +229,40 @@ const html = `<!DOCTYPE html>
   .zeile .src{font-size:11.5px;color:var(--ink-mute);margin-top:2px;line-height:1.4}
   .tafel-fuss{padding:9px 14px 11px;border-top:1px solid var(--panel-line);
        font-size:11px;line-height:1.5;color:var(--ink-mute)}
+  /* ── Palette (W3): was man hinstellen kann ────────────────────────────
+     Sie liegt IM Grundriss-Bereich und erbt damit dessen Sichtbarkeit: beim
+     Wechsel aufs Blatt verschwindet sie von selbst, ohne eine zweite Regel,
+     die man vergessen koennte. Farbklima, Schriften und Rahmen sind die der
+     Legenden-Tafel — ein Planblatt, kein Werkzeugkasten. */
+  .palette{position:fixed;left:16px;top:104px;width:134px;
+       max-height:calc(100vh - 230px);background:var(--panel);
+       border:1px solid var(--panel-line);backdrop-filter:blur(9px);
+       -webkit-backdrop-filter:blur(9px);display:flex;flex-direction:column;z-index:7}
+  .palette-kopf{padding:11px 12px 8px;border-bottom:1px solid var(--panel-line);
+       font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;
+       color:var(--ink-dim)}
+  .palette-leib{overflow-y:auto;padding:4px 5px 6px}
+  /* Ueberschreibt die Leisten-Knopfregel oben: hier steht ein NAME unter einem
+     Zeichen, keine Schaltflaechen-Beschriftung in Versalien. */
+  .pstueck{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;
+       padding:5px 3px;border:1px solid transparent;background:transparent;cursor:grab;
+       font-family:var(--sans);font-size:11.5px;letter-spacing:.01em;text-transform:none;
+       color:var(--ink-dim);min-height:0}
+  .pstueck:hover:not(:disabled){background:var(--paper-deep);color:var(--ink)}
+  .pstueck.zieht{cursor:grabbing}
+  /* MUSS sein: die globale canvas-Regel oben streckt jedes Canvas auf 100 %. */
+  .pstueck canvas{width:110px;height:46px;display:block;pointer-events:none}
+  .pstueck .pmass{font-family:var(--mono);font-size:9px;letter-spacing:.06em;
+       color:var(--ink-mute);font-variant-numeric:tabular-nums}
+  .palette-fuss{padding:8px 12px 10px;border-top:1px solid var(--panel-line);
+       font-size:10.5px;line-height:1.45;color:var(--ink-mute)}
+  /* Das Stueck am Zeiger, waehrend es wandert. `pointer-events:none` ist keine
+     Feinheit, sondern Bedingung: sonst faende `elementFromPoint` beim Loslassen
+     den Geist statt der Zeichenflaeche und es entstuende nie etwas. */
+  .geist{position:fixed;z-index:60;pointer-events:none;padding:4px 9px;
+       background:var(--panel);border:1px solid var(--amber);color:var(--amber);
+       font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase}
+
   .hinweis{position:fixed;left:26px;bottom:18px;max-width:44ch;font-family:var(--mono);
        font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-mute);
        pointer-events:none;opacity:.85;line-height:1.7}
@@ -242,6 +276,13 @@ const html = `<!DOCTYPE html>
     .leiste{bottom:10px;padding:5px;gap:4px}
     button{padding:8px 9px;font-size:10px}
     .lbl{padding:0 4px 0 2px;font-size:9px}
+    /* Auf schmalen Anzeigen KEINE Palette. Das Hineinziehen laeuft ueber
+       Maus-Ereignisse; ein Finger loest sie erst beim Loslassen aus, der Zug
+       waere also nicht zu verfolgen. Dieselbe offene Stelle wie beim Ziehen
+       vorhandener Moebel (W2, "am Handy noch nicht geloest"). Eine sichtbare
+       Palette, die auf Fingerdruck nichts tut, waere schlimmer als keine:
+       sie behauptet eine Bedienung, die es hier nicht gibt. */
+    .palette{display:none}
   }
   @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
 </style>
