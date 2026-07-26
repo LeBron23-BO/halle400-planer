@@ -20,6 +20,19 @@ python tools/extract_plan.py       # Text-Anker + Maßstab aus der PDF -> data/p
 python tools/measure_walls.py      # Trennwand-Kandidaten aus dem Rasterbild
 python tools/build_walls.py        # kuratierte Wandliste + Außenkontur -> data/walls.json
 python tools/export_blueprint.py   # -> app/public/plaene/halle400.json (blueprint3d-Schema, cm)
+                                   #        BRICHT AB, wenn die Zieldatei Arbeit traegt, die die
+                                   #        Quellen nicht hergeben (W5-Waechter). --verwerfe-setzungen
+                                   #        wirft sie ausdruecklich weg, --ohne-gesetzt laesst die
+                                   #        Setzungs-Schicht aus.
+python tools/uebernimm-bearbeitung.py            # W5: Bearbeitung zurueck ins Projekt. Ohne Argument
+                                   #        die neueste Halle400-Plan-*.json aus dem Download-Ordner
+                                   #        (der Handy-Weg). TROCKENLAUF ist der Standard.
+python tools/uebernimm-bearbeitung.py --schreibe # -> data/gesetzt.json (fuenf getrennte Abschnitte)
+node tools/pruefe-uebernahme.mjs   # W5: der Rueckweg — 51 Pruefungen OHNE Browser (der Kern wird
+                                   #        ueber buendel-kern.mjs in node geladen, gemessen wird an
+                                   #        Floorplan.loadFloorplan selbst). Haerteste Probe:
+                                   #        --ohne-gesetzt ist byte-identisch mit
+                                   #        git show HEAD:app/public/plaene/halle400.json
 python tools/mess_kachel.py --von 27 --bis 37   # Lineal: Ausschnitt mit xy-Meterraster (A1..A4)
 python tools/compare_plan.py       # -> data/vergleich.png : Original vs. Nachbildung ANSEHEN
 cd app && ./node_modules/.bin/next build && cp out/de.html out/index.html   # statischer Export (T6: Deutsch ist Standardsprache)
@@ -351,7 +364,40 @@ anderen Ablageort wird beim Start angeboten (M8).
 dem BILDSCHIRM bleibt die Fussnote unter 900 px verborgen (die Zähler im
 Blattkopf tragen die Aussage dort). Beides gehört in die Handy-Welle.
 
+## Der Rueckweg: die Bearbeitung zurueck ins Projekt (W5, 2026-07-26)
+
+Der Export erzeugt `app/public/plaene/halle400.json` NEU. Zwei Dinge verhindern,
+dass er die Bearbeitung des Nutzers ueberschreibt:
+
+1. **Der WAECHTER laeuft vor jedem Schreiben** (`pruefe_zieldatei`). Findet er in der
+   vorhandenen Zieldatei Arbeit, die die Quellen nicht hergeben — Moebel mit
+   `quelle: 'gesetzt'`, Oeffnungen, hash-untreue Ecken, Raumnamen — bricht er ab und
+   schreibt NICHTS, mit einer Anleitung in Alltagssprache. Wegwerfen geht nur
+   ausdruecklich: `--verwerfe-setzungen`. Stiller Verlust ist damit unmoeglich.
+2. **`data/gesetzt.json` wird ganz zuletzt ADDITIV aufgelegt** (`wende_gesetzt_an`).
+   Fuenf getrennte Abschnitte — in EINEM Eimer waere ein verschobenes Messstueck von
+   einem neu hingestellten nicht mehr zu trennen, und der Export schriebe es zweimal.
+
+Der `beleg` ist die Trennschaerfe: `gesetzt` MIT `beleg` = verschobenes Messstueck,
+`gesetzt` OHNE = neu hingestelltes. Ein verschobenes Stueck fliesst nie als neues
+zurueck und nie zurueck in `data/ausstattung.json` — dort steht, wo es GEMESSEN
+wurde. `lade_ausstattung` bleibt unangetastet: flosse der Rueckweg durch sie, machte
+der naechste Lauf aus jeder Setzung still ein Aufmass (Standard beim Laden ist
+`'gemessen'`, `floorplan.ts:829`).
+
+Zwei Dinge fliessen NICHT zurueck. Eine **gezeichnete** Wand wird nur gezaehlt — sie
+aendert Raumableitung, Flaechen und damit die Zahlen im Businessplan (eigene Welle).
+Eine **verschobene gemessene** Ecke fuehrt zum harten ABBRUCH mit Nennung der Ecke:
+die Ecken-Kennung IST der Hash ihrer Koordinate; wer sie zieht, behauptet etwas ueber
+das Aufmass — und das darf nur die PDF.
+
+Jede Uebernahme legt die Nutzerdatei unveraendert als `data/arbeitsstand-<datum>.json`
+ab und ueberschreibt eine vorhandene Sicherung NIE. Der Trockenlauf ist der Standard;
+`--schreibe` schreibt wirklich, `--auch-entfernen` erlaubt eine schrumpfende
+Uebernahme.
+
 ## Hintergrund
 
 Vollständige Befunde, Schwellen-Begründungen und Negativbefunde: `docs/plan-befunde.md`.
 Datenmodell (roomMeta, Room-UUID, blueprint3d-Schema): `docs/datenmodell.md`.
+Bauplaene der letzten Wellen: `docs/plan-w4-oeffnungen.md`, `docs/plan-w5-rueckweg.md`.
