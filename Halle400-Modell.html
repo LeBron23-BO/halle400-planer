@@ -3904,7 +3904,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "c8051b95fb22";
-const BAU_STEMPEL = "2026-07-26 13:05";
+const BAU_STEMPEL = "2026-07-26 13:34";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -4844,8 +4844,11 @@ class Wall {
      * Constructs a new wall.
      * @param start Start corner.
      * @param end End corner.
+     * @param id Vorhandene Kennung aus einer Datei. Fehlt sie, entsteht eine neue
+     *           — eine FRISCH gezeichnete Wand hat noch keine Vergangenheit, an
+     *           die sich etwas binden könnte.
      */
-    constructor(start, end) {
+    constructor(start, end, id) {
         this.start = start;
         this.end = end;
         /** Front is the plane from start to end. */
@@ -4872,12 +4875,9 @@ class Wall {
         this.deleted_callbacks = new EventEmitter();
         /** Actions to be applied explicitly. */
         this.action_callbacks = new EventEmitter();
-        this.id = this.getUuid();
+        this.id = id || Utils.guid();
         this.start.attachStart(this);
         this.end.attachEnd(this);
-    }
-    getUuid() {
-        return [this.start.id, this.end.id].join();
     }
     resetFrontBack() {
         this.frontEdge = null;
@@ -5397,6 +5397,60 @@ class Room {
 }
 
 /* ══════ model/floorplan.js ══════ */
+/**
+ * Fassung des Speicherformats. Erhöhen, sobald ein Feld dazukommt, auf das sich
+ * etwas VERLÄSST — nicht bei jeder Kleinigkeit.
+ *
+ *   1  bis W1: Ecken, Wände (nur über ihre Ecken), Texturen, roomMeta,
+ *      Ausstattung ohne Kennung
+ *   2  ab W2-Fundament: Wände und Ausstattung tragen `id`, Ausstattung `quelle`
+ *
+ * WOZU: eine Datei aus einer NEUEREN Fassung enthält Felder, die dieser Planer
+ * nicht kennt. Er würde sie klaglos öffnen und beim nächsten Sichern still
+ * wegwerfen — der Nutzer verlöre seine Türen und merkte es erst Wochen später.
+ * Lieber ehrlich ablehnen (siehe `loadFloorplan`).
+ */
+const PLAN_FASSUNG = 2;
+/**
+ * Sorgt dafür, dass eine Kennung im Grundriss nur EINMAL vorkommt.
+ *
+ * Nötig, weil die Kennungen fehlender Angaben aus dem INHALT abgeleitet werden
+ * (siehe unten) und zwei gleiche Stühle an derselben Stelle denselben Vorschlag
+ * ergäben. Der Zusatz ist zählend und nicht zufällig, damit die Ableitung
+ * wiederholbar bleibt: dieselbe Datei ergibt dieselben Kennungen.
+ */
+function eindeutigeKennung(vorschlag, vergeben) {
+    let kennung = vorschlag;
+    let n = 2;
+    while (vergeben.has(kennung)) {
+        kennung = `${vorschlag}#${n}`;
+        n++;
+    }
+    vergeben.add(kennung);
+    return kennung;
+}
+/**
+ * Kennung für ein Ausstattungs-Zeichen ohne eigene — aus dem INHALT abgeleitet,
+ * nicht aus einem Zufallswert und nicht aus der Position in der Liste.
+ *
+ * WARUM NICHT `Utils.guid()`: dieselbe Datei ergäbe bei jedem Öffnen andere
+ * Kennungen. Alles, was sich daran bindet (ein Löschvorschlag, später eine
+ * Tür), zeigte nach einem Neustart ins Leere. WARUM NICHT der Listen-Index:
+ * käme in der PDF-Auswertung ein Stück hinzu, verschöbe sich jede folgende
+ * Kennung — dasselbe Möbel hiesse dann anders. Ort und Art verschieben sich
+ * nicht. (Ecken bekommen ihre Kennung genauso aus der Datei statt neu erzeugt,
+ * siehe `newCorner`.)
+ */
+function kennungAusAusstattung(el) {
+    return `a-${el.typ}-${Math.round(el.x)}-${Math.round(el.y)}`;
+}
+/** Kennung für eine Wand ohne eigene — aus dem Eckenpaar, das sie beim Laden
+ *  verbindet. Ab dann bleibt sie fest, auch wenn die Wand später an anderen
+ *  Ecken hängt: genau darum geht es. Die ersten acht Zeichen der Ecken-UUIDs
+ *  reichen zur Unterscheidung; auf Gleichheit prüft `eindeutigeKennung`. */
+function kennungAusWand(corner1, corner2) {
+    return `w-${corner1.slice(0, 8)}-${corner2.slice(0, 8)}`;
+}
 /** */
 const defaultFloorPlanTolerance = 10.0;
 /**
@@ -5494,10 +5548,11 @@ class Floorplan {
      * Creates a new wall.
      * @param start The start corner.
      * @param end he end corner.
+     * @param id Vorhandene Kennung (nur beim Laden), sonst entsteht eine neue.
      * @returns The new wall.
      */
-    newWall(start, end) {
-        const wall = new Wall(start, end);
+    newWall(start, end, id) {
+        const wall = new Wall(start, end, id);
         this.walls.push(wall);
         const scope = this;
         wall.fireOnDelete(() => {
@@ -5569,6 +5624,7 @@ class Floorplan {
     // import and export -- cleanup
     saveFloorplan() {
         const floorplan = {
+            formatVersion: PLAN_FASSUNG,
             corners: {},
             walls: [],
             wallTextures: [],
@@ -5585,6 +5641,10 @@ class Floorplan {
         });
         this.walls.forEach((wall) => {
             floorplan.walls.push({
+                // Die Kennung MUSS mitgeschrieben werden, sonst nützt sie nichts: das
+                // Rückgängig fährt über genau diesen Weg (saveFloorplan -> JSON ->
+                // loadFloorplan), und was hier fehlt, ist danach für immer weg.
+                id: wall.id,
                 corner1: wall.getStart().id,
                 corner2: wall.getEnd().id,
                 frontTexture: wall.frontTexture,
@@ -5597,6 +5657,16 @@ class Floorplan {
         return floorplan;
     }
     loadFloorplan(floorplan) {
+        // VOR dem reset() prüfen: eine abgelehnte Datei darf den Grundriss, der
+        // gerade offen ist, nicht mitreissen. Wer eine Datei aus einer neueren
+        // Fassung öffnet, soll seinen Stand behalten und eine Erklärung bekommen.
+        const fassung = floorplan?.formatVersion ?? 1;
+        if (fassung > PLAN_FASSUNG) {
+            throw new Error(`Dieser Grundriss stammt aus einer neueren Fassung des Planers ` +
+                `(Format ${fassung}, dieser Planer kennt ${PLAN_FASSUNG}). Er wird ` +
+                `nicht geöffnet, weil dabei Angaben still verloren gingen — etwa ` +
+                `Türen, die an einer Wand hängen. Bitte den Planer aktualisieren.`);
+        }
         this.reset();
         const corners = {};
         if (floorplan == null || !('corners' in floorplan) || !('walls' in floorplan)) {
@@ -5607,6 +5677,9 @@ class Floorplan {
             corners[id] = this.newCorner(corner.x, corner.y, id);
         }
         const scope = this;
+        // Vergebene Kennungen für Wände und Ausstattung getrennt: sie leben in
+        // getrennten Listen, und eine Wand namens wie ein Stuhl stört niemanden.
+        const wandKennungen = new Set();
         floorplan.walls.forEach((wall) => {
             // Eine Wand, deren Ecke im Plan fehlt, ueberspringen statt daran zu
             // zerbrechen: `new Wall(undefined, …)` warf einen TypeError und liess die
@@ -5618,7 +5691,8 @@ class Floorplan {
                 console.warn(`[Floorplan] Wand ohne gueltige Ecke uebersprungen (${wall.corner1} -> ${wall.corner2})`);
                 return;
             }
-            const newWall = scope.newWall(corners[wall.corner1], corners[wall.corner2]);
+            const kennung = eindeutigeKennung(wall.id || kennungAusWand(wall.corner1, wall.corner2), wandKennungen);
+            const newWall = scope.newWall(corners[wall.corner1], corners[wall.corner2], kennung);
             if (wall.frontTexture) {
                 newWall.frontTexture = wall.frontTexture;
             }
@@ -5630,7 +5704,7 @@ class Floorplan {
             this.floorTextures = floorplan.newFloorTextures;
         }
         this.roomMeta = floorplan.roomMeta ?? {};
-        this.ausstattung = floorplan.ausstattung ?? [];
+        this.ausstattung = this.uebernehmeAusstattung(floorplan.ausstattung ?? []);
         this.update();
         this.roomLoadedCallbacks.fire();
     }
@@ -5656,13 +5730,44 @@ class Floorplan {
     getAusstattung() {
         return this.ausstattung;
     }
+    /** EIN Stück über seine Kennung — der einzige zulässige Weg, eines
+     *  wiederzufinden. Über eine gemerkte Objektreferenz geht es NICHT: nach
+     *  einem Rückgängig ist die Liste komplett neu aufgebaut. */
+    findeAusstattung(id) {
+        return this.ausstattung.find((el) => el.id === id) ?? null;
+    }
     /**
-     * Ersetzt die Ausstattung vollständig. Bewusst KEIN Einzel-Setter: die
-     * Ausstattung ist eine zusammenhängende Messung aus der PDF, kein vom Nutzer
-     * Stück für Stück gepflegter Bestand.
+     * Ersetzt die Ausstattung vollständig und ergänzt fehlende Kennungen.
+     *
+     * FRÜHER STAND HIER, die Ausstattung sei „eine zusammenhängende Messung aus
+     * der PDF, kein vom Nutzer Stück für Stück gepflegter Bestand" — als
+     * Begründung dafür, dass es keinen Einzel-Setter gibt. Diese Begründung ist
+     * überholt, seit der Nutzer Möbel verschieben darf. Sie stehen zu lassen
+     * hiesse, eine widerlegte Regel als Wahrheit im Code zu führen.
+     *
+     * Was BLEIBT, ist der wahre Kern: die gemessenen Stücke sind Grundwahrheit
+     * aus der PDF und tragen `quelle: 'gemessen'`. Was der Nutzer anfasst, wird
+     * `'gesetzt'` und ist ab dann eine Annahme — sichtbar getrennt, damit nie
+     * eine Annahme als Aufmaß durchgeht.
      */
     setAusstattung(elemente) {
-        this.ausstattung = elemente;
+        this.ausstattung = this.uebernehmeAusstattung(elemente);
+    }
+    /**
+     * Macht aus dem, was in einer Datei stand, vollständige Elemente: jede fehlende
+     * Kennung wird stabil vergeben, jede fehlende Herkunft ist `'gemessen'`.
+     *
+     * Warum 'gemessen' der Standard ist: Dateien ohne dieses Feld stammen aus der
+     * Zeit VOR dieser Welle. Damals konnte der Nutzer nichts hinstellen — alles,
+     * was darin steht, kommt aus `tools/export_blueprint.py` und damit aus der PDF.
+     */
+    uebernehmeAusstattung(elemente) {
+        const vergeben = new Set();
+        return elemente.map((el) => ({
+            ...el,
+            id: eindeutigeKennung(el.id || kennungAusAusstattung(el), vergeben),
+            quelle: el.quelle ?? 'gemessen'
+        }));
     }
     /**
      * Welches Ausstattungs-Zeichen liegt unter diesem Punkt? (E1)
@@ -5683,7 +5788,11 @@ class Floorplan {
      * anzuklicken — man würde beim Griff nach dem Stuhl die ganze Loggia treffen.
      */
     overlappedAusstattung(x, y, tolerance) {
-        const toleranz = tolerance || defaultFloorPlanTolerance;
+        // `??` und nicht `||`: die Greif-Vorrangkette fragt mit Toleranz 0 („steht
+        // der Zeiger WIRKLICH auf dem Möbel?"), und `0 || 10` wären stillschweigend
+        // 10 cm gewesen — die Vorrangkette hätte nie gegriffen, ohne dass irgendwo
+        // etwas rot geworden wäre.
+        const toleranz = tolerance ?? defaultFloorPlanTolerance;
         let treffer = null;
         let kleinsteFlaeche = Infinity;
         this.ausstattung.forEach((el) => {
@@ -5707,21 +5816,47 @@ class Floorplan {
         return treffer;
     }
     /**
-     * Entfernt EIN Ausstattungs-Zeichen (E1). Bewusst über die Objektreferenz
-     * und nicht über einen Index: zwischen dem Zeigen der Rückfrage und dem
-     * Bestätigen liegt Zeit, in der sich die Liste verschoben haben kann — ein
-     * gemerkter Index würde dann das falsche Möbel löschen.
+     * Entfernt EIN Ausstattungs-Zeichen (E1) über seine KENNUNG.
+     *
+     * Vorher lief das über die Objektreferenz, mit der Begründung, ein gemerkter
+     * Index könne zwischen Rückfrage und Bestätigung veralten. Das stimmt — die
+     * Referenz veraltet aber genauso, nur unauffälliger: `undo.apply()` lädt den
+     * Grundriss neu, und danach ist JEDES Element ein neues Objekt. Ein
+     * Löschvorschlag, der ein Rückgängig überlebt, träfe dann auf `indexOf() < 0`
+     * und täte still gar nichts. Über die Kennung greift er weiterhin.
      *
      * Die PDF bleibt Grundwahrheit: gelöscht wird die ANZEIGE des Nutzers,
      * neu geladen steht wieder alles da. Rückgabe meldet, ob wirklich etwas
      * entfernt wurde (VERIFIED-EFFECT statt stillem No-Op).
      */
-    entferneAusstattung(element) {
-        const index = this.ausstattung.indexOf(element);
+    entferneAusstattung(id) {
+        const index = this.ausstattung.findIndex((el) => el.id === id);
         if (index < 0) {
             return false;
         }
         this.ausstattung.splice(index, 1);
+        return true;
+    }
+    /**
+     * Verschiebt EIN Ausstattungs-Zeichen an einen neuen Mittelpunkt (cm) — und
+     * macht es dabei zu `'gesetzt'`.
+     *
+     * Der Herkunfts-Wechsel ist hier fest verdrahtet und NICHT dem Aufrufer
+     * überlassen: ein gemessenes Stück, das man wegschiebt, steht nicht mehr da,
+     * wo es gemessen wurde. Es weiter als Aufmaß zu führen wäre die eine Lüge,
+     * die dieses Projekt sich nicht leisten kann. Der `beleg` bleibt erhalten —
+     * er sagt, woher das Stück ursprünglich kam, und ist damit die Spur zurück.
+     *
+     * Rückgabe meldet, ob wirklich etwas bewegt wurde.
+     */
+    verschiebeAusstattung(id, x, y) {
+        const el = this.findeAusstattung(id);
+        if (!el) {
+            return false;
+        }
+        el.x = x;
+        el.y = y;
+        el.quelle = 'gesetzt';
         return true;
     }
     /**
@@ -5987,6 +6122,15 @@ const ausstattungFlaeche = '#efe7dd'; // Loggia/Kiesbett, wie im Plan beige
 const ausstattungGruen = '#cfdcc8'; // Bepflanzung
 const ausstattungLinienBreite = 1;
 /**
+ * Strichelung für GESETZTE Ausstattung (Herkunft `'gesetzt'`) — 4 px Strich,
+ * 3 px Lücke, in BILDSCHIRM-Pixeln wie die Linienbreite selbst. Die Zahlen sind
+ * die kleinsten, bei denen die Lücke bei 1 px Linienbreite noch als Lücke zu
+ * sehen ist; grösser gewählt löste sich der Umriss eines 40-cm-Stuhls auf.
+ * Gestrichelt heisst in jeder Bauzeichnung „nicht gesichert" — genau das ist
+ * gemeint: hier steht eine Annahme, kein Aufmaß aus der PDF.
+ */
+const GESETZT_STRICH = [4, 3];
+/**
  * Ab wann die Ausstattung DETAILS zeigt (Treppenstufen, Kochfeld-Platten,
  * Stuhl-Lehnen) und ab wann nur noch ihren Umriss. Beides sind Schwellen in
  * BILDSCHIRM-Pixeln pro cm, nicht in Weltmaß — dieselbe Lehre wie bei den
@@ -6177,18 +6321,31 @@ class FloorplannerView {
         }
         const detail = proCm >= AUSSTATTUNG_DETAIL_AB;
         const kandidat = this.viewmodel.loeschKandidat?.art === 'ausstattung'
-            ? this.viewmodel.loeschKandidat.element
+            ? this.viewmodel.loeschKandidat.kennung
             : null;
         this.floorplan.getAusstattung().forEach((el) => {
+            // GESETZT wird gestrichelt gezeichnet, GEMESSEN durchgezogen (Projekt-DNA:
+            // die PDF ist die Grundwahrheit). Ein frei hingestelltes Stück sieht sonst
+            // aus wie ein Aufmaß — und dann liest die Bank eine Annahme als Messung.
+            // Der Strich sitzt hier am Aufruf und nicht in `zeichneAusstattung`: die
+            // hat elf Zweige mit eigenem `return`, das Zurücksetzen wäre dort in
+            // jedem einzelnen zu wiederholen und beim zwölften vergessen.
+            const gesetzt = el.quelle === 'gesetzt';
+            if (gesetzt) {
+                this.context.setLineDash(GESETZT_STRICH);
+            }
             this.zeichneAusstattung(el, detail);
+            if (gesetzt) {
+                this.context.setLineDash([]);
+            }
             // Markierung NACH dem Zeichen, damit sie darüber liegt — und bewusst als
             // Rahmen um den Umriss statt als Farbwechsel in jeder der elf
             // Zeichenvorschriften: eine Stelle, die für jede Signatur gilt, kann
             // nicht bei der zwölften vergessen werden.
-            if (el === kandidat) {
+            if (el.id === kandidat) {
                 this.markiereAusstattung(el, true);
             }
-            else if (el === this.viewmodel.activeAusstattung) {
+            else if (el.id === this.viewmodel.activeAusstattung) {
                 this.markiereAusstattung(el, false);
             }
         });
@@ -6615,12 +6772,17 @@ class Floorplanner {
             ziel = { art: 'wand', wand: this.activeWall, beschreibung: this.wandBeschreibung(this.activeWall) };
         }
         else if (this.activeAusstattung) {
-            const el = this.activeAusstattung;
-            ziel = {
-                art: 'ausstattung',
-                element: el,
-                beschreibung: AUSSTATTUNG_NAME[el.typ] ?? el.typ
-            };
+            // Nachschlagen statt Merken: die Kennung ist beständig, das Objekt nicht.
+            // Findet sich nichts, ist das Stück inzwischen weg — dann gibt es auch
+            // nichts vorzuschlagen.
+            const el = this.floorplan.findeAusstattung(this.activeAusstattung);
+            if (el) {
+                ziel = {
+                    art: 'ausstattung',
+                    kennung: el.id,
+                    beschreibung: AUSSTATTUNG_NAME[el.typ] ?? el.typ
+                };
+            }
         }
         if (!ziel) {
             return false;
@@ -6679,7 +6841,7 @@ class Floorplanner {
             entfernt = true;
         }
         else {
-            entfernt = this.floorplan.entferneAusstattung(ziel.element);
+            entfernt = this.floorplan.entferneAusstattung(ziel.kennung);
         }
         // Der Vorschlag ist verbraucht, und was gelöscht wurde, kann der Zeiger
         // nicht mehr überdecken — sonst schlüge das nächste Verweilen dasselbe
@@ -6786,7 +6948,14 @@ class Floorplanner {
         // ------------------------------------------------- Löschen per Verweilen (E1)
         /** Was gerade zum Löschen vorgeschlagen ist — `null` heisst: keine Rückfrage. */
         this.loeschKandidat = null;
-        /** Was der Zeiger gerade überdeckt, auch ohne dass schon verweilt wurde. */
+        /**
+         * KENNUNG des Ausstattungs-Zeichens, das der Zeiger gerade überdeckt — auch
+         * ohne dass schon verweilt wurde. `null` heisst: keines.
+         *
+         * Bewusst die Kennung und nicht das Objekt: ein Rückgängig baut die Liste neu
+         * auf, eine gehaltene Referenz wäre danach eine Leiche, und jede Handlung
+         * daran ginge still ins Leere.
+         */
         this.activeAusstattung = null;
         /**
          * Die vorhandene Ecke, auf die der nächste Punkt gerade einrastet (E2), oder
@@ -7011,37 +7180,55 @@ class Floorplanner {
         // Greifzone in Weltkoordinaten umrechnen, damit sie auf dem Bildschirm
         // bei jedem Zoom gleich gross bleibt (T7).
         const toleranz = GREIF_TOLERANZ_PX * this.cmPerPixel;
-        const hoverCorner = this.floorplan.overlappedCorner(this.mouseX, this.mouseY, toleranz);
-        const hoverWall = this.floorplan.overlappedWall(this.mouseX, this.mouseY, toleranz);
+        // Ausstattung ist greifbar, solange sie auch GEZEICHNET wird (sonst liesse
+        // sich Unsichtbares anfassen) — und bisher nur im Löschen-Werkzeug. Das
+        // Ziehen im Verschieben-Werkzeug kommt in Welle 2; bis dahin wäre ein
+        // gegriffenes Möbel dort ein Griff, der nichts bewirkt, und würde nur das
+        // Schwenken der Ansicht blockieren.
+        const ausstattungGreifbar = this.mode == floorplannerModes.DELETE && this.pixelProCm() >= AUSSTATTUNG_UMRISS_AB;
+        // --- VORRANG: steht der Zeiger WIRKLICH auf einem Möbel? (Toleranz 0)
+        //
+        // Warum das die alte Reihenfolge (Ecke -> Wand -> Ausstattung) umdreht:
+        // die Greifzone von 8 BILDSCHIRM-Pixeln ist in Weltmaß nur bei starkem
+        // Zoom klein. In der Übersicht (78 m auf 1400 px) sind es 45 cm, am Handy
+        // über 60 cm — gegen die 289 gemessenen Stücke gerechnet greifen dort 18
+        // bis 28 % der Möbel die WAND statt sich selbst. Der Nutzer will den Stuhl
+        // anfassen und verschiebt gemessene Bausubstanz.
+        //
+        // Toleranz 0 ist der springende Punkt: der Vorrang gilt nur INNERHALB des
+        // (gedrehten) Möbel-Rechtecks. Wer knapp daneben zielt, trifft weiterhin
+        // zuerst Ecke und Wand — die Wand bleibt also unverändert gut greifbar,
+        // solange kein Möbel im Weg steht.
+        const drauf = ausstattungGreifbar
+            ? this.floorplan.overlappedAusstattung(this.mouseX, this.mouseY, 0)
+            : null;
+        const hoverCorner = drauf
+            ? null
+            : this.floorplan.overlappedCorner(this.mouseX, this.mouseY, toleranz);
+        const hoverWall = drauf || hoverCorner // corner takes precendence
+            ? null
+            : this.floorplan.overlappedWall(this.mouseX, this.mouseY, toleranz);
+        // Ausserhalb jedes Möbels gilt die alte Reihenfolge: erst Ecke, dann Wand,
+        // und die Ausstattung nur, wenn beides frei ist — dann aber mit der vollen
+        // Greifzone, damit ein Möbel auch knapp daneben noch anzufassen ist.
+        const hoverAusstattung = drauf
+            ? drauf
+            : ausstattungGreifbar && !hoverCorner && !hoverWall
+                ? this.floorplan.overlappedAusstattung(this.mouseX, this.mouseY, toleranz)
+                : null;
         let draw = false;
         if (hoverCorner != this.activeCorner) {
             this.activeCorner = hoverCorner;
             draw = true;
         }
-        // corner takes precendence
-        if (this.activeCorner == null) {
-            if (hoverWall != this.activeWall) {
-                this.activeWall = hoverWall;
-                draw = true;
-            }
+        if (hoverWall != this.activeWall) {
+            this.activeWall = hoverWall;
+            draw = true;
         }
-        else {
-            this.activeWall = null;
-        }
-        // Ausstattung greifen (E1) — nur im Löschen-Werkzeug und nur, solange sie
-        // auch GEZEICHNET wird (sonst liesse sich Unsichtbares löschen).
-        if (this.mode == floorplannerModes.DELETE) {
-            const sichtbar = this.pixelProCm() >= AUSSTATTUNG_UMRISS_AB;
-            const hoverAusstattung = sichtbar && this.activeCorner == null && this.activeWall == null
-                ? this.floorplan.overlappedAusstattung(this.mouseX, this.mouseY, toleranz)
-                : null;
-            if (hoverAusstattung != this.activeAusstattung) {
-                this.activeAusstattung = hoverAusstattung;
-                draw = true;
-            }
-        }
-        else if (this.activeAusstattung != null) {
-            this.activeAusstattung = null;
+        // Gemerkt wird die KENNUNG, nicht das Objekt (siehe `activeAusstattung`).
+        const kennung = hoverAusstattung ? hoverAusstattung.id : null;
+        if (kennung != this.activeAusstattung) {
+            this.activeAusstattung = kennung;
             draw = true;
         }
         return draw;
@@ -7084,7 +7271,15 @@ class Floorplanner {
             }
         }
         // panning
-        if (this.mouseDown && !this.activeCorner && !this.activeWall) {
+        //
+        // `!this.activeAusstattung` gehört zwingend dazu, sobald ein Möbel gezogen
+        // werden kann (Welle 2): sonst wanderte das Möbel UND der Plan unter ihm
+        // gleich mit — der Zeiger führte zwei Bewegungen auf einmal aus, und das
+        // Stück landete nie dort, wo man es hinzieht. Heute ist die Bedingung noch
+        // wirkungslos (die Ausstattung ist nur im Löschen-Werkzeug greifbar), aber
+        // sie hier erst mit dem Ziehen nachzureichen hiesse, den Fehler zuerst zu
+        // bauen.
+        if (this.mouseDown && !this.activeCorner && !this.activeWall && !this.activeAusstattung) {
             this.originX += this.lastX - this.rawMouseX;
             this.originY += this.lastY - this.rawMouseY;
             this.lastX = this.rawMouseX;
@@ -7364,6 +7559,14 @@ class Floorplanner {
     /** Resets the view - centers and resizes the floorplan */
     reset() {
         this.resizeView();
+        // Was der Zeiger überdeckte, gibt es so nicht mehr: `reset()` hängt an
+        // `roomLoadedCallbacks`, läuft also nach JEDEM Laden — und nach einem
+        // Rückgängig sind Ecken und Wände neue Objekte. `activeCorner`/`activeWall`
+        // zeigten sonst auf entfernte Vorgänger, und der nächste Zug bewegte einen
+        // Geist: sichtbar passiert nichts, gemeldet wird auch nichts.
+        // (`activeAusstattung` und der Löschvorschlag räumt `setMode` gleich mit.)
+        this.activeCorner = null;
+        this.activeWall = null;
         this.setMode(floorplannerModes.MOVE);
         // Beim Oeffnen den ganzen Grundriss zeigen statt eines mittigen
         // Ausschnitts im Ausgangsmassstab (T7).
@@ -8864,7 +9067,20 @@ function bemerkeAenderung(){
 
 grundriss.fireOnUpdatedRooms(bemerkeAenderung);
 
-grundriss.loadFloorplan(abschrift(start ? start.floorplan : PLAN.floorplan));
+/* Der eigene Stand kann aus einer NEUEREN Fassung stammen (jemand hat eine
+   aeltere Kopie dieser Datei geoeffnet). Der Kern lehnt ihn dann ab — was hier
+   keine weisse Seite ergeben darf: lieber der gemessene Plan und eine ehrliche
+   Meldung. Der Stand bleibt liegen, damit die neuere Kopie ihn wiederfindet. */
+let standFehler = null;
+try {
+  grundriss.loadFloorplan(abschrift(start ? start.floorplan : PLAN.floorplan));
+} catch (e) {
+  standFehler = (e && e.message) ? e.message : String(e);
+  start = null;
+  gesichertAm = null;
+  labels = PLAN.labels || [];
+  grundriss.loadFloorplan(abschrift(PLAN.floorplan));
+}
 letzterStand = JSON.stringify(grundriss.saveFloorplan());
 
 const zeichner = new Floorplanner('grundriss-canvas', grundriss);
@@ -9126,6 +9342,15 @@ function pruefePlan(roh){
   if (!fp || typeof fp !== 'object' || !fp.corners || typeof fp.corners !== 'object' || !Array.isArray(fp.walls)) {
     return { fehler: 'Diese Datei ist kein Grundriss — es fehlen „corners“ und „walls“.' };
   }
+  /* Eine Datei aus einer NEUEREN Fassung wird abgelehnt, nicht halb geoeffnet:
+     sie traegt Felder, die dieser Stand nicht kennt (etwa Tueren an einer Wand),
+     und beim naechsten Sichern waeren sie still verschwunden. Der Kern wuerfe
+     hier ohnehin — die Meldung ist nur hier lesbar. */
+  const fassung = fp.formatVersion || 1;
+  if (fassung > PLAN_FASSUNG) {
+    return { fehler: 'Diese Datei stammt aus einer neueren Fassung des Planers (Format ' +
+      fassung + ', hier: ' + PLAN_FASSUNG + '). Sie wird nicht geöffnet, damit keine Angaben still verloren gehen.' };
+  }
   const eckenZahl = Object.keys(fp.corners).length;
   if (eckenZahl === 0 || fp.walls.length === 0) {
     return { fehler: 'Dieser Grundriss ist leer (' + eckenZahl + ' Ecken, ' + fp.walls.length + ' Wände).' };
@@ -9289,6 +9514,10 @@ markiere('[data-blick]', startBlick);
 markiere('[data-namen]', namenModus);
 
 standZeigen();
+
+/* Ein abgelehnter eigener Stand wird GESAGT — still den gemessenen Plan zu
+   zeigen sähe aus, als wäre die Arbeit verloren. */
+if (standFehler) meldung(standFehler, true);
 
 if (standFragt) {
   const d = standFragt.gesichertAm ? new Date(standFragt.gesichertAm) : null;

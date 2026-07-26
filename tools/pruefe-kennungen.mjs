@@ -172,6 +172,33 @@ pruefe(
 )
 pruefe(bestand.fassung >= 2, `a) der gesicherte Grundriss nennt seine Format-Fassung (${bestand.fassung})`)
 
+/* ══ a2) Eine Datei aus einer NEUEREN Fassung wird ehrlich abgelehnt ═════
+   Sie traegt Felder, die dieser Stand nicht kennt (spaeter: Tueren an einer
+   Wand). Klaglos oeffnen hiesse, sie beim naechsten Sichern still wegzuwerfen.
+   Gemessen wird BEIDES: dass abgelehnt wird UND dass der offene Grundriss
+   dabei unversehrt bleibt — eine Ablehnung, die den Plan mitreisst, waere die
+   schlimmere Variante. */
+const abwehr = await page.evaluate(() => {
+  const fp = window.__k.fp()
+  let meldung = null
+  try {
+    fp.loadFloorplan({ formatVersion: 99, corners: {}, walls: [] })
+  } catch (e) {
+    meldung = e && e.message ? e.message : String(e)
+  }
+  return { meldung, ecken: fp.getCorners().length, waende: fp.getWalls().length }
+})
+log(`     Abwehr-Meldung: ${abwehr.meldung}`)
+pruefe(abwehr.meldung !== null, 'a) eine Datei aus einer neueren Fassung wird abgelehnt statt still verstuemmelt')
+pruefe(
+  !!abwehr.meldung && /neueren Fassung/.test(abwehr.meldung),
+  'a) und die Ablehnung sagt auf Deutsch, warum'
+)
+pruefe(
+  abwehr.ecken === 76 && abwehr.waende === bestand.wandZahl,
+  `a) GEGENPROBE: der offene Grundriss bleibt dabei unversehrt (${abwehr.ecken} Ecken, ${abwehr.waende} Waende)`
+)
+
 /* ══ c) Der Moebel-Treffer schlaegt die Wand — mit Gegenprobe ════════════
    ZUERST, weil hier noch nichts veraendert ist: der Plan ist der gemessene. */
 
@@ -245,10 +272,16 @@ for (const kandidat of lage.imBild.slice(0, 12)) {
   log(`     (Kandidat ${kandidat.typ} ${kandidat.id} ergab ${JSON.stringify(t)})`)
 }
 
+// Der Kandidat ist mit Absicht einer, der in der Greifzone einer Wand/Ecke
+// liegt: nach der ALTEN Reihenfolge (Ecke -> Wand -> Ausstattung) haette hier
+// zwingend die Bausubstanz gewonnen. Genau das ist der Befund, der diese Welle
+// ausgeloest hat.
 pruefe(
   probe !== null,
   `c) auf dem Moebel gewinnt das MOEBEL, nicht die Wand dahinter` +
-    (probe ? ` — ${probe.typ} "${probe.id}", Wand: ${trefferAufMoebel.wand}, Ecke: ${trefferAufMoebel.ecke}` : ' — kein Kandidat traf')
+    (probe
+      ? ` — ${probe.typ} "${probe.id}" (liegt in der Greifzone von: ${probe.ueberWand ? 'Wand' : ''}${probe.ueberWand && probe.ueberEcke ? '+' : ''}${probe.ueberEcke ? 'Ecke' : ''}, nach der alten Reihenfolge haette die gewonnen)`
+      : ' — kein Kandidat traf')
 )
 if (probe) {
   pruefe(
@@ -313,14 +346,19 @@ await page.waitForTimeout(200)
 
 /* ══ d) Verschieben macht aus GEMESSEN ein GESETZT ═══════════════════════ */
 
-// Ein grosses Stueck, damit die Wirkung auch im Bild zu sehen ist.
+// Ein grosses Stueck, damit die Wirkung auch im Bild zu sehen ist — aber KEINE
+// `flaeche`: die wird ohne Rand gezeichnet (sie ist Untergrund, kein Moebel),
+// an ihr waere die Strichelung nicht zu sehen.
 const vorher = await page.evaluate(() => {
   const fp = window.__k.fp()
   const aus = fp.getAusstattung()
-  const gross = aus.slice().sort((a, b) => b.breite * b.tiefe - a.breite * a.tiefe)
+  const gross = aus
+    .filter((e) => e.typ !== 'flaeche')
+    .sort((a, b) => b.breite * b.tiefe - a.breite * a.tiefe)
   const el = gross[0]
   return {
-    id: el.id, typ: el.typ, x: el.x, y: el.y, quelle: el.quelle, beleg: el.beleg || null,
+    id: el.id, typ: el.typ, x: el.x, y: el.y, breite: el.breite, tiefe: el.tiefe,
+    quelle: el.quelle, beleg: el.beleg || null,
     gemessen: aus.filter((e) => e.quelle === 'gemessen').length,
     alleIds: aus.map((e) => e.id).join('|')
   }
@@ -384,7 +422,8 @@ const danach = await page.evaluate((p) => {
     zahl: aus.length,
     alleIds: aus.map((e) => e.id).join('|'),
     waende: fp.getWalls().length,
-    wandOhne: fp.getWalls().filter((w) => !w.id).length
+    wandOhne: fp.getWalls().filter((w) => !w.id).length,
+    alleWandIds: fp.getWalls().map((w) => w.id).join('|')
   }
 }, vorher)
 
@@ -406,13 +445,80 @@ pruefe(
   `b) auch die Waende tragen nach dem Rueckgaengig noch ihre Kennung (${danach.waende} Waende, ${danach.wandOhne} ohne)`
 )
 
-// Und die Wand-Kennungen sind DIESELBEN wie vor dem Zurueckspielen — das ist
-// die Zusage, auf die sich eine Tuer spaeter verlassen muss.
-const wandVergleich = await page.evaluate((vorIds) => {
-  const jetzt = window.__k.fp().getWalls().map((w) => w.id).join('|')
-  return { gleich: jetzt === vorIds, jetzt: jetzt.slice(0, 60) }
-}, (await page.evaluate(() => window.__k.fp().getWalls().map((w) => w.id).join('|'))))
-log(`     Wand-Kennungen jetzt: ${wandVergleich.jetzt}…`)
+// Und es sind DIESELBEN Wand-Kennungen wie vor dem Zurueckspielen, nicht nur
+// gleich VIELE — das ist die Zusage, auf die sich eine Tuer verlassen muss.
+pruefe(
+  danach.alleWandIds === bestand.alleWandIds,
+  'b) jede einzelne Wand-Kennung ist nach dem Rueckgaengig unveraendert'
+)
+
+/* ══ e) GESETZT sieht anders aus als GEMESSEN ═══════════════════════════
+   Ein Kennzeichen, das nur in den Daten steht, hilft der Bank nicht — sie
+   schaut auf ein Blatt. Gemessen wird deshalb die TINTE des Stuecks: gleiche
+   Stelle, gleicher Massstab, gleiches Stueck, nur die Herkunft aendert sich.
+   Gestrichelt hat Luecken, also weniger Tinte. Ein reiner Blick auf das
+   Datenfeld wuerde auch dann bestehen, wenn der Zeichner es ignoriert. */
+const strichprobe = await page.evaluate((p) => {
+  const fp = window.__k.fp()
+  const z = window.__k.z()
+  const c = document.getElementById('floorplanner-canvas')
+
+  // Nah heran, damit der Umriss ueberhaupt Striche zeigen kann. Der Ankerpunkt
+  // ist das Stueck selbst — so bleibt es nach dem Zoomen an derselben Stelle.
+  const vor = window.__k.aufBild(p.x, p.y)
+  z.zoomeAufPunkt(2, vor.x, vor.y)
+  const mitte = window.__k.aufBild(p.x, p.y)
+  const proCm = z.pixelProCm()
+  const halb = (Math.max(p.breite, p.tiefe) / 2 + 20) * proCm
+  const kasten = {
+    x0: Math.max(0, Math.round(mitte.x - halb)),
+    y0: Math.max(0, Math.round(mitte.y - halb)),
+    x1: Math.min(c.width, Math.round(mitte.x + halb)),
+    y1: Math.min(c.height, Math.round(mitte.y + halb))
+  }
+
+  // Ein leerer Ausschnitt waere ein Messfehler, der wie ein Erfolg aussieht
+  // (0 < 0 ist zwar falsch, 0 Tinte aber schon vorher verdaechtig): lieber
+  // ehrlich melden als eine Zahl aus dem Nichts.
+  const breitePx = kasten.x1 - kasten.x0
+  const hoehePx = kasten.y1 - kasten.y0
+  if (breitePx < 20 || hoehePx < 20) {
+    return { ok: false, fehler: `Ausschnitt zu klein (${breitePx}x${hoehePx})`, solide: 0, gestrichelt: 0, kasten, proCm, quelle: null }
+  }
+
+  // Nur die Ausstattungs-Linienfarbe #7d8a9c zaehlen (A1-Verfahren): der
+  // Blaustich (b - r) trennt sie von jeder neutralgrauen Wandkante.
+  const tinte = () => {
+    const d = c.getContext('2d').getImageData(kasten.x0, kasten.y0, kasten.x1 - kasten.x0, kasten.y1 - kasten.y0).data
+    const nah = (v, soll) => Math.abs(v - soll) <= 22
+    let n = 0
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] <= 10) continue
+      if (d[i + 2] - d[i] >= 12 && nah(d[i], 125) && nah(d[i + 1], 138) && nah(d[i + 2], 156)) n++
+    }
+    return n
+  }
+
+  z.resizeView() // neu zeichnen OHNE die Ansicht zu verstellen
+  const solide = tinte()
+  // Auf DIESELBE Stelle verschieben: nur die Herkunft aendert sich, sonst nichts.
+  const ok = fp.verschiebeAusstattung(p.id, p.x, p.y)
+  z.resizeView()
+  const gestrichelt = tinte()
+  return { ok, solide, gestrichelt, kasten, proCm, quelle: fp.findeAusstattung(p.id).quelle }
+}, vorher)
+await page.waitForTimeout(200)
+await page.screenshot({ path: `${DIR}/E_gestrichelt.png` })
+log(
+  `SCHRITT 6: Strichprobe an "${vorher.id}" bei ${strichprobe.proCm.toFixed(2)} px/cm — ` +
+    `gemessen ${strichprobe.solide} Bildpunkte Tinte, gesetzt ${strichprobe.gestrichelt}`
+)
+pruefe(strichprobe.ok && strichprobe.quelle === 'gesetzt', 'e) dasselbe Stueck gilt jetzt als gesetzt')
+pruefe(strichprobe.solide > 0, `e) das Stueck ist ueberhaupt gezeichnet (${strichprobe.solide} Bildpunkte)`)
+pruefe(
+  strichprobe.gestrichelt < strichprobe.solide,
+  `e) gesetzt wird SICHTBAR anders gezeichnet — gestrichelt, also weniger Tinte (${strichprobe.solide} -> ${strichprobe.gestrichelt})`
+)
 
 await browser.close()
 
