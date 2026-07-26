@@ -4104,7 +4104,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "c8051b95fb22";
-const BAU_STEMPEL = "2026-07-26 20:06";
+const BAU_STEMPEL = "2026-07-26 20:09";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -12637,6 +12637,9 @@ window.__planerDatei = {
   ladeFrageOffen: function(){ return sichtbar(el('ladeFrage')); },
   ladeFrageText: function(){ return el('ladeFrageText').textContent; },
   druckZeile: function(){ return el('druckZeile').textContent; },
+  /* G1 — wie diese Datei ein Mass SCHREIBT. Der Kern rechnet, die Anzeige
+     formatiert; gemessen werden muss die Anzeige, nicht die Rechnung. */
+  masse: function(cm){ return Dimensioning.cmToMeasure(cm); },
   meldungText: function(){ return sichtbar(meldungEl) ? meldungEl.textContent : null; },
   /* Nur fuer die Gegenprobe zu M1: dieselbe Liste mit anderer Herkunft. */
   waendeRoh: function(){

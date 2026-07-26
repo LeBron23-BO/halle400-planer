@@ -2028,6 +2028,9 @@ window.__planerDatei = {
   ladeFrageOffen: function(){ return sichtbar(el('ladeFrage')); },
   ladeFrageText: function(){ return el('ladeFrageText').textContent; },
   druckZeile: function(){ return el('druckZeile').textContent; },
+  /* G1 — wie diese Datei ein Mass SCHREIBT. Der Kern rechnet, die Anzeige
+     formatiert; gemessen werden muss die Anzeige, nicht die Rechnung. */
+  masse: function(cm){ return Dimensioning.cmToMeasure(cm); },
   meldungText: function(){ return sichtbar(meldungEl) ? meldungEl.textContent : null; },
   /* Nur fuer die Gegenprobe zu M1: dieselbe Liste mit anderer Herkunft. */
   waendeRoh: function(){
