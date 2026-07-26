@@ -206,6 +206,18 @@ log('\n── K3: scharf erst mit „Bearbeiten" ──')
     const zoomNach = await page.evaluate(() => document.getElementById('zoomAnzeige').textContent)
     pruefe(zoomVor !== zoomNach, `K3: das Rad zoomt weiterhin (${zoomVor} -> ${zoomNach})`)
 
+    /* Am Handy landen die Finger jetzt auf dem UMSCHLAG statt auf dem Canvas.
+       Ohne `touch-action:none` DORT zoomte der Browser die ganze Seite, statt
+       dass der Grundriss folgt — das Canvas allein reicht seit K3 nicht mehr. */
+    const griff = await page.evaluate(() => ({
+      umschlag: getComputedStyle(document.getElementById('plan')).touchAction,
+      canvas: getComputedStyle(document.getElementById('grundriss-canvas')).touchAction
+    }))
+    pruefe(
+      griff.umschlag === 'none' && griff.canvas === 'none',
+      `K3: der Umschlag haelt die Finger-Geste fest, nicht nur das Canvas (${JSON.stringify(griff)})`
+    )
+
     /* ── GEGENPROBE ──────────────────────────────────────────────────────
        DERSELBE Zug mit eingeschaltetem Bearbeiten MUSS wirken. Ohne sie
        bestuende die Pruefung oben auch dann, wenn die Koordinaten daneben
