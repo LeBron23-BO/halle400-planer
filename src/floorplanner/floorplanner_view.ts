@@ -708,10 +708,13 @@ export class FloorplannerView {
         // Sie wird IMMER gezeichnet, auch ohne Detailstufe — anders als die
         // Stuhllehne. Ein Gerät, dessen Ausrichtung man nicht sieht, ist im
         // Plan wertlos: dann weiss niemand, ob davor noch der Meter Platz ist,
-        // den man zum Benutzen braucht. Zwei Striche statt einem, damit die
-        // Vorderkante sich vom blossen Umriss abhebt.
-        this.ausLinie(el, -hb, ht, hb, ht)
-        this.ausLinie(el, -hb, ht * 0.72, hb, ht * 0.72)
+        // den man zum Benutzen braucht.
+        //
+        // EIN Strich, INNEN. Ein zweiter direkt auf der Vorderkante wäre nur
+        // der Umriss doppelt gezeichnet; der Abstand von einem Drittel der
+        // Tiefe macht daraus ein erkennbares Band, das auch dann noch als Band
+        // zu sehen ist, wenn das Gerät im Bild nur zwanzig Punkte misst.
+        this.ausLinie(el, -hb, ht * 0.34, hb, ht * 0.34)
         return
 
       case 'liege':

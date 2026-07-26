@@ -132,6 +132,40 @@
   .zeile .src{font-size:11.5px;color:var(--ink-mute);margin-top:2px;line-height:1.4}
   .tafel-fuss{padding:9px 14px 11px;border-top:1px solid var(--panel-line);
        font-size:11px;line-height:1.5;color:var(--ink-mute)}
+  /* ── Palette (W3): was man hinstellen kann ────────────────────────────
+     Sie liegt IM Grundriss-Bereich und erbt damit dessen Sichtbarkeit: beim
+     Wechsel aufs Blatt verschwindet sie von selbst, ohne eine zweite Regel,
+     die man vergessen koennte. Farbklima, Schriften und Rahmen sind die der
+     Legenden-Tafel — ein Planblatt, kein Werkzeugkasten. */
+  .palette{position:fixed;left:16px;top:104px;width:134px;
+       max-height:calc(100vh - 230px);background:var(--panel);
+       border:1px solid var(--panel-line);backdrop-filter:blur(9px);
+       -webkit-backdrop-filter:blur(9px);display:flex;flex-direction:column;z-index:7}
+  .palette-kopf{padding:11px 12px 8px;border-bottom:1px solid var(--panel-line);
+       font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;
+       color:var(--ink-dim)}
+  .palette-leib{overflow-y:auto;padding:4px 5px 6px}
+  /* Ueberschreibt die Leisten-Knopfregel oben: hier steht ein NAME unter einem
+     Zeichen, keine Schaltflaechen-Beschriftung in Versalien. */
+  .pstueck{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;
+       padding:5px 3px;border:1px solid transparent;background:transparent;cursor:grab;
+       font-family:var(--sans);font-size:11.5px;letter-spacing:.01em;text-transform:none;
+       color:var(--ink-dim);min-height:0}
+  .pstueck:hover:not(:disabled){background:var(--paper-deep);color:var(--ink)}
+  .pstueck.zieht{cursor:grabbing}
+  /* MUSS sein: die globale canvas-Regel oben streckt jedes Canvas auf 100 %. */
+  .pstueck canvas{width:110px;height:46px;display:block;pointer-events:none}
+  .pstueck .pmass{font-family:var(--mono);font-size:9px;letter-spacing:.06em;
+       color:var(--ink-mute);font-variant-numeric:tabular-nums}
+  .palette-fuss{padding:8px 12px 10px;border-top:1px solid var(--panel-line);
+       font-size:10.5px;line-height:1.45;color:var(--ink-mute)}
+  /* Das Stueck am Zeiger, waehrend es wandert. `pointer-events:none` ist keine
+     Feinheit, sondern Bedingung: sonst faende `elementFromPoint` beim Loslassen
+     den Geist statt der Zeichenflaeche und es entstuende nie etwas. */
+  .geist{position:fixed;z-index:60;pointer-events:none;padding:4px 9px;
+       background:var(--panel);border:1px solid var(--amber);color:var(--amber);
+       font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase}
+
   .hinweis{position:fixed;left:26px;bottom:18px;max-width:44ch;font-family:var(--mono);
        font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-mute);
        pointer-events:none;opacity:.85;line-height:1.7}
@@ -145,6 +179,13 @@
     .leiste{bottom:10px;padding:5px;gap:4px}
     button{padding:8px 9px;font-size:10px}
     .lbl{padding:0 4px 0 2px;font-size:9px}
+    /* Auf schmalen Anzeigen KEINE Palette. Das Hineinziehen laeuft ueber
+       Maus-Ereignisse; ein Finger loest sie erst beim Loslassen aus, der Zug
+       waere also nicht zu verfolgen. Dieselbe offene Stelle wie beim Ziehen
+       vorhandener Moebel (W2, "am Handy noch nicht geloest"). Eine sichtbare
+       Palette, die auf Fingerdruck nichts tut, waere schlimmer als keine:
+       sie behauptet eine Bedienung, die es hier nicht gibt. */
+    .palette{display:none}
   }
   @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
 </style>
@@ -198,6 +239,17 @@
 <!-- ── Grundriss: hier wird bearbeitet. ─────────────────────────────── -->
 <div class="ansicht weg" id="plan">
   <canvas id="grundriss-canvas"></canvas>
+
+  <!-- Palette (W3): Stücke in den Grundriss ziehen. Erscheint mit den
+       Werkzeugen, weil sie eines ist. Der Inhalt kommt aus
+       AUSSTATTUNG_VORLAGEN im Kern — nicht aus dieser Hülle, sonst hätte die
+       Doppelklick-Datei eine eigene Möbelliste. -->
+  <aside class="palette" id="palette" hidden>
+    <div class="palette-kopf">Hinstellen</div>
+    <div class="palette-leib" id="paletteLeib"></div>
+    <div class="palette-fuss">In den Grundriss ziehen. Was so entsteht, ist
+      <b>frei gesetzt</b> und wird gestrichelt gezeichnet — kein Aufmaß.</div>
+  </aside>
 
   <div class="leiste" id="werkzeuge" role="toolbar" aria-label="Grundriss bearbeiten" hidden>
     <div class="grp">
@@ -3914,7 +3966,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "c8051b95fb22";
-const BAU_STEMPEL = "2026-07-26 15:44";
+const BAU_STEMPEL = "2026-07-26 16:14";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -6760,10 +6812,13 @@ class FloorplannerView {
                 // Sie wird IMMER gezeichnet, auch ohne Detailstufe — anders als die
                 // Stuhllehne. Ein Gerät, dessen Ausrichtung man nicht sieht, ist im
                 // Plan wertlos: dann weiss niemand, ob davor noch der Meter Platz ist,
-                // den man zum Benutzen braucht. Zwei Striche statt einem, damit die
-                // Vorderkante sich vom blossen Umriss abhebt.
-                this.ausLinie(el, -hb, ht, hb, ht);
-                this.ausLinie(el, -hb, ht * 0.72, hb, ht * 0.72);
+                // den man zum Benutzen braucht.
+                //
+                // EIN Strich, INNEN. Ein zweiter direkt auf der Vorderkante wäre nur
+                // der Umriss doppelt gezeichnet; der Abstand von einem Drittel der
+                // Tiefe macht daraus ein erkennbares Band, das auch dann noch als Band
+                // zu sehen ist, wenn das Gerät im Bild nur zwanzig Punkte misst.
+                this.ausLinie(el, -hb, ht * 0.34, hb, ht * 0.34);
                 return;
             case 'liege':
                 this.ausRechteck(el, ausstattungFuellung);
@@ -9709,6 +9764,7 @@ const el = function(id){ return document.getElementById(id); };
 const blattEl = el('blatt');
 const planEl = el('plan');
 const werkzeuge = el('werkzeuge');
+const palette = el('palette');
 const tafel = el('tafel');
 const rueckfrage = el('rueckfrage');
 const zurueckFrage = el('zurueckFrage');
@@ -9959,6 +10015,12 @@ function zeigeAnsicht(name){
 function setzeBearbeiten(an, merken){
   bearbeiten = an;
   werkzeuge.hidden = !an;
+  // Die Palette gehoert zu den Werkzeugen: wer nur zusieht, soll auch nichts
+  // hinstellen koennen. Ein laufender Zug wird dabei abgebrochen — sonst legte
+  // ein Loslassen nach dem Ausschalten noch ein Stueck ab, das niemand
+  // bestellt hat.
+  palette.hidden = !an;
+  if (!an) paletteZugAbbrechen();
   el('btnBearbeiten').setAttribute('aria-pressed', String(an));
   if (an) {
     zeigeAnsicht('plan');
@@ -10180,6 +10242,158 @@ zeichner.addEinrastCallback(function(an){
 });
 el('btnEinrasten').setAttribute('aria-pressed', String(zeichner.istEinrasten()));
 
+/* ── Palette: ein Stueck in den Grundriss ziehen (W3) ────────────────
+   Bewusst mit Maus-Ereignissen und NICHT mit der HTML5-Ziehschnittstelle
+   (draggable + dragstart/drop). Zwei gemessene Gruende: erstens laesst sich
+   dort das Bild am Zeiger nicht steuern, ohne eine Zweitzeichnung anzulegen —
+   und eine zweite Zeichnung driftet; zweitens taugt sie in dieser Datei nicht
+   zum Pruefen, weil ein DataTransfer sich nicht als Ereignis nachstellen
+   laesst. Maus-Ereignisse sind derselbe Weg, den das Moebelziehen (W2) schon
+   geht, und lassen sich mit `dispatchEvent` exakt nachfahren.
+
+   Der WEG des Zuges laeuft ueber das DOKUMENT und nicht ueber die Palette: wer
+   ein Stueck in den Plan zieht, verlaesst die Leiste sofort — auf ihr endet
+   kein einziger Zug. */
+const VORSCHAU_BREITE = 110;
+const VORSCHAU_HOEHE = 46;
+
+let paletteZug = null;
+let geistEl = null;
+
+function vorlageFuer(typ){
+  for (const v of AUSSTATTUNG_VORLAGEN) if (v.typ === typ) return v;
+  return null;
+}
+
+/* Die Vorschau kommt von DERSELBEN Zeichenvorschrift wie der Grundriss
+   (`Floorplanner.zeichneVorschau` -> `FloorplannerView.zeichneAusstattung`).
+   Nachmalen waere eine zweite Wahrheit ueber das Aussehen eines Zeichens: der
+   Nutzer zoege dann irgendwann etwas in den Plan, das dort anders aussieht. */
+function paletteBauen(){
+  const leib = el('paletteLeib');
+  leib.innerHTML = '';
+  AUSSTATTUNG_VORLAGEN.forEach(function(v){
+    const name = AUSSTATTUNG_NAME[v.typ] || v.typ;
+    const knopf = document.createElement('button');
+    knopf.type = 'button';
+    knopf.className = 'pstueck';
+    knopf.dataset.typ = v.typ;
+    knopf.title = name + ' — ' + v.breite + ' × ' + v.tiefe + ' cm, in den Grundriss ziehen';
+    const flaeche = document.createElement('canvas');
+    flaeche.width = VORSCHAU_BREITE;
+    flaeche.height = VORSCHAU_HOEHE;
+    flaeche.className = 'pv';
+    const nm = document.createElement('span');
+    nm.textContent = name;
+    const mass = document.createElement('span');
+    mass.className = 'pmass';
+    mass.textContent = v.breite + '×' + v.tiefe;
+    knopf.appendChild(flaeche);
+    knopf.appendChild(nm);
+    knopf.appendChild(mass);
+    leib.appendChild(knopf);
+    zeichner.zeichneVorschau(flaeche.getContext('2d'), v,
+      { x: 0, y: 0, breite: VORSCHAU_BREITE, hoehe: VORSCHAU_HOEHE });
+  });
+}
+
+function geistZeigen(x, y, text){
+  if (!geistEl) {
+    geistEl = document.createElement('div');
+    geistEl.className = 'geist';
+    geistEl.id = 'geist';
+    document.body.appendChild(geistEl);
+  }
+  geistEl.textContent = text;
+  geistEl.hidden = false;
+  geistBewegen(x, y);
+}
+
+function geistBewegen(x, y){
+  if (!geistEl) return;
+  // Versetzt und nicht mittig: unter dem Zeiger verdeckte der Geist genau die
+  // Stelle, an der abgelegt wird.
+  geistEl.style.left = (x + 14) + 'px';
+  geistEl.style.top = (y + 14) + 'px';
+}
+
+function paletteZugAbbrechen(){
+  paletteZug = null;
+  if (geistEl) geistEl.hidden = true;
+  document.querySelectorAll('.pstueck.zieht').forEach(function(k){ k.classList.remove('zieht'); });
+}
+
+palette.addEventListener('mousedown', function(e){
+  const knopf = e.target && e.target.closest ? e.target.closest('.pstueck') : null;
+  if (!knopf) return;
+  const v = vorlageFuer(knopf.dataset.typ);
+  if (!v) return;
+  // Ohne das startet der Browser sein eigenes Ziehen (Bild/Auswahl) und
+  // verschluckt die weiteren Maus-Ereignisse.
+  e.preventDefault();
+  paletteZug = v;
+  knopf.classList.add('zieht');
+  geistZeigen(e.clientX, e.clientY, AUSSTATTUNG_NAME[v.typ] || v.typ);
+});
+
+document.addEventListener('mousemove', function(e){
+  if (paletteZug) geistBewegen(e.clientX, e.clientY);
+});
+
+document.addEventListener('mouseup', function(e){
+  if (!paletteZug) return;
+  const v = paletteZug;
+  paletteZugAbbrechen();
+  stueckAblegen(v, e.clientX, e.clientY);
+});
+
+/* Esc bricht den Zug ab — dieselbe Taste, mit der der Kern ein angefangenes
+   Zeichnen zuruecknimmt. */
+addEventListener('keydown', function(e){
+  if (paletteZug && e.key === 'Escape') paletteZugAbbrechen();
+});
+
+/* Verlaesst der Zeiger das FENSTER, endet der Zug hier — auch wenn kein
+   Loslassen mehr kommt. Ohne diese beiden Zeilen bliebe der Zug scharf: das
+   Loslassen ausserhalb des Fensters erreicht das Dokument nicht, der Geist
+   klebte am Rand, und der naechste Klick irgendwo im Bild legte ein Stueck ab,
+   das niemand mehr bestellt hatte. Ein abgebrochener Zug kostet ein zweites
+   Ziehen; ein haengender Zug kostet Vertrauen. */
+document.addEventListener('mouseleave', paletteZugAbbrechen);
+addEventListener('blur', paletteZugAbbrechen);
+
+function stueckAblegen(v, clientX, clientY){
+  const c = document.getElementById('grundriss-canvas');
+  /* WORAN ERKENNT DIE HUELLE "im Grundriss"? An dem, was WIRKLICH oben liegt.
+     Die Zeichenflaeche ist bildschirmfuellend (`.ansicht{inset:0}`), Palette
+     und Leisten liegen DARUEBER. Ein blosser Vergleich mit ihrem Rechteck
+     haette darum auch ein Loslassen auf der Palette als "im Grundriss"
+     gewertet und ein Stueck unter der Leiste erzeugt, wo es niemand sieht.
+     Ausserhalb des Fensters liefert `elementFromPoint` null — auch das ist
+     "nicht im Grundriss". */
+  const oben = document.elementFromPoint(clientX, clientY);
+  if (oben !== c) {
+    meldung('Hier lässt sich nichts ablegen — ziehen Sie das Stück auf die Zeichenfläche.', false);
+    return null;
+  }
+  const r = c.getBoundingClientRect();
+  const stueck = zeichner.stueckAblegen(clientX - r.left, clientY - r.top, v);
+  if (!stueck) {
+    meldung('Hier lässt sich nichts ablegen — ziehen Sie das Stück auf die Zeichenfläche.', false);
+    return null;
+  }
+  /* Von Hand melden: `bemerkeAenderung` haengt am Zeigerende des DOKUMENTS und
+     wurde weiter oben angemeldet, laeuft also VOR diesem Rueckruf — es haette
+     den Stand von VOR dem Ablegen verglichen und nichts bemerkt. Ohne diese
+     Zeile bliebe das neue Stueck ungesichert und das Blatt zeigte es nicht. */
+  bemerkeAenderung();
+  meldung((AUSSTATTUNG_NAME[v.typ] || v.typ) + ' hingestellt — frei gesetzt, kein Aufmaß. ' +
+    'Rückgängig mit Strg+Z.', false);
+  return stueck;
+}
+
+paletteBauen();
+
 el('btnZoomAus').addEventListener('click', function(){ zeichner.zoomeUmFaktor(1 / 1.25); });
 el('btnZoomEin').addEventListener('click', function(){ zeichner.zoomeUmFaktor(1.25); });
 el('btnEinpassen').addEventListener('click', function(){ zeichner.allesEinpassen(); });
@@ -10394,6 +10608,50 @@ window.__planerDatei = {
     };
   },
   gesetzte: function(){ return grundriss.zaehleGesetzte(); },
+  /* --- Palette (W3). Der Zug selbst wird vom Gate mit echten Maus-Ereignissen
+     nachgefahren; hier steht nur, WO die Eintraege liegen und ob ihre Vorschau
+     ueberhaupt gezeichnet ist. Die Tinte zaehlt undurchsichtige Bildpunkte im
+     Vorschau-Canvas: ein leeres Kaestchen faellt damit auf, ein nachgemaltes
+     Rechteck nicht — deshalb prueft das Gate zusaetzlich, dass sich die
+     Vorschauen der Arten UNTERSCHEIDEN. */
+  paletteSichtbar: function(){ return !palette.hidden; },
+  paletteEintraege: function(){
+    return Array.prototype.map.call(
+      document.querySelectorAll('#paletteLeib .pstueck'),
+      function(knopf){
+        const flaeche = knopf.querySelector('canvas');
+        const r = knopf.getBoundingClientRect();
+        const v = vorlageFuer(knopf.dataset.typ);
+        const d = flaeche.getContext('2d').getImageData(0, 0, flaeche.width, flaeche.height).data;
+        let tinte = 0, summe = 2166136261;
+        for (let i = 0; i < d.length; i += 4) {
+          if (d[i + 3] > 10) tinte++;
+          summe ^= (d[i + 3] + (i % 977)) & 255;
+          summe = Math.imul(summe, 16777619);
+        }
+        return {
+          typ: knopf.dataset.typ,
+          name: knopf.querySelector('span').textContent,
+          breite: v ? v.breite : null,
+          tiefe: v ? v.tiefe : null,
+          mitteX: r.left + r.width / 2,
+          mitteY: r.top + r.height / 2,
+          tinte: tinte,
+          summe: summe >>> 0
+        };
+      }
+    );
+  },
+  /* Wie viele Koerper die Axonometrie WIRKLICH baut. Die Zahl faellt auf eine
+     halb verdrahtete Typ-Kette: ohne Eintrag in AUSSTATTUNG_STIL oder
+     OBERKANTE_CM liefert `bauformFuer` null und das Stueck fehlt hier, waehrend
+     es im Grundriss weiterhin sichtbar ist. */
+  szeneMoebel: function(){ return szene ? szene.moebel.length : null; },
+  /* Baut die Axonometrie neu — dieselbe Funktion, die die Huelle selbst ruft.
+     Noetig, weil `setzeAusstattung` (Strichprobe) bewusst KEINE Aenderung
+     meldet und die Ansicht sonst veraltet bliebe: das Gate maesse dann die
+     Szene von VORHER und hielte sie fuer die von jetzt. */
+  axoNeuBauen: function(){ axoNeuBauen(); },
   gesetztText: function(){
     const z = el('gesetztZaehler');
     return z.hidden ? null : z.textContent;

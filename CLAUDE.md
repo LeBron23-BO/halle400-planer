@@ -37,6 +37,10 @@ node tools/pruefe-kennungen.mjs   # W2-Fundament: Kennungen an Wand+Ausstattung,
 node tools/pruefe-ziehen.mjs      # W2: das MOEBELZIEHEN — 70 Pruefungen in BEIDEN Welten
                                   #        (Planer auf 3301 UND Doppelklick-Datei unter file://)
                                   #        --nur planer | --nur datei grenzt ein
+node tools/pruefe-palette.mjs     # W3: die PALETTE — 66 Pruefungen in der Doppelklick-Datei
+                                  #        (Stueck hineinziehen, gestrichelt, EIN Undo, Sichern/Laden)
+                                  #        mit GEGENPROBE des Waechters: eine halbe Typ-Kette
+                                  #        muss ERKANNT werden
 node tools/pruefe-axonometrie.mjs  # X2/X3: 6 Gates — Raumableitung == Planer-Kern, Szene vollstaendig,
                                    #        Bild gezeichnet (mit Gegenprobe), Ansicht folgt dem Grundriss
 
@@ -158,6 +162,76 @@ Jedes gezogene oder gedrehte Stueck wird `quelle: 'gesetzt'`, wird im Grundriss
 GESTRICHELT gezeichnet, und das Blatt sagt es im Kopf: „N Stueck frei gesetzt —
 kein Aufmass" (nur wenn N > 0; der Fusshinweis zieht mit, sonst widerspraeche das
 Blatt sich selbst).
+
+## Stuecke hinstellen — die Palette (W3, 2026-07-26)
+
+In der **Doppelklick-Datei** (nur dort) liegt im Bearbeiten-Zustand links eine
+Palette. Ein Stueck wird daraus in den Grundriss gezogen und dort abgelegt: es
+entsteht mit `quelle: 'gesetzt'`, frischer Kennung und Standardmass und rastet
+mit DERSELBEN Rechnung ein wie ein gezogenes (`Floorplanner.stueckAblegen` ruft
+`moebelEinrasten` aus W2). Fuenf Festlegungen:
+
+1. **Die Vorschau kommt aus derselben Zeichenvorschrift wie der Grundriss**
+   (`Floorplanner.zeichneVorschau` → `FloorplannerView.zeichneAusstattung`, nur
+   mit getauschter Welt→Bild-Abbildung). Nachgemalt waere sie eine zweite
+   Wahrheit ueber das Aussehen eines Zeichens.
+2. **Was "im Grundriss" heisst, entscheidet `elementFromPoint`**, nicht das
+   Rechteck des Canvas: die Zeichenflaeche ist bildschirmfuellend, Palette und
+   Leisten liegen DARUEBER. Loslassen auf der Palette erzeugt nichts.
+3. **Ein Ablegen = EIN Rueckgaengig-Schritt.** Der Schnappschuss wird erst
+   gezogen, NACHDEM die Grenze geprueft ist — sonst gaebe es leere Schritte.
+4. **`Floorplan.fuegeAusstattungHinzu`** ist der Einzel-Setter, den
+   `setAusstattung` einmal ausdruecklich abgelehnt hat. Die alte Begruendung
+   ("kein vom Nutzer Stueck fuer Stueck gepflegter Bestand") ist damit endgueltig
+   widerlegt und im Code als widerlegt gekennzeichnet. `quelle: 'gesetzt'` ist
+   fest verdrahtet: ein zur Laufzeit entstandenes Stueck kann nicht aus der PDF
+   stammen.
+5. **Am Handy gibt es die Palette nicht** (`@media (max-width:900px)`): das
+   Hineinziehen laeuft ueber Maus-Ereignisse. Dieselbe offene Stelle wie beim
+   Ziehen vorhandener Moebel (W2).
+
+### Die NEUN Stellen einer Typ-Kette
+
+Ein neuer Ausstattungs-Typ muss ueberall eingetragen werden. Fehlt eine Stelle,
+ist der Fehler LAUTLOS und fuehrt in die Irre: der 2D-Zeichner ist **fail-open**
+(`default:` malt jeden unbekannten Typ als Rechteck), Axonometrie, 3D und Export
+sind **fail-closed**. Das Stueck steht dann im Grundriss und fehlt im Blatt.
+
+| # | Stelle | Datei |
+|---|---|---|
+| 1 | `AusstattungTyp` | `src/model/floorplan.ts` |
+| 2 | `OBERKANTE_CM` **mit Herkunft** | `src/three/ausstattung.ts` |
+| 3 | `KOERPER_CM` (nur wenn nicht am Boden) | `src/three/ausstattung.ts` |
+| 4 | `FARBE` (Blaustich `b−r ≥ 12`!) + `RUND` | `src/three/ausstattung.ts` |
+| 5 | `AUSSTATTUNG_NAME` (deutscher Name) | `src/floorplanner/floorplanner.ts` |
+| 6 | eigener `case` in `zeichneAusstattung` | `src/floorplanner/floorplanner_view.ts` |
+| 7 | `AUSSTATTUNG_STIL` (sonst `bauformFuer → null`) | `src/axo/axo-kontrakt.js` |
+| 8 | `ERLAUBTE_TYPEN` (sonst harter Abbruch) | `tools/export_blueprint.py` |
+| 9 | ein Gate, das die halbe Kette rot meldet | `tools/pruefe-palette.mjs` |
+
+Seit W3 ist der `default:`-Zweig in `zeichneAusstattung` **laut**: er meldet
+einen unbekannten Typ EINMAL auf der Konsole (nicht je Bild — die Zeichenschleife
+laeuft 60-mal je Sekunde) und zeichnet trotzdem weiter. `pruefe-palette.mjs`
+beweist mit einer Attrappe, dass diese Meldung wirklich kommt und dass die
+Zaehlung `szene.moebel === ausstattung` dabei auseinanderfaellt.
+
+### Die drei neuen Arten und woher ihre Hoehe kommt
+
+| Art | Name | Standardmass | Oberkante | Herkunft der Hoehe |
+|---|---|---|---|---|
+| `matte` | Matte | 180 × 60 cm | 2 cm | **gesetzte Annahme** — eine ausgerollte Gymnastik-/Yogamatte ist wenige mm bis rund 2 cm dick |
+| `geraet` | Fitnessgeraet | 120 × 80 cm | 130 cm | **gesetzte Annahme** — Geraete streuen von 45 cm (Bank) bis ueber 220 cm (Seilzugturm); 130 cm ist die Mitte und bleibt unter Augenhoehe |
+| `liege` | Liege | 200 × 70 cm | 65 cm (Koerper 8 cm) | **gesetzte Annahme** — Behandlungsliegen sind hoehenverstellbar, Herstellerangaben meist 60–85 cm |
+
+Fuer keine der drei gibt es eine Norm — anders als beim Buerotisch (DIN EN 527-1)
+oder Buerostuhl (DIN EN 1335). Sie stehen deshalb ehrlich als Annahme da. Eine
+erfundene DIN-Nummer waere schlimmer als eine offene Annahme: sie saehe belegt
+aus. Die Standardmasse sind verbreitete Handelsmasse (`AUSSTATTUNG_VORLAGEN` in
+`src/model/floorplan.ts`) — ebenfalls gesetzt, aber nicht beliebig.
+
+**Diese drei Arten kommen in KEINEM gemessenen Plan vor.** Sie entstehen
+ausschliesslich dadurch, dass der Nutzer sie hinstellt, und tragen darum immer
+`quelle: 'gesetzt'`. `app/public/plaene/halle400.json` bleibt unangetastet.
 
 ## Hintergrund
 
