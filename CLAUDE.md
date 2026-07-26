@@ -32,6 +32,8 @@ node tools/pruefe-ausstattung-3d.mjs # A6: Koerper in 3D — auf dem Boden, im G
 node tools/pruefe-loeschen.mjs     # E1: Loeschen per Verweilen + Rueckfrage, Moebel-Fall richtungsgeprueft
 node tools/pruefe-zeichnen.mjs     # E2: Ecken-Fang, Winkel-Raster (mit Gegenprobe 20 Grad), Escape
 node tools/pruefe-touch.mjs        # E3: Langdruck + Tippen am Handy, echte TouchEvents, 2 Gegenproben
+node tools/pruefe-kennungen.mjs   # W2-Fundament: Kennungen an Wand+Ausstattung, undo-fest,
+                                  #        Moebel-Vorrang vor der Wand (mit Gegenprobe), gemessen/gesetzt
 node tools/pruefe-axonometrie.mjs  # X2/X3: 6 Gates — Raumableitung == Planer-Kern, Szene vollstaendig,
                                    #        Bild gezeichnet (mit Gegenprobe), Ansicht folgt dem Grundriss
 

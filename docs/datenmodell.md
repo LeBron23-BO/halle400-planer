@@ -24,8 +24,10 @@ Ein gespeicherter Plan ist **ein** JSON-Objekt mit genau zwei Zweigen:
 
 ```ts
 interface SavedFloorplan {
+  formatVersion?: number                               // fehlt = 1 (alle Dateien bis W1)
   corners: Record<string, { x: number; y: number }>   // Schlüssel = Ecken-ID (UUID)
   walls: Array<{
+    id?: string                                        // dauerhafte Wand-Kennung
     corner1: string                                    // ID aus corners
     corner2: string
     frontTexture?: { url: string; stretch: boolean; scale: number }
@@ -34,8 +36,34 @@ interface SavedFloorplan {
   wallTextures?: unknown[]
   floorTextures?: Record<string, { url: string; scale: number }>      // Schlüssel = Raum-UUID
   newFloorTextures?: Record<string, { url: string; scale: number }>
+  ausstattung?: Array<{ id?: string; quelle?: 'gemessen' | 'gesetzt'; /* … */ }>
 }
 ```
+
+### Kennungen und Herkunft (Fundament für W2/W4, 2026-07-26)
+
+Drei Festlegungen, ohne die Möbelziehen und Türen still kaputt wären:
+
+1. **Wände und Ausstattung tragen eine `id`, und die steht im Speicherformat.**
+   Grund: `UndoManager.apply()` lädt den Grundriss komplett neu
+   (`src/core/undo.ts:161`) — danach ist JEDES Objekt ein neues. Wer sich eine
+   Objektreferenz gemerkt hat (Löschvorschlag, gezogenes Möbel, später eine Tür),
+   hält danach eine Leiche, und die Handlung tut still nichts. Fehlt die Kennung
+   in einer Datei, wird sie beim Laden aus dem INHALT abgeleitet
+   (`a-<typ>-<x>-<y>`, `w-<ecke1>-<ecke2>`), nie zufällig: dieselbe Datei ergibt
+   dieselben Kennungen. Eine Wand behält ihre Kennung, auch wenn sie durch Ziehen
+   ihre Ecken wechselt — genau darauf bindet sich eine Tür.
+2. **`quelle: 'gemessen' | 'gesetzt'` ist Pflichtfeld der Ausstattung.** Die PDF
+   ist die Grundwahrheit; was der Nutzer hinstellt oder verschiebt, ist eine
+   Annahme und wird `'gesetzt'` — auch das blosse VERSCHIEBEN eines gemessenen
+   Stücks, denn danach steht es nicht mehr dort, wo gemessen wurde. Der 2D-Zeichner
+   zeichnet `'gesetzt'` **gestrichelt**. Ohne diese Trennung könnte die Bank ein
+   frei gezogenes Blatt für ein Aufmass halten.
+3. **`formatVersion` (aktuell 2) wird beim Laden geprüft.** Eine Datei mit HÖHERER
+   Fassung wird mit einer deutschen Meldung abgelehnt, statt still Felder zu
+   verlieren; der offene Grundriss bleibt dabei unversehrt. Dateien OHNE
+   `formatVersion` und ohne Kennungen laden weiterhin — `app/public/plaene/halle400.json`
+   ist genau so eine. Beweis: `tools/pruefe-kennungen.mjs`.
 
 **Einheit: Zentimeter.** Belegt durch `src/core/dimensioning.ts:16` — die einzige
 Umrechnungsfunktion heißt `cmToMeasure(cm)`, alle Anzeigeeinheiten (m/cm/mm/inch)
