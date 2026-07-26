@@ -1129,7 +1129,9 @@ export class Floorplanner {
       this.undoManager?.snapshot()
       const corner = this.floorplan.newCorner(this.targetX, this.targetY)
       if (this.lastNode != null) {
-        this.floorplan.newWall(this.lastNode, corner)
+        // M2: eine gezeichnete Wand ist kein Aufmass. Ausdrücklich hier und
+        // nicht als Standard im Modell — geladene Wände stammen aus der PDF.
+        this.floorplan.newWall(this.lastNode, corner, undefined, 'gesetzt')
       }
       if (corner.mergeWithIntersected() && this.lastNode != null) {
         this.setMode(floorplannerModes.MOVE)
@@ -1823,6 +1825,25 @@ export class Floorplanner {
     this.view.draw()
   }
 
+  /**
+   * Schiebt den Ausschnitt um dx/dy BILDPUNKTE — reine Ansicht, kein Modell.
+   *
+   * Gebraucht wird das, seit die Doppelklick-Datei ihre Zeichenflaeche im
+   * Lese-Zustand auf `pointer-events:none` legt (K3): der Kern hoert seine
+   * Zeiger-Ereignisse am Canvas ab, und die kommen dort dann nicht mehr an.
+   * Ohne diesen einen oeffentlichen Weg muesste die Huelle `originX/originY`
+   * von aussen beschreiben und danach selbst ein Neuzeichnen anstossen — zwei
+   * Eingriffe in Interna statt einer benannten Handlung. Was hier NICHT
+   * passiert, ist der Punkt: keine Ecke, keine Wand, kein Moebel wird
+   * angefasst. Ein Lese-Zustand, der ueber diese Tuer etwas veraendern
+   * koennte, waere keiner.
+   */
+  public verschiebeAnsicht(dx: number, dy: number): void {
+    this.originX -= dx
+    this.originY -= dy
+    this.view.draw()
+  }
+
   /** Zoomt um die Bildmitte — fuer die Plus/Minus-Schaltflaechen. */
   public zoomeUmFaktor(faktor: number): void {
     this.zoomeAufPunkt(
@@ -2028,7 +2049,8 @@ export class Floorplanner {
       this.undoManager?.snapshot()
       const corner = this.floorplan.newCorner(this.targetX, this.targetY)
       if (this.lastNode != null) {
-        this.floorplan.newWall(this.lastNode, corner)
+        // M2, wie beim Klick weiter oben: gezeichnet ist gesetzt.
+        this.floorplan.newWall(this.lastNode, corner, undefined, 'gesetzt')
       }
       if (corner.mergeWithIntersected() && this.lastNode != null) {
         this.setMode(floorplannerModes.MOVE)

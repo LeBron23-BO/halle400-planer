@@ -31,6 +31,26 @@ export class Wall {
    */
   public id: string
 
+  /**
+   * Woher diese Wand stammt (M2) — `gemessen` heisst: aus der PDF, Grundwahrheit.
+   * `gesetzt` heisst: der Nutzer hat sie gezeichnet oder verschoben.
+   *
+   * WARUM ES SIE BRAUCHT: die Ausstattung führt diese Angabe seit W2 und das
+   * Blatt sagt sie im Kopf. Die WÄNDE führten sie nicht — und so behauptete
+   * dasselbe Blatt weiter „Der Grundriss ist gemessen", nachdem eine gemessene
+   * Wand gelöscht war (gemessen: 100 → 99 Wände, 25 → 24 Räume, Blatt
+   * unverändert). Der Satz war damit falsch, und zwar in dem Punkt, auf den
+   * sich die Bank verlässt.
+   *
+   * Der Standard ist `gemessen`, nicht `gesetzt`: eine Wand aus einer Datei
+   * ohne diese Angabe stammt aus einer Fassung, die noch nichts vom Nutzer
+   * setzen liess. Sie als gesetzt zu führen wäre eine erfundene Änderung.
+   *
+   * Der Typ steht hier als Literal-Vereinigung und nicht als Import aus
+   * `floorplan.ts`: das Modell importiert die Wand, nicht umgekehrt.
+   */
+  public quelle: 'gemessen' | 'gesetzt' = 'gemessen'
+
   /** Front is the plane from start to end. */
   public frontEdge: HalfEdge | null = null
 

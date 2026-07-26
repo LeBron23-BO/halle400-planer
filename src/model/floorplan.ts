@@ -320,6 +320,10 @@ export interface SavedFloorplan {
     corner2: string
     frontTexture?: WallTexture
     backTexture?: WallTexture
+    /** Herkunft (M2). Fehlt sie, gilt `gemessen` — eine Datei ohne diese
+     *  Angabe stammt aus einer Fassung, in der der Nutzer keine Wand setzen
+     *  konnte. Geschrieben wird sie nur, wenn sie `gesetzt` ist. */
+    quelle?: AusstattungQuelle
   }>
   wallTextures?: unknown[]
   floorTextures?: Record<string, FloorTexture>
@@ -531,10 +535,16 @@ export class Floorplan {
    * @param start The start corner.
    * @param end he end corner.
    * @param id Vorhandene Kennung (nur beim Laden), sonst entsteht eine neue.
+   * @param quelle Herkunft (M2). Standard `gemessen` — wer eine Wand ZEICHNET,
+   *        muss `gesetzt` ausdrücklich mitgeben. Andersherum wäre jede geladene
+   *        Wand aus der PDF plötzlich eine Nutzer-Wand.
    * @returns The new wall.
    */
-  public newWall(start: Corner, end: Corner, id?: string): Wall {
+  public newWall(start: Corner, end: Corner, id?: string, quelle?: 'gemessen' | 'gesetzt'): Wall {
     const wall = new Wall(start, end, id)
+    if (quelle) {
+      wall.quelle = quelle
+    }
     this.walls.push(wall)
     const scope = this
     wall.fireOnDelete(() => {
@@ -642,7 +652,14 @@ export class Floorplan {
         corner1: wall.getStart().id,
         corner2: wall.getEnd().id,
         frontTexture: wall.frontTexture,
-        backTexture: wall.backTexture
+        backTexture: wall.backTexture,
+        // NUR wenn sie wirklich gesetzt ist (M2). Eine unveränderte Wand
+        // schreibt hier NICHTS: sonst unterschieden sich alle bisher
+        // gespeicherten Stände und alle Vergleiche, die auf dem
+        // ausgeschriebenen Grundriss beruhen (`bemerkeAenderung`,
+        // `UndoManager.snapshot`), an jeder einzelnen Wand — für eine Angabe,
+        // die in 100 von 100 Fällen der Standard ist.
+        ...(wall.quelle === 'gesetzt' ? { quelle: 'gesetzt' as const } : {})
       })
     })
     floorplan.newFloorTextures = this.floorTextures
@@ -697,7 +714,13 @@ export class Floorplan {
         wall.id || kennungAusWand(wall.corner1, wall.corner2),
         wandKennungen
       )
-      const newWall = scope.newWall(corners[wall.corner1], corners[wall.corner2], kennung)
+      const newWall = scope.newWall(
+        corners[wall.corner1],
+        corners[wall.corner2],
+        kennung,
+        // Fehlt die Angabe, ist die Wand gemessen (M2) — nicht andersherum.
+        wall.quelle === 'gesetzt' ? 'gesetzt' : 'gemessen'
+      )
       if (wall.frontTexture) {
         newWall.frontTexture = wall.frontTexture
       }
@@ -967,6 +990,19 @@ export class Floorplan {
    */
   public zaehleGesetzte(): number {
     return this.ausstattung.filter((el) => el.quelle === 'gesetzt').length
+  }
+
+  /**
+   * Wie viele WÄNDE der Nutzer gezeichnet oder verschoben hat (M2) — dieselbe
+   * Frage wie oben, nur für die Geometrie.
+   *
+   * GRENZE, die man kennen muss: eine GELÖSCHTE Wand kann hier nicht auftauchen,
+   * sie ist weg. Wer wissen will, ob am gemessenen Grundriss etwas FEHLT, muss
+   * gegen den gemessenen Plan vergleichen — die Doppelklick-Datei tut genau das
+   * (`grundrissAbweichung`), weil sie ihn eingebaut mitführt.
+   */
+  public zaehleGesetzteWaende(): number {
+    return this.walls.filter((w) => w.quelle === 'gesetzt').length
   }
 
   /* ═══════════════════════════════════════════════════════════════════════

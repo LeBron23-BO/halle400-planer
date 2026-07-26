@@ -154,10 +154,18 @@ export class Corner implements Point {
     this.moved_callbacks.fire(this.x, this.y)
 
     this.wallStarts.forEach((wall) => {
+      // M2: eine verschobene Ecke ist eine verschobene WAND — und die ist kein
+      // Aufmass mehr. Hier und nicht im Floorplanner, weil jeder Weg zum
+      // Verschieben durch diese eine Methode führt (`relativeMove`, das
+      // Ziehen im Zeichner, das Verschieben einer ganzen Wand). Eine Marke,
+      // die an einem der Wege vorbeiführt, wäre schlimmer als keine: das Blatt
+      // behauptete dann „gemessen" für etwas Verschobenes.
+      wall.quelle = 'gesetzt'
       wall.fireMoved()
     })
 
     this.wallEnds.forEach((wall) => {
+      wall.quelle = 'gesetzt'
       wall.fireMoved()
     })
   }
@@ -324,7 +332,12 @@ export class Corner implements Point {
         this.x = intersection.x
         this.y = intersection.y
         // merge this corner into wall by breaking wall into two parts
-        this.floorplan.newWall(this, wall.getEnd())
+        // Die zweite Hälfte ERBT die Herkunft (M2): eine Teilung verschiebt
+        // keinen einzigen Zentimeter Mauerwerk, sie setzt nur einen Knoten
+        // hinein. Die Hälfte einer gemessenen Wand liegt weiter auf der
+        // gemessenen Achse — sie als „gesetzt" zu führen wäre eine erfundene
+        // Abweichung.
+        this.floorplan.newWall(this, wall.getEnd(), undefined, wall.quelle)
         wall.setEnd(this)
         this.floorplan.update()
         return true

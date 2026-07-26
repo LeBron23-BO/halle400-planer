@@ -16,15 +16,38 @@
 import { PALETTE, SCHRIFT, BLICK_START, LICHT, SCHATTEN, DARSTELLUNG, BESCHRIFTUNG, SAEULEN } from './axo-kontrakt.js'
 
 /** Flaechenhelligkeit aus dem Winkel zum Streiflicht. [uebersicht.html:560] */
-function toenen(hex, n) {
+/** Hex nach [r,g,b]. */
+function zahlen(hex) {
+  const h = hex.replace('#', '')
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]
+}
+
+/**
+ * @param {string} hex Grundfarbe des Materials
+ * @param {number[]} n Flaechennormale
+ * @param {number[]|null} [zurueck] Ton, ZU DEM hin aufgehellt wird — gesetzt
+ *        heisst: dieses Stueck tritt zurueck (M1). `null` = unveraendert.
+ */
+function toenen(hex, n, zurueck) {
   const d = LICHT[0] * n[0] + LICHT[1] * n[1] + LICHT[2] * n[2]
   const k = SCHATTEN.grund + SCHATTEN.streif * Math.max(0, d)
-  const h = hex.replace('#', '')
-  const r = parseInt(h.slice(0, 2), 16)
-  const g = parseInt(h.slice(2, 4), 16)
-  const b = parseInt(h.slice(4, 6), 16)
-  const c = (v) => Math.max(0, Math.min(255, Math.round(v * k)))
-  return `rgb(${c(r)},${c(g)},${c(b)})`
+  const rgb = zahlen(hex)
+  /**
+   * FREI GESETZT wird ZUM BLATTGRUND hin gemischt (M1) — nicht umgefaerbt.
+   *
+   * Zum Buehnengrund und nicht zu Weiss und schon gar nicht zu einer
+   * Signalfarbe: die Farbfamilie des Stuecks bleibt erkennbar (ein Tisch bleibt
+   * hoelzern, eine Liege blaugrau), es tritt nur zurueck. Das ist die Sprache
+   * dieses Blattes — ein oranger Klecks waere eine Warnung, und gemeint ist
+   * keine Warnung, sondern „nicht gesichert". Im dunklen Thema mischt dieselbe
+   * Rechnung zum dunklen Grund und hellt also ab; „zurueck" stimmt in beiden
+   * Faellen, „heller" nur in einem.
+   */
+  const c = (v, i) => {
+    const gemischt = zurueck ? v + (zurueck[i] - v) * DARSTELLUNG.gesetztRueckzug : v
+    return Math.max(0, Math.min(255, Math.round(gemischt * k)))
+  }
+  return `rgb(${c(rgb[0], 0)},${c(rgb[1], 1)},${c(rgb[2], 2)})`
 }
 
 /**
@@ -124,6 +147,10 @@ export function erzeugeAxonometrie(canvas, szene, opt = {}) {
       if (d > DARSTELLUNG.schnittSchwelle) return
     }
     const farbe = farben[k.material] || farben.wand
+    // M1: frei Gesetztes tritt zum Blattgrund hin zurueck und bekommt eine
+    // gestrichelte Kontur. Der Ton kommt aus der GELADENEN Palette, nicht aus
+    // einer Konstanten — sonst haette das dunkle Thema einen hellen Fleck.
+    const zurueck = k.gesetzt ? zahlen(farben.buehneOben) : null
     const p = k.punkte
     const n = p.length
 
@@ -132,7 +159,7 @@ export function erzeugeAxonometrie(canvas, szene, opt = {}) {
     if (richtung[1] > 0.001) {
       let tiefe = 0
       for (const q of oben) tiefe += q.p
-      raus.push({ pts: oben, col: toenen(farbe, [0, 1, 0]), depth: tiefe / n })
+      raus.push({ pts: oben, col: toenen(farbe, [0, 1, 0], zurueck), depth: tiefe / n, gesetzt: !!k.gesetzt })
     }
 
     if (k.istBoden) return // Boeden sind flach; ihre Kanten lohnen nicht
@@ -166,7 +193,12 @@ export function erzeugeAxonometrie(canvas, szene, opt = {}) {
         projiziere(b.x, k.y0, b.z),
         projiziere(a.x, k.y0, a.z)
       ]
-      raus.push({ pts: q, col: toenen(farbe, [nx, 0, nz]), depth: (q[0].p + q[1].p + q[2].p + q[3].p) / 4 })
+      raus.push({
+        pts: q,
+        col: toenen(farbe, [nx, 0, nz], zurueck),
+        depth: (q[0].p + q[1].p + q[2].p + q[3].p) / 4,
+        gesetzt: !!k.gesetzt
+      })
     }
   }
 
@@ -181,7 +213,23 @@ export function erzeugeAxonometrie(canvas, szene, opt = {}) {
       ctx.closePath()
       ctx.fillStyle = f.col
       ctx.fill()
-      if (kanten) {
+      /* M1 — die KONTUR sagt es zweimal. Der aufgehellte Ton allein traegt
+         nicht: er verschwindet in der Ferne, hinter einer Wand und auf einem
+         schwarz-weissen Ausdruck. Gestrichelt heisst in jeder Bauzeichnung
+         „nicht gesichert" — dieselbe Sprache wie im Grundriss (dort
+         `GESETZT_STRICH`), nur feiner, weil hier viel mehr Kanten liegen.
+         Und IMMER, nicht erst ab `kanteAbMassstab`: die Schwelle entscheidet,
+         ob Kanten sich LOHNEN — ob eine Herkunft genannt wird, entscheidet
+         sie nicht. */
+      if (f.gesetzt) {
+        ctx.setLineDash(DARSTELLUNG.gesetztStrich)
+        ctx.strokeStyle = farben.tinteMatt
+        ctx.globalAlpha = DARSTELLUNG.gesetztKanteDeckkraft
+        ctx.lineWidth = DARSTELLUNG.gesetztKanteBreite
+        ctx.stroke()
+        ctx.globalAlpha = 1
+        ctx.setLineDash([])
+      } else if (kanten) {
         ctx.strokeStyle = farben.tinte
         ctx.globalAlpha = DARSTELLUNG.kanteDeckkraft
         ctx.lineWidth = DARSTELLUNG.kanteBreite

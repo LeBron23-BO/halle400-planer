@@ -207,6 +207,25 @@ export const DARSTELLUNG = {
   kanteDeckkraft: 0.2,
   kanteBreite: 0.6,
 
+  /* ── FREI GESETZTE STUECKE (M1) ──────────────────────────────────────
+     NICHT aus uebersicht.html — die Vorlage kannte keine Herkunft. Drei
+     gesetzte Darstellungswerte, gemeinsam abgestimmt am Standbild:
+
+     `gesetztRueckzug` 0.42 mischt die Materialfarbe zu 42 % zum Buehnengrund.
+     Weniger (0.25) war neben einem gemessenen Nachbarn nicht zu unterscheiden,
+     mehr (0.6) loeschte die Farbfamilie und machte aus einem Tisch einen
+     Fleck. Die Haelfte ist ungefaehr die Grenze, an der beides noch geht:
+     „das ist ein Tisch" und „der steht da nur angenommen".
+
+     Strich und Kante sind FEINER als im Grundriss ([4,3] bei 1 px): eine
+     Axonometrie zeigt je Koerper bis zu fuenf Flaechen statt einer, die
+     Kanten liegen also dichter. Mit der groben Grundriss-Strichelung wurde
+     aus einem Stuhl ein Knaeuel. */
+  gesetztRueckzug: 0.42,
+  gesetztStrich: [3, 2.2],
+  gesetztKanteDeckkraft: 0.55,
+  gesetztKanteBreite: 0.75,
+
   /** Zoom-Grenzen und Empfindlichkeit.       [uebersicht.html:777-778,792] */
   zoomMin: 0.45,
   zoomMax: 4.2,

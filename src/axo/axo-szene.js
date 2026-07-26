@@ -154,7 +154,18 @@ function ausstattungsKoerper(el, hoehen) {
       punkte: form.rund ? rund(cx, cz, b, t) : rechteck(cx, cz, b, t, dr),
       y0: form.y0,
       y1: form.y1,
-      material: form.material
+      material: form.material,
+      /**
+       * FREI GESETZT (M1) — und das Blatt muss es ZEIGEN, nicht nur behaupten.
+       *
+       * Bis hierher kam `quelle` in `src/axo/*.js` KEIN EINZIGES MAL vor.
+       * Gemessen: derselbe Tisch von `gemessen` auf `gesetzt` gekippt ergab im
+       * Grundriss ein klar anderes Bild, in der Axonometrie dagegen exakt
+       * dieselbe Prüfsumme (2728510327 vorher wie nachher). Die Strichelung
+       * erreichte also ausgerechnet die Ansicht nicht, die sich die Bank
+       * ansieht — dort sah eine Annahme aus wie ein Aufmass.
+       */
+      gesetzt: el.quelle === 'gesetzt'
     }
   ]
 }

@@ -28,14 +28,22 @@ export class Dimensioning {
       case dimMilliMeter:
         return '' + Math.round(10 * cm) + ' mm'
       case dimCentiMeter:
-        return '' + Math.round(10 * cm) / 10 + ' cm'
+        return (Math.round(10 * cm) / 10).toFixed(1).replace('.', ',') + ' cm'
       case dimMeter:
       default:
         // Auf Zentimeter runden (2 Nachkommastellen), NICHT auf Millimeter:
         // die Halle-400-Geometrie ist aus einem freihaendig GEZEICHNETEN Plan
         // in cm gemessen. Eine dritte Nachkommastelle behauptet eine
         // Millimeter-Praezision, die das Original nicht hergibt (Projekt-DNA).
-        return '' + Math.round(cm) / 100 + ' m'
+        //
+        // DEUTSCH GESCHRIEBEN und mit FESTER Stellenzahl (G1). Vorher stand auf
+        // einem deutschen Bankblatt „5.12 m", daneben „5.8 m" und daneben
+        // „5 m": englischer Dezimalpunkt und wechselnde Stellenzahl, weil
+        // `'' + zahl` die Null am Ende wegwirft. Zwei Masse untereinander
+        // liessen sich so nicht mehr vergleichen. Die Rueckfrage beim Loeschen
+        // schreibt seit E1 „diese Wand (3,63 m lang)" — dieselbe Sprache gilt
+        // jetzt ueberall.
+        return (Math.round(cm) / 100).toFixed(2).replace('.', ',') + ' m'
     }
   }
 }

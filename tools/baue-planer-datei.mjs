@@ -124,7 +124,11 @@ const html = `<!DOCTYPE html>
   /* Beide Ansichten liegen uebereinander und behalten IHRE GROESSE, auch wenn
      sie ruhen: mit display:none haette der Grundriss-Zeichner beim Start eine
      Leinwand von 0x0 und "ganze Halle einpassen" liefe ins Leere. */
-  .ansicht{position:fixed;inset:0}
+  /* \`touch-action:none\` gehoert seit K3 auch auf den UMSCHLAG und nicht mehr
+     nur auf das Canvas: im Lese-Zustand nimmt die Zeichenflaeche keine
+     Zeiger-Ereignisse mehr an, die Finger landen also hier. Ohne diese Zeile
+     zoomte der BROWSER die ganze Seite, statt dass der Grundriss folgt. */
+  .ansicht{position:fixed;inset:0;touch-action:none}
   .ansicht.weg{visibility:hidden;opacity:0;pointer-events:none}
   #blatt{background:var(--paper)}
   #blatt canvas{cursor:grab}
@@ -133,6 +137,24 @@ const html = `<!DOCTYPE html>
      Planer, damit Raster und Wandstaerken dieselbe Wirkung haben. */
   #plan{background:#fff}
   #plan canvas{cursor:default}
+
+  /* ── K3: SCHARF ERST MIT „BEARBEITEN" ────────────────────────────────
+     GEMESSEN, nicht befuerchtet: ein Klick auf „Grundriss" genuegte, um ein
+     Moebel zu ziehen — ohne den Bearbeiten-Schalter je beruehrt zu haben.
+     Danach standen 1 gesetztes Stueck und 84 510 Bytes im Speicher, und der
+     Blattkopf sagte dauerhaft „1 Stück frei gesetzt — kein Aufmaß". Das
+     beschaedigt genau die Zusage, auf der dieses Vorhaben beruht.
+
+     Der Kern hoert Maus, Rad und Finger AM CANVAS ab. Nimmt das Canvas keine
+     Zeiger-Ereignisse an, erreicht ihn kein einziges davon — kein Ziehen,
+     kein Zeichnen, kein Loeschen, und auch kein Q/E, denn das dreht das
+     Stueck UNTER DEM ZEIGER, und das bestimmt eine Zeigerbewegung auf dem
+     Canvas. Ansehen und Zoomen bleiben: die Lese-Navigation weiter unten
+     haengt am UMSCHLAG und ruft ausschliesslich Ansichts-Funktionen. */
+  #plan canvas{pointer-events:none}
+  body.bearbeitet #plan canvas{pointer-events:auto}
+  body:not(.bearbeitet) #plan{cursor:grab}
+  body:not(.bearbeitet) #plan.liest{cursor:grabbing}
   body.zeichnet #plan canvas{cursor:crosshair}
   body.loescht #plan canvas{cursor:not-allowed}
   /* Im Oeffnungs-Werkzeug zeigt das Fadenkreuz auf die Wand — der Kern setzt
@@ -289,6 +311,47 @@ const html = `<!DOCTYPE html>
     .palette{display:none}
   }
   @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
+
+  /* ── DAS PAPIER (M5) ─────────────────────────────────────────────────
+     Bisher gab es KEINE einzige Druckregel; der Ausdruck war ein
+     Bildschirmfoto. Auf A4 gemessen: die Bedienknoepfe landeten mit auf dem
+     Blatt, „Aktivierung" und „Balance" wurden von der Knopfleiste
+     abgeschnitten, und die Herkunfts-Fussnote fehlte ganz — sie faellt unter
+     900 px weg, und ein A4-Blatt ist bei 96 dpi rund 794 px breit. Die Bank
+     druckt; das ist keine Vermutung, das ist ihr Beruf.
+
+     QUER, weil der Riegel 78 m lang und 15 m tief ist: hochkant blieben zwei
+     Drittel des Blattes leer. */
+  .nurDruck{display:none}
+  @media print{
+    @page{size:A4 landscape;margin:10mm}
+    /* Der warme Papierton bleibt — er ist die Bildidee, nicht Zierat. Wer ihn
+       nicht mitdrucken will, schaltet in seinem Druckdialog die
+       Hintergrundgrafiken ab; das ist seine Entscheidung, nicht unsere. */
+    html,body{background:#fff;overflow:visible}
+    /* Bedienelemente gehoeren nicht aufs Papier. Ein gedruckter Knopf ist eine
+       Aufforderung, die das Blatt nicht einloesen kann. */
+    .kopfleiste,.leiste,.palette,.standleiste,.meldung,.frage,.geist,
+    #hinweisBedienung{display:none!important}
+    /* Die Saeulen-Tafel ist ein Bildschirm-Aufsteller mit eigenem Schalter und
+       Weichzeichner: auf Papier verdeckte sie ein Viertel des Grundrisses, und
+       der Weichzeichner druckt ohnehin nicht. Ihr Inhalt steht als Beschriftung
+       im Bild. */
+    .tafel{display:none!important}
+    /* Das Blatt steht STILL: keine Uebergaenge, keine Weichzeichner, kein
+       Halbdurchsichtiges — beides druckt unzuverlaessig und kostet nur Farbe. */
+    *{transition:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+    .ansicht.weg{display:none!important}
+    /* Und JETZT der eigentliche Fund: die Fussnote ueber die Herkunft. Sie ist
+       das einzige, was ein frei gesetztes Blatt von einem Aufmass
+       unterscheidet — sie darf auf dem Papier NIE fehlen. */
+    .hinweis{display:block!important;position:fixed;left:0;right:0;bottom:0;
+         max-width:none;padding:0 6mm;opacity:1;color:#1E2A25;
+         font-size:8.5pt;letter-spacing:.06em;line-height:1.5}
+    .kopf{position:fixed;top:0;left:0;padding:4mm 6mm;max-width:none}
+    .kopf .gesetzt{color:#A33A2A}
+    .nurDruck{display:block}
+  }
 </style>
 </head>
 <body>
@@ -301,7 +364,16 @@ const html = `<!DOCTYPE html>
     <h1>Halle&nbsp;400 &middot; Büro</h1>
     <div class="strich"></div>
     <div class="sub" id="unterzeile">Axonometrie</div>
+    <!-- Nur auf dem Papier (M5): Datum und die Maßstabs-Aussage. Auf dem
+         Bildschirm wäre beides Rauschen — dort sieht man ja, dass man dreht.
+         Auf einem Ausdruck ohne Datum weiss in drei Wochen niemand mehr, ob
+         er den aktuellen Stand in der Hand hält. -->
+    <div class="sub nurDruck" id="druckZeile"></div>
     <div class="gesetzt" id="gesetztZaehler" hidden></div>
+    <!-- M2: was der Nutzer an den WÄNDEN verändert hat. Bis hierher sagte das
+         Blatt „Der Grundriss ist gemessen", auch nachdem eine gemessene Wand
+         gelöscht war (100 → 99, Räume 25 → 24). -->
+    <div class="gesetzt" id="grundrissZaehler" hidden></div>
     <!-- Die Öffnungs-Zeile (W4). Sie steht NUR da, wenn es Öffnungen gibt:
          eine dauerhafte „0 Öffnungen"-Zeile lehrte den Leser, über sie
          hinwegzusehen — genau dann, wenn sie einmal wichtig wird.
@@ -339,7 +411,10 @@ const html = `<!DOCTYPE html>
   </div>
 
   <div class="hinweis">
-    Ziehen dreht &middot; Rad zoomt &middot; zwei Finger zoomen<br>
+    <!-- Bedienhinweise gehören auf den Bildschirm, nicht aufs Papier (M5).
+         Deshalb ein eigener Anker: die Fussnote darunter MUSS gedruckt
+         werden, diese Zeile darf es nicht. -->
+    <span id="hinweisBedienung">Ziehen dreht &middot; Rad zoomt &middot; zwei Finger zoomen<br></span>
     <span id="hinweisHerkunft">Grundriss und Ausstattung sind gemessen.</span> Höhen sind
     gesetzte Annahmen — ein Grundriss enthält keine.
     <!-- Der Massstabs-Vorbehalt der Öffnungen (W4) steht HIER und nicht im
@@ -416,6 +491,21 @@ const html = `<!DOCTYPE html>
     <span class="fuss">Rückgängig mit Strg+Z &middot; Abbrechen mit Esc</span>
   </div>
 
+  <!-- Lade-Rückfrage (K1). Sie fehlte, und das war der schwerste Fund des
+       Gegners: „Laden" warf den Stand sofort und unumkehrbar weg (gemessen
+       292 Stück / 100 Wände → 0 / 4, Historie leer, Speicher überschrieben) —
+       während das viel harmlosere „Zurücksetzen" seit jeher fragt. Gleiche
+       Gefahr, gleiche Rückfrage: Abbrechen zuerst, die gefährliche Wahl darf
+       nicht die bequemste sein. -->
+  <div class="frage" id="ladeFrage" role="alertdialog" aria-live="assertive" aria-label="Laden bestätigen" hidden>
+    <span class="txt"><b>Laden:</b> <span id="ladeFrageText"></span></span>
+    <span class="knoepfe">
+      <button type="button" id="btnLadeNein">Abbrechen</button>
+      <button type="button" id="btnLadeJa" class="ernst">Stand ersetzen</button>
+    </span>
+    <span class="fuss">Das ersetzt deinen jetzigen Stand und lässt sich nicht rückgängig machen. Vorher „Sichern“ legt ihn als Datei ab.</span>
+  </div>
+
   <div class="frage" id="zurueckFrage" role="alertdialog" aria-live="assertive" aria-label="Zurücksetzen bestätigen" hidden>
     <span class="txt"><b>Zurücksetzen:</b> alle eigenen Änderungen verwerfen und den gemessenen Plan zeigen?</span>
     <span class="knoepfe">
@@ -439,6 +529,25 @@ const html = `<!DOCTYPE html>
 <div class="standleiste" id="standleiste" hidden>
   <span id="standText"></span>
   <button type="button" id="btnStandZurueck">Auf den gemessenen Plan zurücksetzen</button>
+  <!-- K4: zwei Fenster derselben Datei. Die Wahl gehört dem Nutzer — welcher
+       der beiden Stände gilt, kann diese Datei nicht wissen. -->
+  <span id="standFremd" hidden>
+    <button type="button" id="btnFremdLaden">Den anderen Stand holen</button>
+    <button type="button" id="btnFremdUebergehen">Meinen Stand behalten</button>
+  </span>
+</div>
+
+<!-- M8: derselbe Plan, anderer Ablageort. Der Speicherschlüssel trägt den
+     Ablageort (nötig, damit zwei Kopien sich nicht ins Gehege kommen) — wer
+     die Datei verschiebt, sieht seine Arbeit sonst nicht mehr. Gemessen:
+     289 Stück waren weg, ohne einen Hinweis. -->
+<div class="frage" id="ortFrage" role="alertdialog" aria-live="assertive" aria-label="Stand von einem anderen Ablageort" hidden>
+  <span class="txt"><b>Anderer Ablageort:</b> <span id="ortFrageText"></span></span>
+  <span class="knoepfe">
+    <button type="button" id="btnOrtNein">Nein danke</button>
+    <button type="button" id="btnOrtJa" class="ernst">Stand übernehmen</button>
+  </span>
+  <span class="fuss">Der Stand bleibt am alten Ablageort liegen — hier entsteht eine Kopie.</span>
 </div>
 
 <div class="frage" id="standFrage" role="alertdialog" aria-live="assertive" aria-label="Gespeicherten Stand prüfen" hidden>
@@ -566,6 +675,12 @@ Configuration.setValue(configWallThickness, WAND_DICKE_CM);
 const grundriss = new Floorplan();
 
 let labels = PLAN.labels || [];
+/* Die 3D-Moebel des Planer-Formats (G4). Diese Datei erzeugt selbst KEINE —
+   sie kennt nur den 2D-Grundriss. Sie muss sie aber DURCHREICHEN: wer eine
+   Datei aus dem echten Planer hier oeffnet, sie bearbeitet und wieder sichert,
+   verlor sie bisher stillschweigend, weil der Export fest \`PLAN.items\` schrieb.
+   Ein stiller Verlust ist die schlechteste aller Antworten. */
+let items = PLAN.items || [];
 let gesichertAm = null;
 let speicherFehler = speicher ? null : 'merkt-nichts';
 let sichernGesperrt = true;
@@ -593,6 +708,7 @@ if (speicher) {
 if (start) {
   gesichertAm = start.gesichertAm || null;
   if (Array.isArray(start.labels)) labels = start.labels;
+  if (Array.isArray(start.items)) items = start.items;
 }
 
 /* ── Woran erkennt die Huelle eine Aenderung? ───────────────────────
@@ -611,15 +727,42 @@ if (start) {
    Filter gegen Leerlauf — ein Klick, der nichts aendert, sichert auch nichts. */
 let letzterStand = null;
 
+/* M6 — steht ein Zug noch ungesichert im Fenster? Das Sichern ist um 600 ms
+   entprellt (ein Ziehen darf nicht hundertmal schreiben). Gemessen: direkt nach
+   dem Ablegen standen 0 Bytes im Speicher, geschrieben wurde erst nach 850 ms.
+   Wer in dieser Luecke schliesst, verliert seinen letzten Zug — und erfaehrt es
+   nie. Diese Angabe traegt den \`beforeunload\`-Schutz weiter unten. */
+let ungesichert = false;
+let sichernHinweisGezeigt = false;
+
 function bemerkeAenderung(){
   if (sichernGesperrt) return;
   const jetzt = JSON.stringify(grundriss.saveFloorplan());
   if (jetzt === letzterStand) return;
   letzterStand = jetzt;
+  ungesichert = true;
   axoVeraltet = true;
   gesetztZeigen();
   if (ansicht === 'axo') axoBaldNeu();
   sichernPlanen();
+  /* EINMAL, beim ersten eigenen Zug: dass es „Sichern" gibt. Der localStorage
+     unter \`file://\` ist geteilt, knapp und jederzeit vom Nutzer wegzuraeumen —
+     wer hier eine Stunde plant, soll wissen, dass es einen zweiten Weg gibt.
+     Nur EINMAL: eine Meldung, die bei jedem Zug erscheint, wird weggeklickt,
+     ohne gelesen zu werden.
+
+     Und erst NACH dem Sichern (die Entprellung wartet 600 ms) und nur, wenn
+     gerade nichts anderes im Meldungsfeld steht: sonst verdraengte dieser
+     allgemeine Hinweis genau die Antwort auf die Handlung, die der Nutzer eben
+     ausgeloest hat („Tür gesetzt", „Stuhl hingestellt"). Steht dort etwas,
+     bleibt der Hinweis ungezeigt und versucht es beim naechsten Zug wieder. */
+  if (!sichernHinweisGezeigt) {
+    setTimeout(function(){
+      if (sichernHinweisGezeigt || !meldungEl.hidden) return;
+      sichernHinweisGezeigt = true;
+      meldung('Deine Änderungen bleiben in diesem Browser erhalten. Für einen Stand, den du weitergeben oder aufheben kannst, „Sichern“ drücken — das legt eine Datei ab.', false);
+    }, 1000);
+  }
 }
 
 /* ── Was der Nutzer FREI GESETZT hat ────────────────────────────────
@@ -629,17 +772,62 @@ function bemerkeAenderung(){
    nicht. Darum diese eine Zeile im Blattkopf. Sie erscheint nur, wenn es etwas
    zu sagen gibt: eine dauerhafte "0 Stueck frei gesetzt"-Zeile lehrte den
    Leser, ueber sie hinwegzusehen — genau dann, wenn sie einmal wichtig wird. */
+/* ── Was am GRUNDRISS anders ist als in der PDF (M2) ────────────────
+   Bis hierher sagte das Blatt „Der Grundriss ist gemessen" auch dann noch,
+   wenn eine gemessene Wand geloescht war (gemessen: 100 → 99 Waende,
+   25 → 24 Raeume, Blatt unveraendert). Fuer die Ausstattung gab es diese
+   Auskunft seit W2, fuer die Waende nicht — ausgerechnet fuer das, was ein
+   Grundriss eigentlich IST.
+
+   Zwei Zaehlungen, und beide braucht es:
+
+   1. `gesetzt` kommt aus dem MODELL (`Wall.quelle`). Diese Angabe reist mit
+      der Datei: wer einen Stand sichert und woanders oeffnet, nimmt sie mit.
+   2. `fehlen` wird GEOMETRISCH gegen den eingebauten Plan gemessen — er liegt
+      in dieser Datei ohnehin daneben und ist die Grundwahrheit. Eine geloeschte
+      Wand kann kein `quelle` mehr tragen, sie ist weg; nur der Vergleich mit
+      dem Original bemerkt sie noch. Und geometrisch statt ueber Kennungen,
+      weil eine GETEILTE Wand zwei neue Kennungen traegt, obwohl kein
+      Zentimeter Mauerwerk verschwunden ist: gefragt wird deshalb, ob an der
+      MITTE der gemessenen Wand ueberhaupt noch eine Wand liegt.
+
+   Damit ueberlebt die Auskunft auch den Verlust des Feldes: verloere eine
+   aeltere Fassung `quelle` beim Speichern, faende der geometrische Vergleich
+   die Abweichung trotzdem. */
+function grundrissAbweichung(){
+  let fehlen = 0;
+  const pc = PLAN.floorplan.corners;
+  for (const w of PLAN.floorplan.walls) {
+    const a = pc[w.corner1], b = pc[w.corner2];
+    if (!a || !b) continue;
+    if (!grundriss.overlappedWall((a.x + b.x) / 2, (a.y + b.y) / 2, WAND_DICKE_CM)) fehlen++;
+  }
+  return { gesetzt: grundriss.zaehleGesetzteWaende(), fehlen: fehlen };
+}
+
 function gesetztZeigen(){
   const n = grundriss.zaehleGesetzte();
   const z = el('gesetztZaehler');
   z.textContent = n + ' Stück frei gesetzt — kein Aufmaß';
   z.hidden = n === 0;
+
+  const w = grundrissAbweichung();
+  const teile = [];
+  if (w.gesetzt > 0) teile.push(w.gesetzt + (w.gesetzt === 1 ? ' Wand gezeichnet oder verschoben' : ' Wände gezeichnet oder verschoben'));
+  if (w.fehlen > 0) teile.push(w.fehlen + (w.fehlen === 1 ? ' gemessene Wand fehlt' : ' gemessene Wände fehlen'));
+  const gz = el('grundrissZaehler');
+  gz.hidden = teile.length === 0;
+  gz.textContent = 'Grundriss verändert: ' + teile.join(', ') + ' — kein Aufmaß';
+
   /* Der Fusshinweis MUSS mitgehen, sonst widerspricht dasselbe Blatt sich
      selbst: oben "1 Stück frei gesetzt", unten "Ausstattung ist gemessen".
      Wer das liest, glaubt am Ende der bequemeren Zeile. */
-  el('hinweisHerkunft').textContent = n === 0
-    ? 'Grundriss und Ausstattung sind gemessen.'
-    : 'Der Grundriss ist gemessen; ' + n + ' Stück der Ausstattung sind frei gesetzt (im Grundriss gestrichelt).';
+  const grundrissSatz = teile.length === 0 ? null : 'Der Grundriss ist verändert (' + teile.join(', ') + ')';
+  el('hinweisHerkunft').textContent =
+    n === 0 && !grundrissSatz ? 'Grundriss und Ausstattung sind gemessen.'
+    : n === 0 ? grundrissSatz + '; die Ausstattung ist gemessen.'
+    : (grundrissSatz || 'Der Grundriss ist gemessen') + '; ' + n +
+      ' Stück der Ausstattung sind frei gesetzt (im Grundriss gestrichelt).';
   oeffnungenZeigen();
 }
 
@@ -715,6 +903,79 @@ document.addEventListener('keyup', bemerkeAenderung);
 /* Der Zeichner entstand nach dem Laden, hat dessen \`roomLoadedCallbacks\` also
    nicht mitbekommen. Einmal das nachholen, was er sonst selbst tut. */
 zeichner.reset();
+
+/* ── Lese-Navigation (K3) ───────────────────────────────────────────
+   Im Lese-Zustand nimmt die Zeichenflaeche keine Zeiger-Ereignisse an (s. CSS).
+   Damit fielen aber auch Zoomen und Schieben weg, die der KERN am Canvas
+   abonniert hat — der Grundriss waere ein Standbild, und von einer 78 m langen
+   Halle saehe man nie mehr als einen Ausschnitt. Diese Zeilen holen genau das
+   zurueck und NICHTS sonst.
+
+   Sie haengen am UMSCHLAG (\`#plan\`), der jetzt das Ziel der Ereignisse ist, und
+   rufen ausschliesslich \`zoomeAufPunkt\` und \`verschiebeAnsicht\`. Von hier
+   fuehrt kein Weg ins Modell: keine Ecke, keine Wand, kein Moebel. Sobald
+   bearbeitet wird, schweigen sie und der Kern uebernimmt wieder — sonst zoomten
+   zwei Stellen dasselbe Rad. */
+const leseZeiger = new Map();
+let leseAbstand = 0;
+
+function leseZugBeenden(){
+  leseZeiger.clear();
+  leseAbstand = 0;
+  planEl.classList.remove('liest');
+}
+
+function leseCanvasPunkt(clientX, clientY){
+  const r = document.getElementById('grundriss-canvas').getBoundingClientRect();
+  return { x: clientX - r.left, y: clientY - r.top };
+}
+
+planEl.addEventListener('wheel', function(e){
+  if (bearbeiten) return;
+  // Ohne das scrollte die Seite, statt dass der Grundriss folgt — derselbe
+  // Grund, aus dem der Kern es am Canvas tut.
+  e.preventDefault();
+  const p = leseCanvasPunkt(e.clientX, e.clientY);
+  zeichner.zoomeAufPunkt(zeichner.getZoom() * (e.deltaY < 0 ? 1.1 : 1 / 1.1), p.x, p.y);
+}, { passive: false });
+
+planEl.addEventListener('pointerdown', function(e){
+  if (bearbeiten) return;
+  leseZeiger.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  planEl.classList.add('liest');
+  // Ohne Fang endete der Zug, sobald der Zeiger eine Leiste streift.
+  try { planEl.setPointerCapture(e.pointerId); } catch (err) { /* nicht fangbar: dann eben ohne */ }
+});
+
+planEl.addEventListener('pointermove', function(e){
+  if (bearbeiten || !leseZeiger.has(e.pointerId)) return;
+  const vorher = leseZeiger.get(e.pointerId);
+  leseZeiger.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (leseZeiger.size === 1) {
+    zeichner.verschiebeAnsicht(e.clientX - vorher.x, e.clientY - vorher.y);
+    return;
+  }
+  if (leseZeiger.size !== 2) return;
+  // Zwei Finger: zwischen ihnen zoomen — dieselbe Rechnung wie im Kern
+  // (\`fingerBewegt\`), nur ohne den Zweig, der bearbeitet.
+  const p = Array.from(leseZeiger.values());
+  const abstand = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+  if (leseAbstand > 0 && abstand > 0) {
+    const c = leseCanvasPunkt((p[0].x + p[1].x) / 2, (p[0].y + p[1].y) / 2);
+    zeichner.zoomeAufPunkt(zeichner.getZoom() * (abstand / leseAbstand), c.x, c.y);
+  }
+  leseAbstand = abstand;
+});
+
+['pointerup','pointercancel'].forEach(function(t){
+  planEl.addEventListener(t, function(e){
+    if (!leseZeiger.has(e.pointerId)) return;
+    leseZeiger.delete(e.pointerId);
+    leseAbstand = 0;
+    if (leseZeiger.size === 0) planEl.classList.remove('liest');
+  });
+});
+addEventListener('blur', leseZugBeenden);
 
 /* ── Axonometrie ────────────────────────────────────────────────────
    Sie ist ein FENSTER, kein Werkzeug: bearbeitet wird im Grundriss, die
@@ -811,6 +1072,13 @@ function zeigeAnsicht(name){
    OEffnen neu greifen muss. */
 function setzeBearbeiten(an, merken){
   bearbeiten = an;
+  /* DIE tragende Zeile aus K3: an ihr haengt \`pointer-events\` der
+     Zeichenflaeche. Sie steht ganz vorn, damit kein frueher Rueckweg (etwa
+     \`paletteZugAbbrechen\`) sie ueberspringen kann — eine scharfe Flaeche in
+     einem Blatt, das sich fuer ruhig haelt, ist der schlimmste der beiden
+     Fehler. */
+  document.body.classList.toggle('bearbeitet', an);
+  if (!an) leseZugBeenden();
   werkzeuge.hidden = !an;
   // Die Palette gehoert zu den Werkzeugen: wer nur zusieht, soll auch nichts
   // hinstellen koennen. Ein laufender Zug wird dabei abgebrochen — sonst legte
@@ -840,8 +1108,47 @@ function sichernPlanen(){
   sicherUhr = setTimeout(sichereJetzt, 600);
 }
 
+/* ── Zwei Fenster derselben Datei (K4) ──────────────────────────────
+   \`file://\` ist EIN Ursprung fuer die ganze Festplatte: zwei geoeffnete Kopien
+   dieser Datei am SELBEN Ablageort teilen sich denselben Schluessel. Gemessen:
+   Fenster A setzt ein Stueck, B setzt ein anderes, A legt nach — im Speicher
+   stehen danach nur A's zwei, und B zeigt weiter „Eigener Stand vom …" und
+   luegt damit.
+
+   Zwei Riegel, bewusst beide:
+   1. VOR jedem Schreiben wird der abgelegte Zeitstempel mit dem verglichen,
+      den DIESES Fenster zuletzt geschrieben hat. Weichen sie ab, war jemand
+      anderes da — dann wird NICHT geschrieben, sondern gefragt. Dieser Riegel
+      ist deterministisch und der eigentliche Schutz.
+   2. Das \`storage\`-Ereignis meldet den Fremdschreiber sofort, statt erst beim
+      naechsten eigenen Zug. Es ist die Hoeflichkeit, nicht der Schutz — ob es
+      unter \`file://\` in jedem Browser feuert, ist nicht verbuergt, und ein
+      Schutz, der auf einem Vielleicht steht, ist keiner. */
+let zuletztGeschrieben = start ? (start.gesichertAm || null) : null;
+let fremdStand = null;
+
+function fremderStand(){
+  if (!speicher) return null;
+  let roh = null;
+  try { roh = speicher.getItem(SCHLUESSEL); } catch (e) { return null; }
+  if (!roh) return null;
+  let s = null;
+  try { s = JSON.parse(roh); } catch (e) { return null; }
+  if (!s || !s.gesichertAm) return null;
+  // Was dieses Fenster selbst zuletzt geschrieben hat, ist nicht fremd.
+  return s.gesichertAm === zuletztGeschrieben ? null : s;
+}
+
 function sichereJetzt(){
   if (!speicher) { standZeigen(); return; }
+  const fremd = fremderStand();
+  if (fremd) {
+    // NICHT schreiben. Der Nutzer entscheidet, welcher Stand gilt — still den
+    // anderen zu ueberschreiben ist genau der gemessene Fehler.
+    fremdStand = fremd;
+    standZeigen();
+    return;
+  }
   const jetzt = new Date().toISOString();
   try {
     speicher.setItem(SCHLUESSEL, JSON.stringify({
@@ -850,10 +1157,16 @@ function sichereJetzt(){
       bauStempel: BAU_STEMPEL,
       gesichertAm: jetzt,
       floorplan: grundriss.saveFloorplan(),
-      labels: labels
+      labels: labels,
+      // G4: die 3D-Moebel muessen den Neustart ueberleben, sonst gingen sie
+      // beim naechsten Oeffnen doch verloren.
+      items: items
     }));
     gesichertAm = jetzt;
+    zuletztGeschrieben = jetzt;
     speicherFehler = null;
+    // M6: erst JETZT ist der Zug wirklich abgelegt.
+    ungesichert = false;
   } catch (e) {
     // Nie still verlieren: der Platz ist geteilt und schnell voll.
     speicherFehler = (e && e.name) ? e.name : 'Fehler';
@@ -861,8 +1174,40 @@ function sichereJetzt(){
   standZeigen();
 }
 
+/* Der Nutzer hat sich entschieden: sein Stand gilt. Der fremde wird
+   ueberschrieben — aber SICHTBAR und auf Ansage, nicht im Vorbeigehen. */
+function fremdUebergehen(){
+  const fremd = fremderStand();
+  zuletztGeschrieben = fremd ? fremd.gesichertAm : zuletztGeschrieben;
+  fremdStand = null;
+  sichereJetzt();
+  meldung('Dein Stand gilt jetzt — der Stand des anderen Fensters ist überschrieben.', false);
+}
+
+if (speicher) {
+  addEventListener('storage', function(e){
+    if (e.key !== SCHLUESSEL) return;
+    const fremd = fremderStand();
+    if (!fremd) return;
+    fremdStand = fremd;
+    standZeigen();
+  });
+}
+
 function standZeigen(){
   const knopf = el('btnStandZurueck');
+  const fremdKnoepfe = el('standFremd');
+  fremdKnoepfe.hidden = !fremdStand;
+  if (fremdStand) {
+    standleiste.hidden = false;
+    standleiste.classList.add('warnt');
+    const f = new Date(fremdStand.gesichertAm);
+    el('standText').textContent = 'Ein anderes Fenster hat diese Datei um ' +
+      f.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) +
+      ' Uhr gespeichert. Dein Stand ist NICHT abgelegt worden.';
+    knopf.hidden = true;
+    return;
+  }
   if (speicherFehler === 'merkt-nichts') {
     standleiste.hidden = false;
     standleiste.classList.add('warnt');
@@ -898,11 +1243,31 @@ function meldung(text, warnt){
    raeumt der Kern selbst ab (UndoManager haengt an roomLoadedCallbacks) — ein
    Undo ueber einen Plan-Wechsel hinweg spielte sonst fremde Waende ein. */
 function ladeGrundriss(fp, neueLabels, alsEigenerStand){
+  /* ATOMAR — entweder ganz oder gar nicht (K2). Gemessen: eine Ecke mit
+     \`x: 1e8\` liess den Kern MITTEN im Laden einen Bereichsfehler werfen, und
+     zurueck blieb ein halb geladener Grundriss: ein paar Ecken der fremden
+     Datei, keine Waende, kein Raum — und nichts sagte es. Die Formpruefung
+     unten faengt das inzwischen vorher ab; dieser Rueckweg ist der zweite
+     Riegel, denn eine Pruefung kennt immer nur die Fehler, an die jemand
+     gedacht hat. Der Zustand VOR dem Laden ist billig zu sichern: derselbe
+     Schnappschuss, mit dem auch das Rueckgaengig arbeitet. */
+  const standVorher = grundriss.saveFloorplan();
+  const labelsVorher = labels;
   sichernGesperrt = true;
   try {
     if (Array.isArray(neueLabels)) labels = neueLabels;
     grundriss.loadFloorplan(abschrift(fp));
     letzterStand = JSON.stringify(grundriss.saveFloorplan());
+  } catch (e) {
+    labels = labelsVorher;
+    grundriss.loadFloorplan(abschrift(standVorher));
+    letzterStand = JSON.stringify(grundriss.saveFloorplan());
+    sichernGesperrt = false;
+    gesetztZeigen();
+    axoNeuBauen();
+    // Weiterreichen: der Aufrufer sagt dem Nutzer, WAS nicht ging. Still
+    // zurueckzurollen saehe aus, als waere nie etwas passiert.
+    throw e;
   } finally {
     sichernGesperrt = false;
   }
@@ -919,21 +1284,41 @@ function ladeGrundriss(fp, neueLabels, alsEigenerStand){
 }
 
 function zuruecksetzen(){
-  if (speicher) { try { speicher.removeItem(SCHLUESSEL); } catch (e) { /* egal */ } }
+  /* M7 — BEIDE Schluessel, nicht nur einer. Gemessen: „Zurücksetzen" loeschte
+     den Plan-Schluessel und liess den Bearbeiten-Schluessel stehen; nach einem
+     Neuladen standen wieder Grundriss und Werkzeuge da. Ein einziger
+     Neugier-Klick machte damit den Werkzeugkasten dauerhaft zur Begruessung —
+     das Gegenteil dessen, was dieser Knopf verspricht. „Zuruecksetzen" heisst
+     AUSLIEFERUNGSZUSTAND: ruhiges Blatt, keine Werkzeuge, gemessener Plan. */
+  if (speicher) {
+    try { speicher.removeItem(SCHLUESSEL); } catch (e) { /* egal */ }
+    try { speicher.removeItem(SCHLUESSEL_BEARBEITEN); } catch (e) { /* egal */ }
+  }
   clearTimeout(sicherUhr);
   labels = PLAN.labels || [];
+  items = PLAN.items || [];
   speicherFehler = speicher ? null : 'merkt-nichts';
   ladeGrundriss(PLAN.floorplan, PLAN.labels || [], false);
-  meldung('Der gemessene Plan aus der PDF ist wieder hergestellt.', false);
+  // \`merken: false\` — der Schluessel ist eben geloescht worden, ihn hier wieder
+  // zu schreiben machte das Loeschen zur Geste.
+  setzeBearbeiten(false, false);
+  ungesichert = false;
+  meldung('Der gemessene Plan aus der PDF ist wieder hergestellt — die Datei ist wie am ersten Tag.', false);
 }
 
 /* ── Als Datei sichern ──────────────────────────────────────────────
    Dasselbe Format wie app/public/plaene/halle400.json, damit dieselbe Datei im
-   echten Planer geoeffnet werden kann — beide Welten sprechen ein Format. */
+   echten Planer geoeffnet werden kann — beide Welten sprechen ein Format.
+
+   \`items\` sind die 3D-Moebel des Planers. Diese Datei erzeugt keine und zeigt
+   keine; sie REICHT sie durch (G4). Vorher stand hier fest \`PLAN.items\`, und
+   das war eine stille Luege: wer eine Datei aus dem echten Planer hier oeffnete
+   und wieder sicherte, verlor deren Moebel, waehrend die Datei weiter
+   behauptete, im Planer oeffenbar zu sein. */
 function alsDatei(){
   const daten = {
     floorplan: grundriss.saveFloorplan(),
-    items: PLAN.items || [],
+    items: items,
     labels: labels
   };
   const heute = new Date();
@@ -949,17 +1334,84 @@ function alsDatei(){
   a.click();
   document.body.removeChild(a);
   setTimeout(function(){ URL.revokeObjectURL(adresse); }, 4000);
+  // M6: als Datei abgelegt heisst gesichert — der Schutz beim Schliessen darf
+  // danach nicht weiter Alarm schlagen, sonst lernt der Nutzer, ihn wegzuklicken.
+  ungesichert = false;
   meldung('Gesichert als ' + a.download + ' (im Download-Ordner).', false);
 }
 
-/* Grobe Formpruefung beim Laden: lieber klar ablehnen als an einer fremden
-   Datei zerbrechen. */
+/* ── Formpruefung beim Laden ────────────────────────────────────────
+   Lieber klar ablehnen als an einer fremden Datei zerbrechen.
+
+   SIE PRUEFTE LANGE KEINE ZAHLEN — und genau daran zerbrach sie (K2, gemessen,
+   nicht vermutet):
+     \`x: null\`   und \`x: "abc"\` wurden angenommen; three meldete danach
+                 „Computed min/max have NaN values", das Blatt blieb leer.
+     \`x: 1e8\`    warf MITTEN im Laden einen Bereichsfehler und hinterliess
+                 einen halb geladenen Grundriss.
+     \`x: 1e12\`   antwortete nach 68 400 ms immer noch nicht — der Browser
+                 musste abgeschossen werden.
+   Jede Ecke geht deshalb jetzt gegen \`Number.isFinite\` UND gegen eine Grenze.
+   Die Grenze ist eine gesetzte Annahme, kein Messwert: ±100 000 cm ist ein
+   Kilometer in jede Richtung und damit rund dreizehnmal die 78 m dieser Halle
+   — weit genug fuer jeden ernst gemeinten Grundriss, eng genug, dass die
+   Zeichenschleife nicht stehen bleibt. */
+const KOORDINATE_MAX_CM = 100000;
+
+/** Eine Zahl, die man zeichnen kann. Kein \`typeof === 'number'\`: NaN und
+ *  Infinity sind das auch, und beide haben genau diesen Schaden angerichtet. */
+function zahlOk(v, grenze){
+  return Number.isFinite(v) && Math.abs(v) <= grenze;
+}
+
 function pruefePlan(roh){
   let d;
   try { d = JSON.parse(roh); } catch (e) { return { fehler: 'Das ist keine lesbare JSON-Datei.' }; }
   const fp = d && d.floorplan ? d.floorplan : d;
   if (!fp || typeof fp !== 'object' || !fp.corners || typeof fp.corners !== 'object' || !Array.isArray(fp.walls)) {
     return { fehler: 'Diese Datei ist kein Grundriss — es fehlen „corners“ und „walls“.' };
+  }
+  /* Ecken: Zahl, endlich, im Rahmen. Die erste unbrauchbare wird BENANNT —
+     „irgendwo steckt ein Fehler" hilft niemandem beim Nachsehen. */
+  for (const id of Object.keys(fp.corners)) {
+    const c = fp.corners[id];
+    if (!c || typeof c !== 'object' || !zahlOk(c.x, KOORDINATE_MAX_CM) || !zahlOk(c.y, KOORDINATE_MAX_CM)) {
+      return { fehler: 'Diese Datei hat eine unbrauchbare Ecke (' + id.slice(0, 8) +
+        ': x=' + JSON.stringify(c && c.x) + ', y=' + JSON.stringify(c && c.y) +
+        '). Erlaubt sind Zahlen zwischen −' + KOORDINATE_MAX_CM + ' und ' +
+        KOORDINATE_MAX_CM + ' cm. Es wird NICHTS geladen.' };
+    }
+  }
+  /* Waende: beide Ecken muessen es wirklich geben. Der Kern ueberspringt eine
+     Wand mit fehlender Ecke zwar (mit Warnung auf der Konsole), aber dann
+     zeigte die Datei stillschweigend weniger, als der Nutzer gab. */
+  for (let i = 0; i < fp.walls.length; i++) {
+    const w = fp.walls[i];
+    if (!w || typeof w !== 'object' || !fp.corners[w.corner1] || !fp.corners[w.corner2]) {
+      return { fehler: 'Wand ' + (i + 1) + ' dieser Datei hängt an einer Ecke, die es nicht gibt. Es wird NICHTS geladen.' };
+    }
+  }
+  /* Ausstattung und Oeffnungen: dieselbe Frage, andere Felder. Ein Moebel mit
+     \`breite: null\` faellt sonst erst im Zeichner auf — als leeres Blatt. */
+  const listen = [
+    { name: 'Ausstattung', liste: fp.ausstattung, felder: ['x', 'y', 'breite', 'tiefe'] },
+    { name: 'Öffnung', liste: fp.oeffnungen, felder: ['lage', 'breite'] }
+  ];
+  for (const l of listen) {
+    if (l.liste === undefined || l.liste === null) continue;
+    if (!Array.isArray(l.liste)) return { fehler: '„' + l.name + '" ist in dieser Datei keine Liste. Es wird NICHTS geladen.' };
+    for (let i = 0; i < l.liste.length; i++) {
+      const e = l.liste[i];
+      if (!e || typeof e !== 'object') {
+        return { fehler: l.name + ' ' + (i + 1) + ' dieser Datei ist unbrauchbar. Es wird NICHTS geladen.' };
+      }
+      for (const f of l.felder) {
+        if (!zahlOk(e[f], KOORDINATE_MAX_CM)) {
+          return { fehler: l.name + ' ' + (i + 1) + ' dieser Datei hat ein unbrauchbares Maß (' +
+            f + '=' + JSON.stringify(e[f]) + '). Es wird NICHTS geladen.' };
+        }
+      }
+    }
   }
   /* Eine Datei aus einer NEUEREN Fassung wird abgelehnt, nicht halb geoeffnet:
      sie traegt Felder, die dieser Stand nicht kennt (etwa Tueren an einer Wand),
@@ -974,7 +1426,14 @@ function pruefePlan(roh){
   if (eckenZahl === 0 || fp.walls.length === 0) {
     return { fehler: 'Dieser Grundriss ist leer (' + eckenZahl + ' Ecken, ' + fp.walls.length + ' Wände).' };
   }
-  return { floorplan: fp, labels: Array.isArray(d.labels) ? d.labels : null, ecken: eckenZahl, waende: fp.walls.length };
+  return {
+    floorplan: fp,
+    labels: Array.isArray(d.labels) ? d.labels : null,
+    // G4: die 3D-Moebel des Planer-Formats werden DURCHGEREICHT, nicht gelesen.
+    items: Array.isArray(d.items) ? d.items : null,
+    ecken: eckenZahl,
+    waende: fp.walls.length
+  };
 }
 
 /* ── Bedienung: Grundriss ──────────────────────────────────────────── */
@@ -1234,20 +1693,64 @@ zeichner.addZoomCallback(function(z){
 el('zoomAnzeige').textContent = Math.round(zeichner.getZoom() * 100) + ' %';
 
 el('btnExport').addEventListener('click', alsDatei);
+/* ── Laden (K1) ─────────────────────────────────────────────────────
+   Eine geprueft gute Datei wird NICHT sofort eingespielt, sondern erst
+   angeboten. Der Grund ist gemessen: das alte „Laden" ersetzte 292 Stück und
+   100 Wände durch 0 und 4, leerte die Historie (\`kannZurueck() === false\`) und
+   ueberschrieb sofort den Speicher — es gab keinen Weg zurueck. Ausgerechnet
+   das viel harmlosere „Zuruecksetzen" fragte seit jeher nach. */
+let ladeWartet = null;
+
 el('btnImport').addEventListener('click', function(){ dateiWahl.value = ''; dateiWahl.click(); });
 dateiWahl.addEventListener('change', function(){
   const datei = dateiWahl.files && dateiWahl.files[0];
   if (!datei) return;
   const leser = new FileReader();
-  leser.onerror = function(){ meldung('Die Datei liess sich nicht lesen.', true); };
+  leser.onerror = function(){ meldung('Die Datei ließ sich nicht lesen.', true); };
   leser.onload = function(){
     const geprueft = pruefePlan(String(leser.result));
-    if (geprueft.fehler) { meldung(geprueft.fehler, true); return; }
-    ladeGrundriss(geprueft.floorplan, geprueft.labels, true);
-    meldung('Geladen: ' + geprueft.ecken + ' Ecken, ' + geprueft.waende + ' Wände aus „' + datei.name + '“.', false);
+    // Eine unbrauchbare Datei wird gar nicht erst angeboten: eine Rueckfrage
+    // ueber etwas, das ohnehin abgelehnt wird, waere reine Umstaendlichkeit.
+    if (geprueft.fehler) { ladeWartet = null; meldung(geprueft.fehler, true); return; }
+    ladeWartet = { floorplan: geprueft.floorplan, labels: geprueft.labels, items: geprueft.items, name: datei.name };
+    el('ladeFrageText').textContent = '„' + datei.name + '" (' + geprueft.ecken +
+      ' Ecken, ' + geprueft.waende + ' Wände) ersetzt deinen jetzigen Stand' +
+      (gesichertAm ? ' vom ' + new Date(gesichertAm).toLocaleDateString('de-DE') : '') + '.';
+    frageZeigen(el('ladeFrage'));
+    el('btnLadeNein').focus();
   };
   leser.readAsText(datei);
 });
+
+function ladeAbbrechen(){
+  el('ladeFrage').hidden = true;
+  ladeWartet = null;
+  meldung('Nichts geladen — dein Stand ist unverändert.', false);
+}
+
+function ladeBestaetigen(){
+  el('ladeFrage').hidden = true;
+  const w = ladeWartet;
+  ladeWartet = null;
+  if (!w) return;
+  try {
+    if (Array.isArray(w.items)) items = w.items;
+    ladeGrundriss(w.floorplan, w.labels, true);
+  } catch (e) {
+    meldung('Diese Datei ließ sich nicht öffnen (' + ((e && e.message) ? e.message : String(e)) +
+      '). Dein Stand ist unverändert.', true);
+    return;
+  }
+  /* G2 — GEZAEHLT WIRD AM MODELL, nicht in der Datei. Die alte Meldung erzaehlte
+     das JSON nach und meldete „1 Wände", waehrend der Kern null geladen hatte
+     (eine Wand mit fehlender Ecke ueberspringt er). Eine Meldung, die die
+     Eingabe wiederholt statt das Ergebnis zu messen, ist eine Behauptung. */
+  meldung('Geladen: ' + grundriss.getCorners().length + ' Ecken, ' +
+    grundriss.getWalls().length + ' Wände aus „' + w.name + '".', false);
+}
+
+el('btnLadeNein').addEventListener('click', ladeAbbrechen);
+el('btnLadeJa').addEventListener('click', ladeBestaetigen);
 
 el('btnZurueck').addEventListener('click', function(){ frageZeigen(zurueckFrage); el('btnZurueckNein').focus(); });
 el('btnZurueckNein').addEventListener('click', function(){ zurueckFrage.hidden = true; });
@@ -1266,6 +1769,10 @@ el('btnStandZurueck').addEventListener('click', function(){
 addEventListener('keydown', function(e){
   const z = e.target;
   if (z && (z.tagName === 'INPUT' || z.tagName === 'TEXTAREA' || z.isContentEditable)) return;
+  // K3: im Lese-Zustand aendert auch die Tastatur nichts. Die Zeichenflaeche
+  // ist dort ohnehin taub — ein Strg+Z waere die einzige Tuer, durch die sich
+  // ein ruhiges Blatt noch verstellen liesse.
+  if (!bearbeiten) return;
   if (!(e.ctrlKey || e.metaKey)) return;
   const taste = (e.key || '').toLowerCase();
   if (taste === 'z' && !e.shiftKey) { e.preventDefault(); undo.undo(); }
@@ -1310,6 +1817,40 @@ el('btnAnsichtAxo').addEventListener('click', function(){ zeigeAnsicht('axo'); }
 el('btnAnsichtPlan').addEventListener('click', function(){ zeigeAnsicht('plan'); });
 el('btnBearbeiten').addEventListener('click', function(){ setzeBearbeiten(!bearbeiten, true); });
 
+/* ── Zwei Fenster: die Wahl (K4) ────────────────────────────────────── */
+el('btnFremdLaden').addEventListener('click', function(){ location.reload(); });
+el('btnFremdUebergehen').addEventListener('click', fremdUebergehen);
+
+/* ── Das Papier beschriften (M5) ────────────────────────────────────
+   Datum und Massstabs-Aussage entstehen erst beim Drucken. Auf dem Bildschirm
+   waeren sie Rauschen; auf einem Ausdruck OHNE Datum weiss in drei Wochen
+   niemand mehr, ob er den aktuellen Stand in der Hand haelt. \`beforeprint\`
+   und nicht beim Start: der Ausdruck traegt den Tag des Ausdrucks. */
+function druckZeileSetzen(){
+  const heute = new Date();
+  el('druckZeile').textContent = 'Gedruckt am ' + heute.toLocaleDateString('de-DE') +
+    ' · Axonometrie, nicht maßstäblich — die Maße oben sind gemessen · Plan vom ' + BAU_STEMPEL;
+}
+addEventListener('beforeprint', druckZeileSetzen);
+// Ohne diese Zeile bliebe die Zeile leer, wenn der Druck aus einem Werkzeug
+// heraus ausgeloest wird, das `beforeprint` nicht feuert (gemessen: Playwright
+// `page.pdf()` tut das nicht).
+druckZeileSetzen();
+
+/* ── Schutz beim Schliessen (M6) ────────────────────────────────────
+   Das Sichern ist entprellt; zwischen dem letzten Zug und dem Schreiben liegen
+   bis zu 600 ms (gemessen wurden 850 ms bis zum ersten Byte). Wer in dieser
+   Luecke schliesst, verliert den Zug und erfaehrt es nie. Der Browser zeigt
+   hier seinen eigenen Text — den kann eine Seite nicht bestimmen; der Riegel
+   selbst ist das, was zaehlt. */
+addEventListener('beforeunload', function(e){
+  if (!ungesichert) return;
+  e.preventDefault();
+  // Aeltere Browser brauchen beides; der Wert wird nirgends angezeigt.
+  e.returnValue = '';
+  return '';
+});
+
 addEventListener('resize', function(){ if (axoAnsicht && ansicht === 'axo') axoAnsicht.passeAn(); });
 
 /* ── Start ──────────────────────────────────────────────────────────
@@ -1351,6 +1892,63 @@ if (standFragt) {
   });
 }
 
+/* ── Derselbe Plan, ein anderer Ablageort (M8) ──────────────────────
+   Der Speicherschluessel traegt den Ablageort — noetig, weil \`file://\` EIN
+   Ursprung fuer die ganze Festplatte ist und zwei Kopien sich sonst ins Gehege
+   kaemen. Der Preis: wer die Datei in einen anderen Ordner schiebt, oeffnet ein
+   leeres Blatt. Gemessen: 289 Stück waren weg, ohne einen einzigen Hinweis.
+
+   Hier wird deshalb einmal beim Start nachgesehen, ob derselbe eingebaute Plan
+   (gleicher Abdruck!) anderswo einen Stand hat, und der juengste RUHIG
+   angeboten. Nicht geladen: welche Kopie gilt, weiss nur der Nutzer. Der alte
+   Stand bleibt liegen — hier entstuende eine Kopie, dort verschwindet nichts. */
+function staendeAnderswo(){
+  if (!speicher) return [];
+  const praefix = 'halle400-planer-datei:plan:' + PLAN_ABDRUCK + ':';
+  const gefunden = [];
+  try {
+    for (let i = 0; i < speicher.length; i++) {
+      const k = speicher.key(i);
+      if (!k || k.indexOf(praefix) !== 0 || k === SCHLUESSEL) continue;
+      let s = null;
+      try { s = JSON.parse(speicher.getItem(k)); } catch (e) { continue; }
+      if (!s || !s.floorplan || !s.floorplan.corners) continue;
+      gefunden.push({ schluessel: k, stand: s, gesichertAm: s.gesichertAm || '' });
+    }
+  } catch (e) { /* ein Speicher, der sich nicht durchzaehlen laesst: dann eben nicht */ }
+  gefunden.sort(function(a, b){ return a.gesichertAm < b.gesichertAm ? 1 : -1; });
+  return gefunden;
+}
+
+/* NUR wenn hier noch nichts liegt: wer an diesem Ablageort schon gearbeitet
+   hat, will nicht gefragt werden, ob er stattdessen etwas Fremdes moechte. */
+if (!start && !standFragt && speicher) {
+  const anderswo = staendeAnderswo();
+  if (anderswo.length) {
+    const a = anderswo[0];
+    const d = a.gesichertAm ? new Date(a.gesichertAm) : null;
+    const zahl = Object.keys(a.stand.floorplan.corners).length;
+    el('ortFrageText').textContent = 'An einem anderen Ablageort liegt ein Stand desselben Plans' +
+      (d ? ' vom ' + d.toLocaleDateString('de-DE') + ', ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' Uhr' : '') +
+      ' (' + zahl + ' Ecken)' + (anderswo.length > 1 ? ' — der jüngste von ' + anderswo.length : '') +
+      '. Wurde diese Datei verschoben oder kopiert? Dann ist das deine Arbeit.';
+    el('ortFrage').hidden = false;
+    el('btnOrtNein').addEventListener('click', function(){ el('ortFrage').hidden = true; });
+    el('btnOrtJa').addEventListener('click', function(){
+      el('ortFrage').hidden = true;
+      if (Array.isArray(a.stand.items)) items = a.stand.items;
+      try {
+        ladeGrundriss(a.stand.floorplan, a.stand.labels, true);
+        meldung('Übernommen: ' + grundriss.getCorners().length + ' Ecken, ' +
+          grundriss.getWalls().length + ' Wände vom anderen Ablageort. Dort bleibt er unverändert liegen.', false);
+      } catch (e) {
+        meldung('Der Stand vom anderen Ablageort ließ sich nicht öffnen (' +
+          ((e && e.message) ? e.message : String(e)) + ').', true);
+      }
+    });
+  }
+}
+
 // Erst JETZT darf gesichert werden: das blosse OEffnen ist keine Aenderung.
 sichernGesperrt = false;
 
@@ -1361,6 +1959,29 @@ if (speicher) {
 /* ── Selbstauskunft fuer tools/pruefe-planer-datei.mjs ───────────────
    Das Pruefwerkzeug misst am lebenden Modell und am fertigen Bild, statt
    Behauptungen zu glauben. Bewusst nur lesend gedacht; es kostet nichts. */
+
+/**
+ * IST DAS WIRKLICH ZU SEHEN? — die wichtigste Lehre des Gegners.
+ *
+ * \`element.hidden\` sagt nur, ob DIESES eine Attribut gesetzt ist. Es sagt
+ * nichts ueber \`display:none\` aus einer Medienabfrage, nichts ueber einen
+ * unsichtbaren Vorfahren und nichts ueber Deckkraft null. Gemessen:
+ * \`paletteSichtbar()\` meldete \`true\` fuer eine Palette, die unter
+ * \`@media (max-width:900px){display:none}\` gar nicht da war — und auf genau
+ * dieser Messgroesse fussten 67 Pruefungen. Eine Pruefung ist nie schaerfer als
+ * ihre Messgroesse.
+ *
+ * \`checkVisibility\` fragt die GERECHNETE Darstellung, samt aller Vorfahren.
+ */
+function sichtbar(e){
+  if (!e) return false;
+  if (typeof e.checkVisibility === 'function') {
+    return e.checkVisibility({ contentVisibilityAuto: true, opacityProperty: true, visibilityProperty: true });
+  }
+  // Sehr alter Browser: wenigstens Flaeche pruefen, statt zu luegen.
+  return !!(e.offsetWidth || e.offsetHeight || e.getClientRects().length);
+}
+
 function bildmass(canvas){
   const g = canvas.getContext('2d');
   const d = g.getImageData(0, 0, canvas.width, canvas.height).data;
@@ -1382,7 +2003,35 @@ window.__planerDatei = {
   speicherTraegt: !!speicher,
   ansicht: function(){ return ansicht; },
   bearbeitet: function(){ return bearbeiten; },
-  werkzeugeSichtbar: function(){ return !werkzeuge.hidden; },
+  werkzeugeSichtbar: function(){ return sichtbar(werkzeuge); },
+  /* K3 — nimmt die Zeichenflaeche ueberhaupt Zeiger-Ereignisse an? GERECHNET
+     und nicht aus der Klasse geraten: die Klasse ist das, was wir gesetzt
+     haben, der gerechnete Stil ist das, was der Browser daraus macht. */
+  zeichenflaecheScharf: function(){
+    return getComputedStyle(document.getElementById('grundriss-canvas')).pointerEvents !== 'none';
+  },
+  /* M2/M6/K4/M8 — was das Blatt ueber die Herkunft des GRUNDRISSES sagt und
+     was der Speicher gerade tut. Alles lesend. */
+  grundrissText: function(){
+    const z = el('grundrissZaehler');
+    return sichtbar(z) ? z.textContent : null;
+  },
+  abweichung: function(){ return grundrissAbweichung(); },
+  ungesichert: function(){ return ungesichert; },
+  fremdErkannt: function(){ return !!fremdStand; },
+  standleisteText: function(){
+    return sichtbar(standleiste) ? el('standText').textContent : null;
+  },
+  staendeAnderswo: function(){ return staendeAnderswo().length; },
+  ortFrageOffen: function(){ return sichtbar(el('ortFrage')); },
+  ladeFrageOffen: function(){ return sichtbar(el('ladeFrage')); },
+  ladeFrageText: function(){ return el('ladeFrageText').textContent; },
+  druckZeile: function(){ return el('druckZeile').textContent; },
+  meldungText: function(){ return sichtbar(meldungEl) ? meldungEl.textContent : null; },
+  /* Nur fuer die Gegenprobe zu M1: dieselbe Liste mit anderer Herkunft. */
+  waendeRoh: function(){
+    return grundriss.getWalls().map(function(w){ return { id: w.id, quelle: w.quelle }; });
+  },
   zahlen: function(){
     return {
       ecken: grundriss.getCorners().length,
