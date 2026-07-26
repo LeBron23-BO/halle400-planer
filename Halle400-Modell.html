@@ -3904,7 +3904,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "c8051b95fb22";
-const BAU_STEMPEL = "2026-07-26 12:56";
+const BAU_STEMPEL = "2026-07-26 12:59";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -9334,6 +9334,15 @@ window.__planerDatei = {
   ecken: function(){
     return grundriss.getCorners().map(function(c){
       return { id: c.id, x: c.x, y: c.y, bx: zeichner.convertX(c.x), by: zeichner.convertY(c.y) };
+    });
+  },
+  waende: function(){
+    return grundriss.getWalls().map(function(w){
+      const a = w.getStart(), b = w.getEnd();
+      return {
+        ax: zeichner.convertX(a.x), ay: zeichner.convertY(a.y),
+        bx: zeichner.convertX(b.x), by: zeichner.convertY(b.y)
+      };
     });
   },
   ecke: function(id){
