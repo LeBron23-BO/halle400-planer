@@ -121,9 +121,11 @@
      also nicht entstehen. Was fehlte, war die AUSKUNFT darueber. Diese Zeile
      gibt sie, ruhig und im Farbklima des Blattes.
 
-     Sie liegt IM Blatt und erbt dessen Sichtbarkeit (dieselbe Bauart wie die
-     Palette im Grundriss): eine zweite Regel, die man beim Umschalten
-     vergessen koennte, gibt es damit nicht. */
+     Sie liegt IM BLATTKOPF und erbt dessen Sichtbarkeit (dieselbe Bauart wie
+     die Palette im Grundriss): eine zweite Regel, die man beim Umschalten
+     vergessen koennte, gibt es damit nicht. `position:fixed` hebt sie am
+     breiten Bildschirm aus dem Kopf heraus unter den Umschalter — am Handy
+     faellt genau diese Zeile weg, und sie wird zur letzten Kopfzeile. */
   .arbeitshinweis{position:fixed;top:60px;left:50%;transform:translateX(-50%);
        max-width:calc(100vw - 24px);padding:7px 13px;background:var(--panel);
        border:1px solid var(--panel-line);backdrop-filter:blur(9px);
@@ -228,18 +230,28 @@
     .tafel{top:auto;bottom:112px;right:10px;left:10px;width:auto;max-height:38vh}
     .hinweis{display:none}
     /* ── W7 am Handy ─────────────────────────────────────────────────────
-       AM STANDBILD GEMESSEN, nicht uebertragen: oben ist kein Platz. Der
-       Blattkopf verliert hier seine Breitenbegrenzung (`max-width:none`,
-       Zeile unten) und laeuft ab 52 px quer ueber die Anzeige — eine Leiste
-       bei 60 px laege mitten im Titel. Der Hinweis geht deshalb nach UNTEN,
-       dicht ueber die Blick-Leiste; die Legenden-Tafel beginnt erst bei
-       112 px, er stoesst also an nichts.
+       GEMESSEN bei 390 x 800, nicht uebertragen: fuer eine SCHWEBENDE Leiste
+       ist hier nirgends Platz. Oben laeuft der Blattkopf ab 52 px quer ueber
+       die ganze Anzeige (er verliert unten seine Breitenbegrenzung) — die
+       Leiste lag mitten im Titel (Kopf 52-137, Leiste 60-172). Unten bricht
+       die Blick-Leiste in drei Reihen um und beginnt schon bei 656 px — auch
+       dort lag sie drin (707-736). Dazwischen steht die Legenden-Tafel.
 
-       Und er sagt hier nur den SATZ, nicht die Begruendung: auf 390 px braeche
-       der Sehstrahl-Satz in drei Zeilen um und naehme ein Zehntel der Anzeige
-       fuer etwas, das man einmal liest. */
-    .arbeitshinweis{top:auto;bottom:64px;left:10px;right:10px;transform:none;
-         max-width:none;padding:6px 10px;font-size:9.5px}
+       Also KEINE Leiste: die Zeile faellt in den Blattkopf zurueck, wo sie
+       ohnehin steht, und reiht sich neben die anderen Saetze, die dieses
+       Blatt ueber seinen Zustand sagt („N Stueck frei gesetzt"). Dieselbe
+       Schriftmetrik wie die, nur nicht in der Warnfarbe — sie warnt nicht,
+       sie erklaert.
+
+       Die Begruendung faellt weg: auf 390 px braeche der Sehstrahl-Satz in
+       drei Zeilen um und naehme ein Zehntel der Anzeige fuer etwas, das man
+       einmal liest. */
+    .arbeitshinweis{position:static;transform:none;max-width:none;padding:0;
+         margin-top:5px;background:none;border:0;backdrop-filter:none;
+         -webkit-backdrop-filter:none;text-align:left;font-size:10.5px;
+         letter-spacing:.13em;text-transform:uppercase;line-height:1.7;
+         color:var(--sage-deep)}
+    .arbeitshinweis b{color:var(--sage-deep);font-weight:600}
     .arbeitshinweis .warum{display:none}
     /* Damit auch die Stapel-Bahn oben: was nicht mehr dort steht, darf die
        beiden darunter nicht mehr verschieben. */
@@ -339,17 +351,24 @@
          und „Teamtable" hinein. Der Massstabs-Vorbehalt gehört ohnehin nach
          unten, zu dem Satz über die Höhen — siehe „hinweisOeffnung". -->
     <div class="gesetzt" id="oeffnungZaehler" hidden></div>
-  </header>
 
-  <!-- W7: „Bearbeiten" lässt die Ansicht stehen. Wer den Schalter hier drückt,
-       hat die Werkzeuge an — nur liegen sie im Grundriss, weil in einer
-       schrägen Parallelprojektion ein Klick keinen Punkt trifft, sondern einen
-       Sehstrahl. Diese Zeile sagt genau das. Sie steht IM Blatt und ist damit
-       nur zu sehen, solange das Blatt vorn ist. -->
-  <div class="arbeitshinweis" id="arbeitshinweis" role="status" hidden>
-    <b>Bearbeiten ist an</b> — gezeichnet wird im Grundriss.
-    <span class="warum">In der Axonometrie trifft ein Klick keinen Punkt, sondern einen Sehstrahl.</span>
-  </div>
+    <!-- W7: „Bearbeiten" lässt die Ansicht stehen. Wer den Schalter hier drückt,
+         hat die Werkzeuge an — nur liegen sie im Grundriss, weil in einer
+         schrägen Parallelprojektion ein Klick keinen Punkt trifft, sondern einen
+         Sehstrahl. Diese Zeile sagt genau das.
+
+         Sie steht IM Blattkopf, und das ist kein Zufall: am breiten Bildschirm
+         hebt `position:fixed` sie als eigene Leiste unter den Umschalter (dort
+         ist Platz und dort wurde eben geklickt), am Handy fällt genau diese
+         Angabe weg und sie wird zur letzten Zeile des Kopfes — neben den
+         anderen Sätzen, die dieses Blatt über seinen eigenen Zustand sagt.
+         AM STANDBILD GEMESSEN: als schwebende Leiste lag sie bei 390 px quer
+         über dem Titel. -->
+    <div class="arbeitshinweis" id="arbeitshinweis" role="status" hidden>
+      <b>Bearbeiten ist an</b> — gezeichnet wird im Grundriss.
+      <span class="warum">In der Axonometrie trifft ein Klick keinen Punkt, sondern einen Sehstrahl.</span>
+    </div>
+  </header>
 
   <aside class="tafel" id="tafel">
     <div class="tafel-kopf"><b>Die neun Säulen</b><span id="zaehler"></span></div>
@@ -4168,7 +4187,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "c8051b95fb22";
-const BAU_STEMPEL = "2026-07-26 22:31";
+const BAU_STEMPEL = "2026-07-26 22:36";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */

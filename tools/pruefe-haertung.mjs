@@ -939,9 +939,11 @@ log('\n── MG: die Messgroesse ──')
 
   /* W7 am Handy: die Werkzeuge sind hier ohnehin fern (keine Palette, kein
      Fingerziehen) — umso mehr muss die ruhige Zeile SAGEN, wo gezeichnet wird.
-     Gemessen wird ihre LAGE, nicht nur ihr Dasein: oben laeuft der Blattkopf
-     quer ueber die Anzeige, unten steht die Blick-Leiste. Eine Zeile, die in
-     einem von beiden liegt, ist keine Auskunft, sondern Unordnung. */
+     Gemessen wird ihre LAGE, nicht nur ihr Dasein. Der Grund steht im
+     Bauwerkzeug: als schwebende Leiste lag sie bei 390 px erst im Titel
+     (52-137 gegen 60-172), nach dem Verschieben nach unten in der Blick-Leiste
+     (656-790 gegen 707-736). Sie gehoert hier IN den Blattkopf — und genau das
+     wird gemessen, mitsamt Abstand zur Blick-Leiste. */
   await page.evaluate(() => document.getElementById('btnAnsichtAxo').dispatchEvent(new MouseEvent('click', { bubbles: true })))
   await page.waitForTimeout(700)
   const amHandy = await page.evaluate(() => {
@@ -955,13 +957,19 @@ log('\n── MG: die Messgroesse ──')
       hinweis: kasten('#arbeitshinweis'),
       kopf: kasten('.kopf'),
       leiste: kasten('#blatt .leiste'),
-      zeilen: document.getElementById('arbeitshinweis').getClientRects().length
+      // Eine einzige Zeile: die Begruendung faellt am Handy weg.
+      warum: kasten('#arbeitshinweis .warum')
     }
   })
   pruefe(
     amHandy.hinweis !== null && amHandy.kopf !== null && amHandy.leiste !== null &&
-      amHandy.hinweis.oben > amHandy.kopf.unten && amHandy.hinweis.unten <= amHandy.leiste.oben,
-    `MG: am Handy steht die W7-Zeile zwischen Blattkopf und Blick-Leiste, nicht darin (${JSON.stringify(amHandy)})`
+      amHandy.hinweis.oben >= amHandy.kopf.oben && amHandy.hinweis.unten <= amHandy.kopf.unten &&
+      amHandy.hinweis.unten < amHandy.leiste.oben,
+    `MG: am Handy steht die W7-Zeile IM Blattkopf und nicht in einer Leiste (${JSON.stringify(amHandy)})`
+  )
+  pruefe(
+    amHandy.warum === null && amHandy.hinweis && amHandy.hinweis.unten - amHandy.hinweis.oben < 40,
+    `MG: … und nur der Satz, nicht die Begruendung — sonst braeche sie auf 390 px in drei Zeilen um (${JSON.stringify(amHandy.hinweis)})`
   )
   // Ein Standbild dazu: gemessene Rechtecke sagen nichts darueber, ob es auch
   // GUT aussieht. Das entscheidet nur ein Blick.
