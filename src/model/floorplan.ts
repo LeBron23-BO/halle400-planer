@@ -143,6 +143,154 @@ export const AUSSTATTUNG_VORLAGEN: ReadonlyArray<{
   { typ: 'liege', breite: 200, tiefe: 70 }
 ]
 
+/* ══════════════════════════════════════════════════════════════════════════
+   ÖFFNUNGEN — Türen, Fenster, Durchgänge (W4)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Arten einer Wandöffnung. Geschlossene Liste wie `AusstattungTyp`, und aus
+ * demselben Grund: gezeichnet wird ein GRUNDRISS-ZEICHEN, kein Bauteil. Ein
+ * Türblatt mit Aufschlagbogen IST die Tür im Plan — ein Modell mit Zarge,
+ * Drücker und Bändern wäre eine Formaussage, die ein Grundriss nicht trägt.
+ */
+export type OeffnungsArt =
+  | 'tuer' // Türblatt als Strecke + Viertelkreis-Aufschlagbogen
+  | 'doppeltuer' // zwei gespiegelte Blätter, je halbe lichte Weite
+  | 'fenster' // zwei dünne Parallelen längs in der Wandstärke
+  | 'durchgang' // nur die beiden Laibungen — kein Blatt, keine Schwelle
+
+/**
+ * EINE Öffnung in EINER Wand.
+ *
+ * DREI FESTLEGUNGEN, die man kennen muss, bevor man hier etwas ändert:
+ *
+ * 1. `wandId` ist der PRIMÄRSCHLÜSSEL, nie eine Objektreferenz. Ein
+ *    Rückgängig lädt den Grundriss komplett neu (`src/core/undo.ts`), danach
+ *    ist JEDES Wand-Objekt ein neues. Eine gemerkte Referenz wäre eine Leiche,
+ *    und die Tür hinge an einer Wand, die es nicht mehr gibt. `Wall.id` selbst
+ *    überlebt das: sie wird einmal beim Erzeugen gesetzt (`wall.ts:83`) und nie
+ *    neu gerechnet, und `saveFloorplan` schreibt sie mit.
+ *
+ * 2. `lage` ist ein ABSOLUTES Maß in cm, kein Bruchteil. Eine Tür sitzt 12 cm
+ *    von der Ecke, nicht bei 4 % der Wandlänge. Wird die Wand verlängert, bleibt
+ *    das Maß erhalten und nicht das Verhältnis (Projekt-DNA Punkt 3). Gemessen
+ *    wird von der START-Ecke der Wand bis zur MITTE der Öffnung — die Mitte,
+ *    weil sich daran beide Laibungen symmetrisch aufhängen und ein Wechsel der
+ *    Breite die Öffnung nicht wandern lässt.
+ *
+ * 3. KEINE `hoehe`. Ein Grundriss enthält keine (Projekt-DNA Punkt 4). Die
+ *    Axonometrie schneidet die Wände auf 1,16 m und sagt das in ihrer Legende;
+ *    eine Türhöhe von 2,01 m wäre erfunden und sähe gemessen aus.
+ */
+export type Oeffnung = {
+  /** Dauerhafte Kennung — Pflichtfeld, aus demselben Grund wie bei
+   *  `AusstattungElement.id`: jede Handlung (ziehen, wenden, löschen) greift
+   *  ausschliesslich über sie zu. */
+  id: string
+  /** Kennung der tragenden Wand (`Wall.id`). */
+  wandId: string
+  /** cm von der START-Ecke der Wand bis zur MITTE der Öffnung. */
+  lage: number
+  /** Lichte Weite in cm. */
+  breite: number
+  art: OeffnungsArt
+  /**
+   * Auf welcher Seite die Tür aufschlägt: Vorzeichen entlang der Wand-Normalen
+   * (+1 = links der Richtung Start→Ende, −1 = rechts). Bei `fenster` und
+   * `durchgang` ohne Wirkung — sie bleibt trotzdem Pflichtfeld, damit ein
+   * Wechsel der Art nicht in einen unbestimmten Zustand führt.
+   */
+  seite: 1 | -1
+  /** An welcher Laibung das Band sitzt (die Drehachse des Blattes). */
+  anschlag: 'anfang' | 'ende'
+  /**
+   * Brüstungshöhe in cm — NUR bei `fenster`. Fehlt sie, geht die Öffnung bis
+   * zum Boden (bodentiefes Fenster). GESETZTE Annahme, kein Messwert: eine
+   * Brüstungshöhe steht in keinem Grundriss.
+   */
+  bruestung?: number
+  /** Aufmaß oder Annahme? Dieselbe Bedeutung wie bei `AusstattungQuelle`. */
+  quelle: AusstattungQuelle
+  /**
+   * ABGELEITETER Weltpunkt der Öffnungsmitte in cm — KEINE zweite Wahrheit.
+   *
+   * Er wird bei JEDEM Schreiben aus (`wandId`, `lage`) neu gerechnet und
+   * ausschliesslich in `versoehneOeffnungen()` gelesen. Ohne ihn sind drei
+   * Fälle unrettbar, in denen eine Wand-Kennung kippt: die Wand-TEILUNG
+   * (`corner.ts:326-331` erzeugt die zweite Hälfte ohne `id`, die alte Wand
+   * behält ihre und wird KÜRZER), die Wand-ENTFERNUNG, und ein NEU-EXPORT, bei
+   * dem eine nachgemessene Wand neue Ecken und damit eine neue abgeleitete
+   * Kennung bekommt. In dieser Pipeline überlebt keine Kennung ein Nachmessen —
+   * die einzige dauerhafte Identität einer Wand ist ihre GEOMETRIE.
+   */
+  anker: { x: number; y: number }
+  /**
+   * Die Wand ist weg und in Reichweite des Ankers stand keine andere. Die
+   * Öffnung wird dann NICHT gezeichnet und NICHT gelöscht: still zu entsorgen,
+   * was der Nutzer gesetzt hat, wäre der schlimmere Fehler. Er erfährt es über
+   * die Leiste und kann die Wand zurückholen (Strg+Z).
+   */
+  verwaist?: boolean
+}
+
+/** So darf eine Öffnung in einer DATEI liegen: Kennung, Herkunft und Anker
+ *  dürfen fehlen und werden beim Laden ergänzt (siehe `uebernehmeOeffnungen`). */
+export type GespeicherteOeffnung = Omit<Oeffnung, 'id' | 'quelle' | 'anker'> & {
+  id?: string
+  quelle?: AusstattungQuelle
+  anker?: { x: number; y: number }
+}
+
+/**
+ * Was sich einsetzen lässt, samt lichter Weite in cm (W4).
+ *
+ * DIE MASSE SIND GESETZTE ANNAHMEN, KEINE MESSWERTE — dieselbe Ehrlichkeit wie
+ * bei `AUSSTATTUNG_VORLAGEN`. `Nur Büro.pdf` zeigt Wände, keine Türblätter; was
+ * hier steht, ist ein Vorschlag für den Nutzer und trägt darum immer
+ * `quelle: 'gesetzt'`.
+ *
+ * Die Zahlen sind trotzdem nicht beliebig: 87,5 cm ist das verbreitete
+ * Baurichtmaß einer Türöffnung im Büro- und Wohnbau (die übliche Reihe lautet
+ * 62,5 / 75 / 87,5 / 100 / 112,5 cm), die Doppeltür ist genau das Doppelte.
+ * Eine DIN-Nummer steht hier bewusst NICHT: eine erfundene Norm sähe belegt aus
+ * und wäre schlimmer als eine offene Annahme (dieselbe Regel wie bei Matte,
+ * Gerät und Liege in W3).
+ *
+ * Reihenfolge = Reihenfolge in der Leiste: erst das Häufigste.
+ */
+export const OEFFNUNGS_VORLAGEN: ReadonlyArray<{
+  art: OeffnungsArt
+  breite: number
+  bruestung?: number
+}> = [
+  { art: 'tuer', breite: 87.5 },
+  { art: 'doppeltuer', breite: 175 },
+  // 90 cm Brüstung ist die verbreitete Höhe eines Bürofensters — gesetzte
+  // Annahme. In der Axonometrie bleibt darunter ein Brüstungsblock stehen,
+  // sonst sähe ein Fenster aus wie ein Durchgang.
+  { art: 'fenster', breite: 125, bruestung: 90 },
+  { art: 'durchgang', breite: 100 }
+]
+
+/**
+ * Wie nah zwei Öffnungen derselben Wand sich kommen dürfen (cm). Null wäre
+ * mathematisch richtig und baulich falsch: zwischen zwei Öffnungen steht immer
+ * ein Stück Wand. 5 cm ist bewusst knapp — die Regel soll den Fehlgriff fangen
+ * (zwei ineinander liegende Türen), nicht eine dichte Fensterreihe verbieten.
+ */
+export const OEFFNUNG_MINDESTABSTAND_CM = 5
+
+/**
+ * Wie weit die Versöhnung um den Anker herum nach einer Ersatzwand sucht —
+ * ZUSÄTZLICH zur halben Wanddicke. 25 cm deckt den Fall ab, für den der Anker
+ * gebaut ist (die geteilte Wand: die neue Hälfte liegt exakt auf derselben
+ * Achse, der Abstand ist rechnerisch null), lässt aber Luft für eine Wand, die
+ * beim Verschmelzen von Ecken ein paar Zentimeter gewandert ist. Grösser
+ * gewählt zöge eine Tür auf die NACHBARWAND um — schlimmer als eine ehrlich
+ * verwaiste Tür, denn eine falsch umgezogene sieht richtig aus.
+ */
+export const VERSOEHNUNG_SUCHWEITE_CM = 25
+
 /**
  * Fassung des Speicherformats. Erhöhen, sobald ein Feld dazukommt, auf das sich
  * etwas VERLÄSST — nicht bei jeder Kleinigkeit.
@@ -150,13 +298,15 @@ export const AUSSTATTUNG_VORLAGEN: ReadonlyArray<{
  *   1  bis W1: Ecken, Wände (nur über ihre Ecken), Texturen, roomMeta,
  *      Ausstattung ohne Kennung
  *   2  ab W2-Fundament: Wände und Ausstattung tragen `id`, Ausstattung `quelle`
+ *   3  ab W4: `oeffnungen` — Türen, Fenster und Durchgänge, die an `Wall.id`
+ *      hängen. Genau der Fall, den der Text unten seit W1 als Beispiel nennt.
  *
  * WOZU: eine Datei aus einer NEUEREN Fassung enthält Felder, die dieser Planer
  * nicht kennt. Er würde sie klaglos öffnen und beim nächsten Sichern still
  * wegwerfen — der Nutzer verlöre seine Türen und merkte es erst Wochen später.
  * Lieber ehrlich ablehnen (siehe `loadFloorplan`).
  */
-export const PLAN_FASSUNG = 2
+export const PLAN_FASSUNG = 3
 
 export interface SavedFloorplan {
   /** Fassung des Formats; fehlt in allen Dateien bis W1 und heisst dann 1. */
