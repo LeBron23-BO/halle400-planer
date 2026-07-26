@@ -776,7 +776,7 @@ let axoUhr = null;
 let meldungUhr = null;
 let axoVeraltet = true;
 /* Schalter NUR fuer die Gegenprobe des Kosten-Gates (W7) — im Betrieb immer
-   `false`. Er macht aus dem billigen Koerper-Tausch den teuren vollen Neubau
+   AUS. Er macht aus dem billigen Koerper-Tausch den teuren vollen Neubau
    und beweist damit, dass das Gate den Unterschied ueberhaupt misst. */
 let vollNeubauImZug = false;
 
@@ -2606,6 +2606,61 @@ window.__planerDatei = {
     try { return speicher.getItem(SCHLUESSEL); } catch (e) { return null; }
   },
   bildBlatt: function(){ return bildmass(axoCanvas); },
+  /* ── Bearbeiten im Blatt (W7) ────────────────────────────────────────
+     Alles LESEND ausser \`axoSetzeBlick\` und \`axoVollNeubau\`. Der Zug selbst
+     wird vom Gate mit echten Zeiger-Ereignissen nachgefahren (\`page.mouse\`):
+     \`dispatchEvent\` ruft die Zuhoerer direkt auf und ginge auch dann durch,
+     wenn die Flaeche gar nicht getroffen werden kann — genau daran ist K3
+     fuenf Wellen lang vorbeigemessen worden. */
+  axoKasten: function(){
+    const r = axoCanvas.getBoundingClientRect();
+    return { left: r.left, top: r.top, breite: r.width, hoehe: r.height };
+  },
+  axoKamera: function(){ return axoAnsicht ? axoAnsicht.kamera() : null; },
+  axoBlick: function(){ return axoAnsicht ? axoAnsicht.blick : null; },
+  axoSetzeBlick: function(az, neigung){ if (axoAnsicht) axoAnsicht.setzeBlick(az, neigung); },
+  axoZiehbar: function(){ return axoAnsicht ? axoAnsicht.ziehbar : null; },
+  axoGreift: function(){ return axoAnsicht ? axoAnsicht.greift : null; },
+  axoUnterZeiger: function(){ return axoAnsicht ? axoAnsicht.unterZeiger : null; },
+  /* Der Treffer-Test OHNE Zeiger — fuer die Selbsttreffer-Probe ueber alle
+     289 Stuecke. Dieselbe Funktion, die auch die Hand benutzt. */
+  axoTreffer: function(x, y){
+    if (!axoAnsicht) return null;
+    return koerperUnter(axoAnsicht.szene, axoAnsicht.kamera(), x, y);
+  },
+  /* Ein Weltpunkt (cm) auf seiner Hoehe (m) VORWAERTS ins Bild — die
+     Gegenrichtung zu \`axoTreffer\`. */
+  axoAufBild: function(weltX, weltY, hoeheM){
+    if (!axoAnsicht) return null;
+    const p = axoAnsicht.projiziere(weltX * CM, hoeheM, weltY * CM);
+    return { x: p.x, y: p.y, tiefe: p.p };
+  },
+  axoMoebel: function(){
+    if (!szene) return null;
+    return szene.moebel.map(function(k){
+      return { id: k.id, typ: k.typ, y0: k.y0, y1: k.y1, gesetzt: !!k.gesetzt };
+    });
+  },
+  /* Der KILL-SCHALTER fuer die Kosten-Gegenprobe (s. \`vollNeubauImZug\`). */
+  axoVollNeubau: function(an){ vollNeubauImZug = !!an; },
+  /* Schwerpunkt der Bildpunkte, die einer Materialfarbe nahe kommen — die
+     „Pixel-Tinte" des Gates. Gerechnet auf dem GERENDERTEN Blatt: eine
+     Modellzahl bewiese nur, dass das Modell sich geaendert hat, nicht dass man
+     es sieht. */
+  axoSchwerpunkt: function(farbe, umkreis){
+    const g = axoCanvas.getContext('2d');
+    const d = g.getImageData(0, 0, axoCanvas.width, axoCanvas.height).data;
+    const dpr = axoCanvas.width / Math.max(1, axoCanvas.getBoundingClientRect().width);
+    let sx = 0, sy = 0, n = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      if (Math.abs(d[i] - farbe[0]) + Math.abs(d[i+1] - farbe[1]) + Math.abs(d[i+2] - farbe[2]) > umkreis) continue;
+      const p = (i / 4) | 0;
+      sx += p % axoCanvas.width;
+      sy += (p / axoCanvas.width) | 0;
+      n++;
+    }
+    return n ? { x: sx / n / dpr, y: sy / n / dpr, n: n } : null;
+  },
   bildPlan: function(){ return bildmass(document.getElementById('grundriss-canvas')); },
   maus: function(typ, x, y){
     const c = document.getElementById('grundriss-canvas');

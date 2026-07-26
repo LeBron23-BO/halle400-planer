@@ -352,10 +352,15 @@
          unten, zu dem Satz über die Höhen — siehe „hinweisOeffnung". -->
     <div class="gesetzt" id="oeffnungZaehler" hidden></div>
 
-    <!-- W7: „Bearbeiten" lässt die Ansicht stehen. Wer den Schalter hier drückt,
-         hat die Werkzeuge an — nur liegen sie im Grundriss, weil in einer
-         schrägen Parallelprojektion ein Klick keinen Punkt trifft, sondern einen
-         Sehstrahl. Diese Zeile sagt genau das.
+    <!-- W7: „Bearbeiten" lässt die Ansicht stehen, und im Blatt geht seither
+         etwas. Diese Zeile sagt WAS — und was nicht.
+
+         Ihr erster Wortlaut („gezeichnet wird im Grundriss") stimmte genau so
+         lange, wie hier gar nichts ging. Ein Hinweis, der eine Bedienung
+         verschweigt, die es gibt, ist schlimmer als keiner: er lehrt den Nutzer,
+         es nicht zu versuchen. Möbel ziehen, drehen und löschen geht hier;
+         Wände, Türen und Fenster nicht — ein Punkt in leerer Luft hat keine
+         bekannte Höhe, ein Möbel hat eine.
 
          Sie steht IM Blattkopf, und das ist kein Zufall: am breiten Bildschirm
          hebt `position:fixed` sie als eigene Leiste unter den Umschalter (dort
@@ -365,8 +370,8 @@
          AM STANDBILD GEMESSEN: als schwebende Leiste lag sie bei 390 px quer
          über dem Titel. -->
     <div class="arbeitshinweis" id="arbeitshinweis" role="status" hidden>
-      <b>Bearbeiten ist an</b> — gezeichnet wird im Grundriss.
-      <span class="warum">In der Axonometrie trifft ein Klick keinen Punkt, sondern einen Sehstrahl.</span>
+      <b>Bearbeiten ist an</b> <span id="arbeitshinweisWas">— Möbel ziehen, Q und E drehen, Entf löscht.</span>
+      <span class="warum" id="arbeitshinweisWarum">Wände, Türen und Fenster gehören in den Grundriss.</span>
     </div>
   </header>
 
@@ -466,17 +471,6 @@
     </div>
   </div>
 
-  <!-- Lösch-Rückfrage (E1): Abbrechen zuerst, die gefährliche Wahl darf nicht
-       die bequemste sein. -->
-  <div class="frage" id="rueckfrage" role="alertdialog" aria-live="assertive" aria-label="Löschen bestätigen" hidden>
-    <span class="txt"><b>Entfernen:</b> <span id="rueckfrageZiel"></span>?</span>
-    <span class="knoepfe">
-      <button type="button" id="btnAbbrechen">Abbrechen</button>
-      <button type="button" id="btnEntfernen" class="ernst">Entfernen</button>
-    </span>
-    <span class="fuss">Rückgängig mit Strg+Z &middot; Abbrechen mit Esc</span>
-  </div>
-
   <div class="frage" id="zurueckFrage" role="alertdialog" aria-live="assertive" aria-label="Zurücksetzen bestätigen" hidden>
     <span class="txt"><b>Zurücksetzen:</b> alle eigenen Änderungen verwerfen und den gemessenen Plan zeigen?</span>
     <span class="knoepfe">
@@ -485,6 +479,26 @@
     </span>
     <span class="fuss">Das lässt sich nicht rückgängig machen. Vorher „Sichern“ legt den Stand als Datei ab.</span>
   </div>
+</div>
+
+<!-- Lösch-Rückfrage (E1): Abbrechen zuerst, die gefährliche Wahl darf nicht die
+     bequemste sein.
+
+     SIE LIEGT SEIT W7 AUSSERHALB BEIDER ANSICHTEN. Bis dahin stand sie im
+     Grundriss-Umschlag und erbte dessen Sichtbarkeit — richtig, solange nur
+     dort gelöscht wurde. Seit „Entf" auch im Blatt ein Möbel entfernt, fragte
+     dort etwas Unsichtbares: der Kandidat wäre gesetzt, die Frage nicht zu
+     sehen, und der nächste Tastendruck hätte in einen Zustand geführt, den
+     niemand angeboten hat. Derselbe Fallstrick wie bei `btnStandZurueck`, nur
+     umgekehrt gelöst: eine Frage, die zu BEIDEN Ansichten gehört, gehört in
+     keine von beiden. -->
+<div class="frage" id="rueckfrage" role="alertdialog" aria-live="assertive" aria-label="Löschen bestätigen" hidden>
+  <span class="txt"><b>Entfernen:</b> <span id="rueckfrageZiel"></span>?</span>
+  <span class="knoepfe">
+    <button type="button" id="btnAbbrechen">Abbrechen</button>
+    <button type="button" id="btnEntfernen" class="ernst">Entfernen</button>
+  </span>
+  <span class="fuss">Rückgängig mit Strg+Z &middot; Abbrechen mit Esc</span>
 </div>
 
 <div class="kopfleiste" role="toolbar" aria-label="Ansicht wählen">
@@ -4187,7 +4201,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "c8051b95fb22";
-const BAU_STEMPEL = "2026-07-26 23:11";
+const BAU_STEMPEL = "2026-07-26 23:37";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -11121,6 +11135,7 @@ function baueSzene(plan, opt = {}) {
 
 
 
+
 /** Flaechenhelligkeit aus dem Winkel zum Streiflicht. [uebersicht.html:560] */
 /** Hex nach [r,g,b]. */
 function zahlen(hex) {
@@ -11160,8 +11175,20 @@ function toenen(hex, n, zurueck) {
  * Erzeugt eine Axonometrie auf dem uebergebenen Canvas.
  *
  * @param {HTMLCanvasElement} canvas
- * @param {object} szene Ergebnis von `baueSzene`
- * @param {{dunkel?:boolean, namen?:'alle'|'saeulen'|'aus', randRechts?:number, randOben?:number}} [opt]
+ * @param {object} szeneEingang Ergebnis von `baueSzene`
+ * @param {{dunkel?:boolean, namen?:'alle'|'saeulen'|'aus', randRechts?:number,
+ *          randOben?:number, bearbeitung?:{
+ *            aktiv:()=>boolean,
+ *            greife:(id:string,weltX:number,weltY:number)=>boolean,
+ *            ziehe:(weltX:number,weltY:number)=>object|null,
+ *            lassLos:()=>void,
+ *            zuFlach?:(el:number)=>void
+ *          }}} [opt]
+ *        `bearbeitung` ist OPTIONAL (W7). Ohne sie ist das Blatt genau das,
+ *        was es immer war: ein Fenster. Mit ihr laesst sich ein Moebel darin
+ *        greifen — die Huelle sagt, was daraus im Modell wird; der Renderer
+ *        sagt nur, WO im Weltmass gegriffen wurde. Masse in ZENTIMETERN, weil
+ *        das Modell des Planers so rechnet.
  */
 function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
   const ctx = canvas.getContext('2d')
@@ -11571,6 +11598,24 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     if (namenModus !== 'aus') maleNamen()
   }
 
+  /**
+   * Tauscht GENAU EINEN Ausstattungs-Koerper an Ort und Stelle und zeichnet neu
+   * (W7).
+   *
+   * Der ganze Grund, warum ein Zug in dieser Ansicht fluessig sein kann:
+   * `baueSzene` leitet Raeume ab, zerlegt Waende in Kacheln, versoehnt
+   * Oeffnungen und baut 526 Koerper — gemessen 16,2 ms. Fuer ein verschobenes
+   * Moebel ist davon alles ausser einem Vieleck umsonst.
+   */
+  function tauscheKoerper(id, koerper) {
+    if (!id || !koerper || !szene?.moebel) return false
+    const i = szene.moebel.findIndex((k) => k.id === id)
+    if (i < 0) return false
+    szene.moebel[i] = koerper
+    zeichne()
+    return true
+  }
+
   function passeAn() {
     const dpr = Math.min(globalThis.devicePixelRatio || 1, 2)
     const kasten = canvas.getBoundingClientRect()
@@ -11589,11 +11634,86 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
   let zeiger = new Map()
   let spanne = 0
 
+  /* ══ MOEBEL GREIFEN (W7) ═══════════════════════════════════════════════
+     Der TREFFER entscheidet, keine Zusatztaste: Druck auf einen Koerper
+     greift, Druck auf Buehne, Boden oder Wand dreht wie bisher. Der
+     Praezedenzfall ist die Schwenk-Sperre im Grundriss
+     (`floorplanner.ts:1036`) — ohne sie wanderte das Moebel UND der Plan, und
+     der Zug legte das Stueck gemessen doppelt so weit.
+
+     Der Renderer kennt das MODELL nicht und soll es nicht kennen. Er meldet
+     nur, WO im Weltmass gegriffen und gezogen wird; was daraus wird,
+     entscheidet die Huelle ueber `opt.bearbeitung`. Ohne dieses Objekt
+     verhaelt sich das Blatt exakt wie vorher — die Bank-Datei im
+     Auslieferungszustand nimmt keinen Griff an. */
+  const bearbeitung = opt.bearbeitung || null
+  let greift = null // Kennung des Stuecks in der Hand
+  let griffHoehe = 0 // Hoehe der ZIEH-EBENE, ueber den ganzen Zug fest
+  let unterZeiger = null
+
+  const bearbeitbar = () => !!bearbeitung && bearbeitung.aktiv()
+
+  /** Bildpunkt in CSS-Pixeln, so wie `projiziere` sie liefert. */
+  function amBild(e) {
+    const r = canvas.getBoundingClientRect()
+    return { x: e.clientX - r.left, y: e.clientY - r.top }
+  }
+
+  /** Weltpunkt in ZENTIMETERN auf der Ziehebene — die Sprache des Planers. */
+  function weltAuf(X, Y, h) {
+    const p = umkehreAuf(kamera(), X, Y, h)
+    return p ? { x: p.x / CM, y: p.z / CM } : null
+  }
+
+  /** Zeiger-Aussage: was liegt unter dem Zeiger, und wie sagt es der Zeiger? */
+  function zeigerPflegen(treffer) {
+    unterZeiger = treffer ? treffer.id : null
+    /* Der Grund-Zeiger des Blattes ist bereits `grab` (Ziehen dreht) — ein
+       zweites `grab` waere also keine Auskunft. `move` sagt, was hier anders
+       ist: dieses Stueck laesst sich VERSETZEN. Inline gesetzt und beim
+       Wegfahren wieder GELEERT, damit die Stilvorlage der Huelle wieder gilt
+       (dieselbe Technik wie `zeigerStilSetzen` im Kern). */
+    const stil = greift ? 'grabbing' : unterZeiger ? 'move' : ''
+    if (canvas.style.cursor !== stil) canvas.style.cursor = stil
+  }
+
   amCanvas('pointerdown', (e) => {
     zeiger.set(e.pointerId, [e.clientX, e.clientY])
     if (zeiger.size > 1) {
       zieht = false
+      // Ein zweiter Finger beendet einen laufenden Griff: zwei Finger heissen
+      // in diesem Blatt „zoomen", und beides zugleich waere keine Geste.
+      if (greift) griffBeenden()
       return
+    }
+    if (bearbeitbar()) {
+      const b = amBild(e)
+      const treffer = koerperUnter(szene, kamera(), b.x, b.y)
+      if (treffer) {
+        /* DIE EHRLICHE GRENZE. Unter `NEIGUNG_MIN_ZIEHEN` bedeutet 1 Bildpunkt
+           ueber 22 cm Tiefe — dort wird NICHT gezogen. Gesagt, nicht still
+           verweigert: eine Bedienung, die manchmal wortlos nichts tut, ist
+           schlimmer als eine, die es gar nicht gibt. */
+        if (blick.el < NEIGUNG_MIN_ZIEHEN) {
+          bearbeitung.zuFlach?.(blick.el)
+        } else {
+          const w = weltAuf(b.x, b.y, treffer.hoehe)
+          if (w && bearbeitung.greife?.(treffer.id, w.x, w.y)) {
+            greift = treffer.id
+            // Die Ziehebene bleibt die des GRIFFS. Liefe sie mit der Hoehe des
+            // Stuecks mit, veraenderte jedes Einrasten zugleich die Abbildung
+            // Bild -> Welt, und das Stueck driftete unter dem Zeiger weg.
+            griffHoehe = treffer.hoehe
+            zeigerPflegen(treffer)
+            try {
+              canvas.setPointerCapture(e.pointerId)
+            } catch (_) {
+              /* aelterer Browser: der Zug endet dann am Rand der Flaeche */
+            }
+            return
+          }
+        }
+      }
     }
     zieht = true
     schnell = true
@@ -11606,6 +11726,13 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     }
   })
 
+  function griffBeenden() {
+    if (!greift) return
+    greift = null
+    bearbeitung?.lassLos?.()
+    zeigerPflegen(null)
+  }
+
   amCanvas('pointermove', (e) => {
     if (zeiger.has(e.pointerId)) zeiger.set(e.pointerId, [e.clientX, e.clientY])
     if (zeiger.size === 2) {
@@ -11617,6 +11744,24 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
       }
       spanne = d
       return
+    }
+    // --- Ein Stueck in der Hand: es folgt, das Blatt steht still (W7).
+    if (greift) {
+      const b = amBild(e)
+      const w = weltAuf(b.x, b.y, griffHoehe)
+      if (!w) return
+      const neu = bearbeitung.ziehe?.(w.x, w.y)
+      /* NUR den einen Koerper tauschen und neu zeichnen. `baueSzene` kostet
+         gemessen 16,2 ms — bei jeder Zeigerbewegung waere das ein Ruckeln, das
+         der Nutzer der Bank zurecht als „hakt" liest. Der volle Neubau kommt
+         beim Loslassen. */
+      if (neu) tauscheKoerper(greift, neu)
+      return
+    }
+    // --- Nichts in der Hand: sagen, was greifbar waere.
+    if (!zieht && bearbeitbar()) {
+      const b = amBild(e)
+      zeigerPflegen(koerperUnter(szene, kamera(), b.x, b.y))
     }
     if (!zieht) return
     const dx = e.clientX - lx
@@ -11639,6 +11784,12 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
   const beenden = (e) => {
     zeiger.delete(e.pointerId)
     if (zeiger.size < 2) spanne = 0
+    // Das Stueck ist abgelegt. ZUERST, denn `lassLos` baut die Szene voll neu
+    // — danach stimmte `zieht` nicht mehr mit dem Bild zusammen.
+    if (greift) {
+      griffBeenden()
+      return
+    }
     if (!zieht) return
     zieht = false
     schnell = false
@@ -11684,9 +11835,32 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
       szene = neu
       zeichne()
     },
+    tauscheKoerper,
     /** Die aktuelle Szene — der Treffer-Test braucht ihre Koerper. */
     get szene() {
       return szene
+    },
+    /**
+     * KENNUNG des Stuecks unter dem Zeiger (W7) — oder `null`.
+     *
+     * Dieselbe Regel wie im Grundriss: gedreht und geloescht wird IMMER das
+     * Stueck unter dem Zeiger. Es gibt in diesem Planer keine Auswahl, die
+     * einen Klick ueberdauert, und eine einzufuehren waere eine zweite
+     * Bedienidee fuer eine Drehung um 15°.
+     */
+    get unterZeiger() {
+      return unterZeiger
+    },
+    /** Laeuft gerade ein Griff? Die Huelle sperrt daran ihr Sichern. */
+    get greift() {
+      return greift
+    },
+    /**
+     * Ist die Neigung ueberhaupt gutmuetig genug zum Ziehen? Die Huelle
+     * schreibt es auf den Bildschirm, statt es den Nutzer erraten zu lassen.
+     */
+    get ziehbar() {
+      return blick.el >= NEIGUNG_MIN_ZIEHEN
     },
     /**
      * Meldet ALLE Abos ab (B3). Ohne diesen Griff war jeder zweite Renderer auf
@@ -11817,6 +11991,10 @@ let szene = null;
 let axoUhr = null;
 let meldungUhr = null;
 let axoVeraltet = true;
+/* Schalter NUR fuer die Gegenprobe des Kosten-Gates (W7) — im Betrieb immer
+   AUS. Er macht aus dem billigen Koerper-Tausch den teuren vollen Neubau
+   und beweist damit, dass das Gate den Unterschied ueberhaupt misst. */
+let vollNeubauImZug = false;
 
 /* ── Aufbau ─────────────────────────────────────────────────────────
    Die Reihenfolge ist zwingend: Configuration VOR dem Laden (Wall liest seine
@@ -12144,6 +12322,61 @@ addEventListener('blur', leseZugBeenden);
    weiterlaufen. */
 function tafelRand(){ return (tafelAn && innerWidth > 900) ? 294 : 0; }
 
+/* ── Bearbeiten IM BLATT (W7) ───────────────────────────────────────
+   Der Renderer meldet nur, WO im Weltmass gegriffen und gezogen wird; was
+   daraus wird, entscheidet allein diese Huelle — und zwar ueber DENSELBEN Kern,
+   der auch den Grundriss bedient (`zugBeginnen`/`zugSchritt`/`zugBeenden`).
+   Zwei Zieh-Fassungen waeren zwei Einrast-Rechnungen fuer dieselbe Bewegung.
+
+   `aktiv()` fragt BEIDES ab: den Bearbeiten-Schalter und die vorn stehende
+   Ansicht. Das ruhende Blatt der Bank nimmt damit keinen Griff an — und der
+   Schalter allein macht es auch nicht scharf. */
+const axoBearbeitung = {
+  aktiv: function(){ return bearbeiten && ansicht === 'axo'; },
+  greife: function(id, wx, wy){ return zeichner.zugBeginnen(id, wx, wy); },
+  ziehe: function(wx, wy){
+    if (!zeichner.zugSchritt(wx, wy)) return null;
+    /* NUR fuer die Gegenprobe des Kosten-Gates: derselbe Zug mit dem vollen
+       Szenen-Neubau je Bewegung. Ein Waechter, der nie rot wird, ist keiner —
+       das Gate muss beweisen koennen, dass es 16 ms ueberhaupt bemerkt. */
+    if (vollNeubauImZug) { axoNeuBauen(); return null; }
+    const stueck = grundriss.findeAusstattung(zeichner.zugLaeuft());
+    /* NUR dieser eine Koerper — aus DERSELBEN Funktion, aus der `baueSzene` ihn
+       baut. Ein hier nachgebautes Vieleck waere eine zweite Wahrheit ueber das
+       Aussehen eines Stuecks, und sie fiele erst beim Loslassen auf: dann
+       spraenge das Moebel in seine richtige Form zurueck. */
+    return stueck ? (ausstattungsKoerper(stueck, HOEHEN)[0] || null) : null;
+  },
+  lassLos: function(){
+    const id = zeichner.zugLaeuft();
+    zeichner.zugBeenden();
+    /* Erst JETZT der volle Neubau (ueber `bemerkeAenderung` -> `axoBaldNeu`):
+       waehrend des Zuges kostete er gemessen 16,2 ms je Bewegung. */
+    if (id) bemerkeAenderung();
+  },
+  zuFlach: function(neigung){
+    /* EHRLICH SAGEN statt still verweigern. Unter dieser Neigung bedeutet ein
+       Bildpunkt ueber 22 cm Tiefe — ein Zittern der Hand legte das Stueck einen
+       halben Meter weiter hinten ab, ohne dass man es saehe. */
+    meldung('Das Blatt liegt zu flach zum Verschieben — ein Bildpunkt wäre hier über 22 cm Tiefe. ' +
+      'Blatt aufrichten oder „Plan“ wählen. Drehen mit Q und E geht weiter.', false);
+    arbeitshinweisPflegen();
+  }
+};
+
+/* Was der Hinweis oben gerade sagen MUSS. Er haengt an der Neigung: ein
+   flachgekipptes Blatt kann nicht ziehen, und das soll man lesen koennen,
+   BEVOR man es versucht. */
+function arbeitshinweisPflegen(){
+  const flach = !!axoAnsicht && !axoAnsicht.ziehbar;
+  el('arbeitshinweisWas').textContent = flach
+    ? '— zu flach zum Ziehen. Q und E drehen, Entf löscht.'
+    : '— Möbel ziehen, Q und E drehen, Entf löscht.';
+  el('arbeitshinweisWarum').textContent = flach
+    ? 'Ein Bildpunkt bedeutet hier über 22 cm Tiefe — Blatt aufrichten oder „Plan“ wählen.'
+    : 'Wände, Türen und Fenster gehören in den Grundriss.';
+}
+
 function axoNeuBauen(){
   szene = baueSzene(
     { floorplan: grundriss.saveFloorplan(), labels: labels },
@@ -12152,13 +12385,21 @@ function axoNeuBauen(){
   if (axoAnsicht) {
     axoAnsicht.setzeSzene(szene);
   } else {
-    axoAnsicht = erzeugeAxonometrie(axoCanvas, szene, { namen: namenModus, randRechts: tafelRand() });
+    axoAnsicht = erzeugeAxonometrie(axoCanvas, szene, {
+      namen: namenModus, randRechts: tafelRand(), bearbeitung: axoBearbeitung
+    });
     axoAnsicht.passeAn();
     /* EINMALIG, nicht je Neubau: das Canvas wechselt nicht mehr, also wechseln
        auch seine Zuhoerer nicht. */
     axoCanvas.addEventListener('pointerdown', function(){ axoCanvas.classList.add('zieht'); });
     ['pointerup','pointercancel'].forEach(function(t){
-      axoCanvas.addEventListener(t, function(){ axoCanvas.classList.remove('zieht'); });
+      axoCanvas.addEventListener(t, function(){
+        axoCanvas.classList.remove('zieht');
+        /* Nach einem Dreh-Zug kann die Neigung die Ziehgrenze ueberschritten
+           haben — dann muss der Hinweis oben es sagen, bevor jemand vergeblich
+           greift. */
+        arbeitshinweisPflegen();
+      });
     });
   }
   tafelZeichnen();
@@ -12275,7 +12516,11 @@ function setzeBearbeiten(an, merken){
      in der Axonometrie zu sehen ist, entscheidet seine Lage im Blatt, nicht
      diese Zeile. */
   arbeitshinweis.hidden = !an;
+  if (an) arbeitshinweisPflegen();
   el('btnBearbeiten').setAttribute('aria-pressed', String(an));
+  /* Wer aufhoert zu bearbeiten, laesst auch los: ein Griff, der einen
+     ausgeschalteten Schalter ueberlebte, zoege am naechsten Blatt weiter. */
+  if (!an) zeichner.zugBeenden();
   // Ein ruhendes Loeschen-Werkzeug waere eine Falle beim naechsten OEffnen.
   if (!an) zeichner.setMode(floorplannerModes.MOVE);
   if (merken && speicher) {
@@ -12977,6 +13222,48 @@ addEventListener('keydown', function(e){
   else if (taste === 'y' || (taste === 'z' && e.shiftKey)) { e.preventDefault(); undo.redo(); }
 });
 
+/* ── Drehen und Loeschen IM BLATT (W7) ──────────────────────────────
+   Dieselbe Regel wie im Grundriss: gewirkt wird immer auf das Stueck UNTER DEM
+   ZEIGER. Es gibt in diesem Planer keine Auswahl, die einen Klick ueberdauert
+   — ein Knopf in der Leiste braeuchte eine, denn auf dem Weg dorthin verlaesst
+   der Zeiger das Moebel.
+
+   IN DER FANG-PHASE (`true`) und mit `stopPropagation`, und das ist kein
+   Feinschliff: der KERN hoert Q und E ebenfalls am Dokument ab und wirkt dabei
+   auf `activeAusstattung` — das ist der letzte Treffer im GRUNDRISS und bleibt
+   liegen, wenn der Zeiger die Flaeche verlaesst. Ohne diesen Riegel drehte ein
+   Q im Blatt ein Stueck, das man gar nicht sieht. Solange die Axonometrie vorn
+   ist, gehoeren diese Tasten ihr — auch dann, wenn gerade nichts darunter
+   liegt.
+
+   `Entf` ist NEU und die einzige Taste, die dieses Blatt zusaetzlich lernt. Sie
+   loescht nicht, sie FRAGT: `loeschStueckVorschlagen` setzt denselben Kandidaten,
+   den das Verweilen im Grundriss setzt, und dieselbe Rueckfrage erscheint.
+   BEKANNTE GRENZE: am Handy gibt es keine Tastatur — dort bleibt das Blatt beim
+   Ziehen. Dieselbe offene Stelle wie Q/E im Grundriss seit W2. */
+document.addEventListener('keydown', function(e){
+  if (ansicht !== 'axo' || !bearbeiten) return;
+  const z = e.target;
+  if (z && (z.tagName === 'INPUT' || z.tagName === 'TEXTAREA' || z.isContentEditable)) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const taste = (e.key || '').toLowerCase();
+  if (taste !== 'q' && taste !== 'e' && taste !== 'delete') return;
+  // Der Riegel gegen den Kern gilt IMMER, auch ohne Treffer.
+  e.stopPropagation();
+  const id = axoAnsicht ? axoAnsicht.unterZeiger : null;
+  if (!id) return;
+  e.preventDefault();
+  if (taste === 'delete') {
+    zeichner.loeschStueckVorschlagen(id);
+    return;
+  }
+  if (zeichner.dreheStueck(id, taste === 'q' ? -1 : 1)) {
+    const stueck = grundriss.findeAusstattung(id);
+    if (stueck) axoAnsicht.tauscheKoerper(id, ausstattungsKoerper(stueck, HOEHEN)[0]);
+    bemerkeAenderung();
+  }
+}, true);
+
 /* ── Bedienung: Blatt ──────────────────────────────────────────────── */
 function markiere(auswahl, wert){
   document.querySelectorAll(auswahl).forEach(function(b){
@@ -13535,6 +13822,61 @@ window.__planerDatei = {
     try { return speicher.getItem(SCHLUESSEL); } catch (e) { return null; }
   },
   bildBlatt: function(){ return bildmass(axoCanvas); },
+  /* ── Bearbeiten im Blatt (W7) ────────────────────────────────────────
+     Alles LESEND ausser `axoSetzeBlick` und `axoVollNeubau`. Der Zug selbst
+     wird vom Gate mit echten Zeiger-Ereignissen nachgefahren (`page.mouse`):
+     `dispatchEvent` ruft die Zuhoerer direkt auf und ginge auch dann durch,
+     wenn die Flaeche gar nicht getroffen werden kann — genau daran ist K3
+     fuenf Wellen lang vorbeigemessen worden. */
+  axoKasten: function(){
+    const r = axoCanvas.getBoundingClientRect();
+    return { left: r.left, top: r.top, breite: r.width, hoehe: r.height };
+  },
+  axoKamera: function(){ return axoAnsicht ? axoAnsicht.kamera() : null; },
+  axoBlick: function(){ return axoAnsicht ? axoAnsicht.blick : null; },
+  axoSetzeBlick: function(az, neigung){ if (axoAnsicht) axoAnsicht.setzeBlick(az, neigung); },
+  axoZiehbar: function(){ return axoAnsicht ? axoAnsicht.ziehbar : null; },
+  axoGreift: function(){ return axoAnsicht ? axoAnsicht.greift : null; },
+  axoUnterZeiger: function(){ return axoAnsicht ? axoAnsicht.unterZeiger : null; },
+  /* Der Treffer-Test OHNE Zeiger — fuer die Selbsttreffer-Probe ueber alle
+     289 Stuecke. Dieselbe Funktion, die auch die Hand benutzt. */
+  axoTreffer: function(x, y){
+    if (!axoAnsicht) return null;
+    return koerperUnter(axoAnsicht.szene, axoAnsicht.kamera(), x, y);
+  },
+  /* Ein Weltpunkt (cm) auf seiner Hoehe (m) VORWAERTS ins Bild — die
+     Gegenrichtung zu `axoTreffer`. */
+  axoAufBild: function(weltX, weltY, hoeheM){
+    if (!axoAnsicht) return null;
+    const p = axoAnsicht.projiziere(weltX * CM, hoeheM, weltY * CM);
+    return { x: p.x, y: p.y, tiefe: p.p };
+  },
+  axoMoebel: function(){
+    if (!szene) return null;
+    return szene.moebel.map(function(k){
+      return { id: k.id, typ: k.typ, y0: k.y0, y1: k.y1, gesetzt: !!k.gesetzt };
+    });
+  },
+  /* Der KILL-SCHALTER fuer die Kosten-Gegenprobe (s. `vollNeubauImZug`). */
+  axoVollNeubau: function(an){ vollNeubauImZug = !!an; },
+  /* Schwerpunkt der Bildpunkte, die einer Materialfarbe nahe kommen — die
+     „Pixel-Tinte" des Gates. Gerechnet auf dem GERENDERTEN Blatt: eine
+     Modellzahl bewiese nur, dass das Modell sich geaendert hat, nicht dass man
+     es sieht. */
+  axoSchwerpunkt: function(farbe, umkreis){
+    const g = axoCanvas.getContext('2d');
+    const d = g.getImageData(0, 0, axoCanvas.width, axoCanvas.height).data;
+    const dpr = axoCanvas.width / Math.max(1, axoCanvas.getBoundingClientRect().width);
+    let sx = 0, sy = 0, n = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      if (Math.abs(d[i] - farbe[0]) + Math.abs(d[i+1] - farbe[1]) + Math.abs(d[i+2] - farbe[2]) > umkreis) continue;
+      const p = (i / 4) | 0;
+      sx += p % axoCanvas.width;
+      sy += (p / axoCanvas.width) | 0;
+      n++;
+    }
+    return n ? { x: sx / n / dpr, y: sy / n / dpr, n: n } : null;
+  },
   bildPlan: function(){ return bildmass(document.getElementById('grundriss-canvas')); },
   maus: function(typ, x, y){
     const c = document.getElementById('grundriss-canvas');
