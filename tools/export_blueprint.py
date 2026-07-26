@@ -172,9 +172,18 @@ def lade_labels(geometry_pfad: Path) -> list[dict]:
     return labels
 
 
+# Muss mit `AusstattungTyp` in src/model/floorplan.ts uebereinstimmen. Fehlt ein
+# Typ hier, bricht der Export hart ab (fail-closed, siehe lade_ausstattung).
+#
+# Die drei W3-Typen stehen bewusst mit drin, obwohl sie in KEINER gemessenen
+# Quelle vorkommen und der Export sie darum nie sieht: eine vom Nutzer
+# gesicherte Datei traegt sie, und wenn diese Datei je wieder durch die
+# Werkzeugkette laeuft, soll sie nicht an ihnen zerbrechen. Ein Typ, der im
+# Planer erzeugt werden kann, aber im Export verboten ist, waere eine Sackgasse.
 ERLAUBTE_TYPEN = {
     "tisch", "rundtisch", "stuhl", "schrank", "treppe", "wc",
     "waschbecken", "kochfeld", "pflanze", "aufzug", "flaeche",
+    "matte", "geraet", "liege",
 }
 
 

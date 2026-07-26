@@ -1,5 +1,5 @@
 import { Floorplan } from '../model/floorplan'
-import type { AusstattungElement } from '../model/floorplan'
+import type { AusstattungElement, AusstattungTyp } from '../model/floorplan'
 import { Wall } from '../model/wall'
 import { Corner } from '../model/corner'
 import { FloorplannerView, floorplannerModes, AUSSTATTUNG_UMRISS_AB } from './floorplanner_view'
@@ -1112,6 +1112,99 @@ export class Floorplanner {
       y: Math.round(y / EINRAST_RASTER_CM) * EINRAST_RASTER_CM,
       drehung
     }
+  }
+
+  // --------------------------------------------- Stück aus der Palette (W3)
+
+  /**
+   * Legt EIN neues Stück im Grundriss ab — der Abschluss des Zuges aus der
+   * Palette in den Plan.
+   *
+   * Es entsteht mit `quelle: 'gesetzt'` (fest verdrahtet in
+   * `Floorplan.fuegeAusstattungHinzu`), bekommt eine frische Kennung und wird
+   * dann durch DIESELBE Einrast-Rechnung geschickt wie ein gezogenes Stück
+   * (`moebelEinrasten`). Das ist der ganze Punkt: ein abgelegtes Stück soll sich
+   * nicht anders verhalten als ein gezogenes — zwei Einrast-Wege wären zwei
+   * Ergebnisse für dieselbe Bewegung.
+   *
+   * AUSSERHALB DER ZEICHENFLÄCHE ENTSTEHT NICHTS, und zwar geprüft BEVOR der
+   * Schnappschuss gezogen wird: ein Rückgängig-Schritt, der nichts zurücknimmt,
+   * wäre ein Klick ins Leere, den der Nutzer erst beim nächsten Strg+Z bemerkt.
+   * Die Prüfung sitzt hier im KERN und nicht in der Oberfläche, damit beide
+   * Auslieferungen dieselbe Grenze haben.
+   *
+   * KEINE Modus-Prüfung: die Palette ist eine eigene Geste und hat mit dem
+   * gewählten Werkzeug nichts zu tun. Ein „geht im Zeichnen-Werkzeug nicht"
+   * wäre ein stummer Zustand, in dem das Ziehen wirkungslos bliebe, ohne dass
+   * jemand sagt, warum.
+   *
+   * @param bildX Ablagepunkt in Canvas-Pixeln (links oben = 0,0)
+   * @param bildY dito
+   * @param vorlage Art und Standardmaß in cm (aus `AUSSTATTUNG_VORLAGEN`)
+   * @returns das abgelegte Stück oder `null`, wenn nichts entstanden ist
+   */
+  public stueckAblegen(
+    bildX: number,
+    bildY: number,
+    vorlage: { typ: AusstattungTyp; breite: number; tiefe: number }
+  ): AusstattungElement | null {
+    if (
+      !Number.isFinite(bildX) ||
+      !Number.isFinite(bildY) ||
+      bildX < 0 ||
+      bildY < 0 ||
+      bildX > this.canvasElement.width ||
+      bildY > this.canvasElement.height
+    ) {
+      return null
+    }
+    if (!(vorlage.breite > 0) || !(vorlage.tiefe > 0)) {
+      // Ein Stück ohne Ausdehnung wäre unsichtbar und nicht mehr greifbar —
+      // dieselbe Strenge wie im Export (`tools/export_blueprint.py`).
+      return null
+    }
+
+    // Umkehrung von `convertX`/`convertY`. Bewusst hier ausgeschrieben und
+    // nicht als zweite öffentliche Methode: es gibt genau diesen einen Aufrufer.
+    const weltX = bildX * this.cmPerPixel + this.originX * this.cmPerPixel
+    const weltY = bildY * this.cmPerPixel + this.originY * this.cmPerPixel
+
+    // Der Schnappschuss GENAU EINMAL und erst jetzt — das Ablegen ist EIN
+    // Rückgängig-Schritt, nicht drei (hinstellen, verschieben, drehen).
+    this.undoManager?.snapshot()
+
+    const el = this.floorplan.fuegeAusstattungHinzu({
+      typ: vorlage.typ,
+      x: Math.round(weltX),
+      y: Math.round(weltY),
+      breite: vorlage.breite,
+      tiefe: vorlage.tiefe
+    })
+
+    // Einrasten NACH dem Anlegen: `moebelEinrasten` braucht Breite, Tiefe und
+    // Drehung des fertigen Stücks, um zu wissen, wie weit sein Rand von der
+    // Mitte weg ist.
+    const ziel = this.moebelEinrasten(el, weltX, weltY)
+    this.floorplan.verschiebeAusstattung(el.id, ziel.x, ziel.y)
+    if (ziel.drehung !== (el.drehung ?? 0)) {
+      this.floorplan.dreheAusstattung(el.id, ziel.drehung)
+    }
+
+    this.view.draw()
+    return el
+  }
+
+  /**
+   * Zeichnet ein Vorschau-Zeichen in ein fremdes Canvas (W3) — für die Palette.
+   * Reicht nur durch; die Vorschrift steht im Zeichner, damit Vorschau und
+   * Grundriss nicht auseinanderlaufen können.
+   */
+  public zeichneVorschau(
+    ziel: CanvasRenderingContext2D,
+    vorlage: { typ: AusstattungTyp; breite: number; tiefe: number },
+    kasten: { x: number; y: number; breite: number; hoehe: number }
+  ): void {
+    this.view.zeichneVorschau(ziel, vorlage, kasten)
   }
 
   /**

@@ -60,7 +60,14 @@ export const PALETTE = {
     polster: '#C8703A',
     kabine: '#0F4C4A',
     topf: '#B9A583',
-    gruen: '#7C9A6B'
+    gruen: '#7C9A6B',
+    // W3 — NICHT aus uebersicht.html, sondern eine neue Darstellungs-
+    // entscheidung: die Behandlungsliege braucht einen eigenen Ton. Die
+    // vorhandenen Toene sind alle vergeben (Polster ist der Saeulen-Akzent,
+    // Sitz gehoert der Matte, Metall dem Geraet), und zwei gleich gefaerbte
+    // Koerper nebeneinander waeren im Blatt ein Koerper. Gedaempftes Blaugrau,
+    // weil Regeneration im Farbklima der Halle ruhig auftritt.
+    liege: '#4A6E8A'
   },
   dunkel: {
     buehneOben: '#161D1A',
@@ -86,7 +93,8 @@ export const PALETTE = {
     polster: '#D98A4E',
     kabine: '#2C7370',
     topf: '#6B5A44',
-    gruen: '#4E6B4C'
+    gruen: '#4E6B4C',
+    liege: '#6E93AE'
   }
 }
 
@@ -264,7 +272,14 @@ export const AUSSTATTUNG_STIL = {
   pflanze: { material: 'gruen', rund: true },
   kochfeld: { material: 'schrank' },
   aufzug: { material: 'kern' },
-  flaeche: { material: 'loggia' }
+  flaeche: { material: 'loggia' },
+  // ── W3 ──────────────────────────────────────────────────────────────────
+  // Ein Typ, der HIER fehlt, liefert aus `bauformFuer` ein `null` und wird
+  // stillschweigend nicht gezeichnet — im Grundriss steht er trotzdem. Genau
+  // diese halbe Kette prueft `tools/pruefe-palette.mjs`.
+  matte: { material: 'sitz' }, // weiche Auflage, Farbfamilie der Sitzflaechen
+  geraet: { material: 'metall' }, // Stahlrahmen
+  liege: { material: 'liege' }
 }
 
 /**

@@ -3910,11 +3910,11 @@ const PLAN = {
 };
 
 /* Hoehen aus src/three/ausstattung.ts, zur Bauzeit GELESEN statt abgeschrieben. */
-const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,"treppe":15,"wc":40,"waschbecken":85,"kochfeld":90,"pflanze":120,"aufzug":300,"flaeche":2},"koerper":{"tisch":6,"rundtisch":6}};
+const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,"treppe":15,"wc":40,"waschbecken":85,"kochfeld":90,"pflanze":120,"aufzug":300,"flaeche":2,"matte":2,"geraet":130,"liege":65},"koerper":{"tisch":6,"rundtisch":6,"liege":8}};
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "c8051b95fb22";
-const BAU_STEMPEL = "2026-07-26 15:08";
+const BAU_STEMPEL = "2026-07-26 15:44";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -5408,6 +5408,39 @@ class Room {
 
 /* ══════ model/floorplan.js ══════ */
 /**
+ * Was aus der Palette in den Grundriss gezogen werden kann (W3), samt seinem
+ * Standardmaß in cm.
+ *
+ * DIE MASSE SIND GESETZTE HANDELSMASSE, KEINE MESSWERTE. Ein neu hingestelltes
+ * Stück ist eine Annahme — es wird `quelle: 'gesetzt'` und im Grundriss
+ * gestrichelt gezeichnet. Die Zahlen sind trotzdem nicht beliebig: sie sind die
+ * verbreiteten Liefermaße der jeweiligen Ware, damit ein Raum, in den vier
+ * Liegen passen sollen, auch wirklich vier fasst.
+ *
+ * HIER UND NICHT IN DER OBERFLÄCHE, weil beide Auslieferungen (Planer und
+ * Doppelklick-Datei) dasselbe hinstellen müssen. Zwei Listen liefen
+ * auseinander, sobald jemand nur eine anfasst — und dann hiesse dieselbe Matte
+ * in der einen Welt 180 cm und in der anderen 200 cm.
+ *
+ * Reihenfolge = Reihenfolge in der Palette: erst das Vertraute (Stuhl, Tisch),
+ * dann das Neue. Der Nutzer hat Stühle und Tische ausdrücklich genannt.
+ */
+const AUSSTATTUNG_VORLAGEN = [
+    // Deckt sich mit den 144 gemessenen Stühlen der PDF (alle 45 × 45 cm) — ein
+    // neu gesetzter Stuhl soll neben einem gemessenen nicht auffallen.
+    { typ: 'stuhl', breite: 45, tiefe: 45 },
+    // Gängiges Büro-Schreibtischmaß. Die gemessenen Tische reichen von 50 bis
+    // 290 cm Breite; 160 × 80 liegt mittig und ist das, was man bestellt.
+    { typ: 'tisch', breite: 160, tiefe: 80 },
+    // Verbreitetes Handelsmaß einer Yoga-/Gymnastikmatte.
+    { typ: 'matte', breite: 180, tiefe: 60 },
+    // Stellfläche eines einzelnen Kraft-/Ausdauergeräts ohne Bedienfläche
+    // davor — die gehört dem Raum, nicht dem Gerät, und wäre hier erfunden.
+    { typ: 'geraet', breite: 120, tiefe: 80 },
+    // Verbreitetes Handelsmaß einer Massage-/Behandlungsliege.
+    { typ: 'liege', breite: 200, tiefe: 70 }
+];
+/**
  * Fassung des Speicherformats. Erhöhen, sobald ein Feld dazukommt, auf das sich
  * etwas VERLÄSST — nicht bei jeder Kleinigkeit.
  *
@@ -5751,17 +5784,53 @@ class Floorplan {
      *
      * FRÜHER STAND HIER, die Ausstattung sei „eine zusammenhängende Messung aus
      * der PDF, kein vom Nutzer Stück für Stück gepflegter Bestand" — als
-     * Begründung dafür, dass es keinen Einzel-Setter gibt. Diese Begründung ist
-     * überholt, seit der Nutzer Möbel verschieben darf. Sie stehen zu lassen
-     * hiesse, eine widerlegte Regel als Wahrheit im Code zu führen.
+     * Begründung dafür, dass es keinen Einzel-Setter gibt. W1.5 hat diese
+     * Begründung bereits als überholt gekennzeichnet, weil der Nutzer Möbel
+     * verschieben darf. Mit W3 ist sie vollends widerlegt: der Nutzer STELLT
+     * jetzt Stücke hin, einzeln, aus der Palette. Der Einzel-Setter heisst
+     * `fuegeAusstattungHinzu` und steht direkt darunter.
      *
-     * Was BLEIBT, ist der wahre Kern: die gemessenen Stücke sind Grundwahrheit
-     * aus der PDF und tragen `quelle: 'gemessen'`. Was der Nutzer anfasst, wird
-     * `'gesetzt'` und ist ab dann eine Annahme — sichtbar getrennt, damit nie
-     * eine Annahme als Aufmaß durchgeht.
+     * Diese Methode BLEIBT trotzdem, und zwar für das, wofür sie gedacht war:
+     * eine ganze Liste auf einmal übernehmen (Laden, Zurückspielen). Sie ersetzt
+     * den Bestand VOLLSTÄNDIG — wer ein einzelnes Stück hinzufügen will und dafür
+     * die ganze Liste durchreicht, vergibt bei jedem Aufruf alle Kennungen neu.
+     *
+     * Was ebenfalls BLEIBT, ist der wahre Kern der alten Regel: die gemessenen
+     * Stücke sind Grundwahrheit aus der PDF und tragen `quelle: 'gemessen'`. Was
+     * der Nutzer anfasst oder neu hinstellt, ist `'gesetzt'` und damit eine
+     * Annahme — sichtbar getrennt, damit nie eine Annahme als Aufmaß durchgeht.
      */
     setAusstattung(elemente) {
         this.ausstattung = this.uebernehmeAusstattung(elemente);
+    }
+    /**
+     * Stellt EIN Stück hin (W3) — der Einzel-Setter, den `setAusstattung` oben
+     * einmal ausdrücklich abgelehnt hat.
+     *
+     * `quelle: 'gesetzt'` ist FEST VERDRAHTET und nicht dem Aufrufer überlassen,
+     * aus demselben Grund wie bei `verschiebeAusstattung`: ein Stück, das zur
+     * Laufzeit entsteht, kann unmöglich aus der PDF stammen — dort steht das Büro,
+     * nicht die Halle im Betrieb. Es als Aufmaß zu führen wäre die eine Lüge, die
+     * dieses Projekt sich nicht leisten kann. Ein `beleg` wird deshalb auch nicht
+     * übernommen: es gibt keinen.
+     *
+     * Die Kennung wird gegen die BEREITS VERGEBENEN geprüft, nicht gegen eine
+     * leere Menge. Zwei gleiche Stühle an derselben Stelle ergäben sonst zweimal
+     * dieselbe Kennung, und ab da zöge, drehte und löschte jeder Griff am zweiten
+     * in Wahrheit den ersten.
+     *
+     * Gibt das fertige Stück zurück — der Aufrufer braucht seine Kennung, um es
+     * gleich einzurasten (`Floorplanner.stueckAblegen`).
+     */
+    fuegeAusstattungHinzu(neu) {
+        const vergeben = new Set(this.ausstattung.map((el) => el.id));
+        const el = {
+            ...neu,
+            id: eindeutigeKennung(neu.id || kennungAusAusstattung(neu), vergeben),
+            quelle: 'gesetzt'
+        };
+        this.ausstattung.push(el);
+        return el;
     }
     /**
      * Macht aus dem, was in einer Datei stand, vollständige Elemente: jede fehlende
@@ -6206,6 +6275,27 @@ class FloorplannerView {
         this.floorplan = floorplan;
         this.viewmodel = viewmodel;
         this.canvas = canvas;
+        /**
+         * Abbildung Welt (cm) → Bild (Pixel) für die Ausstattungs-Zeichen (W3).
+         *
+         * Normalerweise ist das schlicht die des Zeichners. Für die VORSCHAU in der
+         * Palette wird sie kurz ausgetauscht, damit DIESELBE Zeichenvorschrift in ein
+         * kleines Kästchen malt statt in den Grundriss. Der Umweg lohnt genau
+         * deswegen: eine nachgemalte Vorschau wäre eine zweite Wahrheit über das
+         * Aussehen eines Zeichens, und der Nutzer zöge irgendwann ein Stück in den
+         * Plan, das dort anders aussieht als in der Leiste.
+         *
+         * `null` heisst: der Zeichner selbst. Der Zweig kostet einen Vergleich je
+         * Punkt und läuft nur in `ausPunkt`/`ausEllipse` — nicht in der Wand- oder
+         * Raster-Ausgabe, die um Grössenordnungen mehr Punkte hat.
+         */
+        this.abbild = null;
+        /**
+         * Schon gemeldete unbekannte Typen (W3). Instanz-gebunden und nicht statisch:
+         * zwei Zeichner nebeneinander (Planer und eine zweite Ansicht) sollen beide
+         * einmal melden — die Meldung gehört zu dem, was DIESE Ansicht zeichnet.
+         */
+        this.gemeldeteTypen = new Set();
         this.canvasElement = document.getElementById(canvas);
         this.context = this.canvasElement.getContext('2d');
         // Bind resize handler for later cleanup
@@ -6438,10 +6528,68 @@ class FloorplannerView {
         const w = el.drehung ?? 0;
         const cos = Math.cos(w);
         const sin = Math.sin(w);
-        return [
-            this.viewmodel.convertX(el.x + dx * cos - dy * sin),
-            this.viewmodel.convertY(el.y + dx * sin + dy * cos)
-        ];
+        return [this.bildX(el.x + dx * cos - dy * sin), this.bildY(el.y + dx * sin + dy * cos)];
+    }
+    /** Welt-x (cm) → Bild-x (Pixel), je nach gesetzter Abbildung. */
+    bildX(cm) {
+        return this.abbild ? this.abbild.x(cm) : this.viewmodel.convertX(cm);
+    }
+    /** Welt-y (cm) → Bild-y (Pixel), je nach gesetzter Abbildung. */
+    bildY(cm) {
+        return this.abbild ? this.abbild.y(cm) : this.viewmodel.convertY(cm);
+    }
+    /** Bildpunkte je cm, je nach gesetzter Abbildung. */
+    bildProCm() {
+        return this.abbild ? this.abbild.proCm() : this.viewmodel.pixelProCm();
+    }
+    /**
+     * Zeichnet EIN Ausstattungs-Zeichen als Vorschau in ein beliebiges Kästchen
+     * eines beliebigen Canvas (W3) — für die Palette.
+     *
+     * Gezeichnet wird mit `zeichneAusstattung`, also mit exakt der Vorschrift des
+     * Grundrisses; getauscht wird nur die Abbildung. Immer mit `detail = true`:
+     * die Detailstufe des Plans hängt am Zoom, das Kästchen hat keinen — und ohne
+     * Details wären Stuhl, Gerät und Liege drei gleiche Rechtecke.
+     *
+     * GESTRICHELT, weil das hingestellte Stück gestrichelt sein WIRD: die Palette
+     * erzeugt `quelle: 'gesetzt'`, und eine durchgezogene Vorschau verspräche ein
+     * Aufmaß, das sie nicht liefern kann.
+     *
+     * @param ziel   Zeichenkontext des Vorschau-Canvas
+     * @param vorlage Art und Standardmaß in cm (aus `AUSSTATTUNG_VORLAGEN`)
+     * @param kasten Rechteck im Ziel-Canvas, in dem das Zeichen sitzen soll
+     */
+    zeichneVorschau(ziel, vorlage, kasten) {
+        // Einpassen mit Rand: das Zeichen soll im Kästchen stehen, nicht an seinen
+        // Kanten kleben. Der kleinere der beiden Massstäbe gewinnt, sonst ragte eine
+        // 200 cm lange Liege seitlich heraus.
+        const proCm = Math.min(kasten.breite / vorlage.breite, kasten.hoehe / vorlage.tiefe) * 0.82;
+        const mx = kasten.x + kasten.breite / 2;
+        const my = kasten.y + kasten.hoehe / 2;
+        const vorherKontext = this.context;
+        const vorherAbbild = this.abbild;
+        this.context = ziel;
+        this.abbild = { x: (cm) => mx + cm * proCm, y: (cm) => my + cm * proCm, proCm: () => proCm };
+        ziel.setLineDash(GESETZT_STRICH);
+        try {
+            this.zeichneAusstattung({
+                id: 'vorschau',
+                quelle: 'gesetzt',
+                typ: vorlage.typ,
+                x: 0,
+                y: 0,
+                breite: vorlage.breite,
+                tiefe: vorlage.tiefe
+            }, true);
+        }
+        finally {
+            // Ohne dieses Zurücksetzen malte der nächste Grundriss-Durchlauf in den
+            // Vorschau-Canvas — ein Fehler, der erst beim nächsten Neuzeichnen
+            // sichtbar würde und dann schwer einer Palette zuzuordnen wäre.
+            ziel.setLineDash([]);
+            this.context = vorherKontext;
+            this.abbild = vorherAbbild;
+        }
     }
     /** Umriss-Rechteck des Elements, wahlweise gefüllt. */
     ausRechteck(el, fuellung, rand = true) {
@@ -6455,6 +6603,50 @@ class FloorplannerView {
         ];
         this.drawPolygon(ecken.map((p) => p[0]), ecken.map((p) => p[1]), fuellung !== null, fuellung, rand, ausstattungLinie, ausstattungLinienBreite);
     }
+    /**
+     * Umriss mit abgerundeten Ecken (W3) — das Zeichen der Matte.
+     *
+     * Eigene Vorschrift statt `ausRechteck`, weil eine ausgerollte Matte im Plan
+     * genau daran zu erkennen ist: sie hat keine scharfen Ecken. Der Radius ist
+     * RELATIV zur kürzeren Seite und nicht in cm festgelegt — ein fester Radius
+     * verschluckte bei einer schmalen Matte die ganze Kante und wäre bei einer
+     * breiten kaum zu sehen.
+     *
+     * Die Rundung entsteht aus quadratischen Kurven über den Eckpunkt. Auch hier
+     * wird in WELTkoordinaten gedreht (`ausPunkt`) und nicht über `context.rotate`,
+     * damit das Zeichen wie jedes andere über dieselbe Abbildung läuft.
+     */
+    ausRundRechteck(el, fuellung) {
+        const hb = el.breite / 2;
+        const ht = el.tiefe / 2;
+        const r = Math.min(hb, ht) * 0.35;
+        const p = (dx, dy) => this.ausPunkt(el, dx, dy);
+        // Ein Rundgang, vier Abschnitte: bis kurz vor die Ecke gerade, dann ÜBER
+        // die Ecke hinweg gekrümmt zum Anfang der nächsten Geraden. Ein Zug für
+        // Füllung UND Rand — zwei getrennte Pfade wären zwei Umrisse, die bei
+        // gestricheltem Rand sichtbar auseinanderlägen.
+        const weg = [
+            { bis: p(hb - r, -ht), ecke: p(hb, -ht), nach: p(hb, -ht + r) },
+            { bis: p(hb, ht - r), ecke: p(hb, ht), nach: p(hb - r, ht) },
+            { bis: p(-hb + r, ht), ecke: p(-hb, ht), nach: p(-hb, ht - r) },
+            { bis: p(-hb, -ht + r), ecke: p(-hb, -ht), nach: p(-hb + r, -ht) }
+        ];
+        const anfang = p(-hb + r, -ht);
+        this.context.beginPath();
+        this.context.moveTo(anfang[0], anfang[1]);
+        for (const abschnitt of weg) {
+            this.context.lineTo(abschnitt.bis[0], abschnitt.bis[1]);
+            this.context.quadraticCurveTo(abschnitt.ecke[0], abschnitt.ecke[1], abschnitt.nach[0], abschnitt.nach[1]);
+        }
+        this.context.closePath();
+        if (fuellung !== null) {
+            this.context.fillStyle = fuellung;
+            this.context.fill();
+        }
+        this.context.lineWidth = ausstattungLinienBreite;
+        this.context.strokeStyle = ausstattungLinie;
+        this.context.stroke();
+    }
     /** Linie zwischen zwei Punkten im lokalen System des Elements. */
     ausLinie(el, dx1, dy1, dx2, dy2) {
         const a = this.ausPunkt(el, dx1, dy1);
@@ -6463,7 +6655,7 @@ class FloorplannerView {
     }
     /** Ellipse im lokalen System (Mittelpunkt dx/dy, Halbachsen in cm). */
     ausEllipse(el, dx, dy, rx, ry, fuellung) {
-        const proCm = this.viewmodel.pixelProCm();
+        const proCm = this.bildProCm();
         const m = this.ausPunkt(el, dx, dy);
         this.context.beginPath();
         this.context.ellipse(m[0], m[1], rx * proCm, ry * proCm, el.drehung ?? 0, 0, 2 * Math.PI);
@@ -6554,11 +6746,65 @@ class FloorplannerView {
                     this.ausEllipse(el, 0, 0, hb * 0.62, ht * 0.52, null);
                 }
                 return;
+            // ── W3 ────────────────────────────────────────────────────────────────
+            case 'matte':
+                // Eine Matte ist eine FLÄCHE, kein Polster mit Rand: ein Umriss, sonst
+                // nichts. Abgerundet, weil eine ausgerollte Matte genau daran zu
+                // erkennen ist. Die Rundung gehört NICHT in die Detailstufe — sie ist
+                // das Zeichen selbst und nicht seine Verzierung.
+                this.ausRundRechteck(el, ausstattungFuellung);
+                return;
+            case 'geraet':
+                this.ausRechteck(el, ausstattungFuellung);
+                // Die Vorderseite ist die Seite, auf die man steigt oder sich setzt.
+                // Sie wird IMMER gezeichnet, auch ohne Detailstufe — anders als die
+                // Stuhllehne. Ein Gerät, dessen Ausrichtung man nicht sieht, ist im
+                // Plan wertlos: dann weiss niemand, ob davor noch der Meter Platz ist,
+                // den man zum Benutzen braucht. Zwei Striche statt einem, damit die
+                // Vorderkante sich vom blossen Umriss abhebt.
+                this.ausLinie(el, -hb, ht, hb, ht);
+                this.ausLinie(el, -hb, ht * 0.72, hb, ht * 0.72);
+                return;
+            case 'liege':
+                this.ausRechteck(el, ausstattungFuellung);
+                if (detail) {
+                    // Kopfende (lokal -x): der Querstrich sagt, wo der Kopf liegt, und
+                    // damit auf welcher Seite die Behandlerin steht. Ein Strich, kein
+                    // zweiter Körper — die Doktrin gilt hier wie überall.
+                    this.ausLinie(el, -hb * 0.66, -ht, -hb * 0.66, ht);
+                }
+                return;
             case 'tisch':
+                this.ausRechteck(el, ausstattungFuellung);
+                return;
             default:
+                // FAIL-OPEN, ABER NICHT MEHR STUMM.
+                //
+                // Dieser Zweig war die teuerste Falle des Projekts: ein Typ, dessen
+                // Kette nur halb verdrahtet ist (Union ja, Höhe/Stil nein), sieht hier
+                // völlig richtig aus — ein sauberes Rechteck — und ist in Axonometrie,
+                // 3D und Export unsichtbar, weil die alle fail-closed sind. Man sucht
+                // dann in der Axonometrie nach einem Fehler, der im Grundriss sitzt.
+                //
+                // Gezeichnet wird trotzdem weiter: die Ansicht soll nicht sterben, nur
+                // weil ein Zeichen fehlt. Aber sie sagt es — EINMAL je Typ, sonst füllt
+                // eine Zeichenschleife mit 60 Bildern je Sekunde die Konsole so schnell,
+                // dass die Meldung selbst zum Rauschen wird.
+                this.meldeUnbekanntenTyp(el.typ);
                 this.ausRechteck(el, ausstattungFuellung);
                 return;
         }
+    }
+    /** Meldet einen Typ ohne eigene Zeichenvorschrift genau einmal. */
+    meldeUnbekanntenTyp(typ) {
+        if (this.gemeldeteTypen.has(typ)) {
+            return;
+        }
+        this.gemeldeteTypen.add(typ);
+        console.warn(`Ausstattung: keine Zeichenvorschrift für Typ "${typ}" — als schlichtes Rechteck ` +
+            `gezeichnet. Vollständig wird ein Typ erst mit Eintrag in AusstattungTyp, OBERKANTE_CM, ` +
+            `FARBE, AUSSTATTUNG_NAME, zeichneAusstattung, AUSSTATTUNG_STIL und ERLAUBTE_TYPEN — ` +
+            `fehlt einer davon, ist das Stück hier sichtbar und in der Axonometrie nicht.`);
     }
     /** */
     drawCorner(corner) {
@@ -6721,7 +6967,14 @@ const LANGDRUCK_MS = 500;
  * und beim Aufsetzen fast immer ein paar Pixel rutscht.
  */
 const FINGER_WACKEL_PX = 10;
-/** Deutsche Namen der Ausstattungs-Zeichen für die Rückfrage (E1). */
+/**
+ * Deutsche Namen der Ausstattungs-Zeichen für die Rückfrage (E1) — und seit W3
+ * auch für die Beschriftung der Palette.
+ *
+ * Ausdrücklich EINE Liste für beides: hiesse dasselbe Zeichen in der Palette
+ * „Gerät" und in der Lösch-Rückfrage „Fitnessgerät", müsste der Nutzer beim
+ * Bestätigen raten, ob er dasselbe wegwirft, das er hingestellt hat.
+ */
 const AUSSTATTUNG_NAME = {
     tisch: 'Tisch',
     rundtisch: 'Runder Tisch',
@@ -6733,7 +6986,10 @@ const AUSSTATTUNG_NAME = {
     kochfeld: 'Kochfeld',
     pflanze: 'Pflanze',
     aufzug: 'Aufzug',
-    flaeche: 'Fläche'
+    flaeche: 'Fläche',
+    matte: 'Matte',
+    geraet: 'Fitnessgerät',
+    liege: 'Liege'
 };
 /** how much will we move a corner to make a wall axis aligned (cm) */
 const snapTolerance = 25;
@@ -7639,6 +7895,81 @@ class Floorplanner {
             drehung
         };
     }
+    // --------------------------------------------- Stück aus der Palette (W3)
+    /**
+     * Legt EIN neues Stück im Grundriss ab — der Abschluss des Zuges aus der
+     * Palette in den Plan.
+     *
+     * Es entsteht mit `quelle: 'gesetzt'` (fest verdrahtet in
+     * `Floorplan.fuegeAusstattungHinzu`), bekommt eine frische Kennung und wird
+     * dann durch DIESELBE Einrast-Rechnung geschickt wie ein gezogenes Stück
+     * (`moebelEinrasten`). Das ist der ganze Punkt: ein abgelegtes Stück soll sich
+     * nicht anders verhalten als ein gezogenes — zwei Einrast-Wege wären zwei
+     * Ergebnisse für dieselbe Bewegung.
+     *
+     * AUSSERHALB DER ZEICHENFLÄCHE ENTSTEHT NICHTS, und zwar geprüft BEVOR der
+     * Schnappschuss gezogen wird: ein Rückgängig-Schritt, der nichts zurücknimmt,
+     * wäre ein Klick ins Leere, den der Nutzer erst beim nächsten Strg+Z bemerkt.
+     * Die Prüfung sitzt hier im KERN und nicht in der Oberfläche, damit beide
+     * Auslieferungen dieselbe Grenze haben.
+     *
+     * KEINE Modus-Prüfung: die Palette ist eine eigene Geste und hat mit dem
+     * gewählten Werkzeug nichts zu tun. Ein „geht im Zeichnen-Werkzeug nicht"
+     * wäre ein stummer Zustand, in dem das Ziehen wirkungslos bliebe, ohne dass
+     * jemand sagt, warum.
+     *
+     * @param bildX Ablagepunkt in Canvas-Pixeln (links oben = 0,0)
+     * @param bildY dito
+     * @param vorlage Art und Standardmaß in cm (aus `AUSSTATTUNG_VORLAGEN`)
+     * @returns das abgelegte Stück oder `null`, wenn nichts entstanden ist
+     */
+    stueckAblegen(bildX, bildY, vorlage) {
+        if (!Number.isFinite(bildX) ||
+            !Number.isFinite(bildY) ||
+            bildX < 0 ||
+            bildY < 0 ||
+            bildX > this.canvasElement.width ||
+            bildY > this.canvasElement.height) {
+            return null;
+        }
+        if (!(vorlage.breite > 0) || !(vorlage.tiefe > 0)) {
+            // Ein Stück ohne Ausdehnung wäre unsichtbar und nicht mehr greifbar —
+            // dieselbe Strenge wie im Export (`tools/export_blueprint.py`).
+            return null;
+        }
+        // Umkehrung von `convertX`/`convertY`. Bewusst hier ausgeschrieben und
+        // nicht als zweite öffentliche Methode: es gibt genau diesen einen Aufrufer.
+        const weltX = bildX * this.cmPerPixel + this.originX * this.cmPerPixel;
+        const weltY = bildY * this.cmPerPixel + this.originY * this.cmPerPixel;
+        // Der Schnappschuss GENAU EINMAL und erst jetzt — das Ablegen ist EIN
+        // Rückgängig-Schritt, nicht drei (hinstellen, verschieben, drehen).
+        this.undoManager?.snapshot();
+        const el = this.floorplan.fuegeAusstattungHinzu({
+            typ: vorlage.typ,
+            x: Math.round(weltX),
+            y: Math.round(weltY),
+            breite: vorlage.breite,
+            tiefe: vorlage.tiefe
+        });
+        // Einrasten NACH dem Anlegen: `moebelEinrasten` braucht Breite, Tiefe und
+        // Drehung des fertigen Stücks, um zu wissen, wie weit sein Rand von der
+        // Mitte weg ist.
+        const ziel = this.moebelEinrasten(el, weltX, weltY);
+        this.floorplan.verschiebeAusstattung(el.id, ziel.x, ziel.y);
+        if (ziel.drehung !== (el.drehung ?? 0)) {
+            this.floorplan.dreheAusstattung(el.id, ziel.drehung);
+        }
+        this.view.draw();
+        return el;
+    }
+    /**
+     * Zeichnet ein Vorschau-Zeichen in ein fremdes Canvas (W3) — für die Palette.
+     * Reicht nur durch; die Vorschrift steht im Zeichner, damit Vorschau und
+     * Grundriss nicht auseinanderlaufen können.
+     */
+    zeichneVorschau(ziel, vorlage, kasten) {
+        this.view.zeichneVorschau(ziel, vorlage, kasten);
+    }
     /**
      * Der Zeiger zeigt, dass hier etwas zu greifen ist (W2) — dieselbe Sprache,
      * die die Doppelklick-Datei beim Drehen des Blattes schon spricht
@@ -8059,7 +8390,14 @@ const PALETTE = {
     polster: '#C8703A',
     kabine: '#0F4C4A',
     topf: '#B9A583',
-    gruen: '#7C9A6B'
+    gruen: '#7C9A6B',
+    // W3 — NICHT aus uebersicht.html, sondern eine neue Darstellungs-
+    // entscheidung: die Behandlungsliege braucht einen eigenen Ton. Die
+    // vorhandenen Toene sind alle vergeben (Polster ist der Saeulen-Akzent,
+    // Sitz gehoert der Matte, Metall dem Geraet), und zwei gleich gefaerbte
+    // Koerper nebeneinander waeren im Blatt ein Koerper. Gedaempftes Blaugrau,
+    // weil Regeneration im Farbklima der Halle ruhig auftritt.
+    liege: '#4A6E8A'
   },
   dunkel: {
     buehneOben: '#161D1A',
@@ -8085,7 +8423,8 @@ const PALETTE = {
     polster: '#D98A4E',
     kabine: '#2C7370',
     topf: '#6B5A44',
-    gruen: '#4E6B4C'
+    gruen: '#4E6B4C',
+    liege: '#6E93AE'
   }
 }
 
@@ -8263,7 +8602,14 @@ const AUSSTATTUNG_STIL = {
   pflanze: { material: 'gruen', rund: true },
   kochfeld: { material: 'schrank' },
   aufzug: { material: 'kern' },
-  flaeche: { material: 'loggia' }
+  flaeche: { material: 'loggia' },
+  // ── W3 ──────────────────────────────────────────────────────────────────
+  // Ein Typ, der HIER fehlt, liefert aus `bauformFuer` ein `null` und wird
+  // stillschweigend nicht gezeichnet — im Grundriss steht er trotzdem. Genau
+  // diese halbe Kette prueft `tools/pruefe-palette.mjs`.
+  matte: { material: 'sitz' }, // weiche Auflage, Farbfamilie der Sitzflaechen
+  geraet: { material: 'metall' }, // Stahlrahmen
+  liege: { material: 'liege' }
 }
 
 /**
