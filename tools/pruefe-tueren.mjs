@@ -776,10 +776,23 @@ async function pruefeWelt(page, name, hilfen) {
   await page.evaluate(() => window.__tf.undoJetzt())
   await schlaf(page, 500)
   await page.evaluate(() => window.__tf.versoehnung(true))
-  const zurueckgesetzt = await page.evaluate((id) => window.__tf.oeffnung(id), tuer.id)
+  const zurueckgesetzt = await page.evaluate((id) => {
+    const o = window.__tf.oeffnung(id)
+    const w = window.__tf.waende().find(function (v) { return v.id === (o ? o.wandId : '') })
+    return { o, laenge: w ? window.__tf.laenge(w) : null, waende: window.__tf.zahlen().waende }
+  }, tuer.id)
   pruefe(
-    zurueckgesetzt !== null && zurueckgesetzt.wandId === wand.id,
-    `d) Rueckgaengig stellt die ungeteilte Wand samt Tuer wieder her ("${zurueckgesetzt ? zurueckgesetzt.wandId : 'null'}")`
+    zurueckgesetzt.o !== null && zurueckgesetzt.o.wandId === wand.id,
+    `d) Rueckgaengig stellt die Tuer an ihrer Wand wieder her ("${zurueckgesetzt.o ? zurueckgesetzt.o.wandId : 'null'}")`
+  )
+  // Die LAENGE mitzupruefen ist nicht Beiwerk: die Wand behaelt beim Teilen
+  // ihre Kennung. Eine Pruefung, die nur die Kennung liest, bestuende auch
+  // dann, wenn das Rueckgaengig die Teilung gar nicht zurueckgenommen hat —
+  // beim ersten Lauf dieses Gates war genau das der Fall (der Messzugang der
+  // Doppelklick-Datei zog vor dem Teilen keinen Schnappschuss).
+  pruefe(
+    zurueckgesetzt.laenge !== null && Math.abs(zurueckgesetzt.laenge - wand.laenge) < 1,
+    `d) und die Wand ist wirklich wieder UNGETEILT (${zurueckgesetzt.laenge === null ? '?' : zurueckgesetzt.laenge.toFixed(0)} von ${wand.laenge.toFixed(0)} cm)`
   )
 
   const mit = await page.evaluate(
