@@ -5,7 +5,7 @@
  * Aufruf:
  *   node tools/pruefe-axonometrie.mjs [--plan halle400] [--port 3301]
  *
- * Fuenf Gates. Exit 0 nur, wenn alle bestehen.
+ * Sechs Gates. Exit 0 nur, wenn alle bestehen.
  *
  *   G1  Die Raumableitung `src/axo/axo-zyklen.js` liefert GENAU dasselbe wie
  *       `floorplan.getRooms()` im echten Planer. Das ist der Beweis, dass die
@@ -13,8 +13,9 @@
  *       nur, wenn ein Planer erreichbar ist (`node tools/serve-local.mjs`);
  *       ohne ihn meldet das Gate ehrlich "uebersprungen" statt "gruen".
  *   G2  Die Szene enthaelt alle gemessenen Daten: 25 Raumflaechen, 18
- *       Namens-Anker, 9 aufgeloeste Saeulen und jedes der 289 Ausstattungs-
- *       Elemente mit mindestens einem Koerper.
+ *       Namens-Anker, 9 aufgeloeste Saeulen und GENAU EINEN Koerper je
+ *       gemessenem Ausstattungs-Element — nicht weniger (Verlust) und nicht
+ *       mehr (erfundene Teile wie Lehnen oder Treppenstufen).
  *   G3  Das Bild ist wirklich gezeichnet — Farbvielfalt weit ueber dem
  *       Hintergrundverlauf, und die Amber-Akzentfarbe der Saeulen kommt vor.
  *   G4  GEGENPROBE: dieselbe Messung an einer Szene OHNE Moebel und OHNE
@@ -29,6 +30,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { liesHoehen } from './lies-hoehen.mjs'
 
 const HIER = path.dirname(fileURLToPath(import.meta.url))
 const WURZEL = path.resolve(HIER, '..')
@@ -43,6 +45,7 @@ const PORT = arg('--port', '3301')
 
 const planPfad = path.join(WURZEL, 'app/public/plaene', `${PLAN}.json`)
 const plan = JSON.parse(fs.readFileSync(planPfad, 'utf8'))
+const HOEHEN = liesHoehen()
 const fp = plan.floorplan ?? plan
 
 const { chromium } = (await import(process.env.PLAYWRIGHT_PFAD || PW_STANDARD)).default
@@ -109,7 +112,7 @@ try {
 import { baueSzene } from '/src/axo/axo-szene.js'
 import { erzeugeAxonometrie } from '/src/axo/axo-zeichnen.js'
 const plan = await (await fetch('/plan.json')).json()
-const szene = baueSzene(plan, { wandDicke: 12.5 })
+const szene = baueSzene(plan, { wandDicke: 12.5, hoehen: ${JSON.stringify(HOEHEN)} })
 if (!${mitMoebeln}) szene.moebel = []
 const axo = erzeugeAxonometrie(document.getElementById('c'), szene, { namen: ${mitNamen ? "'alle'" : "'aus'"} })
 axo.passeAn()
@@ -164,11 +167,17 @@ globalThis.__blick = (az, el) => axo.setzeBlick(az, el)
 
   const voll = await oeffne(true, true)
   const zahlen = await voll.s.evaluate(() => globalThis.__zahlen)
-  const g2 = zahlen.boeden === 25 && zahlen.marken === 18 && zahlen.saeulen === 9 && zahlen.moebel > 400
+  // Jedes gemessene Ausstattungs-Element wird GENAU EINMAL gezeichnet. Die
+  // Gleichheit ist schaerfer als eine Untergrenze: sie faellt sowohl auf, wenn
+  // Elemente verloren gehen, als auch, wenn jemand wieder anfaengt, aus einem
+  // Element mehrere Koerper zu erfinden (Lehnen, Stufen, Beine).
+  const elemente = (fp.ausstattung || []).length
+  const g2 =
+    zahlen.boeden === 25 && zahlen.marken === 18 && zahlen.saeulen === 9 && zahlen.moebel === elemente
   melde(
     'G2 Szene vollstaendig',
     g2,
-    `${zahlen.boeden} Raumflaechen · ${zahlen.waende} Wandstuecke · ${zahlen.moebel} Moebelkoerper · ${zahlen.marken} Namen · ${zahlen.saeulen}/9 Saeulen`
+    `${zahlen.boeden} Raumflaechen · ${zahlen.waende} Wandstuecke · ${zahlen.moebel}/${elemente} Ausstattung · ${zahlen.marken} Namen · ${zahlen.saeulen}/9 Saeulen`
   )
 
   const bildVoll = await messeBild(voll.s)

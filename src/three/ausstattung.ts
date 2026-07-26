@@ -35,7 +35,7 @@ import type { AusstattungElement, AusstattungTyp } from '../model/floorplan'
  * (siehe Klassen-Kopf). Grundlage sind übliche Möbel- und Sanitärmaße; die
  * Quelle steht je Zeile.
  */
-const OBERKANTE_CM: Record<AusstattungTyp, number> = {
+export const OBERKANTE_CM: Record<AusstattungTyp, number> = {
   // Feste Arbeitshöhe nach DIN EN 527-1 (Büroarbeitstisch).
   tisch: 74,
   // Gleiche Arbeitshöhe — die Loggia-Tische sind Sitz-, keine Stehtische.
@@ -79,7 +79,7 @@ const OBERKANTE_CM: Record<AusstattungTyp, number> = {
  * jedes Bein wäre erfunden. Alle übrigen Typen stehen auf dem Boden und
  * brauchen keinen Eintrag — ihre Körperhöhe IST ihre Oberkante.
  */
-const KOERPER_CM: Partial<Record<AusstattungTyp, number>> = {
+export const KOERPER_CM: Partial<Record<AusstattungTyp, number>> = {
   tisch: 6,
   rundtisch: 6
 }

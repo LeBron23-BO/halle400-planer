@@ -116,23 +116,31 @@ export const DARSTELLUNGSHOEHE = {
   boden: 0.1, // Bodenplatte, traegt den Farbton des Raums
   wandAussen: 1.16, // Schnitthoehe Aussenhuelle
   wandInnen: 0.94, // Schnitthoehe Trenn- und Flurwaende
-  kern: 2.45, // Aufzug/Treppenhaus ragen bewusst durch den Schnitt
-  tisch: 0.72,
-  platte: 0.05,
-  sitz: 0.44,
-  lehne: 0.8,
-  polster: 0.38,
-  polsterLehne: 0.7,
-  schrank: 1.72,
-  stellwand: 1.45, // schmale Schraenke (<= 30 cm tief) sind Stellwaende
-  kabine: 2.05,
-  topf: 0.42,
-  krone: 0.72,
-  becken: 0.85,
-  wc: 0.42,
-  kochfeld: 0.9,
-  loggia: 0.04 // flache Auflage auf dem Boden
+  kern: 3.0 // Aufzugsschacht, durchgehend bis Oberkante Wand
 }
+
+/* ── Ausstattungs-Hoehen kommen NICHT von hier ────────────────────────
+   Sie stehen in `src/three/ausstattung.ts` (OBERKANTE_CM / KOERPER_CM) und
+   werden von dort uebernommen — die 3D-Ansicht benutzt dieselbe Tabelle.
+   Diese Datei setzt keine zweite daneben.
+
+   Das ist mehr als Ordnungsliebe. Die Tabelle traegt eine ausformulierte
+   Doktrin, die beim ersten Entwurf dieser Axonometrie verletzt wurde:
+
+     · Der Stuhl ist NUR die Sitzflaeche (45 cm, DIN EN 1335). Eine Rueckenlehne
+       waere "eine Formaussage, die der Plan nicht traegt" — der erste Entwurf
+       hatte 144 Lehnen erfunden.
+     · Die Treppe ist NUR der Antritt (15 cm). Weder Geschosshoehe noch
+       Stufenzahl stehen in einem Grundriss; der erste Entwurf liess sie in
+       neun Stufen ansteigen und behauptete damit eine Steigung, die niemand
+       gemessen hat.
+     · Der Tisch ist die PLATTE auf Arbeitshoehe (6 cm auf 74 cm), kein
+       Vollkoerper — sonst stellt ein 290x350-Konferenztisch den halben Raum zu.
+
+   Frei bleibt allein die FARBE: sie ist eine Optik-Entscheidung dieser
+   Ansicht, kein Messwert. Die 3D-Ansicht faerbt blaustichig, damit ihre
+   eigenen Pruefungen Moebel von Waenden trennen koennen; die Axonometrie
+   braucht dafuer das warme Klima der Vorlage. */
 
 /* ══════════════════════════════════════════════════════════════════
    3 · PROJEKTION UND LICHT              [uebersicht.html:506,547-558]
@@ -237,44 +245,52 @@ export const BESCHRIFTUNG = {
    kennt nur EIN Grundkoerper-Primitiv (das extrudierte Vieleck), ein Kasten
    ist dessen Sonderfall mit vier Ecken. */
 
-/** @typedef {{material:string, y0:number, y1:number, rund?:boolean, teil?:string}} Bauform */
+/** @typedef {{material:string, y0:number, y1:number, rund?:boolean}} Bauform */
 
-/** Zuordnung Typ -> Bauform. Sonderfaelle loest `bauformFuer` ueber `text`. */
+/**
+ * Farbe und Umriss je Ausstattungs-Typ — die HOEHE steht bewusst nicht hier.
+ * `rund: true` heisst: als Vieleck statt als Kasten zeichnen (der Renderer
+ * kennt nur ein Primitiv, das ausgezogene Vieleck; ein Kasten ist dessen
+ * Sonderfall mit vier Ecken).
+ */
 export const AUSSTATTUNG_STIL = {
-  treppe: { material: 'stufe', y0: 0, y1: 1.4, teil: 'stufen' },
-  wc: { material: 'schrank', y0: 0, y1: DARSTELLUNGSHOEHE.wc, rund: true },
-  waschbecken: { material: 'schrank', y0: 0, y1: DARSTELLUNGSHOEHE.becken },
-  tisch: { material: 'holz', y0: DARSTELLUNGSHOEHE.tisch, y1: DARSTELLUNGSHOEHE.tisch + DARSTELLUNGSHOEHE.platte, teil: 'tisch' },
-  rundtisch: { material: 'holz', y0: DARSTELLUNGSHOEHE.tisch, y1: DARSTELLUNGSHOEHE.tisch + DARSTELLUNGSHOEHE.platte, rund: true, teil: 'tisch' },
-  stuhl: { material: 'sitz', y0: 0, y1: DARSTELLUNGSHOEHE.sitz, teil: 'stuhl' },
-  schrank: { material: 'schrank', y0: 0, y1: DARSTELLUNGSHOEHE.schrank },
-  pflanze: { material: 'gruen', y0: 0, y1: DARSTELLUNGSHOEHE.topf + DARSTELLUNGSHOEHE.krone, rund: true, teil: 'pflanze' },
-  kochfeld: { material: 'schrank', y0: 0, y1: DARSTELLUNGSHOEHE.kochfeld },
-  flaeche: { material: 'loggia', y0: 0, y1: DARSTELLUNGSHOEHE.loggia }
+  treppe: { material: 'stufe' },
+  wc: { material: 'schrank', rund: true },
+  waschbecken: { material: 'schrank' },
+  tisch: { material: 'holz' },
+  rundtisch: { material: 'holz', rund: true },
+  stuhl: { material: 'sitz' },
+  schrank: { material: 'schrank' },
+  pflanze: { material: 'gruen', rund: true },
+  kochfeld: { material: 'schrank' },
+  aufzug: { material: 'kern' },
+  flaeche: { material: 'loggia' }
 }
 
 /**
- * Bauform eines Elements — mit den Sonderfaellen, die erst der Blick in die
- * `text`-Felder zeigt: unter `rundtisch` stecken auch 'Lounge-Sessel' und
- * 'Sessel' (Sitzmoebel, kein Tisch), unter `schrank` auch 'Stellwand' und
- * 'Regal'. Eine Stellwand ist 20 cm tief und 1,45 m hoch, eine Schrankzeile
- * 35 cm tief und 1,72 m — als gleicher Kasten gezeichnet saehe der Raum
- * zugestellt aus, wo in Wirklichkeit nur eine Trennscheibe steht.
+ * Bauform eines Elements: Umriss und Farbe von hier, Hoehe aus der Tabelle des
+ * Projekts (`src/three/ausstattung.ts`), die der Aufrufer hereinreicht.
+ *
+ * Ein Typ ohne Hoehen-Eintrag wird NICHT gezeichnet — genauso haelt es die
+ * 3D-Ansicht ("lieber nichts zeichnen als einen erfundenen Koerper").
+ *
  * @param {{typ:string,text?:string|null,tiefe:number,breite:number}} el
- * @returns {Bauform}
+ * @param {{oberkante:Record<string,number>, koerper:Record<string,number>}} hoehen in cm
+ * @returns {Bauform|null}
  */
-export function bauformFuer(el) {
+export function bauformFuer(el, hoehen) {
   const stil = AUSSTATTUNG_STIL[el.typ]
-  if (!stil) return { material: 'schrank', y0: 0, y1: 0.8 }
-  const text = (el.text || '').toLowerCase()
-
-  if (el.typ === 'rundtisch' && /sessel|lounge/.test(text)) {
-    return { material: 'polster', y0: 0, y1: DARSTELLUNGSHOEHE.polsterLehne, rund: true, teil: 'sessel' }
+  const oben = hoehen?.oberkante?.[el.typ]
+  if (!stil || oben === undefined) return null
+  // Ohne eigenen Koerper-Eintrag steht das Stueck auf dem Boden; mit Eintrag
+  // schwebt nur die gemessene Platte auf ihrer Arbeitshoehe.
+  const dicke = hoehen.koerper?.[el.typ] ?? oben
+  return {
+    material: stil.material,
+    rund: !!stil.rund,
+    y0: (oben - dicke) * CM,
+    y1: oben * CM
   }
-  if (el.typ === 'schrank' && Math.min(el.breite, el.tiefe) <= 30) {
-    return { material: 'schirm', y0: 0, y1: DARSTELLUNGSHOEHE.stellwand }
-  }
-  return stil
 }
 
 /* ══════════════════════════════════════════════════════════════════

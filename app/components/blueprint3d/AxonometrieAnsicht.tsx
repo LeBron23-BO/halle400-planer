@@ -27,6 +27,7 @@ import { Configuration, configWallThickness } from '@blueprint3d/core/configurat
 import { baueSzene } from '@blueprint3d/axo/axo-szene.js'
 import { erzeugeAxonometrie } from '@blueprint3d/axo/axo-zeichnen.js'
 import { BLICKE, SAEULEN } from '@blueprint3d/axo/axo-kontrakt.js'
+import { OBERKANTE_CM, KOERPER_CM } from '@blueprint3d/three/ausstattung'
 
 type NamenModus = 'alle' | 'saeulen' | 'aus'
 
@@ -58,7 +59,9 @@ export function AxonometrieAnsicht({ blueprint3d, labels, aktiv }: Props) {
     const dicke = Configuration.getNumericValue(configWallThickness)
     const szene = baueSzene(
       { floorplan: gespeichert, labels },
-      { wandDicke: dicke, nurKernSaeulen: !vollausbau }
+      // Hoehen aus der Tabelle des Projekts — dieselbe, aus der die
+      // 3D-Ansicht ihre Koerper baut.
+      { wandDicke: dicke, nurKernSaeulen: !vollausbau, hoehen: { oberkante: OBERKANTE_CM, koerper: KOERPER_CM } }
     )
 
     const belegt: Record<number, string> = {}

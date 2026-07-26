@@ -87,81 +87,45 @@ function wandStuecke(a, b, dicke, y1, material, normale) {
   return stuecke
 }
 
-/** Koerper eines Ausstattungs-Elements. Masse kommen in cm herein. */
-function ausstattungsKoerper(el) {
-  const form = bauformFuer(el)
+/**
+ * Koerper eines Ausstattungs-Elements — EIN Koerper je gemessenem Element.
+ *
+ * Der erste Entwurf setzte Stuehle aus Sitz und Lehne zusammen, liess Treppen
+ * in neun Stufen ansteigen und machte aus manchen Rundtischen Sessel. Alles
+ * davon ist wieder verschwunden: der Plan misst Umriss und Standort, nicht
+ * Form. Was ein Element hoch ist, sagt die Tabelle des Projekts; wie es
+ * aussieht, sagt sein Umriss. Mehr steht nicht fest, also wird mehr nicht
+ * gezeigt.
+ *
+ * @param {object} el Element aus `floorplan.ausstattung`, Masse in cm
+ * @param {{oberkante:object, koerper:object}} hoehen
+ */
+function ausstattungsKoerper(el, hoehen) {
+  const form = bauformFuer(el, hoehen)
+  if (!form) return [] // unbekannter Typ: lieber nichts als etwas Erfundenes
   const cx = el.x * CM
   const cz = el.y * CM
   const b = el.breite * CM
   const t = el.tiefe * CM
   const dr = el.drehung || 0
-  const grund = () => (form.rund ? rund(cx, cz, b, t) : rechteck(cx, cz, b, t, dr))
-  const raus = []
-
-  if (form.teil === 'stuhl') {
-    // Sitzflaeche und Lehne. Die Beine der Vorlage (uebersicht.html:246) sind
-    // hier weggelassen: bei 144 Stuehlen waeren das 576 zusaetzliche Koerper,
-    // deren 7 cm im fertigen Bild niemand sieht.
-    raus.push({ punkte: rechteck(cx, cz, b, t, dr), y0: 0, y1: DARSTELLUNGSHOEHE.sitz, material: 'sitz' })
-    // Lehne an der Rueckkante: lokal um `versatz` in +z verschoben, mitgedreht.
-    const rueck = t * 0.35
-    const c = Math.cos(dr)
-    const s = Math.sin(dr)
-    const versatz = (t - rueck) / 2
-    raus.push({
-      punkte: rechteck(cx - versatz * s, cz + versatz * c, b, rueck, dr),
-      y0: DARSTELLUNGSHOEHE.sitz,
-      y1: DARSTELLUNGSHOEHE.lehne,
-      material: 'sitz'
-    })
-    return raus
-  }
-
-  if (form.teil === 'sessel') {
-    raus.push({ punkte: rund(cx, cz, b, t), y0: 0, y1: DARSTELLUNGSHOEHE.polster, material: 'polster' })
-    raus.push({ punkte: rund(cx, cz, b * 0.78, t * 0.78), y0: DARSTELLUNGSHOEHE.polster, y1: DARSTELLUNGSHOEHE.polsterLehne, material: 'polster' })
-    return raus
-  }
-
-  if (form.teil === 'pflanze') {
-    raus.push({ punkte: rund(cx, cz, b * 0.55, t * 0.55, 8), y0: 0, y1: DARSTELLUNGSHOEHE.topf, material: 'topf' })
-    raus.push({ punkte: rund(cx, cz, b, t, 8), y0: DARSTELLUNGSHOEHE.topf, y1: DARSTELLUNGSHOEHE.topf + DARSTELLUNGSHOEHE.krone, material: 'gruen' })
-    return raus
-  }
-
-  if (form.teil === 'stufen') {
-    // Treppenlauf: gestaffelte Tritte entlang der laengeren Achse, damit man
-    // die Steigung sieht statt eines Klotzes (uebersicht.html:301).
-    const n = 9
-    const laengs = b >= t
-    for (let i = 0; i < n; i++) {
-      const anteil = (i + 0.5) / n
-      const px = laengs ? cx - b / 2 + b * anteil : cx
-      const pz = laengs ? cz : cz - t / 2 + t * anteil
-      raus.push({
-        punkte: rechteck(px, pz, laengs ? b / n : b, laengs ? t : t / n, dr),
-        y0: 0,
-        y1: (form.y1 * (i + 1)) / n,
-        material: 'stufe'
-      })
+  return [
+    {
+      punkte: form.rund ? rund(cx, cz, b, t) : rechteck(cx, cz, b, t, dr),
+      y0: form.y0,
+      y1: form.y1,
+      material: form.material
     }
-    return raus
-  }
-
-  if (form.teil === 'tisch') {
-    raus.push({ punkte: grund(), y0: form.y0, y1: form.y1, material: form.material })
-    return raus
-  }
-
-  raus.push({ punkte: grund(), y0: form.y0, y1: form.y1, material: form.material })
-  return raus
+  ]
 }
 
 /**
  * Baut die vollstaendige Szene.
  *
  * @param {{floorplan:{corners:object,walls:object[],ausstattung?:object[]},labels?:object[]}} plan
- * @param {{wandDicke?:number, nurKernSaeulen?:boolean}} [opt] Wanddicke in cm
+ * @param {{wandDicke?:number, nurKernSaeulen?:boolean, hoehen?:object}} [opt]
+ *        `wandDicke` in cm; `hoehen` sind OBERKANTE_CM/KOERPER_CM aus
+ *        `src/three/ausstattung.ts` — ohne sie wird keine Ausstattung
+ *        gezeichnet, denn dann ist keine Hoehe belegt.
  */
 export function baueSzene(plan, opt = {}) {
   const fp = plan.floorplan || plan
@@ -285,8 +249,9 @@ export function baueSzene(plan, opt = {}) {
     )
   }
 
+  const hoehen = opt.hoehen || { oberkante: {}, koerper: {} }
   const moebel = []
-  for (const el of fp.ausstattung || []) moebel.push(...ausstattungsKoerper(el))
+  for (const el of fp.ausstattung || []) moebel.push(...ausstattungsKoerper(el, hoehen))
 
   /* ── Ausdehnung fuer den Massstab ──────────────────────────────── */
   let x0 = Infinity
