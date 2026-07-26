@@ -356,6 +356,43 @@ async function pruefeWelt(page, name, hilfen) {
     `Greifen: der Zeiger zeigt "grab" ueber dem Moebel und nicht daneben ("${stilFrei}" -> "${beimUeberfahren.stil}")`
   )
 
+  /* Welche FARBE hat die Hervorhebung? Rot heisst in dieser Oberflaeche
+     "das verschwindet gleich". Im Verschieben-Werkzeug waere das eine Drohung,
+     die nicht stimmt — dort wird gegriffen, nicht geloescht. GEGENPROBE im
+     Loeschen-Werkzeug: dort MUSS es rot sein. */
+  const rahmen = await page.evaluate(
+    async (s) => {
+      const k = window.__zg.kasten(s.x, s.y, 45)
+      const p = window.__zg.aufBild(s.x, s.y)
+      const messen = () => {
+        window.__zg.maus('mousemove', p.x, p.y)
+        return {
+          blau: window.__zg.zaehleFarbe(k, [0, 140, 186], 30),
+          rot: window.__zg.zaehleFarbe(k, [255, 0, 0], 30)
+        }
+      }
+      const bewegen = messen()
+      window.__zg.setzeWerkzeug(2) // DELETE
+      const loeschen = messen()
+      window.__zg.setzeWerkzeug(0) // MOVE — Zustand wiederherstellen
+      return { bewegen, loeschen }
+    },
+    stuhl
+  )
+  await schlaf(page, 150)
+  log(
+    `     Hervorhebung: Verschieben blau ${rahmen.bewegen.blau} / rot ${rahmen.bewegen.rot} · ` +
+      `Loeschen blau ${rahmen.loeschen.blau} / rot ${rahmen.loeschen.rot} Bildpunkte`
+  )
+  pruefe(
+    rahmen.bewegen.blau > 20 && rahmen.bewegen.rot === 0,
+    `Greifen: im Verschieben-Werkzeug ist der Rahmen BLAU ("greifbar"), nicht rot (${rahmen.bewegen.blau} blau, ${rahmen.bewegen.rot} rot)`
+  )
+  pruefe(
+    rahmen.loeschen.rot > 20,
+    `Greifen: GEGENPROBE — im Loeschen-Werkzeug bleibt er ROT (${rahmen.loeschen.rot} rot)`
+  )
+
   /* ══ b) GEGENPROBE: dieselbe Bewegung OHNE gedrueckte Taste ═══════════ */
   const zielBild1 = await page.evaluate(
     (a) => {
