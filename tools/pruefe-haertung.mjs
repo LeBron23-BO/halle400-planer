@@ -963,6 +963,9 @@ log('\n── MG: die Messgroesse ──')
       amHandy.hinweis.oben > amHandy.kopf.unten && amHandy.hinweis.unten <= amHandy.leiste.oben,
     `MG: am Handy steht die W7-Zeile zwischen Blattkopf und Blick-Leiste, nicht darin (${JSON.stringify(amHandy)})`
   )
+  // Ein Standbild dazu: gemessene Rechtecke sagen nichts darueber, ob es auch
+  // GUT aussieht. Das entscheidet nur ein Blick.
+  await page.screenshot({ path: path.join(DIR, 'MG_handy_bearbeiten_axonometrie.png') })
 
   pruefe(konsole.length === 0, `MG: keine Konsolen- oder Seitenfehler (${konsole.length}${konsole.length ? ': ' + konsole[0] : ''})`)
   await ctx.close()
