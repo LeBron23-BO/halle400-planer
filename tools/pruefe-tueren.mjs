@@ -1151,6 +1151,7 @@ if (NUR !== 'planer') {
        dieselbe Falle, in die die erste Fassung des Zaehler-Gates in W2 lief. */
     const blattAmAnfang = await page.evaluate(() => ({
       text: window.__planerDatei.oeffnungText(),
+      hoehe: window.__planerDatei.hinweisOeffnung(),
       zahl: window.__tf.oeffnungen().length
     }))
 
@@ -1197,6 +1198,20 @@ if (NUR !== 'planer') {
           window.__tf.axoNeuBauen()
           return window.__tf.szeneWaende()
         })
+        /* Ein Standbild OHNE Oeffnung, als Bezug. Mit ihm laesst sich die
+           Stelle, an der die Tuer entsteht, im fertigen Blatt WIEDERFINDEN:
+           zwei Bilder voneinander abgezogen zeigen genau sie. Ohne diesen
+           Bezug muesste man ein 78-m-Blatt nach einer 11 Bildpunkte breiten
+           Luecke absuchen — und wuerde sie uebersehen. */
+        await p.evaluate(() => {
+          document.getElementById('btnAnsichtAxo').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        })
+        await schlaf(p, 1200)
+        await p.screenshot({ path: path.join(DIR, 'Datei_E0_axo_ohne_tuer.png') })
+        await p.evaluate(() => {
+          document.getElementById('btnAnsichtPlan').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        })
+        await schlaf(p, 500)
         // Eine Tuer auf eine freie Wand setzen und dieselbe Messung wiederholen.
         const w2 = await p.evaluate(`${WAND_SUCHE}(500, 150)`)
         pruefe(w2 !== null, 'f) eine freie Wand fuer die Axonometrie-Messung gefunden')
@@ -1227,6 +1242,24 @@ if (NUR !== 'planer') {
             Math.abs(wirklich - erwartet) < 0.01,
             `f) die Axonometrie laesst GENAU die lichte Weite weg (${wirklich.toFixed(3)} m² statt ${erwartet.toFixed(3)})`
           )
+
+          /* Ein Standbild mit der TUER — zum ANSEHEN, und zwar JETZT: gleich
+             darunter wird sie zurueckgenommen und durch ein Fenster ersetzt,
+             und ein Fenster mit 90-cm-Bruestung ist in einer auf 94 cm
+             geschnittenen Wand nur ein 4-cm-Absatz, also gar nichts zu sehen.
+             Die Tuer dagegen reisst die Wand auf voller Schnitthoehe auf — das
+             ist das Bild, an dem sich beurteilen laesst, ob die Oeffnung an
+             der richtigen Stelle sitzt. (Projekt-DNA Punkt 2: kein
+             Geometrie-Gate ohne Blick aufs Bild.) */
+          await p.evaluate(() => {
+            document.getElementById('btnAnsichtAxo').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+          })
+          await schlaf(p, 1200)
+          await p.screenshot({ path: path.join(DIR, 'Datei_E_axo_mit_tuer.png') })
+          await p.evaluate(() => {
+            document.getElementById('btnAnsichtPlan').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+          })
+          await schlaf(p, 500)
 
           /* ══ Die BRUESTUNG (W4, Schritt 8) ═══════════════════════════
              Ein Fenster ist kein Durchgang: unter ihm bleibt Mauerwerk
@@ -1271,17 +1304,14 @@ if (NUR !== 'planer') {
             `f) GEGENPROBE: die HOEHE sinkt trotzdem — das Fenster schneidet wirklich (${volumenVerlust.toFixed(4)} m³)`
           )
 
-          /* Ein Standbild der Axonometrie MIT der Oeffnung — zum ANSEHEN.
-             Nach Projekt-DNA Punkt 2 ist kein Geometrie-Gate bestanden, bevor
-             jemand das Bild wirklich angesehen hat: eine Tuer, die an der
-             falschen Stelle sitzt, besteht jede Zahlenpruefung. Es entsteht
-             HIER und nicht am Ende, weil Gate j gleich alle Oeffnungen
-             zuruecknimmt und das Blatt dann keine mehr zeigte. */
+          /* Und eines mit dem FENSTER — hier traegt der Blattkopf seine
+             Legende. Es entsteht HIER und nicht am Ende, weil Gate j gleich
+             alle Oeffnungen zuruecknimmt und das Blatt dann keine mehr zeigte. */
           await p.evaluate(() => {
             document.getElementById('btnAnsichtAxo').dispatchEvent(new MouseEvent('click', { bubbles: true }))
           })
           await schlaf(p, 1200)
-          await p.screenshot({ path: path.join(DIR, 'Datei_E_axo_mit_oeffnung.png') })
+          await p.screenshot({ path: path.join(DIR, 'Datei_F_axo_mit_fenster.png') })
           await p.evaluate(() => {
             document.getElementById('btnAnsichtPlan').dispatchEvent(new MouseEvent('click', { bubbles: true }))
           })
@@ -1291,6 +1321,7 @@ if (NUR !== 'planer') {
         /* ══ j) Die Blattkopf-Zeile ════════════════════════════════════ */
         const blattJetzt = await p.evaluate(() => ({
           text: window.__planerDatei.oeffnungText(),
+          hoehe: window.__planerDatei.hinweisOeffnung(),
           zahl: window.__tf.oeffnungen().length
         }))
         pruefe(
@@ -1298,14 +1329,16 @@ if (NUR !== 'planer') {
           `j) GEGENPROBE: ohne Oeffnung schweigt der Blattkopf (${JSON.stringify(blattAmAnfang.text)})`
         )
         pruefe(
-          blattJetzt.zahl > 0 && typeof blattJetzt.text === 'string',
-          `j) mit Oeffnungen erscheint die Zeile (${blattJetzt.zahl} Stueck)`
+          blattAmAnfang.hoehe === '',
+          `j) GEGENPROBE: und der Massstabs-Vorbehalt steht dann auch nicht da ("${blattAmAnfang.hoehe}")`
         )
         pruefe(
-          typeof blattJetzt.text === 'string' &&
-            /1,16 m/.test(blattJetzt.text) &&
-            /nicht maßstäblich/.test(blattJetzt.text),
-          `j) und sie sagt, dass die HOEHE nicht massstaeblich ist ("${String(blattJetzt.text).slice(0, 90)}…")`
+          blattJetzt.zahl > 0 && typeof blattJetzt.text === 'string',
+          `j) mit Oeffnungen erscheint die Zeile ("${blattJetzt.text}")`
+        )
+        pruefe(
+          /1,16 m/.test(blattJetzt.hoehe) && /nicht maßstäblich/.test(blattJetzt.hoehe),
+          `j) und der Fusshinweis sagt, dass die HOEHE nicht massstaeblich ist ("${String(blattJetzt.hoehe).trim().slice(0, 80)}…")`
         )
 
         // Alle Oeffnungen wieder entfernen: die Zeile MUSS dann verschwinden.
@@ -1318,14 +1351,17 @@ if (NUR !== 'planer') {
           return { zahl: window.__tf.oeffnungen().length, schutz }
         })
         await schlaf(p, 600)
-        const blattLeer = await p.evaluate(() => window.__planerDatei.oeffnungText())
+        const blattLeer = await p.evaluate(() => ({
+          text: window.__planerDatei.oeffnungText(),
+          hoehe: window.__planerDatei.hinweisOeffnung()
+        }))
         pruefe(
           leer.zahl === 0,
           `j) alle Oeffnungen liessen sich zurueckwerfen (${leer.schutz} Schritte)`
         )
         pruefe(
-          blattLeer === null,
-          `j) und die Zeile verschwindet wieder (${JSON.stringify(blattLeer)})`
+          blattLeer.text === null && blattLeer.hoehe === '',
+          `j) und beide Zeilen verschwinden wieder (${JSON.stringify(blattLeer.text)}, "${blattLeer.hoehe}")`
         )
         await p.evaluate(() => {
           document.getElementById('btnAnsichtAxo').dispatchEvent(new MouseEvent('click', { bubbles: true }))

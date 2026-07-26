@@ -302,9 +302,13 @@ const html = `<!DOCTYPE html>
     <div class="strich"></div>
     <div class="sub" id="unterzeile">Axonometrie</div>
     <div class="gesetzt" id="gesetztZaehler" hidden></div>
-    <!-- Die Öffnungs-Legende (W4). Sie steht NUR da, wenn es Öffnungen gibt:
+    <!-- Die Öffnungs-Zeile (W4). Sie steht NUR da, wenn es Öffnungen gibt:
          eine dauerhafte „0 Öffnungen"-Zeile lehrte den Leser, über sie
-         hinwegzusehen — genau dann, wenn sie einmal wichtig wird. -->
+         hinwegzusehen — genau dann, wenn sie einmal wichtig wird.
+         KURZ gehalten, GEMESSEN am Standbild: der Blattkopf steht über der
+         Reihe der Raumnamen, und schon vier Zeilen schoben sich in „Toiletten"
+         und „Teamtable" hinein. Der Massstabs-Vorbehalt gehört ohnehin nach
+         unten, zu dem Satz über die Höhen — siehe „hinweisOeffnung". -->
     <div class="gesetzt" id="oeffnungZaehler" hidden></div>
   </header>
 
@@ -338,6 +342,10 @@ const html = `<!DOCTYPE html>
     Ziehen dreht &middot; Rad zoomt &middot; zwei Finger zoomen<br>
     <span id="hinweisHerkunft">Grundriss und Ausstattung sind gemessen.</span> Höhen sind
     gesetzte Annahmen — ein Grundriss enthält keine.
+    <!-- Der Massstabs-Vorbehalt der Öffnungen (W4) steht HIER und nicht im
+         Blattkopf: er gehört zu dem Satz über die Höhen, der schon da ist —
+         und oben schöbe er sich in die Raumnamen (am Standbild gemessen). -->
+    <span id="hinweisOeffnung"></span>
   </div>
 </div>
 
@@ -650,11 +658,16 @@ function oeffnungenZeigen(){
   const verwaist = grundriss.zaehleVerwaiste();
   const z = el('oeffnungZaehler');
   z.hidden = m === 0;
-  if (m === 0) return;
-  z.textContent = m + (m === 1 ? ' Öffnung gesetzt' : ' Öffnungen gesetzt') +
-    (verwaist > 0 ? ' (davon ' + verwaist + ' ohne Wand — nicht gezeichnet)' : '') +
-    ' — die Ansicht schneidet die Wände auf 1,16 m; Türen und Fenster sind darum ' +
-    'in der HÖHE nicht maßstäblich, nur in Lage und Breite.';
+  z.textContent = m === 0 ? '' :
+    m + (m === 1 ? ' Öffnung gesetzt' : ' Öffnungen gesetzt') +
+    (verwaist > 0 ? ', davon ' + verwaist + ' ohne Wand' : '') + ' — kein Aufmaß';
+  /* Der Massstabs-Vorbehalt zieht mit: er ist der eigentliche Grund fuer die
+     Legende. Waere er dauerhaft da, laese ihn niemand mehr; stuende er gar
+     nicht da, laese die Bank aus einem Bild eine Hoehenaussage, die es nicht
+     trifft. */
+  el('hinweisOeffnung').textContent = m === 0 ? '' :
+    ' Türen und Fenster sind in der HÖHE nicht maßstäblich — die Ansicht ' +
+    'schneidet die Wände auf 1,16 m auf; Lage und Breite stimmen.';
 }
 
 grundriss.fireOnUpdatedRooms(bemerkeAenderung);
@@ -1457,6 +1470,7 @@ window.__planerDatei = {
     const z = el('oeffnungZaehler');
     return z.hidden ? null : z.textContent;
   },
+  hinweisOeffnung: function(){ return el('hinweisOeffnung').textContent; },
   /* Der KILL-SCHALTER der Versoehnung — nur fuer die Gegenprobe des Gates.
      Ein Waechter, der nie rot wird, ist kein Waechter: die Pruefung "nach dem
      Teilen liegt die Tuer auf der richtigen Haelfte" beweist erst dann etwas,

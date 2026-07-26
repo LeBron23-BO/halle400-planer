@@ -20,6 +20,13 @@ for g in $GATES; do
   else
     echo "ROT     $g — $ok ok / $fehl fehl (exit $code)"
     printf '%s\n' "$aus" | grep '^FEHL\|^✗ ' | head -8
+    # Bei 0 gemeldeten Fehlern hat das Werkzeug nicht gepatzt, sondern ist
+    # ABGESTUERZT. Dann sagt nur das Ende der Ausgabe, woran — ohne diese
+    # Zeilen steht da "ROT" und sonst nichts, und man sucht im Falschen.
+    if [ "$fehl" -eq 0 ]; then
+      echo "        --- Absturz, letzte Zeilen ---"
+      printf '%s\n' "$aus" | tail -12 | sed 's/^/        /'
+    fi
     gesamt=1
   fi
 done
