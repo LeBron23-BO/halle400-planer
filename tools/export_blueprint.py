@@ -233,12 +233,193 @@ def lade_ausstattung(pfad: Path) -> list[dict]:
     return sauber
 
 
+# ══════════════════════════════════════════════════════════════════════════
+#  DIE SETZUNGS-SCHICHT (W5) — was der Nutzer gesetzt hat, und der Waechter
+#  davor. Alles ab hier ist ADDITIV: es liest data/gesetzt.json und beruehrt
+#  keine der gemessenen Quellen (walls.json, ausstattung.json,
+#  plan-geometry.json). Die PDF bleibt die alleinige Grundwahrheit.
+# ══════════════════════════════════════════════════════════════════════════
+
+GESETZT_ABSCHNITTE = ("verschiebungen", "neue_stuecke", "entfernt",
+                      "oeffnungen", "raumnamen")
+
+
+def leere_setzungen() -> dict:
+    return {"verschiebungen": [], "neue_stuecke": [], "entfernt": [],
+            "oeffnungen": [], "raumnamen": {}}
+
+
+def lade_gesetzt(pfad: Path) -> dict:
+    """Liest die Setzungs-Schicht — was der Nutzer im Planer gesetzt hat.
+
+    Fehlt die Datei, ist das der NORMALFALL und kein Fehler: dann gibt es keine
+    Bearbeitung, und der Export liefert genau den gemessenen Stand.
+
+    Fuenf GETRENNTE Abschnitte, kein gemeinsamer Eimer: nur so kann der Export
+    „neu hingestellt" von „verschoben" unterscheiden. In einem Eimer waere ein
+    verschobenes Messstueck von einem neuen nicht mehr zu trennen, und der
+    Export schriebe es zweimal — einmal an seinem Messort, einmal an seinem
+    neuen.
+
+    Geprueft wird streng: ein unbekannter Abschnitt ist ein Tippfehler, und ein
+    Tippfehler taete hier still gar nichts (die Setzung waere weg, ohne dass
+    jemand es merkt).
+    """
+    if not pfad.exists():
+        return leere_setzungen()
+    try:
+        roh = json.loads(pfad.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"{pfad} ist nicht lesbar ({e}). Abbruch — es wurde "
+                         f"nichts geschrieben.")
+    if not isinstance(roh, dict):
+        raise SystemExit(f"{pfad}: erwartet wird ein Objekt mit den Abschnitten "
+                         f"{', '.join(GESETZT_ABSCHNITTE)}")
+    unbekannt = set(roh) - set(GESETZT_ABSCHNITTE) - {"_stand"}
+    if unbekannt:
+        raise SystemExit(f"{pfad}: unbekannter Abschnitt {sorted(unbekannt)} — "
+                         f"erlaubt sind {', '.join(GESETZT_ABSCHNITTE)}")
+    gesetzt = leere_setzungen()
+    for a in GESETZT_ABSCHNITTE:
+        if a not in roh:
+            continue
+        erwartet = dict if a == "raumnamen" else list
+        if not isinstance(roh[a], erwartet):
+            raise SystemExit(f"{pfad}: Abschnitt {a!r} muss "
+                             f"{'ein Objekt' if erwartet is dict else 'eine Liste'} sein")
+        gesetzt[a] = roh[a]
+    return gesetzt
+
+
+def zaehle_setzungen(plan: dict) -> dict:
+    """Was in einer FERTIGEN Plandatei an Nutzer-Arbeit steckt.
+
+    Vier Merkmale, die ein rein gemessener Plan nicht haben kann:
+    gesetzte Moebel, Oeffnungen, hash-untreue Ecken und Raumnamen. Die
+    Ecken-Kennung IST der Hash ihrer Koordinate (`ecken_id`) — eine gezeichnete
+    Ecke traegt eine GUID, eine verschobene gemessene behaelt ihre alte Kennung.
+    Beides faellt aus dem Hash und ist damit byte-genau erkennbar, auch ohne
+    ein `quelle`-Feld an der Wand.
+    """
+    fp = plan.get("floorplan") or {}
+    ecken = []
+    for cid, c in (fp.get("corners") or {}).items():
+        try:
+            treu = cid == ecken_id(float(c["x"]), float(c["y"]))
+        except (KeyError, TypeError, ValueError):
+            treu = False
+        if not treu:
+            ecken.append(cid)
+    return {
+        "moebel": [e for e in (fp.get("ausstattung") or [])
+                   if e.get("quelle") == "gesetzt"],
+        "oeffnungen": list(fp.get("oeffnungen") or []),
+        "ecken": ecken,
+        "raumnamen": dict(fp.get("roomMeta") or {}),
+    }
+
+
+def ungedeckte_setzungen(plan: dict, gesetzt: dict) -> list[str]:
+    """Welche Setzungen in der Zieldatei stehen, die `data/gesetzt.json` NICHT
+    hergibt — genau die wuerde ein neuer Export still ueberschreiben.
+
+    BEWUSSTE GRENZE: geloeschte Messstuecke werden hier NICHT gezaehlt. Ein
+    Loeschen unterdrueckt nur die Anzeige, die Messung selbst bleibt in
+    data/ausstattung.json stehen und kaeme beim naechsten Export zurueck — das
+    ist wiederherstellbar und damit kein stiller Verlust. Es hier zu pruefen
+    hiesse ausserdem, jede NEUE Messung als „fehlendes Stueck" zu melden und
+    einen voellig richtigen Export zu blockieren.
+    """
+    stand = zaehle_setzungen(plan)
+    gedeckte_moebel = {e.get("id") for e in gesetzt["verschiebungen"]}
+    gedeckte_moebel |= {e.get("id") for e in gesetzt["neue_stuecke"]}
+    gedeckte_oeffnungen = {o.get("id") for o in gesetzt["oeffnungen"]}
+
+    offen: list[str] = []
+    fremd = [e for e in stand["moebel"] if e.get("id") not in gedeckte_moebel]
+    if fremd:
+        beispiel = " · ".join(f"{e.get('typ','?')} bei "
+                              f"{e.get('x','?')}/{e.get('y','?')}" for e in fremd[:3])
+        offen.append(f"{len(fremd)} von Hand gesetzte(s) Moebelstueck(e) — {beispiel}")
+    fremd_o = [o for o in stand["oeffnungen"] if o.get("id") not in gedeckte_oeffnungen]
+    if fremd_o:
+        beispiel = " · ".join(f"{o.get('art','?')} an Wand {str(o.get('wandId',''))[:12]}"
+                              for o in fremd_o[:3])
+        offen.append(f"{len(fremd_o)} Tuer/Fenster/Durchgang — {beispiel}")
+    # Ecken sind NIE gedeckt: data/gesetzt.json traegt keine Geometrie. Eine
+    # hash-untreue Ecke ist eine Behauptung ueber das Aufmass, und die darf nur
+    # die PDF machen (Projekt-DNA, oberstes Prinzip).
+    if stand["ecken"]:
+        offen.append(f"{len(stand['ecken'])} gezeichnete oder verschobene Ecke(n) — "
+                     f"{' · '.join(stand['ecken'][:3])}")
+    fremde_namen = [k for k in stand["raumnamen"] if k not in gesetzt["raumnamen"]]
+    if fremde_namen:
+        beispiel = " · ".join(str(stand["raumnamen"][k].get("name", "?"))
+                              for k in fremde_namen[:3])
+        offen.append(f"{len(fremde_namen)} Raumname(n) — {beispiel}")
+    return offen
+
+
+def pruefe_zieldatei(out: Path, gesetzt: dict, verwerfen: bool) -> None:
+    """DER WAECHTER (W5, Schritt 1) — fail-closed vor dem Schreiben.
+
+    Der Export erzeugt die Zieldatei NEU. Ohne diese Pruefung ueberschreibt der
+    naechste Lauf jede Bearbeitung des Nutzers, lautlos und ohne Rueckweg. Der
+    Waechter liest deshalb die VORHANDENE Zieldatei und bricht ab, sobald darin
+    Arbeit steckt, die die Quellen nicht hergeben.
+
+    Er ruehrt die Zieldatei NICHT an — er liest sie nur. Was er schuetzt, darf
+    er nicht selbst anfassen.
+    """
+    if verwerfen or not out.exists():
+        return
+    try:
+        vorhanden = json.loads(out.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        raise SystemExit(
+            f"ABBRUCH — {out} ist nicht lesbar ({e}).\n"
+            f"Es wurde nichts geschrieben. Bitte die Datei ansehen; wenn sie "
+            f"kaputt ist:\n"
+            f"    python tools/export_blueprint.py --verwerfe-setzungen")
+    offen = ungedeckte_setzungen(vorhanden, gesetzt)
+    if not offen:
+        return
+    raise SystemExit(
+        "\n".join([
+            "",
+            f"ABBRUCH — in {out} steckt Arbeit, die die Quellen nicht hergeben:",
+            *[f"    · {z}" for z in offen],
+            "",
+            "Ein neuer Export wuerde sie ueberschreiben. Deshalb wurde NICHTS",
+            "geschrieben. So geht es weiter — einer von zwei Wegen:",
+            "",
+            "  1) Die Bearbeitung BEHALTEN. Die gesicherte Datei uebernehmen,",
+            "     dann neu exportieren:",
+            "         python tools/uebernimm-bearbeitung.py            (zeigt nur an)",
+            "         python tools/uebernimm-bearbeitung.py --schreibe (uebernimmt)",
+            "         python tools/export_blueprint.py",
+            "",
+            "  2) Die Bearbeitung WEGWERFEN (sie ist dann weg):",
+            "         python tools/export_blueprint.py --verwerfe-setzungen",
+            "",
+            "Wenn keine gesicherte Datei da ist, ist die Zieldatei selbst der",
+            "letzte Stand: erst wegkopieren (z. B. nach",
+            "data/arbeitsstand-notfall.json), dann Weg 2.",
+        ]))
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--walls", type=Path, default=Path("data/walls.json"))
     p.add_argument("--ausstattung", type=Path, default=Path("data/ausstattung.json"),
                    help="gemessene Ausstattung (A1)")
+    p.add_argument("--gesetzt", type=Path, default=Path("data/gesetzt.json"),
+                   help="Setzungs-Schicht des Nutzers (W5)")
+    p.add_argument("--ohne-gesetzt", action="store_true",
+                   help="die Setzungs-Schicht NICHT anwenden — der rein gemessene Stand")
+    p.add_argument("--verwerfe-setzungen", action="store_true",
+                   help="den Waechter uebergehen und die Zieldatei ueberschreiben")
     # Zielort ist bewusst das Verzeichnis, aus dem die App liest. Eine Kopie
     # unter data/ waere eine zweite Wahrheit, die beim naechsten Lauf driftet.
     p.add_argument("--out", type=Path,
@@ -282,6 +463,13 @@ def main() -> int:
             arten[e["typ"]] = arten.get(e["typ"], 0) + 1
         print(f"{len(plan['floorplan']['ausstattung'])} Ausstattungs-Zeichen "
               f"({' · '.join(f'{k} {v}' for k, v in sorted(arten.items()))})")
+
+    # Die Setzungs-Schicht wird auch bei --ohne-gesetzt GELESEN, nur nicht
+    # angewendet: der Waechter braucht sie, um zu wissen, was in der Zieldatei
+    # gedeckt ist. Was in gesetzt.json steht, ist wiederherstellbar — der
+    # Waechter darf deswegen nicht darauf bestehen.
+    gesetzt = lade_gesetzt(args.gesetzt)
+    pruefe_zieldatei(args.out, gesetzt, args.verwerfe_setzungen)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(plan, indent=1, ensure_ascii=False), encoding="utf-8")
