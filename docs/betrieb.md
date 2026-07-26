@@ -267,6 +267,78 @@ bricht dann laut ab, statt eine weiße Seite auszuliefern:
   Hilfsgrößen (`_m1$1`). Jede bekommt deshalb einen eigenen Scope, verbunden
   über einen gemeinsamen Namens-Beutel.
 
+## Der Rückweg: die Bearbeitung zurück ins Projekt (W5)
+
+Der Nutzer bearbeitet den Plan in `Halle400-Modell.html` und sichert seinen Stand
+als `Halle400-Plan-<datum>.json` im Download-Ordner. **Der Bedienweg in drei
+Zeilen** (Arbeitsverzeichnis `halle400-planer`):
+
+```
+python tools/uebernimm-bearbeitung.py              # zeigt nur an, schreibt nichts
+python tools/uebernimm-bearbeitung.py --schreibe   # -> data/gesetzt.json
+python tools/export_blueprint.py                   # -> app/public/plaene/halle400.json
+```
+
+Ohne Dateiangabe wird die **neueste** `Halle400-Plan-*.json` im Download-Ordner
+genommen — das ist der Handy-Weg: Datei herüberkopieren, Befehl ohne Argument.
+
+**Der Wächter ist das eigentliche Sicherheitsnetz.** Der Export erzeugt die
+Zieldatei neu. Findet er darin Arbeit, die die Quellen nicht hergeben — gesetzte
+Möbel, Türen, hash-untreue Ecken, Raumnamen —, **bricht er ab und schreibt
+nichts**, mit einer Anleitung in Alltagssprache. Ein stiller Verlust ist damit
+unmöglich. Wer die Bearbeitung wirklich wegwerfen will, sagt es ausdrücklich:
+`python tools/export_blueprint.py --verwerfe-setzungen`.
+
+**Jede Übernahme legt zusätzlich eine Roh-Sicherung** als
+`data/arbeitsstand-<datum>.json` an — die Nutzerdatei unverändert, auch im
+Trockenlauf, git-verfolgt. Eine vorhandene Sicherung wird nie überschrieben
+(gleicher Inhalt = keine zweite Datei, anderer Inhalt = `-2`, `-3`, …).
+
+**Was zurückfließt, steht in fünf getrennten Abschnitten** in `data/gesetzt.json`
+(die Datei entsteht bei der ersten Übernahme; fehlt sie, liefert der Export den
+rein gemessenen Stand):
+
+| Kategorie | Erkennung | Abschnitt |
+|---|---|---|
+| Neu hingestelltes Möbel | `gesetzt`, **kein** `beleg` | `neue_stuecke` |
+| Verschobenes Messstück | `gesetzt`, **mit** `beleg` | `verschiebungen` (mit `erwartet`) |
+| Gelöschtes Messstück | fehlt gegenüber der Quelle | `entfernt` |
+| Tür / Fenster / Durchgang | `floorplan.oeffnungen` | `oeffnungen` (**mit `anker`**) |
+| Umbenannter Raum | `floorplan.roomMeta` | `raumnamen` |
+
+Der `beleg` ist die Trennschärfe: `verschiebeAusstattung` setzt `quelle:
+'gesetzt'`, lässt den `beleg` aber stehen — er sagt, woher das Stück kam.
+`fuegeAusstattungHinzu` kann keinen haben. Ein verschobenes Messstück fließt
+deshalb **nie** als neues Stück zurück und **nie** zurück in
+`data/ausstattung.json`: dort steht, wo es GEMESSEN wurde.
+
+**Zwei Dinge fließen bewusst nicht zurück.** Eine **gezeichnete** Wand wird nur
+gezählt und berichtet (sie ändert die Raumableitung, damit Flächen, damit die
+Zahlen im Businessplan — eigene Welle). Eine **verschobene gemessene** Ecke führt
+zum **harten Abbruch** mit Nennung der Ecke: die Ecken-Kennung ist der Hash ihrer
+Koordinate, wer sie zieht, behauptet etwas über das Aufmaß — und das darf nur die
+PDF (Projekt-DNA, oberstes Prinzip). Wenn die Wand wirklich anders steht:
+nachmessen und `data/walls.json` ändern.
+
+**Eine Tür überlebt das Nachmessen.** In dieser Pipeline überlebt keine
+Wand-Kennung eine neue Messung (sie wird aus dem Eckenpaar abgeleitet, die Ecken
+aus der Koordinate). Deshalb trägt jede Öffnung ihren `anker` mit — den Weltpunkt,
+an den der Nutzer sie gesetzt hat. Gemessen: die Südkontur um **10 cm** verschoben,
+die Tür wandert auf die neue Wand-Kennung; um **60 cm** verschoben, sie gilt als
+**verwaist** und wird trotzdem **nicht gelöscht**.
+
+```
+node tools/pruefe-uebernahme.mjs   # 51 Pruefungen, jede mit Gegenprobe
+```
+
+Dieses Gate braucht **keinen Browser**: es holt sich denselben übersetzten Kern,
+aus dem auch die Doppelklick-Datei baut, in den Node-Prozess und misst an
+`Floorplan.loadFloorplan` selbst — ob ein Stück nach dem Bau als `gesetzt` gilt,
+entscheidet der Kern und nicht das Gate. Die härteste Probe: `--ohne-gesetzt`
+erzeugt eine Datei, die **byte-identisch** mit `git show
+HEAD:app/public/plaene/halle400.json` ist (nach der Zeilenende-Normalisierung,
+die git beim Einchecken selbst anwendet; auf der Platte trägt die Datei CRLF).
+
 ## Bekannte offene Punkte
 
 - **Mobile Kopfleiste überlappt** (Upstream-Layout): bei 390 px verdeckt der
@@ -277,6 +349,10 @@ bricht dann laut ab, statt eine weiße Seite auszuliefern:
   hängt, hält danach eine Referenz auf eine Wand, die es nicht mehr gibt. Solange
   nur freistehende Möbel im Einsatz sind, ist das folgenlos; mit T3a muss die
   Wand-Bindung nach dem Zurückspielen neu aufgelöst werden.
+- **Gezeichnete Wände fließen noch nicht zurück** (W5 zählt sie nur). Sie ändern
+  die Raumableitung und damit die Flächen — das gehört in eine eigene Welle mit
+  eigenem Gate, samt vierter Segmentquelle `data/gezeichnet-waende.json`, die
+  `build_walls.py` nicht kennt.
 - **Middleware ist im Export wirkungslos.** `app/middleware.ts` (next-intl-Routing)
   wird beim statischen Export ignoriert — Next warnt darüber, der Build bleibt grün.
   Die vier Sprachseiten (`de`/`en`/`zh`/`tw`) werden statisch vorgerendert.
