@@ -145,6 +145,13 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
     blueprint3dRef.current = blueprint3d
     setReady(true)
 
+    // Messzugang fuer die Pruefwerkzeuge (tools/pruefe-*.mjs). Ohne ihn kann ein
+    // Pruefskript nur das BILD befragen und muss aus Pixeln raten, was das Modell
+    // gerade denkt — genau die Messfehler-Klasse, die in dieser Codebasis schon
+    // dreimal ein Gate falsch rot gemeldet hat. Bewusst nur lesend gedacht und
+    // ohne Nutzen fuer die Seite selbst; er kostet nichts und luegt nicht.
+    ;(window as unknown as { __planer?: Blueprint3d }).__planer = blueprint3d
+
     if (onBlueprint3DReady) {
       onBlueprint3DReady(blueprint3d)
     }
