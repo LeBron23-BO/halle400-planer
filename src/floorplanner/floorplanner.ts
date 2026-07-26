@@ -1,4 +1,5 @@
 import { Floorplan } from '../model/floorplan'
+import type { AusstattungElement } from '../model/floorplan'
 import { Wall } from '../model/wall'
 import { Corner } from '../model/corner'
 import { FloorplannerView, floorplannerModes, AUSSTATTUNG_UMRISS_AB } from './floorplanner_view'
@@ -102,6 +103,39 @@ const snapTolerance = 25
  * richtig: bei Zoom 1 entspricht das rund 16 cm, also etwa dem alten Wert.
  */
 const GREIF_TOLERANZ_PX = 8
+
+/**
+ * Wie nah der RAND eines Möbels an eine Wand kommen muss, damit es sich bündig
+ * anlegt (W2, in cm — hier bewusst NICHT in Bildschirm-Pixeln).
+ *
+ * Der Unterschied zur Greifzone ist grundsätzlich: die Greifzone ist eine
+ * Bedienhilfe für den Zeiger und muss darum auf dem Bildschirm konstant bleiben.
+ * Das Anlegen ist dagegen eine AUSSAGE ÜBER DIE PLANUNG — „der Schrank steht an
+ * der Wand". Ob der Nutzer dabei nah herangezoomt hat oder die ganze Halle
+ * sieht, darf das Ergebnis nicht ändern; sonst legte dasselbe Ziehen bei Zoom 2
+ * an und bei Zoom 0,2 nicht.
+ *
+ * 15 cm ist die Mitte zwischen zwei Fehlern: zu klein und man trifft die Wand in
+ * der Übersicht nie (1 Bildpunkt sind dort rund 5 cm), zu gross und ein Stück,
+ * das bewusst 20 cm vor der Wand stehen soll, klebt gegen den Willen des
+ * Nutzers fest.
+ */
+const EINRAST_WAND_CM = 15
+
+/**
+ * Raster, auf das ohne Wand in der Nähe gerundet wird (cm). 5 cm ist grob genug,
+ * dass eine Reihe Stühle von selbst auf einer Linie steht, und fein genug, dass
+ * man nichts sichtbar verrückt bekommt. Auf ZENTIMETER wird ohnehin immer
+ * gerundet (Projekt-DNA Punkt 3: zwei Nachkommastellen suggerieren eine
+ * Präzision, die eine freihändig gezeichnete Vorlage nicht hergibt).
+ */
+const EINRAST_RASTER_CM = 5
+
+/**
+ * Schrittweite beim Drehen (Bogenmass, 15°). Klein genug für eine schräge
+ * Aufstellung, gross genug, dass 90° in sechs Anschlägen erreicht ist.
+ */
+const DREH_SCHRITT = Math.PI / 12
 
 /** Was ueber ein Zurueckspielen hinweg erhalten bleiben muss (T5a). */
 type AnsichtsZustand = {
@@ -245,6 +279,40 @@ export class Floorplanner {
    * daran ginge still ins Leere.
    */
   public activeAusstattung: string | null = null
+
+  /**
+   * KENNUNG des Stücks, das gerade GEZOGEN wird (W2) — `null` heisst: es läuft
+   * kein Zug. Getrennt von `activeAusstattung` und nicht daraus abgeleitet:
+   * `activeAusstattung` sagt nur, was der Zeiger überdeckt, und wird bei jeder
+   * Bewegung neu bestimmt. Ein laufender Zug muss aber auch dann bei SEINEM
+   * Stück bleiben, wenn der Zeiger es beim schnellen Ziehen kurz verlässt —
+   * sonst liesse man das Möbel unterwegs fallen.
+   */
+  private zugKennung: string | null = null
+
+  /**
+   * Wo genau das Möbel ANGEFASST wurde: der Versatz zwischen Zeiger und
+   * Mittelpunkt in cm, festgehalten beim Drücken. Ohne ihn spränge das Stück
+   * beim Anfassen mit seiner Mitte unter den Zeiger — bei einer 3 m langen
+   * Tischplatte ein Sprung von anderthalb Metern, und der Nutzer verlöre genau
+   * die Stelle, die er im Blick hatte.
+   */
+  private zugVersatzX = 0
+  private zugVersatzY = 0
+
+  /**
+   * Rasten gezogene Möbel ein (W2)? Abschaltbar über die Werkzeugleiste.
+   *
+   * Standardmässig AN, weil ohne Einrasten jedes Stück krumm und ein paar
+   * Zentimeter neben der Wand steht und der Nutzer von Hand ausrichten müsste —
+   * mit einer freihändigen Maus ist das nicht zu schaffen. Abschaltbar, weil
+   * das Einrasten eine ANNAHME trifft („du willst an die Wand"), und eine
+   * Annahme, die sich nicht abstellen lässt, ist ein Zwang.
+   */
+  public einrasten = true
+
+  /** Meldet der Oberfläche, dass sich `einrasten` geändert hat (Knopfzustand). */
+  private einrastCallbacks: Array<(an: boolean) => void> = []
 
   /**
    * Die vorhandene Ecke, auf die der nächste Punkt gerade einrastet (E2), oder
@@ -625,6 +693,30 @@ export class Floorplanner {
     this.lastX = this.rawMouseX
     this.lastY = this.rawMouseY
 
+    // --- Möbel greifen (W2)
+    //
+    // Der Griff wird HIER festgehalten und nicht erst bei der ersten Bewegung:
+    // `trefferBestimmen` läuft nur, solange die Taste OBEN ist, `mouseX/mouseY`
+    // stehen also beim Drücken noch auf derselben Stelle wie beim letzten
+    // Hinüberfahren. Wartete man auf die erste Bewegung, wäre der Versatz schon
+    // um deren Weg verfälscht — das Möbel spränge um genau diesen Betrag.
+    this.zugKennung = null
+    if (this.mode == floorplannerModes.MOVE && this.activeAusstattung) {
+      const el = this.floorplan.findeAusstattung(this.activeAusstattung)
+      if (el) {
+        this.zugKennung = el.id
+        this.zugVersatzX = el.x - this.mouseX
+        this.zugVersatzY = el.y - this.mouseY
+      } else {
+        // Das überdeckte Stück gibt es nicht mehr (gelöscht, zurückgespielt).
+        // Die Merkung MUSS weg, sonst bliebe sie liegen und sperrte über die
+        // Schwenk-Bedingung unten die Ansicht — ein Fleck, in dem der Zeiger
+        // nichts mehr bewirkt und niemand wüsste, warum.
+        this.activeAusstattung = null
+      }
+    }
+    this.zeigerStilSetzen()
+
     // delete
     if (this.mode == floorplannerModes.DELETE) {
       // Seit E1 löscht der Klick NICHT mehr sofort, sondern schlägt dasselbe
@@ -666,12 +758,13 @@ export class Floorplanner {
     const toleranz = GREIF_TOLERANZ_PX * this.cmPerPixel
 
     // Ausstattung ist greifbar, solange sie auch GEZEICHNET wird (sonst liesse
-    // sich Unsichtbares anfassen) — und bisher nur im Löschen-Werkzeug. Das
-    // Ziehen im Verschieben-Werkzeug kommt in Welle 2; bis dahin wäre ein
-    // gegriffenes Möbel dort ein Griff, der nichts bewirkt, und würde nur das
-    // Schwenken der Ansicht blockieren.
+    // sich Unsichtbares anfassen) — im Löschen-Werkzeug (E1) und seit W2 auch
+    // im Verschieben-Werkzeug, wo sie gezogen wird. In beiden Fällen bewirkt
+    // ein Griff etwas; im Zeichnen-Werkzeug täte er nichts und nähme nur den
+    // Ecken-Fang die Sicht.
     const ausstattungGreifbar =
-      this.mode == floorplannerModes.DELETE && this.pixelProCm() >= AUSSTATTUNG_UMRISS_AB
+      (this.mode == floorplannerModes.DELETE || this.mode == floorplannerModes.MOVE) &&
+      this.pixelProCm() >= AUSSTATTUNG_UMRISS_AB
 
     // --- VORRANG: steht der Zeiger WIRKLICH auf einem Möbel? (Toleranz 0)
     //
@@ -741,6 +834,7 @@ export class Floorplanner {
     // update object target
     if (this.mode != floorplannerModes.DRAW && !this.mouseDown) {
       if (this.trefferBestimmen()) {
+        this.zeigerStilSetzen()
         this.view.draw()
       }
 
@@ -770,13 +864,11 @@ export class Floorplanner {
 
     // panning
     //
-    // `!this.activeAusstattung` gehört zwingend dazu, sobald ein Möbel gezogen
-    // werden kann (Welle 2): sonst wanderte das Möbel UND der Plan unter ihm
-    // gleich mit — der Zeiger führte zwei Bewegungen auf einmal aus, und das
-    // Stück landete nie dort, wo man es hinzieht. Heute ist die Bedingung noch
-    // wirkungslos (die Ausstattung ist nur im Löschen-Werkzeug greifbar), aber
-    // sie hier erst mit dem Ziehen nachzureichen hiesse, den Fehler zuerst zu
-    // bauen.
+    // `!this.activeAusstattung` gehört zwingend dazu, seit ein Möbel gezogen
+    // werden kann (W2): sonst wanderte das Möbel UND der Plan unter ihm gleich
+    // mit — der Zeiger führte zwei Bewegungen auf einmal aus, und das Stück
+    // landete nie dort, wo man es hinzieht. GEMESSEN, nicht vermutet: ohne
+    // diese Bedingung legt derselbe Zug das Stück rund doppelt so weit.
     if (this.mouseDown && !this.activeCorner && !this.activeWall && !this.activeAusstattung) {
       this.originX += this.lastX - this.rawMouseX
       this.originY += this.lastY - this.rawMouseY
@@ -790,11 +882,16 @@ export class Floorplanner {
       // Erst hier sichern, nicht schon bei mousedown: ein Druck auf eine Wand
       // ohne Bewegung (oder ein Schwenk der Ansicht) aendert nichts und soll
       // die Historie nicht mit Leerschritten fuellen.
-      if ((this.activeCorner || this.activeWall) && !this.zugGesichert) {
+      if ((this.activeCorner || this.activeWall || this.zugKennung) && !this.zugGesichert) {
         this.undoManager?.snapshot()
         this.zugGesichert = true
       }
-      if (this.activeCorner) {
+      // Das Möbel zuerst: es hat beim Greifen schon den Vorrang bekommen
+      // (`trefferBestimmen`), und dieselbe Reihenfolge hier hält beides
+      // zusammen. Ein Zug bewegt IMMER genau eine Sache.
+      if (this.zugKennung) {
+        this.moebelZiehen()
+      } else if (this.activeCorner) {
         this.activeCorner.move(this.mouseX, this.mouseY)
         this.activeCorner.snapToAxis(snapTolerance)
       } else if (this.activeWall) {
@@ -813,6 +910,11 @@ export class Floorplanner {
   /** */
   private mouseup(): void {
     this.mouseDown = false
+    // Das gezogene Stück ist abgelegt. Die Merkung MUSS hier fallen, auch wenn
+    // gar nichts bewegt wurde — sonst zöge der nächste Druck irgendwo im Bild
+    // stillschweigend dasselbe Möbel weiter.
+    this.zugKennung = null
+    this.zeigerStilSetzen()
 
     // drawing
     if (this.mode == floorplannerModes.DRAW && !this.mouseMoved) {
