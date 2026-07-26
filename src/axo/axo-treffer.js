@@ -66,6 +66,35 @@ export function tiefenFehler(hoehe, el) {
 }
 
 /**
+ * Ein Weltpunkt (Meter, x/y=Hoehe/z) ins Bild — die VORWAERTS-Richtung.
+ *
+ * Sie steht hier und nicht mehr im Renderer, damit Hin und Zurueck aus EINER
+ * Quelle kommen. Zwei Fassungen derselben Projektion waeren die schlimmste
+ * denkbare Doppelung dieses Projekts: sie liefen erst nach einer Aenderung
+ * auseinander, und dann saesse jedes gezogene Moebel ein Stueck neben dem
+ * Zeiger — sichtbar, aber nicht erklaerbar.
+ *
+ * `kamera` wird vom Renderer WIEDERVERWENDET (ein Objekt, bei jedem Bild neu
+ * befuellt): diese Funktion laeuft rund 8000-mal je Bild, ein frisches Objekt
+ * je Aufruf waere ein Muellberg.
+ *
+ * @returns {{x:number,y:number,p:number}} Bildpunkt und Tiefenwert (nur zum
+ *          Sortieren; er ist keine Entfernung).
+ */
+export function projiziereAuf(kamera, x, y, z) {
+  const dx = x - kamera.mitteX
+  const dz = z - kamera.mitteZ
+  const dy = y - kamera.mitteY
+  const xr = dx * kamera.cosA - dz * kamera.sinA
+  const zr = dx * kamera.sinA + dz * kamera.cosA
+  return {
+    x: kamera.ox + xr * kamera.massstab,
+    y: kamera.oy + (zr * kamera.sinE - dy * kamera.cosE) * kamera.massstab,
+    p: zr * kamera.cosE + dy * kamera.sinE
+  }
+}
+
+/**
  * Ein Bildpunkt (X, Y) zurueck in die Welt, auf der bekannten Hoehe `h`.
  *
  * @param {{ox:number,oy:number,massstab:number,sinA:number,cosA:number,sinE:number,cosE:number,mitteX:number,mitteZ:number,mitteY:number}} kamera

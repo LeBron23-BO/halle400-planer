@@ -15,7 +15,7 @@
 
 import { PALETTE, SCHRIFT, BLICK_START, LICHT, SCHATTEN, DARSTELLUNG, BESCHRIFTUNG, SAEULEN } from './axo-kontrakt.js'
 import { CM } from './axo-kontrakt.js'
-import { umkehreAuf, koerperUnter, NEIGUNG_MIN_ZIEHEN } from './axo-treffer.js'
+import { projiziereAuf, umkehreAuf, koerperUnter, NEIGUNG_MIN_ZIEHEN } from './axo-treffer.js'
 
 /** Flaechenhelligkeit aus dem Winkel zum Streiflicht. [uebersicht.html:560] */
 /** Hex nach [r,g,b]. */
@@ -94,33 +94,38 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
   let schnell = false
   let farben = dunkel ? PALETTE.dunkel : PALETTE.hell
 
-  // Projektionsgroessen, bei jedem Bild neu gesetzt
-  let sinA = 0
-  let cosA = 0
-  let sinE = 0
-  let cosE = 0
-  let massstab = 1
-  let ox = 0
-  let oy = 0
+  /**
+   * ALLE Projektionsgroessen in EINEM Objekt, bei jedem Bild neu befuellt.
+   *
+   * Vorher waren es sieben einzelne `let` in diesem Verschluss, und die
+   * Projektion war hier ausgeschrieben. Beides zusammen war der Grund, warum
+   * niemand von aussen einen Bildpunkt zurueckrechnen konnte (B2). Jetzt steht
+   * die Rechnung in `axo-treffer.js` — Hin und Zurueck aus einer Quelle — und
+   * dieses Objekt ist ihr Zustand. WIEDERVERWENDET und nicht je Aufruf neu:
+   * `projiziere` laeuft rund 8000-mal je Bild.
+   *
+   * `mitteY` ist die Drehachse auf halber Schnitthoehe [uebersicht.html:546].
+   */
+  const kameraWerte = {
+    sinA: 0,
+    cosA: 0,
+    sinE: 0,
+    cosE: 0,
+    massstab: 1,
+    ox: 0,
+    oy: 0,
+    mitteX: 0,
+    mitteZ: 0,
+    mitteY: 0.6
+  }
   let silhouette = { y0: 0, y1: 0 }
 
-  const mitteY = 0.6 // Drehachse auf halber Schnitthoehe [uebersicht.html:546]
-
   function projiziere(x, y, z) {
-    const dx = x - szene.mitte.x
-    const dz = z - szene.mitte.z
-    const dy = y - mitteY
-    const xr = dx * cosA - dz * sinA
-    const zr = dx * sinA + dz * cosA
-    return {
-      x: ox + xr * massstab,
-      y: oy + (zr * sinE - dy * cosE) * massstab,
-      p: zr * cosE + dy * sinE
-    }
+    return projiziereAuf(kameraWerte, x, y, z)
   }
 
   function kameraRichtung() {
-    return [cosE * sinA, sinE, cosE * cosA]
+    return [kameraWerte.cosE * kameraWerte.sinA, kameraWerte.sinE, kameraWerte.cosE * kameraWerte.cosA]
   }
 
   /**
@@ -137,30 +142,22 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
    * Luege ueber die Kamera.
    */
   function kamera() {
-    return {
-      ox,
-      oy,
-      massstab,
-      sinA,
-      cosA,
-      sinE,
-      cosE,
-      mitteX: szene.mitte.x,
-      mitteZ: szene.mitte.z,
-      mitteY,
-      richtung: kameraRichtung()
-    }
+    return { ...kameraWerte, richtung: kameraRichtung() }
   }
 
   /** Massstab so, dass der ganze Baukoerper ins Bild passt — bei jeder Drehung. */
   function setzeKamera() {
-    sinA = Math.sin(blick.az)
-    cosA = Math.cos(blick.az)
-    sinE = Math.sin(blick.el)
-    cosE = Math.cos(blick.el)
-    massstab = 1
-    ox = 0
-    oy = 0
+    kameraWerte.sinA = Math.sin(blick.az)
+    kameraWerte.cosA = Math.cos(blick.az)
+    kameraWerte.sinE = Math.sin(blick.el)
+    kameraWerte.cosE = Math.cos(blick.el)
+    kameraWerte.massstab = 1
+    kameraWerte.ox = 0
+    kameraWerte.oy = 0
+    // Die Szene ist austauschbar (`setzeSzene`) — ihre Mitte gehoert deshalb in
+    // jedes Bild neu geschrieben und nicht einmal beim Erzeugen.
+    kameraWerte.mitteX = szene.mitte.x
+    kameraWerte.mitteZ = szene.mitte.z
     const g = szene.grenzen
     let ux0 = Infinity
     let ux1 = -Infinity
@@ -182,12 +179,13 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     const platzB = Math.max(120, breite - 2 * randX - (weit ? randRechts : 0))
     const platzH = Math.max(120, hoehe - randOben - randUnten)
     const grund = Math.min(platzB / Math.max(0.001, ux1 - ux0), platzH / Math.max(0.001, uy1 - uy0))
-    massstab = grund * blick.zoom
-    const cxp = ((ux0 + ux1) / 2) * massstab
-    const cyp = ((uy0 + uy1) / 2) * massstab
-    ox = (weit ? (breite - randRechts) / 2 : breite / 2) - cxp + blick.schiebX
-    oy = randOben + (hoehe - randOben - randUnten) / 2 - cyp + blick.schiebY
-    silhouette = { y0: uy0 * massstab + oy, y1: uy1 * massstab + oy }
+    const m = grund * blick.zoom
+    kameraWerte.massstab = m
+    const cxp = ((ux0 + ux1) / 2) * m
+    const cyp = ((uy0 + uy1) / 2) * m
+    kameraWerte.ox = (weit ? (breite - randRechts) / 2 : breite / 2) - cxp + blick.schiebX
+    kameraWerte.oy = randOben + (hoehe - randOben - randUnten) / 2 - cyp + blick.schiebY
+    silhouette = { y0: uy0 * m + kameraWerte.oy, y1: uy1 * m + kameraWerte.oy }
   }
 
   /**
@@ -263,7 +261,7 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
   }
 
   function maleFlaechen(liste) {
-    const kanten = massstab > DARSTELLUNG.kanteAbMassstab
+    const kanten = kameraWerte.massstab > DARSTELLUNG.kanteAbMassstab
     ctx.lineJoin = 'round'
     for (const f of liste) {
       const p = f.pts
