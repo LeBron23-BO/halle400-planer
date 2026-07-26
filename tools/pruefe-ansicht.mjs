@@ -46,7 +46,13 @@ async function oeffne(browser, breite, hoehe, mobil) {
   // Der Umschalter ist ein Radix-Switch und steht auf 3D. JS-Klick + Poll:
   // die three.js-rAF-Schleife laesst die Seite nie idle werden.
   await page.evaluate(() => {
-    document.querySelector('[role="switch"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    // Die Ansichts-Umschaltung ist seit X3 eine Leiste mit drei Feldern
+  // (2D | 3D | Axonometrie) statt eines Schalters: ein Schalter kennt nur zwei
+  // Zustaende, und die Axonometrie ist der dritte. Gesucht wird der Knopf mit
+  // der Aufschrift "2D" — auf schmalen Anzeigen heisst er genauso.
+  ;[...document.querySelectorAll('button')]
+    .find((b) => b.textContent.trim() === '2D')
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
   })
   await page.waitForFunction(
     () => {

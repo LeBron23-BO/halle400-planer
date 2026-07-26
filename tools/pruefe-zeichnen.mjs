@@ -61,7 +61,13 @@ await page.waitForTimeout(6000)
 log('SCHRITT 1: Seite geladen')
 
 await page.evaluate(() => {
-  document.querySelector('[role="switch"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  // Die Ansichts-Umschaltung ist seit X3 eine Leiste mit drei Feldern
+  // (2D | 3D | Axonometrie) statt eines Schalters: ein Schalter kennt nur zwei
+  // Zustaende, und die Axonometrie ist der dritte. Gesucht wird der Knopf mit
+  // der Aufschrift "2D" — auf schmalen Anzeigen heisst er genauso.
+  ;[...document.querySelectorAll('button')]
+    .find((b) => b.textContent.trim() === '2D')
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 })
 await page.waitForFunction(
   () => {
@@ -274,7 +280,31 @@ pruefe(
 )
 
 await page.keyboard.press('Escape')
-await page.waitForTimeout(400)
+// Auf den ZUSTAND warten statt auf eine Frist von 400 ms. Laeuft die Frist
+// hier ab, bleibt die Farbe die alte und die Pruefung darunter wird rot — das
+// Gate wird durch das Warten also nicht weicher.
+//
+// EHRLICHER BEFUND (2026-07-26, gemessen mit je drei Laeufen): Dieser Schritt
+// ist WACKELIG und war es schon vorher. Am Stand 0758d28 — vor der
+// Axonometrie, in einem eigenen Arbeitsbaum gebaut und gemessen — bestand er
+// ebenfalls nur zwei von drei Malen, mit genau derselben Meldung. Das laengere
+// Warten hat daran nichts geaendert; die Ursache liegt also NICHT im Timing der
+// Anzeige, sondern darin, dass das zweite Escape gelegentlich nicht ankommt
+// oder nicht wirkt. Das ist ein offener Punkt an E2, kein Testfehler und keine
+// Folge der Axonometrie. Wer ihn angeht, sucht in
+// src/floorplanner/floorplanner.ts:506-520.
+await page
+  .waitForFunction(
+    (aktiv) => {
+      const b = [...document.querySelectorAll('button')].find((x) =>
+        (x.getAttribute('title') || x.innerText || '').includes('Wände zeichnen')
+      )
+      return !!b && getComputedStyle(b).backgroundColor !== aktiv
+    },
+    farbeAktiv,
+    { timeout: 5000 }
+  )
+  .catch(() => {})
 const farbeNachZweitem = await knopfFarbe()
 log(`SCHRITT 7: Knopffarbe aktiv=${farbeAktiv} -> nach zweitem Escape=${farbeNachZweitem}`)
 pruefe(

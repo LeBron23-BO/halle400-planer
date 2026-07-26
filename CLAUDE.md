@@ -32,11 +32,52 @@ node tools/pruefe-ausstattung-3d.mjs # A6: Koerper in 3D — auf dem Boden, im G
 node tools/pruefe-loeschen.mjs     # E1: Loeschen per Verweilen + Rueckfrage, Moebel-Fall richtungsgeprueft
 node tools/pruefe-zeichnen.mjs     # E2: Ecken-Fang, Winkel-Raster (mit Gegenprobe 20 Grad), Escape
 node tools/pruefe-touch.mjs        # E3: Langdruck + Tippen am Handy, echte TouchEvents, 2 Gegenproben
+node tools/pruefe-axonometrie.mjs  # X2/X3: 6 Gates — Raumableitung == Planer-Kern, Szene vollstaendig,
+                                   #        Bild gezeichnet (mit Gegenprobe), Ansicht folgt dem Grundriss
 
-# Bank-Ansicht fuer den Businessplan (E4) — eine Datei, Doppelklick, kein Netz
-node tools/baue-bank-ansicht.mjs   # -> Halle400-Modell.html (~2 MB, alles inline)
+# Bank-Ansicht fuer den Businessplan (E4/X4) — eine Datei, Doppelklick, kein Netz
+node tools/baue-bank-ansicht.mjs   # -> Halle400-Modell.html (~138 KB, alles inline)
 node tools/pruefe-bank-ansicht.mjs # prueft unter file:// mit GESPERRTEM Netz + erzeugt bank-export/*.png
 ```
+
+## Die drei Ansichten (X1-X4, 2026-07-26)
+
+Der Planer zeigt denselben Grundriss auf drei Arten: **2D**-Zeichner (hier wird
+bearbeitet), **3D**-Modell und **Axonometrie** — die Planblatt-Ansicht fuer den
+Businessplan. Dieselbe Axonometrie ist auch die Bank-Datei.
+
+```
+src/axo/axo-kontrakt.js   Farbklima, Projektion, Licht, Beschriftungs-Metrik
+                          (Optik aus app/public/uebersicht.html, je Wert belegt)
+src/axo/axo-zyklen.js     Raumflaechen aus den Waenden ableiten
+src/axo/axo-szene.js      Plandaten -> Koerper (ein ausgezogenes Vieleck je Stueck)
+src/axo/axo-zeichnen.js   Koerper -> Canvas-2D (Projektion, Maler, Fuehrungslinien)
+```
+
+Drei Festlegungen, die man kennen muss, bevor man hier etwas aendert:
+
+1. **Hoehen kommen NICHT aus `axo-kontrakt.js`.** Sie stehen in
+   `src/three/ausstattung.ts` (`OBERKANTE_CM` / `KOERPER_CM`) — dieselbe Tabelle,
+   aus der die 3D-Ansicht baut, mit DIN-Belegen und der Doktrin, was NICHT
+   gezeichnet wird (keine Stuhllehne, keine Treppensteigung, kein Tisch-Voll-
+   koerper). Node-Werkzeuge lesen sie ueber `tools/lies-hoehen.mjs`, die
+   React-Ansicht importiert sie. Frei ist allein die FARBE.
+2. **Gestutzte Waende sind Absicht.** 1,16 m aussen / 0,94 m innen statt der
+   gesetzten 300 cm — der Puppenhaus-Schnitt, der den Blick in die Raeume
+   freigibt. Die Ansicht behauptet keine niedrige Halle, sie schneidet sie auf.
+3. **In der Axonometrie wird nicht bearbeitet.** In einer schraegen Parallel-
+   projektion trifft ein Klick keinen Punkt, sondern einen Sehstrahl; die
+   Zielhoehe waere geraten. Bearbeitet wird in 2D, die Axonometrie folgt.
+
+Planer-Ansicht und Bank-Datei benutzen dieselben vier Module — die Bank-Datei
+setzt sie nur ohne Modulgrenzen aneinander, weil `file://` kein Nachladen
+erlaubt. `pruefe-axonometrie.mjs` G1 misst die Raumableitung zusaetzlich gegen
+`floorplan.getRooms()` im laufenden Planer: beide koennen nicht auseinander
+laufen, ohne dass ein Gate rot wird.
+
+**Messzugang:** `window.__planer` (gesetzt in `Blueprint3DAppBase.tsx`) gibt den
+Pruefwerkzeugen die lebende blueprint3d-Instanz — damit ein Gate das Modell
+fragen kann, statt aus Pixeln zu raten.
 
 E2E-Beweis (der einzige, der die Auslieferung wirklich prüft):
 ```

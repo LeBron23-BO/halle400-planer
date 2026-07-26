@@ -74,7 +74,13 @@ log('SCHRITT 1: Seite geladen')
 // rAF-Schleife laesst die Seite nie idle werden, ein wartender Klick liefe in
 // den Timeout, OBWOHL er wirkt. ---
 await page.evaluate(() => {
-  document.querySelector('[role="switch"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  // Die Ansichts-Umschaltung ist seit X3 eine Leiste mit drei Feldern
+  // (2D | 3D | Axonometrie) statt eines Schalters: ein Schalter kennt nur zwei
+  // Zustaende, und die Axonometrie ist der dritte. Gesucht wird der Knopf mit
+  // der Aufschrift "2D" — auf schmalen Anzeigen heisst er genauso.
+  ;[...document.querySelectorAll('button')]
+    .find((b) => b.textContent.trim() === '2D')
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 })
 await page.waitForFunction(
   () => {
