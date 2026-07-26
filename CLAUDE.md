@@ -290,6 +290,67 @@ DIN-Nummer steht bewusst NICHT dabei, eine erfundene Norm saehe belegt aus.
 **Fassung 3** des Speicherformats. Eine Datei aus Fassung 1 oder 2 laedt weiter,
 eine aus Fassung 4 wird ehrlich abgelehnt statt halb geoeffnet.
 
+## Die Härtung (W6, 2026-07-26) — was fünf grüne Wellen nicht gesehen haben
+
+Ein Gegner hat die fertige Datei **bedient** statt gelesen und dabei gefunden,
+was 411 Prüfungen nicht abdeckten. Die Lehre steht über allem Einzelnen:
+
+> **Die Messgröße begrenzt die Schärfe jeder Prüfung.** `element.hidden` sagt
+> nur, ob DIESES Attribut gesetzt ist — nichts über `display:none` aus einer
+> Medienabfrage, nichts über einen unsichtbaren Vorfahren. `paletteSichtbar()`
+> meldete `true` für eine Palette, die gar nicht zu sehen war, und 67 Prüfungen
+> fussten darauf. Alle Sichtbarkeits-Messungen laufen seither über
+> `checkVisibility()` bzw. `locator.isVisible()`.
+>
+> Und: **`dispatchEvent` ist keine Hand.** Es ruft die Zuhörer eines Elements
+> direkt auf und fragt nie, ob dieses Element überhaupt getroffen werden kann.
+> Deshalb benutzt `tools/pruefe-haertung.mjs` `page.mouse` — nur das geht durch
+> die Treffer-Ermittlung des Browsers.
+
+Sieben Festlegungen, die daraus geworden sind:
+
+1. **Scharf erst mit „Bearbeiten"** (K3). `#plan canvas{pointer-events:none}`,
+   aufgehoben allein durch `body.bearbeitet`. Der Kern hört Maus, Rad und Finger
+   AM CANVAS ab — nimmt es keine Zeiger-Ereignisse an, erreicht ihn keines.
+   Ansehen und Zoomen bleiben: die **Lese-Navigation** hängt am Umschlag
+   (`#plan`) und ruft ausschliesslich `zoomeAufPunkt` / `verschiebeAnsicht`.
+2. **„Laden" fragt** (K1) — dieselbe Rückfrage wie „Zurücksetzen". Vorher ersetzte
+   es 292 Stück / 100 Wände durch 0 / 4, leerte die Historie und überschrieb
+   sofort den Speicher.
+3. **Die Formprüfung prüft ZAHLEN** (K2): `Number.isFinite` und ±100 000 cm für
+   jede Ecke, jedes Mass, jede Öffnung. Vorher wurden `null` und `"abc"`
+   angenommen, `1e8` warf mitten im Laden, `1e12` antwortete nach 68 400 ms
+   nicht mehr. Das Laden ist zusätzlich **atomar**: ein Fehler rollt auf den
+   Stand von vorher zurück.
+4. **Zwei Fenster überschreiben sich nicht** (K4): vor jedem Schreiben wird der
+   abgelegte Zeitstempel mit dem eigenen verglichen; bei Abweichung wird NICHT
+   geschrieben, sondern gefragt. Das `storage`-Ereignis ist die Höflichkeit,
+   nicht der Schutz — ob es unter `file://` feuert, ist nicht verbürgt.
+5. **Die Herkunft erreicht die Axonometrie** (M1). `quelle` kam in `src/axo/*.js`
+   vorher NULL mal vor; ein gekipptes Stück ergab exakt dieselbe Prüfsumme.
+   Gesetzte Körper treten jetzt zum Bühnengrund hin zurück
+   (`DARSTELLUNG.gesetztRueckzug`) und tragen eine gestrichelte Kontur — im
+   Farbklima des Blattes, keine Signalfarbe.
+6. **Wände tragen `quelle`** (M2, Standard `gemessen`; `Corner.move` und das
+   Zeichnen setzen `gesetzt`). Weil eine GELÖSCHTE Wand kein Feld mehr tragen
+   kann, misst die Doppelklick-Datei zusätzlich **geometrisch** gegen den
+   eingebauten Plan: liegt an der Mitte einer gemessenen Wand noch Mauerwerk?
+   Über die Kennung ginge es nicht — eine geteilte Wand trägt zwei neue.
+7. **Der Ausdruck ist ein Blatt** (M5): `@media print` (A4 quer), Bedienelemente
+   weg, Titel/Datum/Massstabs-Aussage und die **Herkunfts-Fussnote** darauf. Sie
+   fiel unter 900 px weg — und ein A4-Blatt ist bei 96 dpi rund 794 px breit.
+
+Kleineres, ebenfalls geschlossen: Masse stehen deutsch da (`5,12 m`, feste
+Stellenzahl, G1) · der Ladehinweis zählt am MODELL statt in der Datei (G2) ·
+fremde `items` gehen beim Sichern nicht mehr verloren (G4) · `beforeunload` bei
+ungesichertem Zug (M6) · „Zurücksetzen" löscht BEIDE Speicher-Schlüssel und
+stellt den Auslieferungszustand her (M7) · ein Stand desselben Plans an einem
+anderen Ablageort wird beim Start angeboten (M8).
+
+**Offen und bewusst nicht geschlossen:** Möbel und Türen per Finger ziehen; auf
+dem BILDSCHIRM bleibt die Fussnote unter 900 px verborgen (die Zähler im
+Blattkopf tragen die Aussage dort). Beides gehört in die Handy-Welle.
+
 ## Hintergrund
 
 Vollständige Befunde, Schwellen-Begründungen und Negativbefunde: `docs/plan-befunde.md`.
