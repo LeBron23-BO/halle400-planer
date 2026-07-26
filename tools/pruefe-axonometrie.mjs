@@ -12,10 +12,25 @@
  *       Bank-Datei und die Planer-Ansicht denselben Grundriss zeigen. Laeuft
  *       nur, wenn ein Planer erreichbar ist (`node tools/serve-local.mjs`);
  *       ohne ihn meldet das Gate ehrlich "uebersprungen" statt "gruen".
- *   G2  Die Szene enthaelt alle gemessenen Daten: 25 Raumflaechen, 18
- *       Namens-Anker, 9 aufgeloeste Saeulen und GENAU EINEN Koerper je
+ *   G2  Die Szene enthaelt alle gemessenen Daten: jede abgeleitete Raumflaeche,
+ *       jeden Namens-Anker, jede aufloesbare Saeule und GENAU EINEN Koerper je
  *       gemessenem Ausstattungs-Element — nicht weniger (Verlust) und nicht
  *       mehr (erfundene Teile wie Lehnen oder Treppenstufen).
+ *
+ *       DIE ZAHLEN SIND ABGELEITET, NICHT MEHR EINGETRAGEN (W4). Bis dahin
+ *       standen hier 25 / 18 / 9 als Literale. Das war richtig, solange der
+ *       Grundriss fest war — und wird falsch, sobald ein Durchgang die
+ *       Raumzahl aendert: das Gate faerbte sich rot, obwohl das Verhalten
+ *       stimmt, und der naechste Bauende entschaerfte es. Abgeleitet wird aus
+ *       DERSELBEN Plandatei: `boeden` aus der Raumableitung, `marken` aus
+ *       `plan.labels.length`, `saeulen` aus `SAEULEN.length`.
+ *
+ *   G2b DAMIT DIE ABLEITUNG NICHT ZUR SELBSTERFUELLUNG WIRD, zwei Klammern:
+ *       ein PLAUSIBILITAETSBODEN (>= 20 Raeume, >= 15 Namen — eine leere
+ *       Ableitung kann nicht mehr gruen werden) und eine GEGENPROBE mit EINER
+ *       entfernten Wand, die eine KLEINERE Raumzahl liefern MUSS. Ohne sie
+ *       bestuende G2 auch dann, wenn `leiteRaeumeAb` konstant dasselbe zurueck
+ *       gaebe.
  *   G3  Das Bild ist wirklich gezeichnet — Farbvielfalt weit ueber dem
  *       Hintergrundverlauf, und die Amber-Akzentfarbe der Saeulen kommt vor.
  *   G4  GEGENPROBE: dieselbe Messung an einer Szene OHNE Moebel und OHNE
@@ -58,8 +73,55 @@ const melde = (name, ok, text) => {
 
 /* ══ G1 · Ableitung gegen den echten Planer ═══════════════════════ */
 const { leiteRaeumeAb, flaecheVon } = await import(pathToFileURL(path.join(WURZEL, 'src/axo/axo-zyklen.js')).href)
+const { SAEULEN } = await import(pathToFileURL(path.join(WURZEL, 'src/axo/axo-kontrakt.js')).href)
 const eigene = leiteRaeumeAb(fp.corners, fp.walls)
 const eigeneFl = eigene.map((p) => +(flaecheVon(p) / 10000).toFixed(1)).sort((a, b) => b - a)
+
+/* ══ Die SOLL-Zahlen fuer G2 — abgeleitet aus derselben Plandatei ══════════
+   Aus DERSELBEN Quelle, aus der die Szene baut, aber ueber einen ANDEREN Weg:
+   `leiteRaeumeAb` hier direkt, `baueSzene` dort im Browser. Deckt sich beides
+   nicht, ist etwas zwischen Plan und Szene verloren gegangen. */
+const SOLL = {
+  boeden: eigene.length,
+  marken: (plan.labels || []).length,
+  saeulen: SAEULEN.length,
+  ausstattung: (fp.ausstattung || []).length
+}
+
+/* KLAMMER 1 — Plausibilitaetsboden. Eine Ableitung, die nichts findet, darf
+   nicht dadurch gruen werden, dass die Szene ebenfalls nichts enthaelt: 0 == 0
+   ist wahr und trotzdem der Totalausfall. Die Untergrenzen sind bewusst weit
+   unter den heutigen 25/18 gewaehlt — sie sollen den Zusammenbruch fangen,
+   nicht eine Planaenderung verbieten. */
+const boden = SOLL.boeden >= 20 && SOLL.marken >= 15 && SOLL.saeulen === 9
+melde(
+  'G2a Plausibilitaetsboden der Ableitung',
+  boden,
+  `${SOLL.boeden} Raeume (>= 20) · ${SOLL.marken} Namen (>= 15) · ${SOLL.saeulen} Saeulen (== 9) · ${SOLL.ausstattung} Ausstattung`
+)
+
+/* KLAMMER 2 — GEGENPROBE: die Ableitung muss auf ihre Eingabe REAGIEREN.
+   Gesucht wird eine Wand, deren Entfernen zwei Raumflaechen zu einer
+   verschmilzt. Gaebe `leiteRaeumeAb` konstant dieselbe Zahl zurueck, faende
+   sich keine einzige — und die abgeleiteten SOLL-Zahlen oben waeren wertlos.
+   Es wird die ERSTE genommen und die Fundstelle genannt, damit die Probe
+   nachvollziehbar bleibt. */
+let reagiert = null
+for (let i = 0; i < fp.walls.length; i++) {
+  const ohne = fp.walls.filter((_, k) => k !== i)
+  const zahl = leiteRaeumeAb(fp.corners, ohne).length
+  if (zahl < SOLL.boeden) {
+    reagiert = { index: i, zahl }
+    break
+  }
+}
+melde(
+  'G2b Gegenprobe: Ableitung reagiert auf die Waende',
+  reagiert !== null,
+  reagiert
+    ? `ohne Wand #${reagiert.index} nur noch ${reagiert.zahl} statt ${SOLL.boeden} Raumflaechen`
+    : `KEINE Wand aenderte die Raumzahl — die Ableitung liefert offenbar eine Konstante`
+)
 
 const browser = await chromium.launch()
 try {
@@ -171,13 +233,17 @@ globalThis.__blick = (az, el) => axo.setzeBlick(az, el)
   // Gleichheit ist schaerfer als eine Untergrenze: sie faellt sowohl auf, wenn
   // Elemente verloren gehen, als auch, wenn jemand wieder anfaengt, aus einem
   // Element mehrere Koerper zu erfinden (Lehnen, Stufen, Beine).
-  const elemente = (fp.ausstattung || []).length
+  const elemente = SOLL.ausstattung
   const g2 =
-    zahlen.boeden === 25 && zahlen.marken === 18 && zahlen.saeulen === 9 && zahlen.moebel === elemente
+    zahlen.boeden === SOLL.boeden &&
+    zahlen.marken === SOLL.marken &&
+    zahlen.saeulen === SOLL.saeulen &&
+    zahlen.moebel === elemente
   melde(
     'G2 Szene vollstaendig',
     g2,
-    `${zahlen.boeden} Raumflaechen · ${zahlen.waende} Wandstuecke · ${zahlen.moebel}/${elemente} Ausstattung · ${zahlen.marken} Namen · ${zahlen.saeulen}/9 Saeulen`
+    `${zahlen.boeden}/${SOLL.boeden} Raumflaechen · ${zahlen.waende} Wandstuecke · ${zahlen.moebel}/${elemente} Ausstattung · ` +
+      `${zahlen.marken}/${SOLL.marken} Namen · ${zahlen.saeulen}/${SOLL.saeulen} Saeulen`
   )
 
   const bildVoll = await messeBild(voll.s)

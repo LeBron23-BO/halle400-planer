@@ -1,4 +1,4 @@
-import { Floorplan, AusstattungElement, AusstattungTyp } from '../model/floorplan'
+import { Floorplan, AusstattungElement, AusstattungTyp, Oeffnung } from '../model/floorplan'
 import { Wall } from '../model/wall'
 import { Corner } from '../model/corner'
 import { Room } from '../model/room'
@@ -11,7 +11,14 @@ import type { Floorplanner } from './floorplanner'
 export const floorplannerModes = {
   MOVE: 0,
   DRAW: 1,
-  DELETE: 2
+  DELETE: 2,
+  /**
+   * Türen, Fenster und Durchgänge setzen (W4). Ein EIGENES Werkzeug und kein
+   * Zusatz zum Verschieben: der Zeiger tut hier etwas anderes — er zeigt eine
+   * Geister-Öffnung auf der nächsten Wand statt zu greifen. Zwei Bedeutungen in
+   * einem Werkzeug hiessen raten, welche gemeint war.
+   */
+  OEFFNUNG: 3
 }
 
 // grid parameters
@@ -88,6 +95,33 @@ const AUSSTATTUNG_DETAIL_AB = 0.3
  * der Nutzer an dieser Stelle gar nicht sehen konnte.
  */
 export const AUSSTATTUNG_UMRISS_AB = 0.03
+
+/* ── Öffnungen: Türen, Fenster, Durchgänge (W4) ──────────────────────────
+   Ein GEDÄMPFTES GRÜN (#3f6757, der Sage-Ton des Projekts). Die Farbe ist
+   nicht Geschmack, sondern MESSBARKEIT: die Wandkante ist #888888 (r=g=b), die
+   Ausstattung #7d8a9c (blaustichig, b−r = 31). Ein Türblatt in einem der beiden
+   Töne wäre weder für das Auge noch für eine Prüfung von ihnen zu trennen —
+   genau der Fehler, den die Ausstattung in A1 schon einmal gemacht hat. Grün
+   (g−r = 40, g−b = 16) ist von beiden eindeutig verschieden. */
+const oeffnungLinie = '#3f6757'
+/** Der Geist (was entstünde, wenn man klickte) — Amber, die Akzentfarbe. */
+const oeffnungGeist = '#c8703a'
+/** Der Geist an einer Stelle, an der nichts entstehen kann. */
+const oeffnungGeistSperrt = '#a33a2a'
+/** Womit die Wandlinie unterbrochen wird: Papierweiss. So sieht eine Öffnung
+ *  in jeder Bauzeichnung aus — die Wand ist dort schlicht nicht da. */
+const oeffnungFuellung = '#ffffff'
+/**
+ * Wie breit die Unterbrechung MINDESTENS ist, in BILDSCHIRM-Pixeln.
+ *
+ * GEMESSEN, nicht geschätzt: `drawWall` malt die Wand als 5 px breite Linie,
+ * und zwar unabhängig vom Zoom. Eine Unterbrechung, die nur die echten 12,5 cm
+ * Wanddicke abdeckt, ist bei eingepasster Halle (0,045 px/cm) ein halber
+ * Bildpunkt breit und lässt die Wandlinie ungerührt durchlaufen — die Tür wäre
+ * unsichtbar, obwohl sie im Modell steht. Halbe Linienbreite plus ein Pixel
+ * Reserve deckt sie sicher ab.
+ */
+const OEFFNUNG_MIN_QUER_PX = wallWidth / 2 + 1
 
 // corner config
 const cornerRadius = 0
@@ -171,6 +205,12 @@ export class FloorplannerView {
     this.floorplan.getWalls().forEach((wall) => {
       this.drawWall(wall)
     })
+
+    // Die Öffnungen liegen ÜBER den Wänden und UNTER den Ecken (W4): sie
+    // unterbrechen die Wandlinie, müssen also nach ihr kommen. Vor den Ecken,
+    // weil eine Ecke ein Anschlusspunkt ist — sie darf von einem Türblatt nie
+    // verdeckt werden, sonst zielt man beim Zeichnen daneben.
+    this.drawOeffnungen()
 
     this.floorplan.getCorners().forEach((corner) => {
       this.drawCorner(corner)
@@ -768,6 +808,233 @@ export class FloorplannerView {
         `gezeichnet. Vollständig wird ein Typ erst mit Eintrag in AusstattungTyp, OBERKANTE_CM, ` +
         `FARBE, AUSSTATTUNG_NAME, zeichneAusstattung, AUSSTATTUNG_STIL und ERLAUBTE_TYPEN — ` +
         `fehlt einer davon, ist das Stück hier sichtbar und in der Axonometrie nicht.`
+    )
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     ÖFFNUNGEN (W4) — Türen, Fenster, Durchgänge
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  /** Zeichnet alle Öffnungen und, falls das Werkzeug läuft, den Geist. */
+  private drawOeffnungen() {
+    const kandidat =
+      this.viewmodel.loeschKandidat?.art === 'oeffnung'
+        ? this.viewmodel.loeschKandidat.kennung
+        : null
+
+    this.floorplan.getOeffnungen().forEach((o) => {
+      // Eine VERWAISTE Öffnung wird nicht gezeichnet: ihre Wand gibt es nicht
+      // mehr, sie hätte also keinen Ort. Gelöscht wird sie trotzdem nicht —
+      // die Leiste sagt, dass sie da ist, und ein Strg+Z holt die Wand zurück.
+      if (o.verwaist) {
+        return
+      }
+      this.zeichneOeffnung(o, oeffnungLinie, o.quelle === 'gesetzt')
+      if (o.id === kandidat) {
+        this.markiereOeffnung(o, true)
+      } else if (o.id === this.viewmodel.activeOeffnung) {
+        this.markiereOeffnung(o, false)
+      }
+    })
+
+    // Der GEIST zuletzt, damit er über allem liegt: er ist die Antwort auf
+    // „was passiert, wenn ich jetzt klicke" und darf von nichts verdeckt sein.
+    const geist = this.viewmodel.geistOeffnung
+    if (geist) {
+      this.zeichneOeffnung(
+        {
+          id: '__geist',
+          wandId: geist.wandId,
+          lage: geist.lage,
+          breite: geist.breite,
+          art: geist.art,
+          seite: geist.seite,
+          anschlag: geist.anschlag,
+          quelle: 'gesetzt',
+          anker: { x: 0, y: 0 }
+        },
+        geist.passt ? oeffnungGeist : oeffnungGeistSperrt,
+        true,
+        // Der Geist füllt die Wand NICHT weiss: er soll zeigen, wo etwas
+        // entstünde, nicht so tun, als wäre es schon da. Eine Wand, die unter
+        // dem Zeiger aufreisst und beim Wegfahren wieder zuwächst, liest sich
+        // wie ein Fehler.
+        false
+      )
+    }
+  }
+
+  /**
+   * EINE Öffnung. Die Reihenfolge ist die einer Bauzeichnung: erst die Wand
+   * aufschneiden (weisse Füllung), dann die Laibungen, dann das Zeichen der Art.
+   *
+   * @param farbe    Linienfarbe — für den Geist eine andere als für das Gesetzte
+   * @param gestrich Blatt und Bogen gestrichelt? (`quelle: 'gesetzt'`)
+   * @param fuellen  die Wandlinie wirklich unterbrechen?
+   */
+  private zeichneOeffnung(o: Oeffnung, farbe: string, gestrich: boolean, fuellen = true) {
+    const g = this.floorplan.oeffnungsGeometrie(o)
+    if (!g) {
+      return
+    }
+    const proCm = this.viewmodel.pixelProCm()
+    // Quer zur Wand mindestens so weit, dass die 5 px breite Wandlinie
+    // wirklich verschwindet (siehe `OEFFNUNG_MIN_QUER_PX`).
+    const quer = Math.max(g.dicke / 2, OEFFNUNG_MIN_QUER_PX / proCm)
+    const hb = o.breite / 2
+
+    /** Punkt im lokalen System der Öffnung: `laengs` entlang der Wand,
+     *  `q` quer dazu (positiv in Richtung der linken Normalen), beides in cm. */
+    const p = (laengs: number, q: number): [number, number] => [
+      this.viewmodel.convertX(g.mx + g.ex * laengs + g.nx * q),
+      this.viewmodel.convertY(g.my + g.ey * laengs + g.ny * q)
+    ]
+
+    if (fuellen) {
+      const ecken = [p(-hb, -quer), p(hb, -quer), p(hb, quer), p(-hb, quer)]
+      this.drawPolygon(
+        ecken.map((e) => e[0]),
+        ecken.map((e) => e[1]),
+        true,
+        oeffnungFuellung,
+        false
+      )
+    }
+
+    // Die beiden Laibungen. IMMER durchgezogen, auch bei `gesetzt`: sie sind
+    // die Geometrie der Öffnung, nicht die Aussage über ihre Herkunft. Ohne sie
+    // sähe ein Durchgang aus wie ein Loch, das jemand vergessen hat.
+    const strich = (a: [number, number], b: [number, number]) =>
+      this.drawLine(a[0], a[1], b[0], b[1], ausstattungLinienBreite, farbe)
+    strich(p(-hb, -quer), p(-hb, quer))
+    strich(p(hb, -quer), p(hb, quer))
+
+    if (gestrich) {
+      this.context.setLineDash(GESETZT_STRICH)
+    }
+    switch (o.art) {
+      case 'tuer': {
+        // Band an der gewählten Laibung, Blatt senkrecht in den Raum auf der
+        // gewählten Seite, Bogen zurück zur anderen Laibung. Das ist die
+        // Norm-Darstellung: sie sagt zugleich, wohin die Tür aufschlägt und
+        // wie viel Fläche sie dabei braucht.
+        const band = o.anschlag === 'anfang' ? -hb : hb
+        const gegen = -band
+        this.zeichneBlattUndBogen(p, band, gegen, o.breite, o.seite, farbe)
+        break
+      }
+      case 'doppeltuer':
+        // Zwei Flügel von je halber lichter Weite, an den beiden Laibungen
+        // angeschlagen — `anschlag` hat hier keine Wirkung, beide Seiten sind
+        // besetzt. Das Feld bleibt trotzdem gesetzt, damit ein Wechsel der Art
+        // nicht in einen unbestimmten Zustand führt.
+        this.zeichneBlattUndBogen(p, -hb, 0, hb, o.seite, farbe)
+        this.zeichneBlattUndBogen(p, hb, 0, hb, o.seite, farbe)
+        break
+      case 'fenster': {
+        // Zwei dünne Parallelen längs in der Wandstärke — der Blendrahmen. Bei
+        // einem Viertel der Dicke, damit sie auch dann noch als zwei Linien zu
+        // sehen sind, wenn die Wand im Bild wenige Pixel misst.
+        const q = quer / 2
+        strich(p(-hb, -q), p(hb, -q))
+        strich(p(-hb, q), p(hb, q))
+        break
+      }
+      case 'durchgang':
+        // Nur die Laibungen. Ein Durchgang HAT kein Blatt — ihm eines zu
+        // geben wäre eine Bauaussage, die niemand getroffen hat.
+        break
+    }
+    if (gestrich) {
+      this.context.setLineDash([])
+    }
+  }
+
+  /**
+   * Türblatt als Strecke plus Viertelkreis-Aufschlagbogen.
+   *
+   * Der Bogen wird über `context.arc` in BILDkoordinaten gezogen und nicht als
+   * Punktkette in Weltkoordinaten: ein Kreisbogen bleibt unter der reinen
+   * Verschiebung/Streckung dieser Ansicht ein Kreisbogen, eine Kette wäre bei
+   * starkem Zoom sichtbar eckig. Die Winkel kommen aus den beiden ECHTEN
+   * Endpunkten — dadurch stimmt der Bogen auch bei gedrehter Wand, ohne dass
+   * hier irgendwo ein Wandwinkel nachgerechnet würde.
+   *
+   * @param band  Lage des Bandes entlang der Wand (cm, lokal)
+   * @param gegen Lage der gegenüberliegenden Laibung (cm, lokal)
+   * @param weite Blattlänge in cm
+   * @param seite Aufschlagseite (+1/−1 entlang der Normalen)
+   */
+  private zeichneBlattUndBogen(
+    p: (laengs: number, q: number) => [number, number],
+    band: number,
+    gegen: number,
+    weite: number,
+    seite: 1 | -1,
+    farbe: string
+  ) {
+    const drehpunkt = p(band, 0)
+    const spitze = p(band, seite * weite)
+    const anschlagEnde = p(gegen, 0)
+
+    this.drawLine(
+      drehpunkt[0],
+      drehpunkt[1],
+      spitze[0],
+      spitze[1],
+      ausstattungLinienBreite,
+      farbe
+    )
+
+    const radius = Math.hypot(spitze[0] - drehpunkt[0], spitze[1] - drehpunkt[1])
+    if (radius < 1) {
+      return
+    }
+    const a1 = Math.atan2(spitze[1] - drehpunkt[1], spitze[0] - drehpunkt[0])
+    const a2 = Math.atan2(anschlagEnde[1] - drehpunkt[1], anschlagEnde[0] - drehpunkt[0])
+    // Auf −PI..PI normalisieren: sonst zöge der Bogen bei einem Sprung über
+    // ±180° den langen Weg über drei Viertel des Kreises.
+    let delta = a2 - a1
+    while (delta > Math.PI) delta -= 2 * Math.PI
+    while (delta < -Math.PI) delta += 2 * Math.PI
+
+    this.context.beginPath()
+    this.context.arc(drehpunkt[0], drehpunkt[1], radius, a1, a2, delta < 0)
+    this.context.lineWidth = ausstattungLinienBreite
+    this.context.strokeStyle = farbe
+    this.context.stroke()
+  }
+
+  /**
+   * Rahmen um eine Öffnung — `fest` heisst: sie steht zur Löschung an.
+   * Dieselbe Aufteilung wie bei `markiereAusstattung`, samt derselben
+   * Begründung für die Farbe: rot heisst „das verschwindet gleich", blau „das
+   * könntest du greifen".
+   */
+  private markiereOeffnung(o: Oeffnung, fest: boolean) {
+    const g = this.floorplan.oeffnungsGeometrie(o)
+    if (!g) {
+      return
+    }
+    const proCm = this.viewmodel.pixelProCm()
+    // Etwas höher als die Wand dick ist, sonst läge der Rahmen genau auf den
+    // Laibungen und wäre von ihnen nicht zu unterscheiden.
+    const quer = Math.max(g.dicke, OEFFNUNG_MIN_QUER_PX / proCm) * 1.6
+    const hb = o.breite / 2
+    const p = (laengs: number, q: number): [number, number] => [
+      this.viewmodel.convertX(g.mx + g.ex * laengs + g.nx * q),
+      this.viewmodel.convertY(g.my + g.ey * laengs + g.ny * q)
+    ]
+    const ecken = [p(-hb, -quer), p(hb, -quer), p(hb, quer), p(-hb, quer)]
+    const greifbar = this.viewmodel.mode == floorplannerModes.OEFFNUNG
+    this.drawPolygon(
+      ecken.map((e) => e[0]),
+      ecken.map((e) => e[1]),
+      fest,
+      loeschFuellung,
+      true,
+      fest || !greifbar ? deleteColor : wallColorHover,
+      fest ? 3 : 2
     )
   }
 

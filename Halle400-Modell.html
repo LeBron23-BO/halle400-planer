@@ -38,6 +38,10 @@
   #plan canvas{cursor:default}
   body.zeichnet #plan canvas{cursor:crosshair}
   body.loescht #plan canvas{cursor:not-allowed}
+  /* Im Oeffnungs-Werkzeug zeigt das Fadenkreuz auf die Wand — der Kern setzt
+     ueber diesen Stil hinweg 'grab'/'grabbing', sobald eine vorhandene Tuer
+     unter dem Zeiger liegt (Inline-Stil schlaegt Klassenregel). */
+  body.oeffnet #plan canvas{cursor:crosshair}
 
   .kopf{position:fixed;top:52px;left:0;padding:14px 26px;pointer-events:none;max-width:min(46ch,72vw)}
   .kopf h1{font-family:var(--serif);font-weight:600;font-size:clamp(19px,2.5vw,27px);
@@ -201,6 +205,10 @@
     <div class="strich"></div>
     <div class="sub" id="unterzeile">Axonometrie</div>
     <div class="gesetzt" id="gesetztZaehler" hidden></div>
+    <!-- Die Öffnungs-Legende (W4). Sie steht NUR da, wenn es Öffnungen gibt:
+         eine dauerhafte „0 Öffnungen"-Zeile lehrte den Leser, über sie
+         hinwegzusehen — genau dann, wenn sie einmal wichtig wird. -->
+    <div class="gesetzt" id="oeffnungZaehler" hidden></div>
   </header>
 
   <aside class="tafel" id="tafel">
@@ -256,10 +264,22 @@
       <span class="lbl">Werkzeug</span>
       <button type="button" id="wzMove" title="Verschieben — Ecken, Wände und Möbel ziehen. Q und E drehen das Möbel unter dem Zeiger um 15°." aria-pressed="true">Verschieben</button>
       <button type="button" id="wzDraw" title="Wände zeichnen — Punkt für Punkt" aria-pressed="false">Wände zeichnen</button>
+      <button type="button" id="wzOeffnung" title="Türen &amp; Fenster — auf eine Wand zeigen, klicken setzt. Q wendet den Anschlag, E die Aufschlagseite." aria-pressed="false">Türen &amp; Fenster</button>
       <button type="button" id="wzDelete" title="Löschen — mit Rückfrage" aria-pressed="false">Löschen</button>
     </div>
+    <!-- Die Arten der Öffnung. Sie erscheinen NUR mit dem Werkzeug: vier
+         weitere Knöpfe in einer ohnehin breiten Leiste wären sonst dauerhaft
+         im Weg, ohne je etwas zu bewirken. Ein Klick wählt die Art UND greift
+         das Werkzeug — wer „Fenster" drückt, will ein Fenster setzen. -->
+    <div class="grp" id="oeffnungsArten" hidden>
+      <span class="lbl">Öffnung</span>
+      <button type="button" data-oeffnung="tuer" aria-pressed="true">Tür</button>
+      <button type="button" data-oeffnung="doppeltuer" aria-pressed="false">Doppeltür</button>
+      <button type="button" data-oeffnung="fenster" aria-pressed="false">Fenster</button>
+      <button type="button" data-oeffnung="durchgang" aria-pressed="false">Durchgang</button>
+    </div>
     <div class="grp">
-      <button type="button" id="btnEinrasten" aria-pressed="true" title="Gezogene Möbel bündig an die Wand legen, sonst auf 5 cm runden">Einrasten</button>
+      <button type="button" id="btnEinrasten" aria-pressed="true" title="Gezogene Möbel bündig an die Wand legen, Öffnungen bündig an die Ecke oder in die Wandmitte, sonst auf 5 cm runden">Einrasten</button>
     </div>
     <div class="grp">
       <button type="button" id="btnUndo" title="Rückgängig (Strg+Z)">Rückgängig</button>
@@ -3966,7 +3986,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "c8051b95fb22";
-const BAU_STEMPEL = "2026-07-26 16:41";
+const BAU_STEMPEL = "2026-07-26 16:57";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -6690,7 +6710,14 @@ class Floorplan {
 const floorplannerModes = {
     MOVE: 0,
     DRAW: 1,
-    DELETE: 2
+    DELETE: 2,
+    /**
+     * Türen, Fenster und Durchgänge setzen (W4). Ein EIGENES Werkzeug und kein
+     * Zusatz zum Verschieben: der Zeiger tut hier etwas anderes — er zeigt eine
+     * Geister-Öffnung auf der nächsten Wand statt zu greifen. Zwei Bedeutungen in
+     * einem Werkzeug hiessen raten, welche gemeint war.
+     */
+    OEFFNUNG: 3
 };
 // grid parameters
 const gridSpacing = 20; // pixels
@@ -6758,6 +6785,32 @@ const AUSSTATTUNG_DETAIL_AB = 0.3;
  * der Nutzer an dieser Stelle gar nicht sehen konnte.
  */
 const AUSSTATTUNG_UMRISS_AB = 0.03;
+/* ── Öffnungen: Türen, Fenster, Durchgänge (W4) ──────────────────────────
+   Ein GEDÄMPFTES GRÜN (#3f6757, der Sage-Ton des Projekts). Die Farbe ist
+   nicht Geschmack, sondern MESSBARKEIT: die Wandkante ist #888888 (r=g=b), die
+   Ausstattung #7d8a9c (blaustichig, b−r = 31). Ein Türblatt in einem der beiden
+   Töne wäre weder für das Auge noch für eine Prüfung von ihnen zu trennen —
+   genau der Fehler, den die Ausstattung in A1 schon einmal gemacht hat. Grün
+   (g−r = 40, g−b = 16) ist von beiden eindeutig verschieden. */
+const oeffnungLinie = '#3f6757';
+/** Der Geist (was entstünde, wenn man klickte) — Amber, die Akzentfarbe. */
+const oeffnungGeist = '#c8703a';
+/** Der Geist an einer Stelle, an der nichts entstehen kann. */
+const oeffnungGeistSperrt = '#a33a2a';
+/** Womit die Wandlinie unterbrochen wird: Papierweiss. So sieht eine Öffnung
+ *  in jeder Bauzeichnung aus — die Wand ist dort schlicht nicht da. */
+const oeffnungFuellung = '#ffffff';
+/**
+ * Wie breit die Unterbrechung MINDESTENS ist, in BILDSCHIRM-Pixeln.
+ *
+ * GEMESSEN, nicht geschätzt: `drawWall` malt die Wand als 5 px breite Linie,
+ * und zwar unabhängig vom Zoom. Eine Unterbrechung, die nur die echten 12,5 cm
+ * Wanddicke abdeckt, ist bei eingepasster Halle (0,045 px/cm) ein halber
+ * Bildpunkt breit und lässt die Wandlinie ungerührt durchlaufen — die Tür wäre
+ * unsichtbar, obwohl sie im Modell steht. Halbe Linienbreite plus ein Pixel
+ * Reserve deckt sie sicher ab.
+ */
+const OEFFNUNG_MIN_QUER_PX = wallWidth / 2 + 1;
 // corner config
 const cornerRadius = 0;
 const cornerRadiusHover = 7;
@@ -6842,6 +6895,11 @@ class FloorplannerView {
         this.floorplan.getWalls().forEach((wall) => {
             this.drawWall(wall);
         });
+        // Die Öffnungen liegen ÜBER den Wänden und UNTER den Ecken (W4): sie
+        // unterbrechen die Wandlinie, müssen also nach ihr kommen. Vor den Ecken,
+        // weil eine Ecke ein Anschlusspunkt ist — sie darf von einem Türblatt nie
+        // verdeckt werden, sonst zielt man beim Zeichnen daneben.
+        this.drawOeffnungen();
         this.floorplan.getCorners().forEach((corner) => {
             this.drawCorner(corner);
         });
@@ -7306,6 +7364,188 @@ class FloorplannerView {
             `FARBE, AUSSTATTUNG_NAME, zeichneAusstattung, AUSSTATTUNG_STIL und ERLAUBTE_TYPEN — ` +
             `fehlt einer davon, ist das Stück hier sichtbar und in der Axonometrie nicht.`);
     }
+    /* ═══════════════════════════════════════════════════════════════════════
+       ÖFFNUNGEN (W4) — Türen, Fenster, Durchgänge
+       ═══════════════════════════════════════════════════════════════════════ */
+    /** Zeichnet alle Öffnungen und, falls das Werkzeug läuft, den Geist. */
+    drawOeffnungen() {
+        const kandidat = this.viewmodel.loeschKandidat?.art === 'oeffnung'
+            ? this.viewmodel.loeschKandidat.kennung
+            : null;
+        this.floorplan.getOeffnungen().forEach((o) => {
+            // Eine VERWAISTE Öffnung wird nicht gezeichnet: ihre Wand gibt es nicht
+            // mehr, sie hätte also keinen Ort. Gelöscht wird sie trotzdem nicht —
+            // die Leiste sagt, dass sie da ist, und ein Strg+Z holt die Wand zurück.
+            if (o.verwaist) {
+                return;
+            }
+            this.zeichneOeffnung(o, oeffnungLinie, o.quelle === 'gesetzt');
+            if (o.id === kandidat) {
+                this.markiereOeffnung(o, true);
+            }
+            else if (o.id === this.viewmodel.activeOeffnung) {
+                this.markiereOeffnung(o, false);
+            }
+        });
+        // Der GEIST zuletzt, damit er über allem liegt: er ist die Antwort auf
+        // „was passiert, wenn ich jetzt klicke" und darf von nichts verdeckt sein.
+        const geist = this.viewmodel.geistOeffnung;
+        if (geist) {
+            this.zeichneOeffnung({
+                id: '__geist',
+                wandId: geist.wandId,
+                lage: geist.lage,
+                breite: geist.breite,
+                art: geist.art,
+                seite: geist.seite,
+                anschlag: geist.anschlag,
+                quelle: 'gesetzt',
+                anker: { x: 0, y: 0 }
+            }, geist.passt ? oeffnungGeist : oeffnungGeistSperrt, true, 
+            // Der Geist füllt die Wand NICHT weiss: er soll zeigen, wo etwas
+            // entstünde, nicht so tun, als wäre es schon da. Eine Wand, die unter
+            // dem Zeiger aufreisst und beim Wegfahren wieder zuwächst, liest sich
+            // wie ein Fehler.
+            false);
+        }
+    }
+    /**
+     * EINE Öffnung. Die Reihenfolge ist die einer Bauzeichnung: erst die Wand
+     * aufschneiden (weisse Füllung), dann die Laibungen, dann das Zeichen der Art.
+     *
+     * @param farbe    Linienfarbe — für den Geist eine andere als für das Gesetzte
+     * @param gestrich Blatt und Bogen gestrichelt? (`quelle: 'gesetzt'`)
+     * @param fuellen  die Wandlinie wirklich unterbrechen?
+     */
+    zeichneOeffnung(o, farbe, gestrich, fuellen = true) {
+        const g = this.floorplan.oeffnungsGeometrie(o);
+        if (!g) {
+            return;
+        }
+        const proCm = this.viewmodel.pixelProCm();
+        // Quer zur Wand mindestens so weit, dass die 5 px breite Wandlinie
+        // wirklich verschwindet (siehe `OEFFNUNG_MIN_QUER_PX`).
+        const quer = Math.max(g.dicke / 2, OEFFNUNG_MIN_QUER_PX / proCm);
+        const hb = o.breite / 2;
+        /** Punkt im lokalen System der Öffnung: `laengs` entlang der Wand,
+         *  `q` quer dazu (positiv in Richtung der linken Normalen), beides in cm. */
+        const p = (laengs, q) => [
+            this.viewmodel.convertX(g.mx + g.ex * laengs + g.nx * q),
+            this.viewmodel.convertY(g.my + g.ey * laengs + g.ny * q)
+        ];
+        if (fuellen) {
+            const ecken = [p(-hb, -quer), p(hb, -quer), p(hb, quer), p(-hb, quer)];
+            this.drawPolygon(ecken.map((e) => e[0]), ecken.map((e) => e[1]), true, oeffnungFuellung, false);
+        }
+        // Die beiden Laibungen. IMMER durchgezogen, auch bei `gesetzt`: sie sind
+        // die Geometrie der Öffnung, nicht die Aussage über ihre Herkunft. Ohne sie
+        // sähe ein Durchgang aus wie ein Loch, das jemand vergessen hat.
+        const strich = (a, b) => this.drawLine(a[0], a[1], b[0], b[1], ausstattungLinienBreite, farbe);
+        strich(p(-hb, -quer), p(-hb, quer));
+        strich(p(hb, -quer), p(hb, quer));
+        if (gestrich) {
+            this.context.setLineDash(GESETZT_STRICH);
+        }
+        switch (o.art) {
+            case 'tuer': {
+                // Band an der gewählten Laibung, Blatt senkrecht in den Raum auf der
+                // gewählten Seite, Bogen zurück zur anderen Laibung. Das ist die
+                // Norm-Darstellung: sie sagt zugleich, wohin die Tür aufschlägt und
+                // wie viel Fläche sie dabei braucht.
+                const band = o.anschlag === 'anfang' ? -hb : hb;
+                const gegen = -band;
+                this.zeichneBlattUndBogen(p, band, gegen, o.breite, o.seite, farbe);
+                break;
+            }
+            case 'doppeltuer':
+                // Zwei Flügel von je halber lichter Weite, an den beiden Laibungen
+                // angeschlagen — `anschlag` hat hier keine Wirkung, beide Seiten sind
+                // besetzt. Das Feld bleibt trotzdem gesetzt, damit ein Wechsel der Art
+                // nicht in einen unbestimmten Zustand führt.
+                this.zeichneBlattUndBogen(p, -hb, 0, hb, o.seite, farbe);
+                this.zeichneBlattUndBogen(p, hb, 0, hb, o.seite, farbe);
+                break;
+            case 'fenster': {
+                // Zwei dünne Parallelen längs in der Wandstärke — der Blendrahmen. Bei
+                // einem Viertel der Dicke, damit sie auch dann noch als zwei Linien zu
+                // sehen sind, wenn die Wand im Bild wenige Pixel misst.
+                const q = quer / 2;
+                strich(p(-hb, -q), p(hb, -q));
+                strich(p(-hb, q), p(hb, q));
+                break;
+            }
+            case 'durchgang':
+                // Nur die Laibungen. Ein Durchgang HAT kein Blatt — ihm eines zu
+                // geben wäre eine Bauaussage, die niemand getroffen hat.
+                break;
+        }
+        if (gestrich) {
+            this.context.setLineDash([]);
+        }
+    }
+    /**
+     * Türblatt als Strecke plus Viertelkreis-Aufschlagbogen.
+     *
+     * Der Bogen wird über `context.arc` in BILDkoordinaten gezogen und nicht als
+     * Punktkette in Weltkoordinaten: ein Kreisbogen bleibt unter der reinen
+     * Verschiebung/Streckung dieser Ansicht ein Kreisbogen, eine Kette wäre bei
+     * starkem Zoom sichtbar eckig. Die Winkel kommen aus den beiden ECHTEN
+     * Endpunkten — dadurch stimmt der Bogen auch bei gedrehter Wand, ohne dass
+     * hier irgendwo ein Wandwinkel nachgerechnet würde.
+     *
+     * @param band  Lage des Bandes entlang der Wand (cm, lokal)
+     * @param gegen Lage der gegenüberliegenden Laibung (cm, lokal)
+     * @param weite Blattlänge in cm
+     * @param seite Aufschlagseite (+1/−1 entlang der Normalen)
+     */
+    zeichneBlattUndBogen(p, band, gegen, weite, seite, farbe) {
+        const drehpunkt = p(band, 0);
+        const spitze = p(band, seite * weite);
+        const anschlagEnde = p(gegen, 0);
+        this.drawLine(drehpunkt[0], drehpunkt[1], spitze[0], spitze[1], ausstattungLinienBreite, farbe);
+        const radius = Math.hypot(spitze[0] - drehpunkt[0], spitze[1] - drehpunkt[1]);
+        if (radius < 1) {
+            return;
+        }
+        const a1 = Math.atan2(spitze[1] - drehpunkt[1], spitze[0] - drehpunkt[0]);
+        const a2 = Math.atan2(anschlagEnde[1] - drehpunkt[1], anschlagEnde[0] - drehpunkt[0]);
+        // Auf −PI..PI normalisieren: sonst zöge der Bogen bei einem Sprung über
+        // ±180° den langen Weg über drei Viertel des Kreises.
+        let delta = a2 - a1;
+        while (delta > Math.PI)
+            delta -= 2 * Math.PI;
+        while (delta < -Math.PI)
+            delta += 2 * Math.PI;
+        this.context.beginPath();
+        this.context.arc(drehpunkt[0], drehpunkt[1], radius, a1, a2, delta < 0);
+        this.context.lineWidth = ausstattungLinienBreite;
+        this.context.strokeStyle = farbe;
+        this.context.stroke();
+    }
+    /**
+     * Rahmen um eine Öffnung — `fest` heisst: sie steht zur Löschung an.
+     * Dieselbe Aufteilung wie bei `markiereAusstattung`, samt derselben
+     * Begründung für die Farbe: rot heisst „das verschwindet gleich", blau „das
+     * könntest du greifen".
+     */
+    markiereOeffnung(o, fest) {
+        const g = this.floorplan.oeffnungsGeometrie(o);
+        if (!g) {
+            return;
+        }
+        const proCm = this.viewmodel.pixelProCm();
+        // Etwas höher als die Wand dick ist, sonst läge der Rahmen genau auf den
+        // Laibungen und wäre von ihnen nicht zu unterscheiden.
+        const quer = Math.max(g.dicke, OEFFNUNG_MIN_QUER_PX / proCm) * 1.6;
+        const hb = o.breite / 2;
+        const p = (laengs, q) => [
+            this.viewmodel.convertX(g.mx + g.ex * laengs + g.nx * q),
+            this.viewmodel.convertY(g.my + g.ey * laengs + g.ny * q)
+        ];
+        const ecken = [p(-hb, -quer), p(hb, -quer), p(hb, quer), p(-hb, quer)];
+        const greifbar = this.viewmodel.mode == floorplannerModes.OEFFNUNG;
+        this.drawPolygon(ecken.map((e) => e[0]), ecken.map((e) => e[1]), fest, loeschFuellung, true, fest || !greifbar ? deleteColor : wallColorHover, fest ? 3 : 2);
+    }
     /** */
     drawCorner(corner) {
         const hover = corner === this.viewmodel.activeCorner;
@@ -7491,6 +7731,40 @@ const AUSSTATTUNG_NAME = {
     geraet: 'Fitnessgerät',
     liege: 'Liege'
 };
+/**
+ * Deutsche Namen der Öffnungsarten (W4) — für die Werkzeugleiste und die
+ * Lösch-Rückfrage. EINE Liste für beides, aus demselben Grund wie bei
+ * `AUSSTATTUNG_NAME`.
+ */
+const OEFFNUNG_NAME = {
+    tuer: 'Tür',
+    doppeltuer: 'Doppeltür',
+    fenster: 'Fenster',
+    durchgang: 'Durchgang'
+};
+/**
+ * Wie die Rückfrage die Öffnung benennt — im AKKUSATIV, weil davor „Entfernen:"
+ * steht („diesen Durchgang", nicht „dieser Durchgang"). Die vorhandenen Ziele
+ * sagen es genauso („diese Wand", „diese Ecke mit allen Wänden daran"); eine
+ * abweichende Beugung an einer von vier Stellen fiele als Fehler auf, ohne
+ * einer zu sein.
+ */
+const OEFFNUNG_ARTIKEL = {
+    tuer: 'diese Tür',
+    doppeltuer: 'diese Doppeltür',
+    fenster: 'dieses Fenster',
+    durchgang: 'diesen Durchgang'
+};
+/**
+ * Wie weit der Zeiger von einer Wandachse entfernt sein darf, damit dort eine
+ * Öffnung angeboten wird — ZUSÄTZLICH zur halben Wanddicke, in cm.
+ *
+ * In Weltmaß und nicht in Bildschirm-Pixeln, aus demselben Grund wie beim
+ * Einrasten der Möbel: „diese Wand bekommt eine Tür" ist eine AUSSAGE ÜBER DIE
+ * PLANUNG. Ob der Nutzer herangezoomt hat, darf nicht entscheiden, welche Wand
+ * getroffen wird — sonst finge man in der Übersicht die Nachbarwand.
+ */
+const OEFFNUNG_FANG_CM = 30;
 /** how much will we move a corner to make a wall axis aligned (cm) */
 const snapTolerance = 25;
 /**
@@ -7632,6 +7906,20 @@ class Floorplanner {
                 };
             }
         }
+        // Die Öffnung steht ZULETZT in dieser Kette und trotzdem VORNE beim
+        // Greifen (`trefferBestimmen`): sie wird nur dann überhaupt gemerkt, wenn
+        // der Zeiger wirklich auf ihr steht — dann ist aber weder Ecke noch Wand
+        // noch Möbel gesetzt, und dieser Zweig ist der einzige, der greift.
+        if (!ziel && this.activeOeffnung) {
+            const o = this.floorplan.findeOeffnung(this.activeOeffnung);
+            if (o) {
+                ziel = {
+                    art: 'oeffnung',
+                    kennung: o.id,
+                    beschreibung: this.oeffnungsBeschreibung(o)
+                };
+            }
+        }
         if (!ziel) {
             return false;
         }
@@ -7688,6 +7976,9 @@ class Floorplanner {
             ziel.wand.remove();
             entfernt = true;
         }
+        else if (ziel.art === 'oeffnung') {
+            entfernt = this.floorplan.entferneOeffnung(ziel.kennung);
+        }
         else {
             entfernt = this.floorplan.entferneAusstattung(ziel.kennung);
         }
@@ -7698,6 +7989,7 @@ class Floorplanner {
         this.activeCorner = null;
         this.activeWall = null;
         this.activeAusstattung = null;
+        this.activeOeffnung = null;
         this.view.draw();
         this.loeschAnfrageCallbacks.forEach((cb) => cb(null));
         return entfernt;
@@ -7849,6 +8141,54 @@ class Floorplanner {
         this.verweilY = 0;
         /** Meldet der Oberfläche, dass eine Rückfrage zu zeigen (oder zu schliessen) ist. */
         this.loeschAnfrageCallbacks = [];
+        // ------------------------------------------ Türen, Fenster, Durchgänge (W4)
+        /**
+         * Welche Art das Werkzeug gerade setzt. Öffentlich lesbar, aber nur über
+         * `setzeOeffnungsArt` zu ändern — Breite und Brüstung hängen daran und
+         * müssten sonst an jeder Aufrufstelle mitgeführt werden.
+         */
+        this.oeffnungsArt = OEFFNUNGS_VORLAGEN[0].art;
+        /** Lichte Weite der nächsten Öffnung in cm (aus `OEFFNUNGS_VORLAGEN`). */
+        this.oeffnungsBreite = OEFFNUNGS_VORLAGEN[0].breite;
+        /** Brüstung der nächsten Öffnung in cm, oder `undefined` (bodentief). */
+        this.oeffnungsBruestung = OEFFNUNGS_VORLAGEN[0].bruestung;
+        /**
+         * Die GEISTER-Öffnung: wo eine Öffnung entstünde, wenn man jetzt klickte.
+         * `null` heisst: hier ist keine Wand, die eine tragen kann.
+         *
+         * Sie wird gezeichnet, BEVOR etwas entsteht — ohne diese Vorschau setzt man
+         * eine Tür und sieht erst danach, dass sie an der Nachbarwand gelandet ist.
+         */
+        this.geistOeffnung = null;
+        /** KENNUNG der Öffnung unter dem Zeiger, oder `null`. Wie bei der
+         *  Ausstattung die Kennung und nicht das Objekt — ein Rückgängig baut die
+         *  Liste neu auf. */
+        this.activeOeffnung = null;
+        /** KENNUNG der Öffnung, die gerade GEZOGEN wird. */
+        this.zugOeffnung = null;
+        /**
+         * Versatz zwischen Zeiger und Öffnungsmitte ENTLANG DER WAND, in cm,
+         * festgehalten beim Drücken. Dasselbe Problem wie beim Möbelgriff: ohne ihn
+         * spränge eine 1,75 m breite Doppeltür mit ihrer Mitte unter den Zeiger.
+         */
+        this.zugOeffnungVersatz = 0;
+        /** Aufschlagseite und Anschlag der NÄCHSTEN Öffnung — Q und E wenden sie
+         *  auch dann, wenn noch nichts gesetzt ist (dann gilt es für die Geister-
+         *  Öffnung und damit für das, was gleich entsteht). */
+        this.naechsteSeite = 1;
+        this.naechsterAnschlag = 'anfang';
+        /** Meldet der Oberfläche, dass sich Art/Breite geändert haben. */
+        this.oeffnungsCallbacks = [];
+        /**
+         * Meldet, was ein Klick im Öffnungs-Werkzeug bewirkt hat: die neue Öffnung
+         * oder `null`, wenn keine entstehen konnte.
+         *
+         * Ohne diese Meldung bliebe ein abgelehnter Klick STUMM. Der rote Geist sagt
+         * zwar „hier nicht", aber nur solange der Zeiger dort steht — wer trotzdem
+         * klickt, hätte sonst gar keine Antwort bekommen. Die Oberfläche entscheidet,
+         * wie sie es sagt; der Kern kennt seine beiden Hüllen nicht.
+         */
+        this.oeffnungGesetztCallbacks = [];
         // ------------------------------------------------------- Finger-Navigation
         /** Abstand des letzten Zwei-Finger-Griffs, fuer das Verhaeltnis beim Zoomen. */
         this.fingerAbstand = 0;
@@ -7932,7 +8272,15 @@ class Floorplanner {
             if (taste !== 'q' && taste !== 'e') {
                 return;
             }
-            if (this.dreheAktives(taste === 'q' ? -1 : 1)) {
+            // WELCHE Bedeutung die beiden Tasten haben, entscheidet das Werkzeug
+            // (W4): im Verschieben drehen sie ein Möbel, im Öffnungs-Werkzeug wenden
+            // sie Anschlag (Q) und Aufschlagseite (E). Zwei Bedeutungen für zwei
+            // Werkzeuge sind weniger Last als vier Tasten — und ein Möbel gibt es im
+            // Öffnungs-Werkzeug ohnehin nicht zu greifen.
+            const gewirkt = this.mode == floorplannerModes.OEFFNUNG
+                ? this.wendeAktiveOeffnung(taste === 'q' ? 'anschlag' : 'seite')
+                : this.dreheAktives(taste === 'q' ? -1 : 1);
+            if (gewirkt) {
                 e.preventDefault();
             }
         });
@@ -8066,6 +8414,26 @@ class Floorplanner {
                 this.activeAusstattung = null;
             }
         }
+        // --- Eine vorhandene Öffnung greifen (W4). Der Griff-Versatz wird HIER
+        // festgehalten, aus demselben Grund wie beim Möbel: sonst spränge eine
+        // 1,75 m breite Doppeltür mit ihrer Mitte unter den Zeiger.
+        this.zugOeffnung = null;
+        if (this.mode == floorplannerModes.OEFFNUNG && this.activeOeffnung) {
+            const o = this.floorplan.findeOeffnung(this.activeOeffnung);
+            const g = o ? this.floorplan.oeffnungsGeometrie(o) : null;
+            const wand = o ? this.floorplan.findeWand(o.wandId) : null;
+            if (o && g && wand) {
+                this.zugOeffnung = o.id;
+                const amZeiger = (this.mouseX - wand.getStartX()) * g.ex + (this.mouseY - wand.getStartY()) * g.ey;
+                this.zugOeffnungVersatz = o.lage - amZeiger;
+                // Der Geist muss weg, solange gezogen wird: sonst stünden zwei
+                // Öffnungen im Bild, von denen nur eine existiert.
+                this.geistOeffnung = null;
+            }
+            else {
+                this.activeOeffnung = null;
+            }
+        }
         this.zeigerStilSetzen();
         // delete
         if (this.mode == floorplannerModes.DELETE) {
@@ -8127,9 +8495,24 @@ class Floorplanner {
         const drauf = ausstattungGreifbar
             ? this.floorplan.overlappedAusstattung(this.mouseX, this.mouseY, 0)
             : null;
-        const hoverCorner = drauf
+        // --- ÖFFNUNGEN haben den ALLERERSTEN Vorrang (W4), und zwar nur im
+        // Löschen- und im Öffnungs-Werkzeug.
+        //
+        // Warum ganz vorne: eine Öffnung liegt IN einer Wand. Ohne Vorrang gewänne
+        // immer die Wand, und eine Tür wäre weder zu löschen noch zu ziehen —
+        // stattdessen zöge man die Wand, in der sie sitzt. Warum nur in diesen
+        // beiden Werkzeugen: im Verschieben soll ein Griff auf die Wand weiterhin
+        // die WAND bewegen (mit der Tür darin), und im Zeichnen nähme der Vorrang
+        // dem Ecken-Fang die Sicht.
+        const oeffnungGreifbar = this.mode == floorplannerModes.DELETE || this.mode == floorplannerModes.OEFFNUNG;
+        const hoverOeffnung = oeffnungGreifbar
+            ? this.floorplan.overlappedOeffnung(this.mouseX, this.mouseY, toleranz)
+            : null;
+        const hoverCorner = hoverOeffnung
             ? null
-            : this.floorplan.overlappedCorner(this.mouseX, this.mouseY, toleranz);
+            : drauf
+                ? null
+                : this.floorplan.overlappedCorner(this.mouseX, this.mouseY, toleranz);
         const hoverWall = drauf || hoverCorner // corner takes precendence
             ? null
             : this.floorplan.overlappedWall(this.mouseX, this.mouseY, toleranz);
@@ -8156,6 +8539,11 @@ class Floorplanner {
             this.activeAusstattung = kennung;
             draw = true;
         }
+        const oKennung = hoverOeffnung ? hoverOeffnung.id : null;
+        if (oKennung != this.activeOeffnung) {
+            this.activeOeffnung = oKennung;
+            draw = true;
+        }
         return draw;
     }
     /** */
@@ -8173,6 +8561,13 @@ class Floorplanner {
                 this.zeigerStilSetzen();
                 this.view.draw();
             }
+            // --- Die Geister-Öffnung folgt dem Zeiger (W4). IMMER neu bestimmen und
+            // nicht nur bei einem Treffer-Wechsel: sie wandert entlang derselben
+            // Wand mit, und ein Treffer-Wechsel findet dabei gar nicht statt.
+            if (this.mode == floorplannerModes.OEFFNUNG) {
+                this.geistNeuBestimmen();
+                this.view.draw();
+            }
             // --- Verweilen (E1)
             // Steht bereits eine Rückfrage, bleibt sie stehen, bis entschieden ist.
             // Sie bei Mausbewegung zurückzunehmen wäre naheliegend und FALSCH: der
@@ -8184,7 +8579,10 @@ class Floorplanner {
                 // einzelne Pixel-Ereignisse erzeugt — ohne sie liefe die Uhr nie ab.
                 const wackel = Math.hypot(this.rawMouseX - this.verweilX, this.rawMouseY - this.verweilY);
                 if (wackel > VERWEIL_WACKEL_PX) {
-                    const etwasUnterDemZeiger = this.activeCorner != null || this.activeWall != null || this.activeAusstattung != null;
+                    const etwasUnterDemZeiger = this.activeCorner != null ||
+                        this.activeWall != null ||
+                        this.activeAusstattung != null ||
+                        this.activeOeffnung != null;
                     if (this.mode == floorplannerModes.DELETE && etwasUnterDemZeiger) {
                         this.verweilenNeuStarten(this.rawMouseX, this.rawMouseY);
                     }
@@ -8203,11 +8601,28 @@ class Floorplanner {
         // mit — der Zeiger führte zwei Bewegungen auf einmal aus, und das Stück
         // landete nie dort, wo man es hinzieht. GEMESSEN, nicht vermutet: ohne
         // diese Bedingung legt derselbe Zug das Stück rund doppelt so weit.
-        if (this.mouseDown && !this.activeCorner && !this.activeWall && !this.activeAusstattung) {
+        // `!this.zugOeffnung` aus demselben Grund (W4): sonst wanderte die Tür und
+        // der Plan unter ihr gleich mit.
+        if (this.mouseDown &&
+            !this.activeCorner &&
+            !this.activeWall &&
+            !this.activeAusstattung &&
+            !this.zugOeffnung) {
             this.originX += this.lastX - this.rawMouseX;
             this.originY += this.lastY - this.rawMouseY;
             this.lastX = this.rawMouseX;
             this.lastY = this.rawMouseY;
+            this.view.draw();
+        }
+        // --- Eine gegriffene Öffnung entlang ihrer Wand ziehen (W4). Der
+        // Schnappschuss erst hier, nicht schon beim Drücken: ein Druck ohne
+        // Bewegung ändert nichts und soll die Historie nicht füllen.
+        if (this.mode == floorplannerModes.OEFFNUNG && this.mouseDown && this.zugOeffnung) {
+            if (!this.zugGesichert) {
+                this.undoManager?.snapshot();
+                this.zugGesichert = true;
+            }
+            this.oeffnungZiehen();
             this.view.draw();
         }
         // dragging
@@ -8245,6 +8660,30 @@ class Floorplanner {
         // gar nichts bewegt wurde — sonst zöge der nächste Druck irgendwo im Bild
         // stillschweigend dasselbe Möbel weiter.
         this.zugKennung = null;
+        // --- Öffnung: ein beendeter ZUG setzt nichts Neues (W4).
+        //
+        // Ohne diese Unterscheidung entstünde beim Loslassen einer gerade
+        // verschobenen Tür sofort eine zweite an derselben Stelle — und die wäre
+        // nach der Überlappungsregel auch noch abgelehnt worden, sodass der Nutzer
+        // eine Fehlermeldung für eine Handlung bekäme, die er gar nicht gemacht hat.
+        if (this.mode == floorplannerModes.OEFFNUNG) {
+            if (this.zugOeffnung) {
+                this.zugOeffnung = null;
+                this.geistNeuBestimmen();
+                this.view.draw();
+            }
+            else {
+                // Nur melden, wenn überhaupt eine Wand angeboten war: ein Klick ins
+                // Leere ist kein Fehlversuch, sondern gar kein Versuch.
+                const angeboten = this.geistOeffnung !== null;
+                const gesetzt = this.oeffnungSetzen();
+                this.geistNeuBestimmen();
+                this.view.draw();
+                if (angeboten) {
+                    this.oeffnungGesetztCallbacks.forEach((cb) => cb(gesetzt));
+                }
+            }
+        }
         this.zeigerStilSetzen();
         // drawing
         if (this.mode == floorplannerModes.DRAW && !this.mouseMoved) {
@@ -8269,6 +8708,13 @@ class Floorplanner {
         // dieses Aufräumen führte das Möbel beim Wiedereintritt einen Zug fort,
         // den der Nutzer längst beendet hat.
         this.zugKennung = null;
+        // Die Öffnung ebenso — und ihr Geist auch: er stünde sonst am Bildrand
+        // stehen, wo der Zeiger die Fläche verlassen hat.
+        this.zugOeffnung = null;
+        if (this.geistOeffnung) {
+            this.geistOeffnung = null;
+            this.view.draw();
+        }
         this.zeigerStilSetzen();
         // Das laufende Verweilen endet mit dem Zeichenbereich — ein OFFENER
         // Vorschlag aber nicht: die Rückfrage liegt ausserhalb des Canvas, der Weg
@@ -8395,6 +8841,237 @@ class Floorplanner {
             drehung
         };
     }
+    /** Die Oberfläche hängt sich hier ein, um ihre Knöpfe mitzuführen. */
+    addOeffnungsCallback(callback) {
+        this.oeffnungsCallbacks.push(callback);
+    }
+    /** Die Oberfläche hängt sich hier ein, um das Ergebnis zu sagen. */
+    addOeffnungGesetztCallback(callback) {
+        this.oeffnungGesetztCallbacks.push(callback);
+    }
+    /**
+     * Wählt die Art der nächsten Öffnung und übernimmt ihr Standardmaß aus
+     * `OEFFNUNGS_VORLAGEN` — der einen Liste, die BEIDE Auslieferungen benutzen.
+     * Eine eigene Maßtabelle in der Oberfläche liefe auseinander, sobald jemand
+     * nur eine anfasst.
+     */
+    setzeOeffnungsArt(art) {
+        const vorlage = OEFFNUNGS_VORLAGEN.find((v) => v.art === art);
+        if (!vorlage) {
+            return;
+        }
+        this.oeffnungsArt = vorlage.art;
+        this.oeffnungsBreite = vorlage.breite;
+        this.oeffnungsBruestung = vorlage.bruestung;
+        this.geistNeuBestimmen();
+        this.view.draw();
+        this.oeffnungsCallbacks.forEach((cb) => cb(art));
+    }
+    /**
+     * Wohin eine Öffnung WIRKLICH käme (W4) — Wand suchen, auf die Wandachse
+     * projizieren, dann einrasten. Gibt `null`, wenn keine Wand in Reichweite
+     * ist oder keine die Öffnung fassen kann.
+     *
+     * DIE REIHENFOLGE DER EINRASTUNGEN ist dieselbe Idee wie beim Möbel-Anlegen:
+     * zuerst das, was eine BAUAUSSAGE ist (bündig an der Ecke, mittig in der
+     * Wand), zuletzt das schlichte Raster. Eine Tür, die 3 cm neben der Ecke
+     * sitzt, ist in einer echten Planung immer ein Versehen.
+     */
+    oeffnungsVorschlag(x, y, breite = this.oeffnungsBreite) {
+        let beste = null;
+        this.floorplan.getWalls().forEach((wand) => {
+            const ax = wand.getStartX();
+            const ay = wand.getStartY();
+            const dx = wand.getEndX() - ax;
+            const dy = wand.getEndY() - ay;
+            const laenge = Math.hypot(dx, dy);
+            // Eine Wand, die kürzer ist als die Öffnung, kann sie nicht tragen —
+            // dann lieber gar nichts anbieten als eine Tür, die über beide Ecken
+            // hinausragt.
+            if (laenge < breite) {
+                return;
+            }
+            const t = ((x - ax) * dx + (y - ay) * dy) / (laenge * laenge);
+            // Nur DORT, wo die Wand steht: ihre Verlängerung ist Luft. Dieselbe
+            // Begründung wie beim Anlegen der Möbel.
+            if (t < 0 || t > 1) {
+                return;
+            }
+            const fx = ax + dx * t;
+            const fy = ay + dy * t;
+            const abstand = Math.hypot(x - fx, y - fy);
+            if (abstand > wand.thickness / 2 + OEFFNUNG_FANG_CM) {
+                return;
+            }
+            if (beste && beste.abstand <= abstand) {
+                return;
+            }
+            beste = { wandId: wand.id, lage: this.oeffnungEinrasten(laenge * t, laenge, breite), abstand };
+        });
+        // Der Typprüfer verengt `beste` nach der Rückruf-Zuweisung auf `never` —
+        // dieselbe Stelle und derselbe Griff wie in `moebelEinrasten`.
+        const b = beste;
+        return b ? { wandId: b.wandId, lage: b.lage } : null;
+    }
+    /**
+     * Rastet die Lage entlang der Wandachse ein: Laibung bündig an eine Ecke,
+     * Öffnung mittig in der Wand, sonst 5-cm-Raster. Immer geklemmt auf
+     * `[breite/2, länge − breite/2]`, damit keine Laibung über eine Ecke ragt.
+     *
+     * Abschaltbar über DENSELBEN Schalter wie das Möbel-Anlegen (`einrasten`):
+     * zwei getrennte Schalter für dieselbe Zusage wären zwei Zustände, die der
+     * Nutzer auseinanderhalten müsste. Geklemmt wird trotzdem — das ist keine
+     * Hilfe, sondern die Geometrie.
+     */
+    oeffnungEinrasten(roh, wandLaenge, breite) {
+        const min = breite / 2;
+        const max = wandLaenge - breite / 2;
+        const klemme = (v) => Math.max(min, Math.min(max, v));
+        if (!this.einrasten) {
+            return Math.round(klemme(roh));
+        }
+        // Kandidaten in der Reihenfolge ihrer Aussagekraft. Der erste, der nah
+        // genug liegt, gewinnt — nicht der nächstliegende: bündig an der Ecke
+        // schlägt mittig in der Wand, weil eine Tür an der Ecke die häufigere und
+        // baulich zwingendere Lage ist (dahinter passt kein Möbel mehr).
+        for (const kandidat of [min, max, wandLaenge / 2]) {
+            if (Math.abs(roh - kandidat) <= EINRAST_WAND_CM) {
+                return Math.round(klemme(kandidat));
+            }
+        }
+        return Math.round(klemme(Math.round(roh / EINRAST_RASTER_CM) * EINRAST_RASTER_CM));
+    }
+    /** Bestimmt die Geister-Öffnung an der aktuellen Zeigerstelle neu. */
+    geistNeuBestimmen() {
+        if (this.mode !== floorplannerModes.OEFFNUNG || this.zugOeffnung) {
+            this.geistOeffnung = null;
+            return;
+        }
+        const vorschlag = this.oeffnungsVorschlag(this.mouseX, this.mouseY);
+        if (!vorschlag) {
+            this.geistOeffnung = null;
+            return;
+        }
+        this.geistOeffnung = {
+            wandId: vorschlag.wandId,
+            lage: vorschlag.lage,
+            breite: this.oeffnungsBreite,
+            art: this.oeffnungsArt,
+            seite: this.naechsteSeite,
+            anschlag: this.naechsterAnschlag,
+            // Eine Öffnung, die sich mit einer vorhandenen überschneidet, wird ROT
+            // angeboten statt gar nicht: „hier geht es nicht" ist eine Auskunft,
+            // ein verschwundener Geist wäre ein Rätsel.
+            passt: this.floorplan.oeffnungPasst(vorschlag.wandId, vorschlag.lage, this.oeffnungsBreite)
+        };
+    }
+    /**
+     * Setzt die Öffnung, die der Geist gerade anbietet — EIN Rückgängig-Schritt.
+     *
+     * Der Schnappschuss wird ERST gezogen, NACHDEM feststeht, dass etwas
+     * entsteht: dieselbe Regel wie bei `stueckAblegen`. Ein Rückgängig-Schritt,
+     * der nichts zurücknimmt, ist ein Klick ins Leere, den der Nutzer erst beim
+     * nächsten Strg+Z bemerkt.
+     *
+     * Rückgabe ist die neue Öffnung oder `null` — der Aufrufer soll SAGEN
+     * können, warum nichts entstand.
+     */
+    oeffnungSetzen() {
+        const geist = this.geistOeffnung;
+        if (!geist || !geist.passt) {
+            return null;
+        }
+        this.undoManager?.snapshot();
+        const o = this.floorplan.fuegeOeffnungHinzu({
+            wandId: geist.wandId,
+            lage: geist.lage,
+            breite: geist.breite,
+            art: geist.art,
+            seite: geist.seite,
+            anschlag: geist.anschlag,
+            bruestung: geist.art === 'fenster' ? this.oeffnungsBruestung : undefined
+        });
+        this.view.draw();
+        return o;
+    }
+    /**
+     * Ein Schritt des laufenden Öffnungs-Zugs: die Öffnung wandert ENTLANG IHRER
+     * WAND mit dem Zeiger. Nie quer, nie auf eine andere Wand — ein Wandwechsel
+     * ist ein Löschen plus ein Setzen und soll auch so aussehen.
+     */
+    oeffnungZiehen() {
+        if (!this.zugOeffnung) {
+            return;
+        }
+        const o = this.floorplan.findeOeffnung(this.zugOeffnung);
+        const g = o ? this.floorplan.oeffnungsGeometrie(o) : null;
+        if (!o || !g) {
+            // Unterwegs verschwunden (gelöscht, zurückgespielt) — den Zug beenden,
+            // statt bei jeder Bewegung erneut ins Leere zu greifen.
+            this.zugOeffnung = null;
+            return;
+        }
+        // Zeiger auf die Wandachse projizieren: die Lage ist der Weg von der
+        // Start-Ecke bis zum Fusspunkt, zuzüglich des festgehaltenen Griff-Versatzes.
+        const wand = this.floorplan.findeWand(o.wandId);
+        if (!wand) {
+            return;
+        }
+        const roh = (this.mouseX - wand.getStartX()) * g.ex +
+            (this.mouseY - wand.getStartY()) * g.ey +
+            this.zugOeffnungVersatz;
+        const lage = this.oeffnungEinrasten(roh, g.wandLaenge, o.breite);
+        this.floorplan.verschiebeOeffnung(o.id, lage);
+    }
+    /**
+     * Q wendet den Anschlag, E die Aufschlagseite (W4) — an der Öffnung UNTER
+     * DEM ZEIGER, sonst an der nächsten, die gesetzt wird.
+     *
+     * Dieselben Tasten wie das Drehen der Möbel, und aus demselben Grund
+     * (`dreheAktives`): es gibt in diesem Planer keine Auswahl, die einen Klick
+     * überdauert. Welche Bedeutung sie haben, entscheidet das WERKZEUG — im
+     * Verschieben drehen sie ein Möbel, im Öffnungs-Werkzeug wenden sie eine Tür.
+     * Zwei Bedeutungen für zwei Werkzeuge sind weniger Last als vier Tasten.
+     *
+     * Rückgabe meldet, ob wirklich etwas gewendet wurde.
+     */
+    wendeAktiveOeffnung(was) {
+        if (this.mode !== floorplannerModes.OEFFNUNG) {
+            return false;
+        }
+        const kennung = this.zugOeffnung ?? this.activeOeffnung;
+        if (kennung) {
+            const vorhanden = this.floorplan.findeOeffnung(kennung);
+            if (vorhanden) {
+                // Während eines Zuges ist längst gesichert — dieselbe Regel wie beim
+                // Drehen eines Möbels mitten im Ziehen.
+                if (!(this.mouseDown && this.zugGesichert)) {
+                    this.undoManager?.snapshot();
+                }
+                const ok = was === 'anschlag'
+                    ? this.floorplan.wendeAnschlag(kennung)
+                    : this.floorplan.wendeSeite(kennung);
+                this.view.draw();
+                return ok;
+            }
+        }
+        // Nichts unter dem Zeiger: dann gilt es für die NÄCHSTE Öffnung. Kein
+        // Schnappschuss — es hat sich nichts am Grundriss geändert.
+        if (was === 'anschlag') {
+            this.naechsterAnschlag = this.naechsterAnschlag === 'anfang' ? 'ende' : 'anfang';
+        }
+        else {
+            this.naechsteSeite = this.naechsteSeite === 1 ? -1 : 1;
+        }
+        this.geistNeuBestimmen();
+        this.view.draw();
+        return true;
+    }
+    /** „diese Tür (0,88 m breit)" — damit die Rückfrage benennt, was verschwindet. */
+    oeffnungsBeschreibung(o) {
+        const weite = (o.breite / 100).toFixed(2).replace('.', ',');
+        return `${OEFFNUNG_ARTIKEL[o.art]} (${weite} m breit)`;
+    }
     // --------------------------------------------- Stück aus der Palette (W3)
     /**
      * Legt EIN neues Stück im Grundriss ab — der Abschluss des Zuges aus der
@@ -8488,6 +9165,16 @@ class Floorplanner {
                 stil = 'grabbing';
             }
             else if (this.activeAusstattung) {
+                stil = 'grab';
+            }
+        }
+        else if (this.mode == floorplannerModes.OEFFNUNG) {
+            // Dieselbe Sprache wie beim Möbel (W4): eine vorhandene Öffnung lässt
+            // sich greifen und schieben, überall sonst wird gesetzt.
+            if (this.zugOeffnung) {
+                stil = 'grabbing';
+            }
+            else if (this.activeOeffnung) {
                 stil = 'grab';
             }
         }
@@ -8799,6 +9486,12 @@ class Floorplanner {
         // `setMode` läuft unter anderem nach jedem Rückgängig, und danach ist das
         // gezogene Stück ein anderes Objekt.
         this.zugKennung = null;
+        // Dasselbe für die Öffnungen (W4). Der Geist MUSS mit: er zeigt eine
+        // Öffnung, die es nicht gibt — nach dem Wechsel auf ein anderes Werkzeug
+        // wäre er ein Versprechen, das der Zeiger dort nicht einlöst.
+        this.zugOeffnung = null;
+        this.activeOeffnung = null;
+        this.geistOeffnung = null;
         this.mode = mode;
         this.zeigerStilSetzen();
         this.modeResetCallbacks.forEach((callback) => callback(mode));
@@ -10316,6 +11009,29 @@ function gesetztZeigen(){
   el('hinweisHerkunft').textContent = n === 0
     ? 'Grundriss und Ausstattung sind gemessen.'
     : 'Der Grundriss ist gemessen; ' + n + ' Stück der Ausstattung sind frei gesetzt (im Grundriss gestrichelt).';
+  oeffnungenZeigen();
+}
+
+/* ── Die Öffnungs-Legende (W4) ──────────────────────────────────────
+   Warum sie sein MUSS: die Ansicht schneidet die Waende auf 1,16 m auf. Eine
+   Tuer ist darin so hoch wie die Wand — sie sieht aus wie ein Durchbruch bis
+   zur Decke. Ohne diese Zeile liest die Bank eine Hoehenaussage aus einem
+   Bild, das gar keine trifft. Lage und Breite dagegen SIND massstaeblich, und
+   genau das sagt der Satz.
+
+   Verwaiste Oeffnungen werden getrennt genannt: sie stehen im Modell, aber
+   nicht im Bild. Das still zu lassen waere die schlechtere Wahl — der Nutzer
+   soll erfahren, dass beim Loeschen einer Wand seine Tuer heimatlos wurde. */
+function oeffnungenZeigen(){
+  const m = grundriss.zaehleOeffnungen();
+  const verwaist = grundriss.zaehleVerwaiste();
+  const z = el('oeffnungZaehler');
+  z.hidden = m === 0;
+  if (m === 0) return;
+  z.textContent = m + (m === 1 ? ' Öffnung gesetzt' : ' Öffnungen gesetzt') +
+    (verwaist > 0 ? ' (davon ' + verwaist + ' ohne Wand — nicht gezeichnet)' : '') +
+    ' — die Ansicht schneidet die Wände auf 1,16 m; Türen und Fenster sind darum ' +
+    'in der HÖHE nicht maßstäblich, nur in Lage und Breite.';
 }
 
 grundriss.fireOnUpdatedRooms(bemerkeAenderung);
@@ -10630,10 +11346,12 @@ const werkzeugKnopf = { };
 werkzeugKnopf[floorplannerModes.MOVE] = el('wzMove');
 werkzeugKnopf[floorplannerModes.DRAW] = el('wzDraw');
 werkzeugKnopf[floorplannerModes.DELETE] = el('wzDelete');
+werkzeugKnopf[floorplannerModes.OEFFNUNG] = el('wzOeffnung');
 
 el('wzMove').addEventListener('click', function(){ zeichner.setMode(floorplannerModes.MOVE); });
 el('wzDraw').addEventListener('click', function(){ zeichner.setMode(floorplannerModes.DRAW); });
 el('wzDelete').addEventListener('click', function(){ zeichner.setMode(floorplannerModes.DELETE); });
+el('wzOeffnung').addEventListener('click', function(){ zeichner.setMode(floorplannerModes.OEFFNUNG); });
 
 /* Der Kern schaltet das Werkzeug OFT von selbst zurueck: bei Escape, bei einem
    Klick ins Leere im Loeschen-Werkzeug, wenn ein Streckenzug an einer
@@ -10646,6 +11364,38 @@ zeichner.addModeResetCallback(function(m){
   }
   document.body.classList.toggle('zeichnet', m === floorplannerModes.DRAW);
   document.body.classList.toggle('loescht', m === floorplannerModes.DELETE);
+  document.body.classList.toggle('oeffnet', m === floorplannerModes.OEFFNUNG);
+  // Die Arten-Gruppe erscheint mit ihrem Werkzeug und verschwindet mit ihm.
+  el('oeffnungsArten').hidden = m !== floorplannerModes.OEFFNUNG;
+});
+
+/* ── Öffnungen: Art wählen (W4) ─────────────────────────────────────
+   Der Knopf haelt seinen Zustand NIE selbst fuer wahr, sondern folgt dem Kern
+   — dieselbe Regel wie bei Werkzeug und Einrasten. Die Breiten stehen NICHT
+   hier, sondern in OEFFNUNGS_VORLAGEN im Kern: zwei Listen liefen auseinander,
+   sobald jemand nur eine anfasst, und dann hiesse dieselbe Tuer in der einen
+   Welt 87,5 cm und in der anderen 90. */
+document.querySelectorAll('[data-oeffnung]').forEach(function(b){
+  b.addEventListener('click', function(){
+    zeichner.setzeOeffnungsArt(b.dataset.oeffnung);
+    // Wer eine Art waehlt, will sie setzen — also gleich das Werkzeug greifen.
+    if (zeichner.mode !== floorplannerModes.OEFFNUNG) {
+      zeichner.setMode(floorplannerModes.OEFFNUNG);
+    }
+  });
+});
+zeichner.addOeffnungsCallback(function(art){ markiere('[data-oeffnung]', art); });
+
+/* Was ein Klick bewirkt hat — sonst bliebe ein abgelehnter Versuch stumm. */
+zeichner.addOeffnungGesetztCallback(function(o){
+  if (o) {
+    meldung((OEFFNUNG_NAME[o.art] || o.art) + ' gesetzt — frei gesetzt, kein Aufmaß. ' +
+      'Q wendet den Anschlag, E die Aufschlagseite. Rückgängig mit Strg+Z.', false);
+  } else {
+    meldung('Hier passt keine Öffnung hin — an dieser Stelle liegt schon eine, ' +
+      'oder die Wand ist zu kurz.', false);
+  }
+  bemerkeAenderung();
 });
 
 /* Eine Rueckfrage muss UEBER der Werkzeugleiste stehen, nicht auf ihr. Wie hoch
@@ -11053,6 +11803,68 @@ window.__planerDatei = {
     };
   },
   gesetzte: function(){ return grundriss.zaehleGesetzte(); },
+  /* --- Oeffnungen (W4). Dieselben Angaben wie im Planer, damit ein Gate beide
+     Welten mit DEMSELBEN Code messen kann. `bx/by` ist die Mitte im BILD,
+     `wx/wy` in der WELT — das Gate braucht beides: Bildpunkte zum Klicken,
+     Weltmasse zum Rechnen. */
+  oeffnungen: function(){
+    return grundriss.getOeffnungen().map(function(o){
+      const g = grundriss.oeffnungsGeometrie(o);
+      return {
+        id: o.id, wandId: o.wandId, lage: o.lage, breite: o.breite, art: o.art,
+        seite: o.seite, anschlag: o.anschlag, bruestung: o.bruestung,
+        quelle: o.quelle, verwaist: !!o.verwaist,
+        anker: { x: o.anker.x, y: o.anker.y },
+        wx: g ? g.mx : null, wy: g ? g.my : null,
+        bx: g ? zeichner.convertX(g.mx) : null, by: g ? zeichner.convertY(g.my) : null
+      };
+    });
+  },
+  oeffnung: function(id){
+    return window.__planerDatei.oeffnungen().find(function(o){ return o.id === id; }) || null;
+  },
+  oeffnungsGeist: function(){
+    const g = zeichner.geistOeffnung;
+    return g ? { wandId: g.wandId, lage: g.lage, breite: g.breite, art: g.art,
+                 seite: g.seite, anschlag: g.anschlag, passt: g.passt } : null;
+  },
+  oeffnungsArt: function(){ return zeichner.oeffnungsArt; },
+  setzeOeffnungsArt: function(a){ zeichner.setzeOeffnungsArt(a); },
+  oeffnungText: function(){
+    const z = el('oeffnungZaehler');
+    return z.hidden ? null : z.textContent;
+  },
+  /* Der KILL-SCHALTER der Versoehnung — nur fuer die Gegenprobe des Gates.
+     Ein Waechter, der nie rot wird, ist kein Waechter: die Pruefung "nach dem
+     Teilen liegt die Tuer auf der richtigen Haelfte" beweist erst dann etwas,
+     wenn dieselbe Pruefung OHNE Versoehnung nachweislich fehlschlaegt. */
+  versoehnung: function(an){ grundriss.versoehnungAn = an; },
+  versoehneJetzt: function(){ return grundriss.versoehneOeffnungen(); },
+  /* Eine Wand TEILEN — genau die beiden Aufrufe, die `mouseup` im
+     Zeichnen-Werkzeug macht (floorplanner.ts): eine neue Ecke setzen und sie
+     mit dem verschmelzen lassen, was darunter liegt. Kein Sonderweg fuers
+     Pruefen, sondern der Produktionspfad ohne die Zeiger-Umrechnung davor. */
+  wandTeilenAn: function(x, y){
+    const c = grundriss.newCorner(x, y);
+    return { geteilt: c.mergeWithIntersected(), waende: grundriss.getWalls().length };
+  },
+  wandLoeschen: function(id){
+    const w = grundriss.getWalls().find(function(v){ return v.id === id; });
+    if (!w) return false;
+    w.remove();
+    grundriss.update();
+    return true;
+  },
+  /* Einen fremden Grundriss laden — fuer die Fassungs-Pruefung (Gate h).
+     Geht ueber DIESELBE Formpruefung wie der Knopf "Laden", damit das Gate die
+     Meldung misst, die der Nutzer sehen wuerde. */
+  pruefeDatei: function(roh){ return pruefePlan(roh); },
+  ladeDatei: function(roh){
+    const g = pruefePlan(roh);
+    if (g.fehler) return { fehler: g.fehler };
+    ladeGrundriss(g.floorplan, g.labels, false);
+    return { ecken: g.ecken, waende: g.waende };
+  },
   /* --- Palette (W3). Der Zug selbst wird vom Gate mit echten Maus-Ereignissen
      nachgefahren; hier steht nur, WO die Eintraege liegen und ob ihre Vorschau
      ueberhaupt gezeichnet ist. Die Tinte zaehlt undurchsichtige Bildpunkte im

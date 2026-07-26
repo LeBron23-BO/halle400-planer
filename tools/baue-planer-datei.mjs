@@ -135,6 +135,10 @@ const html = `<!DOCTYPE html>
   #plan canvas{cursor:default}
   body.zeichnet #plan canvas{cursor:crosshair}
   body.loescht #plan canvas{cursor:not-allowed}
+  /* Im Oeffnungs-Werkzeug zeigt das Fadenkreuz auf die Wand — der Kern setzt
+     ueber diesen Stil hinweg 'grab'/'grabbing', sobald eine vorhandene Tuer
+     unter dem Zeiger liegt (Inline-Stil schlaegt Klassenregel). */
+  body.oeffnet #plan canvas{cursor:crosshair}
 
   .kopf{position:fixed;top:52px;left:0;padding:14px 26px;pointer-events:none;max-width:min(46ch,72vw)}
   .kopf h1{font-family:var(--serif);font-weight:600;font-size:clamp(19px,2.5vw,27px);
@@ -298,6 +302,10 @@ const html = `<!DOCTYPE html>
     <div class="strich"></div>
     <div class="sub" id="unterzeile">Axonometrie</div>
     <div class="gesetzt" id="gesetztZaehler" hidden></div>
+    <!-- Die Öffnungs-Legende (W4). Sie steht NUR da, wenn es Öffnungen gibt:
+         eine dauerhafte „0 Öffnungen"-Zeile lehrte den Leser, über sie
+         hinwegzusehen — genau dann, wenn sie einmal wichtig wird. -->
+    <div class="gesetzt" id="oeffnungZaehler" hidden></div>
   </header>
 
   <aside class="tafel" id="tafel">
@@ -353,10 +361,22 @@ const html = `<!DOCTYPE html>
       <span class="lbl">Werkzeug</span>
       <button type="button" id="wzMove" title="Verschieben — Ecken, Wände und Möbel ziehen. Q und E drehen das Möbel unter dem Zeiger um 15°." aria-pressed="true">Verschieben</button>
       <button type="button" id="wzDraw" title="Wände zeichnen — Punkt für Punkt" aria-pressed="false">Wände zeichnen</button>
+      <button type="button" id="wzOeffnung" title="Türen &amp; Fenster — auf eine Wand zeigen, klicken setzt. Q wendet den Anschlag, E die Aufschlagseite." aria-pressed="false">Türen &amp; Fenster</button>
       <button type="button" id="wzDelete" title="Löschen — mit Rückfrage" aria-pressed="false">Löschen</button>
     </div>
+    <!-- Die Arten der Öffnung. Sie erscheinen NUR mit dem Werkzeug: vier
+         weitere Knöpfe in einer ohnehin breiten Leiste wären sonst dauerhaft
+         im Weg, ohne je etwas zu bewirken. Ein Klick wählt die Art UND greift
+         das Werkzeug — wer „Fenster" drückt, will ein Fenster setzen. -->
+    <div class="grp" id="oeffnungsArten" hidden>
+      <span class="lbl">Öffnung</span>
+      <button type="button" data-oeffnung="tuer" aria-pressed="true">Tür</button>
+      <button type="button" data-oeffnung="doppeltuer" aria-pressed="false">Doppeltür</button>
+      <button type="button" data-oeffnung="fenster" aria-pressed="false">Fenster</button>
+      <button type="button" data-oeffnung="durchgang" aria-pressed="false">Durchgang</button>
+    </div>
     <div class="grp">
-      <button type="button" id="btnEinrasten" aria-pressed="true" title="Gezogene Möbel bündig an die Wand legen, sonst auf 5 cm runden">Einrasten</button>
+      <button type="button" id="btnEinrasten" aria-pressed="true" title="Gezogene Möbel bündig an die Wand legen, Öffnungen bündig an die Ecke oder in die Wandmitte, sonst auf 5 cm runden">Einrasten</button>
     </div>
     <div class="grp">
       <button type="button" id="btnUndo" title="Rückgängig (Strg+Z)">Rückgängig</button>
@@ -612,6 +632,29 @@ function gesetztZeigen(){
   el('hinweisHerkunft').textContent = n === 0
     ? 'Grundriss und Ausstattung sind gemessen.'
     : 'Der Grundriss ist gemessen; ' + n + ' Stück der Ausstattung sind frei gesetzt (im Grundriss gestrichelt).';
+  oeffnungenZeigen();
+}
+
+/* ── Die Öffnungs-Legende (W4) ──────────────────────────────────────
+   Warum sie sein MUSS: die Ansicht schneidet die Waende auf 1,16 m auf. Eine
+   Tuer ist darin so hoch wie die Wand — sie sieht aus wie ein Durchbruch bis
+   zur Decke. Ohne diese Zeile liest die Bank eine Hoehenaussage aus einem
+   Bild, das gar keine trifft. Lage und Breite dagegen SIND massstaeblich, und
+   genau das sagt der Satz.
+
+   Verwaiste Oeffnungen werden getrennt genannt: sie stehen im Modell, aber
+   nicht im Bild. Das still zu lassen waere die schlechtere Wahl — der Nutzer
+   soll erfahren, dass beim Loeschen einer Wand seine Tuer heimatlos wurde. */
+function oeffnungenZeigen(){
+  const m = grundriss.zaehleOeffnungen();
+  const verwaist = grundriss.zaehleVerwaiste();
+  const z = el('oeffnungZaehler');
+  z.hidden = m === 0;
+  if (m === 0) return;
+  z.textContent = m + (m === 1 ? ' Öffnung gesetzt' : ' Öffnungen gesetzt') +
+    (verwaist > 0 ? ' (davon ' + verwaist + ' ohne Wand — nicht gezeichnet)' : '') +
+    ' — die Ansicht schneidet die Wände auf 1,16 m; Türen und Fenster sind darum ' +
+    'in der HÖHE nicht maßstäblich, nur in Lage und Breite.';
 }
 
 grundriss.fireOnUpdatedRooms(bemerkeAenderung);
@@ -926,10 +969,12 @@ const werkzeugKnopf = { };
 werkzeugKnopf[floorplannerModes.MOVE] = el('wzMove');
 werkzeugKnopf[floorplannerModes.DRAW] = el('wzDraw');
 werkzeugKnopf[floorplannerModes.DELETE] = el('wzDelete');
+werkzeugKnopf[floorplannerModes.OEFFNUNG] = el('wzOeffnung');
 
 el('wzMove').addEventListener('click', function(){ zeichner.setMode(floorplannerModes.MOVE); });
 el('wzDraw').addEventListener('click', function(){ zeichner.setMode(floorplannerModes.DRAW); });
 el('wzDelete').addEventListener('click', function(){ zeichner.setMode(floorplannerModes.DELETE); });
+el('wzOeffnung').addEventListener('click', function(){ zeichner.setMode(floorplannerModes.OEFFNUNG); });
 
 /* Der Kern schaltet das Werkzeug OFT von selbst zurueck: bei Escape, bei einem
    Klick ins Leere im Loeschen-Werkzeug, wenn ein Streckenzug an einer
@@ -942,6 +987,38 @@ zeichner.addModeResetCallback(function(m){
   }
   document.body.classList.toggle('zeichnet', m === floorplannerModes.DRAW);
   document.body.classList.toggle('loescht', m === floorplannerModes.DELETE);
+  document.body.classList.toggle('oeffnet', m === floorplannerModes.OEFFNUNG);
+  // Die Arten-Gruppe erscheint mit ihrem Werkzeug und verschwindet mit ihm.
+  el('oeffnungsArten').hidden = m !== floorplannerModes.OEFFNUNG;
+});
+
+/* ── Öffnungen: Art wählen (W4) ─────────────────────────────────────
+   Der Knopf haelt seinen Zustand NIE selbst fuer wahr, sondern folgt dem Kern
+   — dieselbe Regel wie bei Werkzeug und Einrasten. Die Breiten stehen NICHT
+   hier, sondern in OEFFNUNGS_VORLAGEN im Kern: zwei Listen liefen auseinander,
+   sobald jemand nur eine anfasst, und dann hiesse dieselbe Tuer in der einen
+   Welt 87,5 cm und in der anderen 90. */
+document.querySelectorAll('[data-oeffnung]').forEach(function(b){
+  b.addEventListener('click', function(){
+    zeichner.setzeOeffnungsArt(b.dataset.oeffnung);
+    // Wer eine Art waehlt, will sie setzen — also gleich das Werkzeug greifen.
+    if (zeichner.mode !== floorplannerModes.OEFFNUNG) {
+      zeichner.setMode(floorplannerModes.OEFFNUNG);
+    }
+  });
+});
+zeichner.addOeffnungsCallback(function(art){ markiere('[data-oeffnung]', art); });
+
+/* Was ein Klick bewirkt hat — sonst bliebe ein abgelehnter Versuch stumm. */
+zeichner.addOeffnungGesetztCallback(function(o){
+  if (o) {
+    meldung((OEFFNUNG_NAME[o.art] || o.art) + ' gesetzt — frei gesetzt, kein Aufmaß. ' +
+      'Q wendet den Anschlag, E die Aufschlagseite. Rückgängig mit Strg+Z.', false);
+  } else {
+    meldung('Hier passt keine Öffnung hin — an dieser Stelle liegt schon eine, ' +
+      'oder die Wand ist zu kurz.', false);
+  }
+  bemerkeAenderung();
 });
 
 /* Eine Rueckfrage muss UEBER der Werkzeugleiste stehen, nicht auf ihr. Wie hoch
@@ -1349,6 +1426,68 @@ window.__planerDatei = {
     };
   },
   gesetzte: function(){ return grundriss.zaehleGesetzte(); },
+  /* --- Oeffnungen (W4). Dieselben Angaben wie im Planer, damit ein Gate beide
+     Welten mit DEMSELBEN Code messen kann. \`bx/by\` ist die Mitte im BILD,
+     \`wx/wy\` in der WELT — das Gate braucht beides: Bildpunkte zum Klicken,
+     Weltmasse zum Rechnen. */
+  oeffnungen: function(){
+    return grundriss.getOeffnungen().map(function(o){
+      const g = grundriss.oeffnungsGeometrie(o);
+      return {
+        id: o.id, wandId: o.wandId, lage: o.lage, breite: o.breite, art: o.art,
+        seite: o.seite, anschlag: o.anschlag, bruestung: o.bruestung,
+        quelle: o.quelle, verwaist: !!o.verwaist,
+        anker: { x: o.anker.x, y: o.anker.y },
+        wx: g ? g.mx : null, wy: g ? g.my : null,
+        bx: g ? zeichner.convertX(g.mx) : null, by: g ? zeichner.convertY(g.my) : null
+      };
+    });
+  },
+  oeffnung: function(id){
+    return window.__planerDatei.oeffnungen().find(function(o){ return o.id === id; }) || null;
+  },
+  oeffnungsGeist: function(){
+    const g = zeichner.geistOeffnung;
+    return g ? { wandId: g.wandId, lage: g.lage, breite: g.breite, art: g.art,
+                 seite: g.seite, anschlag: g.anschlag, passt: g.passt } : null;
+  },
+  oeffnungsArt: function(){ return zeichner.oeffnungsArt; },
+  setzeOeffnungsArt: function(a){ zeichner.setzeOeffnungsArt(a); },
+  oeffnungText: function(){
+    const z = el('oeffnungZaehler');
+    return z.hidden ? null : z.textContent;
+  },
+  /* Der KILL-SCHALTER der Versoehnung — nur fuer die Gegenprobe des Gates.
+     Ein Waechter, der nie rot wird, ist kein Waechter: die Pruefung "nach dem
+     Teilen liegt die Tuer auf der richtigen Haelfte" beweist erst dann etwas,
+     wenn dieselbe Pruefung OHNE Versoehnung nachweislich fehlschlaegt. */
+  versoehnung: function(an){ grundriss.versoehnungAn = an; },
+  versoehneJetzt: function(){ return grundriss.versoehneOeffnungen(); },
+  /* Eine Wand TEILEN — genau die beiden Aufrufe, die \`mouseup\` im
+     Zeichnen-Werkzeug macht (floorplanner.ts): eine neue Ecke setzen und sie
+     mit dem verschmelzen lassen, was darunter liegt. Kein Sonderweg fuers
+     Pruefen, sondern der Produktionspfad ohne die Zeiger-Umrechnung davor. */
+  wandTeilenAn: function(x, y){
+    const c = grundriss.newCorner(x, y);
+    return { geteilt: c.mergeWithIntersected(), waende: grundriss.getWalls().length };
+  },
+  wandLoeschen: function(id){
+    const w = grundriss.getWalls().find(function(v){ return v.id === id; });
+    if (!w) return false;
+    w.remove();
+    grundriss.update();
+    return true;
+  },
+  /* Einen fremden Grundriss laden — fuer die Fassungs-Pruefung (Gate h).
+     Geht ueber DIESELBE Formpruefung wie der Knopf "Laden", damit das Gate die
+     Meldung misst, die der Nutzer sehen wuerde. */
+  pruefeDatei: function(roh){ return pruefePlan(roh); },
+  ladeDatei: function(roh){
+    const g = pruefePlan(roh);
+    if (g.fehler) return { fehler: g.fehler };
+    ladeGrundriss(g.floorplan, g.labels, false);
+    return { ecken: g.ecken, waende: g.waende };
+  },
   /* --- Palette (W3). Der Zug selbst wird vom Gate mit echten Maus-Ereignissen
      nachgefahren; hier steht nur, WO die Eintraege liegen und ob ihre Vorschau
      ueberhaupt gezeichnet ist. Die Tinte zaehlt undurchsichtige Bildpunkte im
