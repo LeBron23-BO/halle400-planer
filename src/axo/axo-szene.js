@@ -229,8 +229,24 @@ export function baueSzene(plan, opt = {}) {
     istBoden: true
   }))
 
-  const mitteX = raeume.length ? raeume.reduce((s, r) => s + r.mitte.x, 0) / raeume.length : 0
-  const mitteZ = raeume.length ? raeume.reduce((s, r) => s + r.mitte.z, 0) / raeume.length : 0
+  /**
+   * Aussenwand oder Innenwand? Topologisch entschieden statt aus dem Feld
+   * `art` des Plans gelesen: eine Wand ist aussen, wenn auf EINER ihrer beiden
+   * Seiten keine Raumflaeche mehr liegt.
+   *
+   * Der Umweg ist noetig und zugleich besser. Noetig, weil `art` nur in der
+   * Plan-Datei steht — das Wandmodell des Planers fuehrt es nicht, nach dem
+   * Laden waere es weg, und die Ansicht im Planer haette gar keine Aussenwaende
+   * mehr. Besser, weil eine Wand, die der Nutzer gerade erst gezeichnet hat,
+   * ueberhaupt kein `art` haben KANN — die Geometrie dagegen ist immer da.
+   *
+   * Nebenbei faellt die Aussennormale ab, und zwar die richtige: sie zeigt zur
+   * leeren Seite. Die vorherige Annahme "zeigt von der Hallenmitte weg" haette
+   * am Aufzug-Vorbau (y-min −352 cm) ins Gebaeudeinnere gezeigt.
+   */
+  const alsPolygone = raeume.map((r) => r.punkte.map((p) => ({ x: p.x, y: p.z })))
+  const inIrgendeinemRaum = (x, z) => alsPolygone.some((poly) => liegtIn({ x, y: z }, poly))
+  const tastAbstand = Math.max(dicke, 0.1) * 1.6
 
   const waende = []
   for (const w of fp.walls) {
@@ -239,24 +255,24 @@ export function baueSzene(plan, opt = {}) {
     if (!a || !b) continue
     const pa = { x: a.x * CM, z: a.y * CM }
     const pb = { x: b.x * CM, z: b.y * CM }
-    const aussen = w.art === 'aussen'
-    // Aussennormale fuer den Puppenhaus-Schnitt: sie zeigt von der Hallenmitte
-    // weg. Zeigt sie zur Kamera, faellt die Wand weg und gibt den Blick frei.
+    const ex = pb.x - pa.x
+    const ez = pb.z - pa.z
+    const laenge = Math.hypot(ex, ez) || 1
+    const nx = -ez / laenge
+    const nz = ex / laenge
+    const mx = (pa.x + pb.x) / 2
+    const mz = (pa.z + pb.z) / 2
+    const linksDrin = inIrgendeinemRaum(mx + nx * tastAbstand, mz + nz * tastAbstand)
+    const rechtsDrin = inIrgendeinemRaum(mx - nx * tastAbstand, mz - nz * tastAbstand)
+
     let normale
-    if (aussen) {
-      const ex = pb.x - pa.x
-      const ez = pb.z - pa.z
-      const laenge = Math.hypot(ex, ez) || 1
-      let nx = -ez / laenge
-      let nz = ex / laenge
-      const mx = (pa.x + pb.x) / 2 - mitteX
-      const mz = (pa.z + pb.z) / 2 - mitteZ
-      if (nx * mx + nz * mz < 0) {
-        nx = -nx
-        nz = -nz
-      }
-      normale = [nx, 0, nz]
+    if (linksDrin !== rechtsDrin) {
+      // Genau eine Seite ist leer — dorthin zeigt die Aussennormale.
+      normale = linksDrin ? [-nx, 0, -nz] : [nx, 0, nz]
     }
+    // Steht die Wand voellig frei (beide Seiten leer), bleibt sie stehen: sie
+    // wegzuschneiden liesse ein Stueck Grundriss verschwinden, das es gibt.
+    const aussen = !!normale
     waende.push(
       ...wandStuecke(
         pa,

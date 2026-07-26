@@ -11,6 +11,7 @@ import { ContextMenu } from './ContextMenu'
 import { BedSizeInput } from './BedSizeInput'
 import { FloorplannerControls } from './FloorplannerControls'
 import { RoomLabels } from './RoomLabels'
+import { AxonometrieAnsicht } from './AxonometrieAnsicht'
 import { TextureSelector } from './TextureSelector'
 import type { PlanLabel } from '@/lib/roomNaming'
 import { loadRoomMeta } from '@/lib/labelStore'
@@ -42,7 +43,7 @@ export interface Blueprint3DAppConfig {
   openMyFloorplans?: boolean
   isFullscreen?: boolean
   onFullscreenToggle?: () => void
-  onViewModeChange?: (mode: '2d' | '3d') => void
+  onViewModeChange?: (mode: '2d' | '3d' | 'axo') => void
   renderOverlay?: () => React.ReactNode
   alwaysSpin?: boolean
 }
@@ -85,7 +86,7 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
   const [textureType, setTextureType] = useState<'floor' | 'wall' | null>(null)
   const [currentTarget, setCurrentTarget] = useState<HalfEdge | Room | null>(null)
   const [itemsLoading, setItemsLoading] = useState(0)
-  const [viewMode, setViewMode] = useState<'2d' | '3d'>('3d')
+  const [viewMode, setViewMode] = useState<'2d' | '3d' | 'axo'>('3d')
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   // Raum-Label-Anker aus dem geladenen Plan + Bereitschaft der blueprint3d-Instanz
   const [planLabels, setPlanLabels] = useState<PlanLabel[]>([])
@@ -327,11 +328,19 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
   }, [activeTab, viewMode])
 
   const handleViewChange = useCallback(
-    (mode: '2d' | '3d') => {
+    (mode: '2d' | '3d' | 'axo') => {
       if (!blueprint3dRef.current) return
-      blueprint3dRef.current.three.setViewMode(mode)
       setViewMode(mode)
       onViewModeChange?.(mode)
+
+      // Die Axonometrie ist eine eigene Zeichenflaeche, keine Betriebsart der
+      // 3D-Engine — `three.setViewMode('axo')` kennt sie nicht. Sie braucht nur
+      // einen frischen Grundriss, den Rest macht ihr eigener Renderer.
+      if (mode === 'axo') {
+        blueprint3dRef.current.model.floorplan.update()
+        return
+      }
+      blueprint3dRef.current.three.setViewMode(mode)
 
       if (mode === '2d') {
         setTimeout(() => {
@@ -789,10 +798,24 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
             )}
           </div>
 
+          {/* Axonometrie (X3): dritte Ansicht neben 2D und 3D. Sie baut ihre
+              Szene aus dem LEBENDEN Modell, nicht aus der Plan-Datei — was im
+              2D-Zeichner geaendert wird, steht hier sofort im Bild. Bearbeitet
+              wird bewusst nur in 2D; die Begruendung steht in der Komponente. */}
+          {ready && blueprint3dRef.current && (
+            <AxonometrieAnsicht
+              blueprint3d={blueprint3dRef.current}
+              labels={planLabels}
+              aktiv={viewMode === 'axo' && (activeTab === 'edit' || activeTab === 'items')}
+            />
+          )}
+
           {/* Raum-Labels (T4): PDF-Namen ueber 2D + 3D, editierbar per Stift-Klick.
               Umbenennen nur, wenn kein Zeichen-/Loesch-Werkzeug aktiv ist —
-              sonst blockierten die Stifte die Raum-Zentren (s. RoomLabels). */}
-          {ready && blueprint3dRef.current && (
+              sonst blockierten die Stifte die Raum-Zentren (s. RoomLabels).
+              In der Axonometrie nicht: die zeichnet ihre Namen selbst, mit
+              Fuehrungslinien ausserhalb des Baukoerpers. */}
+          {ready && blueprint3dRef.current && viewMode !== 'axo' && (
             <RoomLabels
               blueprint3d={blueprint3dRef.current}
               viewMode={viewMode}

@@ -198,6 +198,84 @@ globalThis.__blick = (az, el) => axo.setzeBlick(az, el)
 
   await voll.s.close()
   await kahl.s.close()
+
+  /* ══ G6 · X3: folgt die Ansicht im Planer dem Grundriss? ══════════
+     Der eigentliche Auftrag der dritten Ansicht. Gemessen wird nicht, ob ein
+     Umschalter existiert, sondern ob eine ECHTE Aenderung am Modell im Bild
+     ankommt — mit Gegenprobe, damit das Gate nicht schon auf Bildrauschen
+     anspringt. */
+  if (!erreichbar) {
+    melde('G6 Ansicht folgt dem Grundriss', null, `uebersprungen — kein Planer auf :${PORT}`)
+  } else {
+    const p = await browser.newPage({ viewport: { width: 1440, height: 900 } })
+    const g6fehler = []
+    p.on('pageerror', (e) => g6fehler.push(String(e)))
+    await p.goto(`http://localhost:${PORT}/?plan=${PLAN}`, { waitUntil: 'domcontentloaded' })
+    await p.waitForFunction(() => globalThis.__planer?.model?.floorplan?.getRooms()?.length > 0, null, { timeout: 20000 })
+    await p.getByRole('button', { name: 'Axonometrie', exact: true }).click()
+    await p.waitForTimeout(1200)
+
+    /** Fingerabdruck des Axonometrie-Canvas. Ein reines 2D-Canvas laesst sich
+     *  direkt auslesen — anders als der WebGL-Canvas der 3D-Ansicht, dessen
+     *  Zeichenpuffer nach dem Rendern schon praesentiert ist. */
+    const abdruck = () =>
+      p.evaluate(() => {
+        const c = [...document.querySelectorAll('canvas')].find((x) => x.width > 100 && x.offsetParent !== null)
+        if (!c) return null
+        const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data
+        let h = 5381
+        for (let i = 0; i < d.length; i += 4 * 11) h = ((h * 33) ^ d[i] ^ (d[i + 1] << 3) ^ (d[i + 2] << 6)) >>> 0
+        return h
+      })
+
+    const vorher = await abdruck()
+    // Gegenprobe: ohne jede Aenderung darf sich das Bild NICHT ruehren. Ohne
+    // sie wuerde G6 auch dann gruen, wenn der Renderer bei jedem Neuzeichnen
+    // etwas anderes malt — dann bewiese die Aenderung hinterher gar nichts.
+    await p.waitForTimeout(600)
+    const ruhe = await abdruck()
+
+    const vorherZahlen = await p.evaluate(() => ({
+      raeume: globalThis.__planer.model.floorplan.getRooms().length,
+      waende: globalThis.__planer.model.floorplan.getWalls().length
+    }))
+    // Eine Trennwand einziehen — genau das, was der 2D-Zeichner tut (er ruft
+    // dieselben Modell-Funktionen). Sie wird zwischen zwei VORHANDENE Ecken
+    // gespannt: eine frei in den Raum gesetzte Wand teilt keinen Zyklus, weil
+    // ihre Enden an nichts andocken — dann bliebe die Raumzahl gleich und das
+    // Gate meldete einen Fehler, den es gar nicht gibt.
+    await p.evaluate(() => {
+      const fp = globalThis.__planer.model.floorplan
+      const raum = fp
+        .getRooms()
+        .filter((r) => r.corners.length === 4)
+        .sort((a, b) => b.corners.length - a.corners.length)[0]
+      const ecken = raum.corners
+      fp.newWall(ecken[0], ecken[2]) // Diagonale: teilt die Flaeche sicher
+      fp.update()
+    })
+    await p.waitForTimeout(900)
+    const nachher = await abdruck()
+    const nachherZahlen = await p.evaluate(() => ({
+      raeume: globalThis.__planer.model.floorplan.getRooms().length,
+      waende: globalThis.__planer.model.floorplan.getWalls().length
+    }))
+    const raeumeVorher = vorherZahlen.raeume
+    const raeumeNachher = nachherZahlen.raeume
+
+    const stabil = vorher !== null && vorher === ruhe
+    const gefolgt = nachher !== null && nachher !== vorher
+    const modellGeaendert = nachherZahlen.waende > vorherZahlen.waende && raeumeNachher > raeumeVorher
+    const g6 = stabil && gefolgt && modellGeaendert && g6fehler.length === 0
+    melde(
+      'G6 Ansicht folgt dem Grundriss',
+      g6,
+      g6
+        ? `Trennwand eingezogen: ${vorherZahlen.waende}->${nachherZahlen.waende} Waende, ${raeumeVorher}->${raeumeNachher} Raeume, Bild folgte (ruhend unveraendert)`
+        : `stabil=${stabil} bildGefolgt=${gefolgt} waende=${vorherZahlen.waende}->${nachherZahlen.waende} raeume=${raeumeVorher}->${raeumeNachher}${g6fehler.length ? ' fehler=' + g6fehler.join('|') : ''}`
+    )
+    await p.close()
+  }
 } finally {
   await browser.close()
 }
