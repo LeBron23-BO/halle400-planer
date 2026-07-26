@@ -1355,7 +1355,11 @@ export class Floorplan {
       const lage = Math.max(o.breite / 2, Math.min(laenge - o.breite / 2, laenge * t))
       beste = { wandId: wand.id, lage, abstand }
     })
-    return beste ? { wandId: beste.wandId, lage: beste.lage } : null
+    // Die Zuweisung im Rückruf ist für den Typprüfer unsichtbar, er verengt
+    // `beste` danach auf `never` — dieselbe Stelle und derselbe Griff wie in
+    // `Floorplanner.moebelEinrasten`.
+    const b = beste as { wandId: string; lage: number } | null
+    return b ? { wandId: b.wandId, lage: b.lage } : null
   }
 
   /**
@@ -1418,6 +1422,11 @@ export class Floorplan {
     this.assignOrphanEdges()
 
     this.updateFloorTextures()
+    // DIE REPARATUR-NAHT (W4) — vor dem Melden, nicht danach: wer auf
+    // `fireOnUpdatedRooms` hört (Axonometrie, Sichern in der Doppelklick-Datei),
+    // soll den REPARIERTEN Stand sehen und nicht einen, in dem die Tür noch an
+    // der halbierten Wand hängt.
+    this.versoehneOeffnungen()
     this.updated_rooms.fire()
   }
 
