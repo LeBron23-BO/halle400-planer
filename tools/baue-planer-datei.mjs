@@ -504,19 +504,36 @@ if (start) {
   if (Array.isArray(start.labels)) labels = start.labels;
 }
 
-/* Jede Modell-Aenderung meldet sich hier — daran haengen das Sichern und der
-   Neubau der Axonometrie. Waehrend eines LADEVORGANGS ist beides gesperrt: das
-   blosse OEffnen ist keine Aenderung und darf keinen "eigenen Stand" schreiben,
-   den niemand gemacht hat; und wer laedt, baut die Axonometrie danach selbst
-   neu — sonst liefe zusaetzlich ein Neubau in einem Zeitgeber hinterher. */
-grundriss.fireOnUpdatedRooms(function(){
+/* ── Woran erkennt die Huelle eine Aenderung? ───────────────────────
+   GEMESSEN, nicht angenommen: `fireOnUpdatedRooms` reicht NICHT. Es haengt an
+   `Floorplan.update()`, und das ruft der Kern nur bei neuer/entfernter Wand,
+   beim Verschmelzen von Ecken und beim Laden (floorplan.ts:207,216,352 ·
+   corner.ts:298,329). Eine VERSCHOBENE Ecke ruft es nicht — `Corner.move()`
+   benachrichtigt nur seine Waende. Wer sich allein darauf verliesse, haette
+   genau den Fall verloren, um den es in dieser Welle geht: das Ziehen. (Der
+   Nachweis war knifflig, weil ein Undo danach doch noch `update()` ausloest —
+   die Aenderung kam also scheinbar an, nur eine Handlung zu spaet.)
+
+   Darum wird der Zustand VERGLICHEN statt geglaubt: nach jedem Zeigerende und
+   bei jeder Meldung des Kerns wird der gespeicherte Grundriss einmal
+   ausgeschrieben und mit dem zuletzt bemerkten verglichen. Das ist zugleich der
+   Filter gegen Leerlauf — ein Klick, der nichts aendert, sichert auch nichts. */
+let letzterStand = null;
+
+function bemerkeAenderung(){
   if (sichernGesperrt) return;
+  const jetzt = JSON.stringify(grundriss.saveFloorplan());
+  if (jetzt === letzterStand) return;
+  letzterStand = jetzt;
   axoVeraltet = true;
   if (ansicht === 'axo') axoBaldNeu();
   sichernPlanen();
-});
+}
+
+grundriss.fireOnUpdatedRooms(bemerkeAenderung);
 
 grundriss.loadFloorplan(abschrift(start ? start.floorplan : PLAN.floorplan));
+letzterStand = JSON.stringify(grundriss.saveFloorplan());
 
 const zeichner = new Floorplanner('grundriss-canvas', grundriss);
 
@@ -528,6 +545,14 @@ const zeichner = new Floorplanner('grundriss-canvas', grundriss);
    zieht KEINE eigenen, sonst waere ein Ziehen mehrere Undo-Schritte. */
 const undo = new UndoManager(grundriss);
 zeichner.setUndoManager(undo);
+
+/* Das Ende eines Zuges — hier, nicht bei jeder Bewegung: waehrend eines Ziehens
+   feuert `mousemove` hundertfach, und jedes Mal den ganzen Grundriss
+   auszuschreiben waere Arbeit ohne Ertrag. Am DOKUMENT und nicht am Canvas,
+   weil die Taste auch ausserhalb der Zeichenflaeche losgelassen werden kann. */
+document.addEventListener('mouseup', bemerkeAenderung);
+document.addEventListener('touchend', bemerkeAenderung);
+document.addEventListener('touchcancel', bemerkeAenderung);
 
 /* Der Zeichner entstand nach dem Laden, hat dessen \`roomLoadedCallbacks\` also
    nicht mitbekommen. Einmal das nachholen, was er sonst selbst tut. */
@@ -713,6 +738,7 @@ function ladeGrundriss(fp, neueLabels, alsEigenerStand){
   try {
     if (Array.isArray(neueLabels)) labels = neueLabels;
     grundriss.loadFloorplan(abschrift(fp));
+    letzterStand = JSON.stringify(grundriss.saveFloorplan());
   } finally {
     sichernGesperrt = false;
   }
