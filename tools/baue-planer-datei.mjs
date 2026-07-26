@@ -324,6 +324,24 @@ const html = `<!DOCTYPE html>
   @media (max-width:900px){
     .tafel{top:auto;bottom:112px;right:10px;left:10px;width:auto;max-height:38vh}
     .hinweis{display:none}
+    /* ── W7 am Handy ─────────────────────────────────────────────────────
+       AM STANDBILD GEMESSEN, nicht uebertragen: oben ist kein Platz. Der
+       Blattkopf verliert hier seine Breitenbegrenzung (\`max-width:none\`,
+       Zeile unten) und laeuft ab 52 px quer ueber die Anzeige — eine Leiste
+       bei 60 px laege mitten im Titel. Der Hinweis geht deshalb nach UNTEN,
+       dicht ueber die Blick-Leiste; die Legenden-Tafel beginnt erst bei
+       112 px, er stoesst also an nichts.
+
+       Und er sagt hier nur den SATZ, nicht die Begruendung: auf 390 px braeche
+       der Sehstrahl-Satz in drei Zeilen um und naehme ein Zehntel der Anzeige
+       fuer etwas, das man einmal liest. */
+    .arbeitshinweis{top:auto;bottom:64px;left:10px;right:10px;transform:none;
+         max-width:none;padding:6px 10px;font-size:9.5px}
+    .arbeitshinweis .warum{display:none}
+    /* Damit auch die Stapel-Bahn oben: was nicht mehr dort steht, darf die
+       beiden darunter nicht mehr verschieben. */
+    body.bearbeitet #plan.weg ~ .standleiste{top:60px}
+    body.bearbeitet #plan.weg ~ .meldung{top:104px}
     .kopf{padding:10px 14px;max-width:none}
     .kopf .sub{font-size:9px;letter-spacing:.11em;line-height:1.6}
     .strich{margin:7px 0 6px;max-width:180px}

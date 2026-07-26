@@ -452,6 +452,15 @@ if (exportPfad && fs.existsSync(exportPfad)) {
   )
   await klick(page, 'btnLadeJa')
   await page.waitForTimeout(900)
+  /* Das „Zuruecksetzen" zwei Zeilen weiter oben hat den AUSLIEFERUNGSZUSTAND
+     hergestellt (M7): ruhiges Blatt, keine Werkzeuge — und seit W7 ist dabei
+     auch der gemerkte Ansichts-Schluessel geloescht. Wer weiterarbeiten will,
+     greift beides neu; genau das tut hier der Nutzer. Ohne diese zwei Zeilen
+     maesse G6 gleich den Neustart eines zurueckgesetzten Blattes und nicht
+     den einer laufenden Arbeit. */
+  await klick(page, 'btnBearbeiten')
+  await klick(page, 'btnAnsichtPlan')
+  await page.waitForTimeout(400)
   const nachImport = await page.evaluate((id) => ({
     ecke: window.__planerDatei.ecke(id),
     zahlen: window.__planerDatei.zahlen()
@@ -493,6 +502,20 @@ const gesichert = await page.evaluate(() => ({
   stand: window.__planerDatei.speicherStand() ? window.__planerDatei.speicherStand().length : 0
 }))
 log(`     im Browser gesichert: ${gesichert.am} (${(gesichert.stand / 1024).toFixed(0)} KB)`)
+
+/* WAS genau gemerkt wurde, VOR dem Neuladen — sonst steht bei einem
+   Fehlschlag nur da, dass etwas anderes zurueckkam, und nicht, ob es gar nicht
+   erst geschrieben wurde. Der Plan-Schluessel wird nur als "(Stand)" gezeigt:
+   sein Wert sind 83 KB JSON. */
+const gemerktVor = await page.evaluate(() => {
+  const o = {}
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i)
+    o[k.split(':').slice(0, 2).join(':')] = k.indexOf(':plan:') !== -1 ? '(Stand)' : localStorage.getItem(k)
+  }
+  return { speicher: o, bearbeitet: window.__planerDatei.bearbeitet(), ansicht: window.__planerDatei.ansicht() }
+})
+log(`     gemerkt vor dem Neuladen: ${JSON.stringify(gemerktVor)}`)
 
 await page.reload({ waitUntil: 'domcontentloaded' })
 const bereit2 = await warteBereit(page)

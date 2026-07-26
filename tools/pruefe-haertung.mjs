@@ -937,6 +937,33 @@ log('\n── MG: die Messgroesse ──')
     'MG: … waehrend das ALTE Mass (`hidden`) hier weiterhin `true` sagen wuerde — genau der blinde Fleck'
   )
 
+  /* W7 am Handy: die Werkzeuge sind hier ohnehin fern (keine Palette, kein
+     Fingerziehen) — umso mehr muss die ruhige Zeile SAGEN, wo gezeichnet wird.
+     Gemessen wird ihre LAGE, nicht nur ihr Dasein: oben laeuft der Blattkopf
+     quer ueber die Anzeige, unten steht die Blick-Leiste. Eine Zeile, die in
+     einem von beiden liegt, ist keine Auskunft, sondern Unordnung. */
+  await page.evaluate(() => document.getElementById('btnAnsichtAxo').dispatchEvent(new MouseEvent('click', { bubbles: true })))
+  await page.waitForTimeout(700)
+  const amHandy = await page.evaluate(() => {
+    const kasten = (auswahl) => {
+      const e = document.querySelector(auswahl)
+      if (!e || !e.checkVisibility({ contentVisibilityAuto: true, opacityProperty: true, visibilityProperty: true })) return null
+      const k = e.getBoundingClientRect()
+      return { oben: Math.round(k.top), unten: Math.round(k.bottom) }
+    }
+    return {
+      hinweis: kasten('#arbeitshinweis'),
+      kopf: kasten('.kopf'),
+      leiste: kasten('#blatt .leiste'),
+      zeilen: document.getElementById('arbeitshinweis').getClientRects().length
+    }
+  })
+  pruefe(
+    amHandy.hinweis !== null && amHandy.kopf !== null && amHandy.leiste !== null &&
+      amHandy.hinweis.oben > amHandy.kopf.unten && amHandy.hinweis.unten <= amHandy.leiste.oben,
+    `MG: am Handy steht die W7-Zeile zwischen Blattkopf und Blick-Leiste, nicht darin (${JSON.stringify(amHandy)})`
+  )
+
   pruefe(konsole.length === 0, `MG: keine Konsolen- oder Seitenfehler (${konsole.length}${konsole.length ? ': ' + konsole[0] : ''})`)
   await ctx.close()
 }
