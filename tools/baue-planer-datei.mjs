@@ -141,6 +141,12 @@ const html = `<!DOCTYPE html>
        margin:0 0 3px;line-height:1.15}
   .kopf .sub{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;
        text-transform:uppercase;color:var(--ink-mute);line-height:1.7}
+  /* Der Zaehler der frei gesetzten Stuecke. RUHIG, aber in der Warnfarbe:
+     er widerspricht der Zeile darueber ("aus dem gemessenen Grundriss") und
+     muss darum sofort als Einschraenkung zu erkennen sein — die Bank darf ein
+     frei gezogenes Blatt NIE fuer ein Aufmass halten. */
+  .kopf .gesetzt{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;
+       text-transform:uppercase;color:var(--amber);line-height:1.7;margin-top:5px}
   .strich{height:1px;background:var(--hair-strong);margin:9px 0 8px;max-width:270px}
 
   .leiste{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
@@ -250,6 +256,7 @@ const html = `<!DOCTYPE html>
     <h1>Halle&nbsp;400 &middot; Büro</h1>
     <div class="strich"></div>
     <div class="sub" id="unterzeile">Axonometrie</div>
+    <div class="gesetzt" id="gesetztZaehler" hidden></div>
   </header>
 
   <aside class="tafel" id="tafel">
@@ -292,9 +299,12 @@ const html = `<!DOCTYPE html>
   <div class="leiste" id="werkzeuge" role="toolbar" aria-label="Grundriss bearbeiten" hidden>
     <div class="grp">
       <span class="lbl">Werkzeug</span>
-      <button type="button" id="wzMove" title="Verschieben — Ecken und Wände ziehen" aria-pressed="true">Verschieben</button>
+      <button type="button" id="wzMove" title="Verschieben — Ecken, Wände und Möbel ziehen. Q und E drehen das Möbel unter dem Zeiger um 15°." aria-pressed="true">Verschieben</button>
       <button type="button" id="wzDraw" title="Wände zeichnen — Punkt für Punkt" aria-pressed="false">Wände zeichnen</button>
       <button type="button" id="wzDelete" title="Löschen — mit Rückfrage" aria-pressed="false">Löschen</button>
+    </div>
+    <div class="grp">
+      <button type="button" id="btnEinrasten" aria-pressed="true" title="Gezogene Möbel bündig an die Wand legen, sonst auf 5 cm runden">Einrasten</button>
     </div>
     <div class="grp">
       <button type="button" id="btnUndo" title="Rückgängig (Strg+Z)">Rückgängig</button>
@@ -526,8 +536,23 @@ function bemerkeAenderung(){
   if (jetzt === letzterStand) return;
   letzterStand = jetzt;
   axoVeraltet = true;
+  gesetztZeigen();
   if (ansicht === 'axo') axoBaldNeu();
   sichernPlanen();
+}
+
+/* ── Was der Nutzer FREI GESETZT hat ────────────────────────────────
+   Die tragende Regel des ganzen Vorhabens: die PDF ist die Grundwahrheit, und
+   ein gezogenes Moebel ist KEIN Aufmass mehr. Im Grundriss ist es an der
+   Strichelung zu erkennen — auf dem BLATT, das die Bank ansieht, waere es das
+   nicht. Darum diese eine Zeile im Blattkopf. Sie erscheint nur, wenn es etwas
+   zu sagen gibt: eine dauerhafte "0 Stueck frei gesetzt"-Zeile lehrte den
+   Leser, ueber sie hinwegzusehen — genau dann, wenn sie einmal wichtig wird. */
+function gesetztZeigen(){
+  const n = grundriss.zaehleGesetzte();
+  const z = el('gesetztZaehler');
+  z.textContent = n + ' Stück frei gesetzt — kein Aufmaß';
+  z.hidden = n === 0;
 }
 
 grundriss.fireOnUpdatedRooms(bemerkeAenderung);
@@ -566,6 +591,11 @@ zeichner.setUndoManager(undo);
 document.addEventListener('mouseup', bemerkeAenderung);
 document.addEventListener('touchend', bemerkeAenderung);
 document.addEventListener('touchcancel', bemerkeAenderung);
+/* Auch die TASTATUR aendert etwas: Q und E drehen das Moebel unter dem Zeiger
+   (W2). Ohne diese Zeile bliebe eine Drehung bis zum naechsten Mausklick
+   ungesichert und das Blatt zeigte sie nicht — dieselbe Falle wie beim
+   Verschieben, nur mit anderem Ausloeser. */
+document.addEventListener('keyup', bemerkeAenderung);
 
 /* Der Zeichner entstand nach dem Laden, hat dessen \`roomLoadedCallbacks\` also
    nicht mitbekommen. Einmal das nachholen, was er sonst selbst tut. */
@@ -755,6 +785,9 @@ function ladeGrundriss(fp, neueLabels, alsEigenerStand){
   } finally {
     sichernGesperrt = false;
   }
+  // Von Hand, nicht ueber \`bemerkeAenderung\`: das war waehrend des Ladens
+  // gesperrt und haette den Zaehler auf dem Stand von VOR dem Laden gelassen.
+  gesetztZeigen();
   axoNeuBauen();
   if (alsEigenerStand) {
     sichereJetzt();
@@ -875,6 +908,16 @@ btnUndo.addEventListener('click', function(){ undo.undo(); });
 btnRedo.addEventListener('click', function(){ undo.redo(); });
 historieZeigen();
 
+/* Einrasten (W2). Der Knopf haelt seinen Zustand NIE selbst fuer wahr, sondern
+   folgt dem Kern — genauso wie die Werkzeug-Knoepfe oben. */
+el('btnEinrasten').addEventListener('click', function(){
+  zeichner.setzeEinrasten(!zeichner.istEinrasten());
+});
+zeichner.addEinrastCallback(function(an){
+  el('btnEinrasten').setAttribute('aria-pressed', String(an));
+});
+el('btnEinrasten').setAttribute('aria-pressed', String(zeichner.istEinrasten()));
+
 el('btnZoomAus').addEventListener('click', function(){ zeichner.zoomeUmFaktor(1 / 1.25); });
 el('btnZoomEin').addEventListener('click', function(){ zeichner.zoomeUmFaktor(1.25); });
 el('btnEinpassen').addEventListener('click', function(){ zeichner.allesEinpassen(); });
@@ -979,6 +1022,7 @@ markiere('[data-blick]', startBlick);
 markiere('[data-namen]', namenModus);
 
 standZeigen();
+gesetztZeigen();
 
 /* Ein abgelehnter eigener Stand wird GESAGT — still den gemessenen Plan zu
    zeigen sähe aus, als wäre die Arbeit verloren. */
@@ -1049,8 +1093,14 @@ window.__planerDatei = {
     return grundriss.getWalls().map(function(w){
       const a = w.getStart(), b = w.getEnd();
       return {
+        // BILD-Koordinaten (so hiess es seit W1, bleibt unveraendert) ...
         ax: zeichner.convertX(a.x), ay: zeichner.convertY(a.y),
-        bx: zeichner.convertX(b.x), by: zeichner.convertY(b.y)
+        bx: zeichner.convertX(b.x), by: zeichner.convertY(b.y),
+        // ... und dazu die WELT, die das Einrasten braucht (W2). Zusaetzlich
+        // und nicht anstelle: ein Gate, das die alten Namen liest, misst sonst
+        // ploetzlich Zentimeter und haelt sie fuer Bildpunkte.
+        id: w.id, dicke: w.thickness,
+        wax: a.x, way: a.y, wbx: b.x, wby: b.y
       };
     });
   },
@@ -1059,6 +1109,56 @@ window.__planerDatei = {
     return c ? { id: c.id, x: c.x, y: c.y, bx: zeichner.convertX(c.x), by: zeichner.convertY(c.y) } : null;
   },
   werkzeug: function(){ return zeichner.mode; },
+  /* --- Moebelziehen (W2). Bewusst dieselben Angaben wie im Planer, damit ein
+     Gate beide Welten mit DEMSELBEN Code messen kann: was hier anders hiesse,
+     waere ein zweiter Massstab und damit kein Vergleich mehr. */
+  ausstattung: function(){
+    return grundriss.getAusstattung().map(function(e){
+      return {
+        id: e.id, typ: e.typ, x: e.x, y: e.y, breite: e.breite, tiefe: e.tiefe,
+        drehung: e.drehung || 0, quelle: e.quelle,
+        bx: zeichner.convertX(e.x), by: zeichner.convertY(e.y)
+      };
+    });
+  },
+  stueck: function(id){
+    const e = grundriss.findeAusstattung(id);
+    if (!e) return null;
+    return {
+      id: e.id, typ: e.typ, x: e.x, y: e.y, breite: e.breite, tiefe: e.tiefe,
+      drehung: e.drehung || 0, quelle: e.quelle,
+      bx: zeichner.convertX(e.x), by: zeichner.convertY(e.y)
+    };
+  },
+  gesetzte: function(){ return grundriss.zaehleGesetzte(); },
+  gesetztText: function(){
+    const z = el('gesetztZaehler');
+    return z.hidden ? null : z.textContent;
+  },
+  aufBild: function(x, y){ return { x: zeichner.convertX(x), y: zeichner.convertY(y) }; },
+  treffer: function(){
+    return {
+      ausstattung: zeichner.activeAusstattung,
+      wand: zeichner.activeWall ? zeichner.activeWall.id : null,
+      ecke: zeichner.activeCorner ? zeichner.activeCorner.id : null
+    };
+  },
+  einrasten: function(){ return zeichner.istEinrasten(); },
+  setzeEinrasten: function(an){ zeichner.setzeEinrasten(an); },
+  zoomeAufPunkt: function(z, bx, by){ zeichner.zoomeAufPunkt(z, bx, by); },
+  proCm: function(){ return zeichner.pixelProCm(); },
+  undoJetzt: function(){ undo.undo(); },
+  /* Nur fuer die Strichprobe: dieselbe Liste einmal mit anderer Herkunft
+     einspielen, um am GLEICHEN Stueck an der GLEICHEN Stelle zu messen, ob
+     "gesetzt" wirklich anders gezeichnet wird. Zieht bewusst KEINEN
+     Schnappschuss — sonst zaehlte die Messung als Zug des Nutzers. */
+  ausstattungRoh: function(){ return JSON.parse(JSON.stringify(grundriss.getAusstattung())); },
+  setzeAusstattung: function(liste){ grundriss.setAusstattung(liste); zeichner.resizeView(); },
+  zeigerStil: function(){ return document.getElementById('grundriss-canvas').style.cursor; },
+  taste: function(k){
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent('keyup', { key: k, bubbles: true }));
+  },
   kannZurueck: function(){ return undo.canUndo(); },
   kannVor: function(){ return undo.canRedo(); },
   gesichertAm: function(){ return gesichertAm; },

@@ -91,6 +91,24 @@ export function ControlsHelp({ className, viewMode = '3d' }: ControlsHelpProps) 
                       </div>
                     </div>
 
+                    {/* Moebelziehen (W2). Steht direkt unter „Bewegen", weil es
+                        dasselbe Werkzeug ist — nur ein anderes Ziel. */}
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <RotateCw className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium mb-1">Möbel ziehen und drehen</h3>
+                        <p className="text-muted-foreground text-sm">
+                          Im Werkzeug „Bewegen“ ein Möbel anfassen und ziehen. Mit <b>Q</b> und{' '}
+                          <b>E</b> dreht sich das Möbel unter dem Zeiger um 15°. Bei
+                          eingeschaltetem Einrasten legt es sich an nahe Wände an, sonst auf ein
+                          5-cm-Raster. Ein gezogenes Stück gilt danach als <i>gesetzt</i> und wird
+                          gestrichelt gezeichnet — es ist kein Aufmaß mehr.
+                        </p>
+                      </div>
+                    </div>
+
                     <div className="flex items-start gap-4">
                       <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                         <Pencil className="h-5 w-5 text-primary" />

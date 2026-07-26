@@ -30,7 +30,8 @@
       "redone": "Wiederhergestellt",
       "zoomIn": "Näher heran",
       "zoomOut": "Weiter weg",
-      "fitAll": "Ganze Halle zeigen"
+      "fitAll": "Ganze Halle zeigen",
+      "snap": "Einrasten — Möbel an Wände und aufs 5-cm-Raster legen"
     },
     "viewToggle": {
       "3d": "3D",

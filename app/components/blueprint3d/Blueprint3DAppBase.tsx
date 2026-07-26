@@ -96,6 +96,9 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
   // die Schaltflaechen ausgegraut sind, wenn es nichts zurueckzunehmen gibt.
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
+  // Einrasten gezogener Moebel (W2) — gespiegelt aus dem Floorplanner, der die
+  // Wahrheit haelt. Die Leiste haelt NIE ihren eigenen Zustand fuer wahr.
+  const [einrasten, setEinrasten] = useState(true)
   // Was gerade zum Loeschen vorgeschlagen ist (E1) — gespiegelt aus dem
   // Floorplanner, damit die Rueckfrage im React-Baum leben kann.
   const [loeschAnfrage, setLoeschAnfrage] = useState<LoeschZiel | null>(null)
@@ -174,6 +177,14 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
         m === floorplannerModes.DRAW ? 'draw' : m === floorplannerModes.DELETE ? 'delete' : 'move'
       )
     })
+
+    // Einrasten -> React spiegeln (W2), aus demselben Grund wie der
+    // Werkzeugwechsel: der Kern kann es auch von sich aus umlegen, und eine
+    // Leiste, die ihren eigenen Zustand fuer wahr haelt, log dann darueber.
+    blueprint3d.floorplanner?.addEinrastCallback((an: boolean) => {
+      setEinrasten(an)
+    })
+    setEinrasten(blueprint3d.floorplanner?.istEinrasten() ?? true)
 
     // Loesch-Rueckfrage -> React spiegeln (E1). Der Floorplanner meldet mit
     // `null`, wenn der Vorschlag hinfaellig ist — die Rueckfrage muss also nie
@@ -614,6 +625,14 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
     blueprint3dRef.current?.floorplanner?.allesEinpassen()
   }, [])
 
+  // Nur MELDEN, nicht selbst setzen (W2): der Zustand kommt ueber
+  // `addEinrastCallback` zurueck. Sonst gaebe es zwei Wahrheiten, und die eine
+  // (React) verschoebe sich gegen die andere (Kern), sobald etwas anderes den
+  // Schalter umlegt.
+  const handleEinrastenChange = useCallback((an: boolean) => {
+    blueprint3dRef.current?.floorplanner?.setzeEinrasten(an)
+  }, [])
+
   const handleUndo = useCallback(() => {
     blueprint3dRef.current?.undo.undo()
   }, [])
@@ -787,6 +806,8 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
                   onZoomIn={handleZoomIn}
                   onZoomOut={handleZoomOut}
                   onFitAll={handleFitAll}
+                  einrasten={einrasten}
+                  onEinrastenChange={handleEinrastenChange}
                 />
                 {floorplannerMode === 'draw' && (
                   <div className="absolute left-5 bottom-5 bg-black/50 text-primary-foreground px-2.5 py-1.5 rounded text-sm">

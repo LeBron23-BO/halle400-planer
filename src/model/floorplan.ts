@@ -650,6 +650,43 @@ export class Floorplan {
   }
 
   /**
+   * Dreht EIN Ausstattungs-Zeichen um seinen Mittelpunkt (Bogenmaß, absolut) —
+   * und macht es dabei ebenfalls zu `'gesetzt'`.
+   *
+   * Eigene Methode statt eines dritten Arguments an `verschiebeAusstattung`:
+   * Drehen und Verschieben sind zwei Handlungen und passieren einzeln (Q/E
+   * dreht, ohne zu verschieben). Ein optionales Argument hiesse, bei jedem
+   * Verschieben eine Drehung mitzuliefern oder still die alte zu behalten —
+   * und „still die alte behalten" ist genau die Sorte Nebenwirkung, die man
+   * beim Lesen des Aufrufs nicht sieht.
+   *
+   * Der Herkunfts-Wechsel gilt hier aus demselben Grund wie beim Verschieben:
+   * ein gemessenes Stück, das man dreht, steht nicht mehr so, wie es gemessen
+   * wurde. Rückgabe meldet, ob wirklich etwas gedreht wurde.
+   */
+  public dreheAusstattung(id: string, drehung: number): boolean {
+    const el = this.findeAusstattung(id)
+    if (!el) {
+      return false
+    }
+    el.drehung = drehung
+    el.quelle = 'gesetzt'
+    return true
+  }
+
+  /**
+   * Wie viele Stücke der Nutzer frei gesetzt hat — die Zahl, die auf dem
+   * Planblatt steht („N Stück frei gesetzt — kein Aufmaß").
+   *
+   * Hier und nicht in der Oberfläche, weil beide Auslieferungen (Planer und
+   * Doppelklick-Datei) dieselbe Zahl nennen müssen: zwei eigene Zählungen
+   * liefen auseinander, sobald jemand eine dritte Herkunft einführt.
+   */
+  public zaehleGesetzte(): number {
+    return this.ausstattung.filter((el) => el.quelle === 'gesetzt').length
+  }
+
+  /**
    * Sets a user-defined name for a label key. A blank name clears the override,
    * so the PDF-derived default name shows again.
    */

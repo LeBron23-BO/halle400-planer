@@ -30,7 +30,8 @@
       "redone": "Redone",
       "zoomIn": "Zoom in",
       "zoomOut": "Zoom out",
-      "fitAll": "Fit whole plan"
+      "fitAll": "Fit whole plan",
+      "snap": "Snap — align furniture to walls and the 5 cm grid"
     },
     "viewToggle": {
       "3d": "3D",

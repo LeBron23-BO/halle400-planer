@@ -44,6 +44,12 @@
        margin:0 0 3px;line-height:1.15}
   .kopf .sub{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;
        text-transform:uppercase;color:var(--ink-mute);line-height:1.7}
+  /* Der Zaehler der frei gesetzten Stuecke. RUHIG, aber in der Warnfarbe:
+     er widerspricht der Zeile darueber ("aus dem gemessenen Grundriss") und
+     muss darum sofort als Einschraenkung zu erkennen sein — die Bank darf ein
+     frei gezogenes Blatt NIE fuer ein Aufmass halten. */
+  .kopf .gesetzt{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;
+       text-transform:uppercase;color:var(--amber);line-height:1.7;margin-top:5px}
   .strich{height:1px;background:var(--hair-strong);margin:9px 0 8px;max-width:270px}
 
   .leiste{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
@@ -153,6 +159,7 @@
     <h1>Halle&nbsp;400 &middot; Büro</h1>
     <div class="strich"></div>
     <div class="sub" id="unterzeile">Axonometrie</div>
+    <div class="gesetzt" id="gesetztZaehler" hidden></div>
   </header>
 
   <aside class="tafel" id="tafel">
@@ -195,9 +202,12 @@
   <div class="leiste" id="werkzeuge" role="toolbar" aria-label="Grundriss bearbeiten" hidden>
     <div class="grp">
       <span class="lbl">Werkzeug</span>
-      <button type="button" id="wzMove" title="Verschieben — Ecken und Wände ziehen" aria-pressed="true">Verschieben</button>
+      <button type="button" id="wzMove" title="Verschieben — Ecken, Wände und Möbel ziehen. Q und E drehen das Möbel unter dem Zeiger um 15°." aria-pressed="true">Verschieben</button>
       <button type="button" id="wzDraw" title="Wände zeichnen — Punkt für Punkt" aria-pressed="false">Wände zeichnen</button>
       <button type="button" id="wzDelete" title="Löschen — mit Rückfrage" aria-pressed="false">Löschen</button>
+    </div>
+    <div class="grp">
+      <button type="button" id="btnEinrasten" aria-pressed="true" title="Gezogene Möbel bündig an die Wand legen, sonst auf 5 cm runden">Einrasten</button>
     </div>
     <div class="grp">
       <button type="button" id="btnUndo" title="Rückgängig (Strg+Z)">Rückgängig</button>
@@ -3904,7 +3914,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "c8051b95fb22";
-const BAU_STEMPEL = "2026-07-26 13:47";
+const BAU_STEMPEL = "2026-07-26 14:15";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -5860,6 +5870,41 @@ class Floorplan {
         return true;
     }
     /**
+     * Dreht EIN Ausstattungs-Zeichen um seinen Mittelpunkt (Bogenmaß, absolut) —
+     * und macht es dabei ebenfalls zu `'gesetzt'`.
+     *
+     * Eigene Methode statt eines dritten Arguments an `verschiebeAusstattung`:
+     * Drehen und Verschieben sind zwei Handlungen und passieren einzeln (Q/E
+     * dreht, ohne zu verschieben). Ein optionales Argument hiesse, bei jedem
+     * Verschieben eine Drehung mitzuliefern oder still die alte zu behalten —
+     * und „still die alte behalten" ist genau die Sorte Nebenwirkung, die man
+     * beim Lesen des Aufrufs nicht sieht.
+     *
+     * Der Herkunfts-Wechsel gilt hier aus demselben Grund wie beim Verschieben:
+     * ein gemessenes Stück, das man dreht, steht nicht mehr so, wie es gemessen
+     * wurde. Rückgabe meldet, ob wirklich etwas gedreht wurde.
+     */
+    dreheAusstattung(id, drehung) {
+        const el = this.findeAusstattung(id);
+        if (!el) {
+            return false;
+        }
+        el.drehung = drehung;
+        el.quelle = 'gesetzt';
+        return true;
+    }
+    /**
+     * Wie viele Stücke der Nutzer frei gesetzt hat — die Zahl, die auf dem
+     * Planblatt steht („N Stück frei gesetzt — kein Aufmaß").
+     *
+     * Hier und nicht in der Oberfläche, weil beide Auslieferungen (Planer und
+     * Doppelklick-Datei) dieselbe Zahl nennen müssen: zwei eigene Zählungen
+     * liefen auseinander, sobald jemand eine dritte Herkunft einführt.
+     */
+    zaehleGesetzte() {
+        return this.ausstattung.filter((el) => el.quelle === 'gesetzt').length;
+    }
+    /**
      * Sets a user-defined name for a label key. A blank name clears the override,
      * so the PDF-derived default name shows again.
      */
@@ -6696,6 +6741,36 @@ const snapTolerance = 25;
  */
 const GREIF_TOLERANZ_PX = 8;
 /**
+ * Wie nah der RAND eines Möbels an eine Wand kommen muss, damit es sich bündig
+ * anlegt (W2, in cm — hier bewusst NICHT in Bildschirm-Pixeln).
+ *
+ * Der Unterschied zur Greifzone ist grundsätzlich: die Greifzone ist eine
+ * Bedienhilfe für den Zeiger und muss darum auf dem Bildschirm konstant bleiben.
+ * Das Anlegen ist dagegen eine AUSSAGE ÜBER DIE PLANUNG — „der Schrank steht an
+ * der Wand". Ob der Nutzer dabei nah herangezoomt hat oder die ganze Halle
+ * sieht, darf das Ergebnis nicht ändern; sonst legte dasselbe Ziehen bei Zoom 2
+ * an und bei Zoom 0,2 nicht.
+ *
+ * 15 cm ist die Mitte zwischen zwei Fehlern: zu klein und man trifft die Wand in
+ * der Übersicht nie (1 Bildpunkt sind dort rund 5 cm), zu gross und ein Stück,
+ * das bewusst 20 cm vor der Wand stehen soll, klebt gegen den Willen des
+ * Nutzers fest.
+ */
+const EINRAST_WAND_CM = 15;
+/**
+ * Raster, auf das ohne Wand in der Nähe gerundet wird (cm). 5 cm ist grob genug,
+ * dass eine Reihe Stühle von selbst auf einer Linie steht, und fein genug, dass
+ * man nichts sichtbar verrückt bekommt. Auf ZENTIMETER wird ohnehin immer
+ * gerundet (Projekt-DNA Punkt 3: zwei Nachkommastellen suggerieren eine
+ * Präzision, die eine freihändig gezeichnete Vorlage nicht hergibt).
+ */
+const EINRAST_RASTER_CM = 5;
+/**
+ * Schrittweite beim Drehen (Bogenmass, 15°). Klein genug für eine schräge
+ * Aufstellung, gross genug, dass 90° in sechs Anschlägen erreicht ist.
+ */
+const DREH_SCHRITT = Math.PI / 12;
+/**
  * Massstab bei Zoomstufe 1 (T7): 30.48 cm je 15 Pixel = 2.032 cm/Pixel.
  * Das ist der Upstream-Wert und bleibt der Bezugspunkt — gezoomt wird als
  * Faktor DARAUF, damit "Zoom 1" weiterhin das gewohnte Bild ergibt.
@@ -6966,6 +7041,36 @@ class Floorplanner {
          */
         this.activeAusstattung = null;
         /**
+         * KENNUNG des Stücks, das gerade GEZOGEN wird (W2) — `null` heisst: es läuft
+         * kein Zug. Getrennt von `activeAusstattung` und nicht daraus abgeleitet:
+         * `activeAusstattung` sagt nur, was der Zeiger überdeckt, und wird bei jeder
+         * Bewegung neu bestimmt. Ein laufender Zug muss aber auch dann bei SEINEM
+         * Stück bleiben, wenn der Zeiger es beim schnellen Ziehen kurz verlässt —
+         * sonst liesse man das Möbel unterwegs fallen.
+         */
+        this.zugKennung = null;
+        /**
+         * Wo genau das Möbel ANGEFASST wurde: der Versatz zwischen Zeiger und
+         * Mittelpunkt in cm, festgehalten beim Drücken. Ohne ihn spränge das Stück
+         * beim Anfassen mit seiner Mitte unter den Zeiger — bei einer 3 m langen
+         * Tischplatte ein Sprung von anderthalb Metern, und der Nutzer verlöre genau
+         * die Stelle, die er im Blick hatte.
+         */
+        this.zugVersatzX = 0;
+        this.zugVersatzY = 0;
+        /**
+         * Rasten gezogene Möbel ein (W2)? Abschaltbar über die Werkzeugleiste.
+         *
+         * Standardmässig AN, weil ohne Einrasten jedes Stück krumm und ein paar
+         * Zentimeter neben der Wand steht und der Nutzer von Hand ausrichten müsste —
+         * mit einer freihändigen Maus ist das nicht zu schaffen. Abschaltbar, weil
+         * das Einrasten eine ANNAHME trifft („du willst an die Wand"), und eine
+         * Annahme, die sich nicht abstellen lässt, ist ein Zwang.
+         */
+        this.einrasten = true;
+        /** Meldet der Oberfläche, dass sich `einrasten` geändert hat (Knopfzustand). */
+        this.einrastCallbacks = [];
+        /**
          * Die vorhandene Ecke, auf die der nächste Punkt gerade einrastet (E2), oder
          * `null`. Die Ansicht hebt sie hervor — Einrasten, das man nicht SIEHT, ist
          * kaum besser als keins: man erfährt sonst erst nach dem Klick, ob der
@@ -7042,6 +7147,28 @@ class Floorplanner {
         document.addEventListener('keyup', (e) => {
             if (e.keyCode == 27) {
                 this.escapeKey();
+            }
+        });
+        // --- Drehen mit Q/E (W2). Auf `keydown` und nicht `keyup`, damit Halten
+        // wiederholt dreht — eine Vierteldrehung sind sechs Anschläge.
+        document.addEventListener('keydown', (e) => {
+            // Strg+Z/Y gehören der Historie, und in einem Eingabefeld ist ein „e"
+            // ein Buchstabe. Beides hier durchzulassen hiesse, dem Nutzer beim
+            // Tippen den Grundriss zu verdrehen.
+            if (e.ctrlKey || e.metaKey || e.altKey) {
+                return;
+            }
+            const ziel = e.target;
+            if (ziel &&
+                (ziel.tagName === 'INPUT' || ziel.tagName === 'TEXTAREA' || ziel.isContentEditable)) {
+                return;
+            }
+            const taste = (e.key || '').toLowerCase();
+            if (taste !== 'q' && taste !== 'e') {
+                return;
+            }
+            if (this.dreheAktives(taste === 'q' ? -1 : 1)) {
+                e.preventDefault();
             }
         });
         floorplan.roomLoadedCallbacks.add(() => {
@@ -7151,6 +7278,30 @@ class Floorplanner {
         this.zugGesichert = false;
         this.lastX = this.rawMouseX;
         this.lastY = this.rawMouseY;
+        // --- Möbel greifen (W2)
+        //
+        // Der Griff wird HIER festgehalten und nicht erst bei der ersten Bewegung:
+        // `trefferBestimmen` läuft nur, solange die Taste OBEN ist, `mouseX/mouseY`
+        // stehen also beim Drücken noch auf derselben Stelle wie beim letzten
+        // Hinüberfahren. Wartete man auf die erste Bewegung, wäre der Versatz schon
+        // um deren Weg verfälscht — das Möbel spränge um genau diesen Betrag.
+        this.zugKennung = null;
+        if (this.mode == floorplannerModes.MOVE && this.activeAusstattung) {
+            const el = this.floorplan.findeAusstattung(this.activeAusstattung);
+            if (el) {
+                this.zugKennung = el.id;
+                this.zugVersatzX = el.x - this.mouseX;
+                this.zugVersatzY = el.y - this.mouseY;
+            }
+            else {
+                // Das überdeckte Stück gibt es nicht mehr (gelöscht, zurückgespielt).
+                // Die Merkung MUSS weg, sonst bliebe sie liegen und sperrte über die
+                // Schwenk-Bedingung unten die Ansicht — ein Fleck, in dem der Zeiger
+                // nichts mehr bewirkt und niemand wüsste, warum.
+                this.activeAusstattung = null;
+            }
+        }
+        this.zeigerStilSetzen();
         // delete
         if (this.mode == floorplannerModes.DELETE) {
             // Seit E1 löscht der Klick NICHT mehr sofort, sondern schlägt dasselbe
@@ -7189,11 +7340,12 @@ class Floorplanner {
         // bei jedem Zoom gleich gross bleibt (T7).
         const toleranz = GREIF_TOLERANZ_PX * this.cmPerPixel;
         // Ausstattung ist greifbar, solange sie auch GEZEICHNET wird (sonst liesse
-        // sich Unsichtbares anfassen) — und bisher nur im Löschen-Werkzeug. Das
-        // Ziehen im Verschieben-Werkzeug kommt in Welle 2; bis dahin wäre ein
-        // gegriffenes Möbel dort ein Griff, der nichts bewirkt, und würde nur das
-        // Schwenken der Ansicht blockieren.
-        const ausstattungGreifbar = this.mode == floorplannerModes.DELETE && this.pixelProCm() >= AUSSTATTUNG_UMRISS_AB;
+        // sich Unsichtbares anfassen) — im Löschen-Werkzeug (E1) und seit W2 auch
+        // im Verschieben-Werkzeug, wo sie gezogen wird. In beiden Fällen bewirkt
+        // ein Griff etwas; im Zeichnen-Werkzeug täte er nichts und nähme nur den
+        // Ecken-Fang die Sicht.
+        const ausstattungGreifbar = (this.mode == floorplannerModes.DELETE || this.mode == floorplannerModes.MOVE) &&
+            this.pixelProCm() >= AUSSTATTUNG_UMRISS_AB;
         // --- VORRANG: steht der Zeiger WIRKLICH auf einem Möbel? (Toleranz 0)
         //
         // Warum das die alte Reihenfolge (Ecke -> Wand -> Ausstattung) umdreht:
@@ -7253,6 +7405,7 @@ class Floorplanner {
         // update object target
         if (this.mode != floorplannerModes.DRAW && !this.mouseDown) {
             if (this.trefferBestimmen()) {
+                this.zeigerStilSetzen();
                 this.view.draw();
             }
             // --- Verweilen (E1)
@@ -7280,13 +7433,11 @@ class Floorplanner {
         }
         // panning
         //
-        // `!this.activeAusstattung` gehört zwingend dazu, sobald ein Möbel gezogen
-        // werden kann (Welle 2): sonst wanderte das Möbel UND der Plan unter ihm
-        // gleich mit — der Zeiger führte zwei Bewegungen auf einmal aus, und das
-        // Stück landete nie dort, wo man es hinzieht. Heute ist die Bedingung noch
-        // wirkungslos (die Ausstattung ist nur im Löschen-Werkzeug greifbar), aber
-        // sie hier erst mit dem Ziehen nachzureichen hiesse, den Fehler zuerst zu
-        // bauen.
+        // `!this.activeAusstattung` gehört zwingend dazu, seit ein Möbel gezogen
+        // werden kann (W2): sonst wanderte das Möbel UND der Plan unter ihm gleich
+        // mit — der Zeiger führte zwei Bewegungen auf einmal aus, und das Stück
+        // landete nie dort, wo man es hinzieht. GEMESSEN, nicht vermutet: ohne
+        // diese Bedingung legt derselbe Zug das Stück rund doppelt so weit.
         if (this.mouseDown && !this.activeCorner && !this.activeWall && !this.activeAusstattung) {
             this.originX += this.lastX - this.rawMouseX;
             this.originY += this.lastY - this.rawMouseY;
@@ -7299,11 +7450,17 @@ class Floorplanner {
             // Erst hier sichern, nicht schon bei mousedown: ein Druck auf eine Wand
             // ohne Bewegung (oder ein Schwenk der Ansicht) aendert nichts und soll
             // die Historie nicht mit Leerschritten fuellen.
-            if ((this.activeCorner || this.activeWall) && !this.zugGesichert) {
+            if ((this.activeCorner || this.activeWall || this.zugKennung) && !this.zugGesichert) {
                 this.undoManager?.snapshot();
                 this.zugGesichert = true;
             }
-            if (this.activeCorner) {
+            // Das Möbel zuerst: es hat beim Greifen schon den Vorrang bekommen
+            // (`trefferBestimmen`), und dieselbe Reihenfolge hier hält beides
+            // zusammen. Ein Zug bewegt IMMER genau eine Sache.
+            if (this.zugKennung) {
+                this.moebelZiehen();
+            }
+            else if (this.activeCorner) {
                 this.activeCorner.move(this.mouseX, this.mouseY);
                 this.activeCorner.snapToAxis(snapTolerance);
             }
@@ -7319,6 +7476,11 @@ class Floorplanner {
     /** */
     mouseup() {
         this.mouseDown = false;
+        // Das gezogene Stück ist abgelegt. Die Merkung MUSS hier fallen, auch wenn
+        // gar nichts bewegt wurde — sonst zöge der nächste Druck irgendwo im Bild
+        // stillschweigend dasselbe Möbel weiter.
+        this.zugKennung = null;
+        this.zeigerStilSetzen();
         // drawing
         if (this.mode == floorplannerModes.DRAW && !this.mouseMoved) {
             // Jeder gesetzte Punkt ist ein eigener Zug: beim Zeichnen eines
@@ -7337,11 +7499,212 @@ class Floorplanner {
     /** */
     mouseleave() {
         this.mouseDown = false;
+        // Wer den Zeichenbereich verlässt, hat losgelassen — jedenfalls für uns:
+        // ein `mouseup` ausserhalb bekommt der Canvas nicht mehr zu sehen. Ohne
+        // dieses Aufräumen führte das Möbel beim Wiedereintritt einen Zug fort,
+        // den der Nutzer längst beendet hat.
+        this.zugKennung = null;
+        this.zeigerStilSetzen();
         // Das laufende Verweilen endet mit dem Zeichenbereich — ein OFFENER
         // Vorschlag aber nicht: die Rückfrage liegt ausserhalb des Canvas, der Weg
         // dorthin löst zwangsläufig mouseleave aus und würde sie sonst schliessen.
         this.verweilAbbrechen();
         //scope.setMode(scope.modes.MOVE);
+    }
+    // ------------------------------------------------- Möbel ziehen + einrasten (W2)
+    /**
+     * Ein Schritt des laufenden Möbelzugs: Zielpunkt aus Zeiger + Griff-Versatz,
+     * dann einrasten, dann setzen — ausschliesslich über die KENNUNG.
+     *
+     * Warum nicht über die Objektreferenz, die `mousedown` schon in der Hand
+     * hatte: zwischen zwei Bewegungen kann ein Rückgängig liegen (Strg+Z lässt
+     * sich mit gedrückter Maustaste drücken), und `undo.apply()` lädt den
+     * Grundriss komplett neu. Die Referenz zeigte danach auf ein Objekt, das in
+     * keiner Liste mehr steht: sichtbar bliebe das Möbel stehen, gemeldet würde
+     * nichts, und der Nutzer zöge minutenlang an einer Leiche.
+     */
+    moebelZiehen() {
+        if (!this.zugKennung) {
+            return;
+        }
+        const el = this.floorplan.findeAusstattung(this.zugKennung);
+        if (!el) {
+            // Das Stück ist unterwegs verschwunden. Den Zug beenden statt bei jeder
+            // Bewegung erneut ins Leere zu greifen.
+            this.zugKennung = null;
+            return;
+        }
+        const ziel = this.moebelEinrasten(el, this.mouseX + this.zugVersatzX, this.mouseY + this.zugVersatzY);
+        this.floorplan.verschiebeAusstattung(el.id, ziel.x, ziel.y);
+        if (ziel.drehung !== (el.drehung ?? 0)) {
+            this.floorplan.dreheAusstattung(el.id, ziel.drehung);
+        }
+    }
+    /**
+     * Wohin ein gezogenes Möbel WIRKLICH gelegt wird (W2) — zwei Hilfen, in
+     * dieser Reihenfolge:
+     *
+     * 1. AN DIE WAND ANLEGEN. Liegt der Rand des Stücks näher als
+     *    `EINRAST_WAND_CM` an einer Wandflanke, legt es sich bündig an und
+     *    übernimmt den Wandwinkel. Das ist das Verhalten jedes Möbelplaners: ein
+     *    Schrank steht AN der Wand, nicht 3 cm davor. Ohne diese Hilfe bliebe
+     *    jede Aufstellung krumm, denn eine freihändig geführte Maus trifft eine
+     *    Wand auf den Zentimeter nie.
+     *
+     * 2. AUF DAS RASTER RUNDEN, wenn keine Wand in Reichweite ist. Damit stehen
+     *    mehrere Stücke von selbst auf einer Linie.
+     *
+     * Gerundet wird IMMER auf ganze Zentimeter (Projekt-DNA Punkt 3).
+     *
+     * KEINE KOLLISIONSPRÜFUNG — bewusst: Möbel dürfen sich überlappen. In einer
+     * echten Planung tun sie das auch (der Stuhl steht unter dem Tisch), und eine
+     * Sperre würde genau die Aufstellungen verhindern, die gemeint sind.
+     */
+    moebelEinrasten(el, x, y) {
+        const drehung = el.drehung ?? 0;
+        if (!this.einrasten) {
+            return { x: Math.round(x), y: Math.round(y), drehung };
+        }
+        // So weit kann ein Rand höchstens vom Mittelpunkt entfernt liegen — die
+        // Suchweite, ab der eine Wand überhaupt in Frage kommt.
+        const halbMax = Math.max(el.breite, el.tiefe) / 2;
+        let beste = null;
+        this.floorplan.getWalls().forEach((wand) => {
+            const ax = wand.getStartX();
+            const ay = wand.getStartY();
+            const dx = wand.getEndX() - ax;
+            const dy = wand.getEndY() - ay;
+            const laenge = Math.hypot(dx, dy);
+            if (laenge === 0) {
+                return;
+            }
+            // Fusspunkt auf der Wandgeraden. `t` ausserhalb 0..1 heisst: das Stück
+            // liegt neben dem Wandende. Eine Wand wirkt nur dort, wo sie steht — ihre
+            // Verlängerung ist Luft, und daran anzulegen wäre eine erfundene Wand.
+            const t = ((x - ax) * dx + (y - ay) * dy) / (laenge * laenge);
+            const rand = halbMax / laenge; // ein halbes Möbel Überstand ist noch Anlage
+            if (t < -rand || t > 1 + rand) {
+                return;
+            }
+            const fx = ax + dx * t;
+            const fy = ay + dy * t;
+            // Einheits-Normale der Wand und der VORZEICHENBEHAFTETE Abstand des
+            // Mittelpunkts. Das Vorzeichen entscheidet, auf welcher Seite das Stück
+            // bleibt: ohne es spränge ein Schrank beim Anlegen durch die Wand.
+            const nx = -dy / laenge;
+            const ny = dx / laenge;
+            const versatz = (x - fx) * nx + (y - fy) * ny;
+            // Welche der vier rechtwinkligen Lagen liegt der jetzigen am nächsten?
+            // So bleibt die vom Nutzer gewählte Ausrichtung erhalten — ein längs
+            // gestellter Tisch dreht sich beim Anlegen nicht quer.
+            const winkel = Math.atan2(dy, dx);
+            const viertel = Math.round((drehung - winkel) / (Math.PI / 2));
+            const gerastet = winkel + viertel * (Math.PI / 2);
+            // Quer zur Wand ragt je nach Lage die Tiefe oder die Breite heraus.
+            const quer = Math.abs(viertel) % 2 === 0 ? el.tiefe / 2 : el.breite / 2;
+            const soll = quer + wand.thickness / 2;
+            const abweichung = Math.abs(versatz) - soll; // Abstand des RANDES zur Flanke
+            if (Math.abs(abweichung) > EINRAST_WAND_CM) {
+                return;
+            }
+            if (beste && Math.abs(beste.abweichung) <= Math.abs(abweichung)) {
+                return;
+            }
+            // Genau auf der Achse (versatz === 0) ist keine Seite die richtige —
+            // dann die positive nehmen, statt an einem Sonderfall zu zerbrechen.
+            const seite = versatz < 0 ? -1 : 1;
+            beste = {
+                x: fx + nx * soll * seite,
+                y: fy + ny * soll * seite,
+                drehung: gerastet,
+                abweichung
+            };
+        });
+        if (beste) {
+            const b = beste;
+            return { x: Math.round(b.x), y: Math.round(b.y), drehung: b.drehung };
+        }
+        return {
+            x: Math.round(x / EINRAST_RASTER_CM) * EINRAST_RASTER_CM,
+            y: Math.round(y / EINRAST_RASTER_CM) * EINRAST_RASTER_CM,
+            drehung
+        };
+    }
+    /**
+     * Der Zeiger zeigt, dass hier etwas zu greifen ist (W2) — dieselbe Sprache,
+     * die die Doppelklick-Datei beim Drehen des Blattes schon spricht
+     * (`grab`/`grabbing`).
+     *
+     * Gesetzt wird INLINE am Canvas und nicht über eine Klasse: der Kern kennt
+     * die Stilvorlagen seiner beiden Welten nicht (Planer und Doppelklick-Datei),
+     * und zwei Stellen, die dasselbe meinen, laufen auseinander. Ist nichts zu
+     * greifen, wird der Inline-Stil LEER gesetzt statt auf `default` — dann gilt
+     * wieder, was die Seite selbst vorgibt (Fadenkreuz beim Zeichnen).
+     */
+    zeigerStilSetzen() {
+        let stil = '';
+        if (this.mode == floorplannerModes.MOVE) {
+            if (this.zugKennung) {
+                stil = 'grabbing';
+            }
+            else if (this.activeAusstattung) {
+                stil = 'grab';
+            }
+        }
+        if (this.canvasElement.style.cursor !== stil) {
+            this.canvasElement.style.cursor = stil;
+        }
+    }
+    /**
+     * Dreht das Stück unter dem Zeiger um `schritte` mal 15° (W2).
+     *
+     * WARUM ÜBER DIE TASTATUR (Q/E) UND NICHT ÜBER ZWEI KNÖPFE IN DER LEISTE:
+     * gedreht wird immer DAS STÜCK UNTER DEM ZEIGER — das ist dieselbe Regel wie
+     * beim Greifen und beim Löschen, es gibt in diesem Planer keine Auswahl, die
+     * einen Klick überdauert. Ein Knopf in der Leiste verlangte aber genau die:
+     * auf dem Weg zum Knopf verlässt der Zeiger das Möbel, und das Ziel wäre
+     * verloren. Man müsste dafür eine Auswahl einführen (anklicken, markiert
+     * halten, wieder abwählen) — eine zweite Bedienidee neben dem Ziehen, für
+     * eine Drehung um 15°. Die Hand bleibt stattdessen dort, wo die Arbeit ist,
+     * und das Drehen läuft AUCH MITTEN IM ZIEHEN: anfassen, drehen, ablegen.
+     * BEKANNTE GRENZE: am Handy gibt es keine Tastatur — dort ist auch das Ziehen
+     * von Möbeln noch nicht gelöst (der eine Finger schiebt die Ansicht).
+     *
+     * Rückgabe meldet, ob wirklich gedreht wurde (VERIFIED-EFFECT statt stillem
+     * No-Op).
+     */
+    dreheAktives(schritte) {
+        if (this.mode != floorplannerModes.MOVE || !this.activeAusstattung) {
+            return false;
+        }
+        const el = this.floorplan.findeAusstattung(this.activeAusstattung);
+        if (!el) {
+            return false;
+        }
+        // Während eines Zuges ist längst gesichert — die Drehung gehört dann zu
+        // DIESEM Zug und darf kein eigener Schritt sein. Ausserhalb ist jede
+        // Drehung ein eigener Zug, wie jeder gesetzte Zeichenpunkt auch.
+        if (!(this.mouseDown && this.zugGesichert)) {
+            this.undoManager?.snapshot();
+        }
+        const zwei = Math.PI * 2;
+        const neu = (((el.drehung ?? 0) + schritte * DREH_SCHRITT) % zwei + zwei) % zwei;
+        const ok = this.floorplan.dreheAusstattung(el.id, neu);
+        this.view.draw();
+        return ok;
+    }
+    /** Schaltet das Einrasten um und meldet es der Oberfläche (W2). */
+    setzeEinrasten(an) {
+        this.einrasten = an;
+        this.einrastCallbacks.forEach((cb) => cb(an));
+    }
+    /** Für die Oberfläche: rastet gerade ein? */
+    istEinrasten() {
+        return this.einrasten;
+    }
+    /** Die Oberfläche hängt sich hier ein, um ihren Knopf mitzuführen (W2). */
+    addEinrastCallback(callback) {
+        this.einrastCallbacks.push(callback);
     }
     // ---------------------------------------------------------------- Zoom (T7)
     /** Fuer die Oberflaeche: aktuelle Zoomstufe (1 = Ausgangsmassstab). */
@@ -7592,7 +7955,12 @@ class Floorplanner {
         // Wechsel etwas anbieten, das der Nutzer gar nicht mehr im Sinn hat.
         this.loeschungAbbrechen();
         this.activeAusstattung = null;
+        // Ein Werkzeugwechsel beendet auch einen laufenden Möbelzug (W2) —
+        // `setMode` läuft unter anderem nach jedem Rückgängig, und danach ist das
+        // gezogene Stück ein anderes Objekt.
+        this.zugKennung = null;
         this.mode = mode;
+        this.zeigerStilSetzen();
         this.modeResetCallbacks.forEach((callback) => callback(mode));
         this.updateTarget();
     }
@@ -9069,8 +9437,23 @@ function bemerkeAenderung(){
   if (jetzt === letzterStand) return;
   letzterStand = jetzt;
   axoVeraltet = true;
+  gesetztZeigen();
   if (ansicht === 'axo') axoBaldNeu();
   sichernPlanen();
+}
+
+/* ── Was der Nutzer FREI GESETZT hat ────────────────────────────────
+   Die tragende Regel des ganzen Vorhabens: die PDF ist die Grundwahrheit, und
+   ein gezogenes Moebel ist KEIN Aufmass mehr. Im Grundriss ist es an der
+   Strichelung zu erkennen — auf dem BLATT, das die Bank ansieht, waere es das
+   nicht. Darum diese eine Zeile im Blattkopf. Sie erscheint nur, wenn es etwas
+   zu sagen gibt: eine dauerhafte "0 Stueck frei gesetzt"-Zeile lehrte den
+   Leser, ueber sie hinwegzusehen — genau dann, wenn sie einmal wichtig wird. */
+function gesetztZeigen(){
+  const n = grundriss.zaehleGesetzte();
+  const z = el('gesetztZaehler');
+  z.textContent = n + ' Stück frei gesetzt — kein Aufmaß';
+  z.hidden = n === 0;
 }
 
 grundriss.fireOnUpdatedRooms(bemerkeAenderung);
@@ -9109,6 +9492,11 @@ zeichner.setUndoManager(undo);
 document.addEventListener('mouseup', bemerkeAenderung);
 document.addEventListener('touchend', bemerkeAenderung);
 document.addEventListener('touchcancel', bemerkeAenderung);
+/* Auch die TASTATUR aendert etwas: Q und E drehen das Moebel unter dem Zeiger
+   (W2). Ohne diese Zeile bliebe eine Drehung bis zum naechsten Mausklick
+   ungesichert und das Blatt zeigte sie nicht — dieselbe Falle wie beim
+   Verschieben, nur mit anderem Ausloeser. */
+document.addEventListener('keyup', bemerkeAenderung);
 
 /* Der Zeichner entstand nach dem Laden, hat dessen `roomLoadedCallbacks` also
    nicht mitbekommen. Einmal das nachholen, was er sonst selbst tut. */
@@ -9298,6 +9686,9 @@ function ladeGrundriss(fp, neueLabels, alsEigenerStand){
   } finally {
     sichernGesperrt = false;
   }
+  // Von Hand, nicht ueber `bemerkeAenderung`: das war waehrend des Ladens
+  // gesperrt und haette den Zaehler auf dem Stand von VOR dem Laden gelassen.
+  gesetztZeigen();
   axoNeuBauen();
   if (alsEigenerStand) {
     sichereJetzt();
@@ -9418,6 +9809,16 @@ btnUndo.addEventListener('click', function(){ undo.undo(); });
 btnRedo.addEventListener('click', function(){ undo.redo(); });
 historieZeigen();
 
+/* Einrasten (W2). Der Knopf haelt seinen Zustand NIE selbst fuer wahr, sondern
+   folgt dem Kern — genauso wie die Werkzeug-Knoepfe oben. */
+el('btnEinrasten').addEventListener('click', function(){
+  zeichner.setzeEinrasten(!zeichner.istEinrasten());
+});
+zeichner.addEinrastCallback(function(an){
+  el('btnEinrasten').setAttribute('aria-pressed', String(an));
+});
+el('btnEinrasten').setAttribute('aria-pressed', String(zeichner.istEinrasten()));
+
 el('btnZoomAus').addEventListener('click', function(){ zeichner.zoomeUmFaktor(1 / 1.25); });
 el('btnZoomEin').addEventListener('click', function(){ zeichner.zoomeUmFaktor(1.25); });
 el('btnEinpassen').addEventListener('click', function(){ zeichner.allesEinpassen(); });
@@ -9522,6 +9923,7 @@ markiere('[data-blick]', startBlick);
 markiere('[data-namen]', namenModus);
 
 standZeigen();
+gesetztZeigen();
 
 /* Ein abgelehnter eigener Stand wird GESAGT — still den gemessenen Plan zu
    zeigen sähe aus, als wäre die Arbeit verloren. */
@@ -9592,8 +9994,14 @@ window.__planerDatei = {
     return grundriss.getWalls().map(function(w){
       const a = w.getStart(), b = w.getEnd();
       return {
+        // BILD-Koordinaten (so hiess es seit W1, bleibt unveraendert) ...
         ax: zeichner.convertX(a.x), ay: zeichner.convertY(a.y),
-        bx: zeichner.convertX(b.x), by: zeichner.convertY(b.y)
+        bx: zeichner.convertX(b.x), by: zeichner.convertY(b.y),
+        // ... und dazu die WELT, die das Einrasten braucht (W2). Zusaetzlich
+        // und nicht anstelle: ein Gate, das die alten Namen liest, misst sonst
+        // ploetzlich Zentimeter und haelt sie fuer Bildpunkte.
+        id: w.id, dicke: w.thickness,
+        wax: a.x, way: a.y, wbx: b.x, wby: b.y
       };
     });
   },
@@ -9602,6 +10010,56 @@ window.__planerDatei = {
     return c ? { id: c.id, x: c.x, y: c.y, bx: zeichner.convertX(c.x), by: zeichner.convertY(c.y) } : null;
   },
   werkzeug: function(){ return zeichner.mode; },
+  /* --- Moebelziehen (W2). Bewusst dieselben Angaben wie im Planer, damit ein
+     Gate beide Welten mit DEMSELBEN Code messen kann: was hier anders hiesse,
+     waere ein zweiter Massstab und damit kein Vergleich mehr. */
+  ausstattung: function(){
+    return grundriss.getAusstattung().map(function(e){
+      return {
+        id: e.id, typ: e.typ, x: e.x, y: e.y, breite: e.breite, tiefe: e.tiefe,
+        drehung: e.drehung || 0, quelle: e.quelle,
+        bx: zeichner.convertX(e.x), by: zeichner.convertY(e.y)
+      };
+    });
+  },
+  stueck: function(id){
+    const e = grundriss.findeAusstattung(id);
+    if (!e) return null;
+    return {
+      id: e.id, typ: e.typ, x: e.x, y: e.y, breite: e.breite, tiefe: e.tiefe,
+      drehung: e.drehung || 0, quelle: e.quelle,
+      bx: zeichner.convertX(e.x), by: zeichner.convertY(e.y)
+    };
+  },
+  gesetzte: function(){ return grundriss.zaehleGesetzte(); },
+  gesetztText: function(){
+    const z = el('gesetztZaehler');
+    return z.hidden ? null : z.textContent;
+  },
+  aufBild: function(x, y){ return { x: zeichner.convertX(x), y: zeichner.convertY(y) }; },
+  treffer: function(){
+    return {
+      ausstattung: zeichner.activeAusstattung,
+      wand: zeichner.activeWall ? zeichner.activeWall.id : null,
+      ecke: zeichner.activeCorner ? zeichner.activeCorner.id : null
+    };
+  },
+  einrasten: function(){ return zeichner.istEinrasten(); },
+  setzeEinrasten: function(an){ zeichner.setzeEinrasten(an); },
+  zoomeAufPunkt: function(z, bx, by){ zeichner.zoomeAufPunkt(z, bx, by); },
+  proCm: function(){ return zeichner.pixelProCm(); },
+  undoJetzt: function(){ undo.undo(); },
+  /* Nur fuer die Strichprobe: dieselbe Liste einmal mit anderer Herkunft
+     einspielen, um am GLEICHEN Stueck an der GLEICHEN Stelle zu messen, ob
+     "gesetzt" wirklich anders gezeichnet wird. Zieht bewusst KEINEN
+     Schnappschuss — sonst zaehlte die Messung als Zug des Nutzers. */
+  ausstattungRoh: function(){ return JSON.parse(JSON.stringify(grundriss.getAusstattung())); },
+  setzeAusstattung: function(liste){ grundriss.setAusstattung(liste); zeichner.resizeView(); },
+  zeigerStil: function(){ return document.getElementById('grundriss-canvas').style.cursor; },
+  taste: function(k){
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent('keyup', { key: k, bubbles: true }));
+  },
   kannZurueck: function(){ return undo.canUndo(); },
   kannVor: function(){ return undo.canRedo(); },
   gesichertAm: function(){ return gesichertAm; },

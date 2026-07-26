@@ -579,6 +579,31 @@ export class Floorplanner {
       }
     })
 
+    // --- Drehen mit Q/E (W2). Auf `keydown` und nicht `keyup`, damit Halten
+    // wiederholt dreht — eine Vierteldrehung sind sechs Anschläge.
+    document.addEventListener('keydown', (e: KeyboardEvent) => {
+      // Strg+Z/Y gehören der Historie, und in einem Eingabefeld ist ein „e"
+      // ein Buchstabe. Beides hier durchzulassen hiesse, dem Nutzer beim
+      // Tippen den Grundriss zu verdrehen.
+      if (e.ctrlKey || e.metaKey || e.altKey) {
+        return
+      }
+      const ziel = e.target as HTMLElement | null
+      if (
+        ziel &&
+        (ziel.tagName === 'INPUT' || ziel.tagName === 'TEXTAREA' || ziel.isContentEditable)
+      ) {
+        return
+      }
+      const taste = (e.key || '').toLowerCase()
+      if (taste !== 'q' && taste !== 'e') {
+        return
+      }
+      if (this.dreheAktives(taste === 'q' ? -1 : 1)) {
+        e.preventDefault()
+      }
+    })
+
     floorplan.roomLoadedCallbacks.add(() => {
       this.reset()
     })
@@ -935,11 +960,228 @@ export class Floorplanner {
   /** */
   private mouseleave(): void {
     this.mouseDown = false
+    // Wer den Zeichenbereich verlässt, hat losgelassen — jedenfalls für uns:
+    // ein `mouseup` ausserhalb bekommt der Canvas nicht mehr zu sehen. Ohne
+    // dieses Aufräumen führte das Möbel beim Wiedereintritt einen Zug fort,
+    // den der Nutzer längst beendet hat.
+    this.zugKennung = null
+    this.zeigerStilSetzen()
     // Das laufende Verweilen endet mit dem Zeichenbereich — ein OFFENER
     // Vorschlag aber nicht: die Rückfrage liegt ausserhalb des Canvas, der Weg
     // dorthin löst zwangsläufig mouseleave aus und würde sie sonst schliessen.
     this.verweilAbbrechen()
     //scope.setMode(scope.modes.MOVE);
+  }
+
+  // ------------------------------------------------- Möbel ziehen + einrasten (W2)
+
+  /**
+   * Ein Schritt des laufenden Möbelzugs: Zielpunkt aus Zeiger + Griff-Versatz,
+   * dann einrasten, dann setzen — ausschliesslich über die KENNUNG.
+   *
+   * Warum nicht über die Objektreferenz, die `mousedown` schon in der Hand
+   * hatte: zwischen zwei Bewegungen kann ein Rückgängig liegen (Strg+Z lässt
+   * sich mit gedrückter Maustaste drücken), und `undo.apply()` lädt den
+   * Grundriss komplett neu. Die Referenz zeigte danach auf ein Objekt, das in
+   * keiner Liste mehr steht: sichtbar bliebe das Möbel stehen, gemeldet würde
+   * nichts, und der Nutzer zöge minutenlang an einer Leiche.
+   */
+  private moebelZiehen(): void {
+    if (!this.zugKennung) {
+      return
+    }
+    const el = this.floorplan.findeAusstattung(this.zugKennung)
+    if (!el) {
+      // Das Stück ist unterwegs verschwunden. Den Zug beenden statt bei jeder
+      // Bewegung erneut ins Leere zu greifen.
+      this.zugKennung = null
+      return
+    }
+    const ziel = this.moebelEinrasten(el, this.mouseX + this.zugVersatzX, this.mouseY + this.zugVersatzY)
+    this.floorplan.verschiebeAusstattung(el.id, ziel.x, ziel.y)
+    if (ziel.drehung !== (el.drehung ?? 0)) {
+      this.floorplan.dreheAusstattung(el.id, ziel.drehung)
+    }
+  }
+
+  /**
+   * Wohin ein gezogenes Möbel WIRKLICH gelegt wird (W2) — zwei Hilfen, in
+   * dieser Reihenfolge:
+   *
+   * 1. AN DIE WAND ANLEGEN. Liegt der Rand des Stücks näher als
+   *    `EINRAST_WAND_CM` an einer Wandflanke, legt es sich bündig an und
+   *    übernimmt den Wandwinkel. Das ist das Verhalten jedes Möbelplaners: ein
+   *    Schrank steht AN der Wand, nicht 3 cm davor. Ohne diese Hilfe bliebe
+   *    jede Aufstellung krumm, denn eine freihändig geführte Maus trifft eine
+   *    Wand auf den Zentimeter nie.
+   *
+   * 2. AUF DAS RASTER RUNDEN, wenn keine Wand in Reichweite ist. Damit stehen
+   *    mehrere Stücke von selbst auf einer Linie.
+   *
+   * Gerundet wird IMMER auf ganze Zentimeter (Projekt-DNA Punkt 3).
+   *
+   * KEINE KOLLISIONSPRÜFUNG — bewusst: Möbel dürfen sich überlappen. In einer
+   * echten Planung tun sie das auch (der Stuhl steht unter dem Tisch), und eine
+   * Sperre würde genau die Aufstellungen verhindern, die gemeint sind.
+   */
+  private moebelEinrasten(
+    el: AusstattungElement,
+    x: number,
+    y: number
+  ): { x: number; y: number; drehung: number } {
+    const drehung = el.drehung ?? 0
+    if (!this.einrasten) {
+      return { x: Math.round(x), y: Math.round(y), drehung }
+    }
+
+    // So weit kann ein Rand höchstens vom Mittelpunkt entfernt liegen — die
+    // Suchweite, ab der eine Wand überhaupt in Frage kommt.
+    const halbMax = Math.max(el.breite, el.tiefe) / 2
+    let beste: { x: number; y: number; drehung: number; abweichung: number } | null = null
+
+    this.floorplan.getWalls().forEach((wand) => {
+      const ax = wand.getStartX()
+      const ay = wand.getStartY()
+      const dx = wand.getEndX() - ax
+      const dy = wand.getEndY() - ay
+      const laenge = Math.hypot(dx, dy)
+      if (laenge === 0) {
+        return
+      }
+      // Fusspunkt auf der Wandgeraden. `t` ausserhalb 0..1 heisst: das Stück
+      // liegt neben dem Wandende. Eine Wand wirkt nur dort, wo sie steht — ihre
+      // Verlängerung ist Luft, und daran anzulegen wäre eine erfundene Wand.
+      const t = ((x - ax) * dx + (y - ay) * dy) / (laenge * laenge)
+      const rand = halbMax / laenge // ein halbes Möbel Überstand ist noch Anlage
+      if (t < -rand || t > 1 + rand) {
+        return
+      }
+      const fx = ax + dx * t
+      const fy = ay + dy * t
+      // Einheits-Normale der Wand und der VORZEICHENBEHAFTETE Abstand des
+      // Mittelpunkts. Das Vorzeichen entscheidet, auf welcher Seite das Stück
+      // bleibt: ohne es spränge ein Schrank beim Anlegen durch die Wand.
+      const nx = -dy / laenge
+      const ny = dx / laenge
+      const versatz = (x - fx) * nx + (y - fy) * ny
+
+      // Welche der vier rechtwinkligen Lagen liegt der jetzigen am nächsten?
+      // So bleibt die vom Nutzer gewählte Ausrichtung erhalten — ein längs
+      // gestellter Tisch dreht sich beim Anlegen nicht quer.
+      const winkel = Math.atan2(dy, dx)
+      const viertel = Math.round((drehung - winkel) / (Math.PI / 2))
+      const gerastet = winkel + viertel * (Math.PI / 2)
+      // Quer zur Wand ragt je nach Lage die Tiefe oder die Breite heraus.
+      const quer = Math.abs(viertel) % 2 === 0 ? el.tiefe / 2 : el.breite / 2
+      const soll = quer + wand.thickness / 2
+
+      const abweichung = Math.abs(versatz) - soll // Abstand des RANDES zur Flanke
+      if (Math.abs(abweichung) > EINRAST_WAND_CM) {
+        return
+      }
+      if (beste && Math.abs(beste.abweichung) <= Math.abs(abweichung)) {
+        return
+      }
+      // Genau auf der Achse (versatz === 0) ist keine Seite die richtige —
+      // dann die positive nehmen, statt an einem Sonderfall zu zerbrechen.
+      const seite = versatz < 0 ? -1 : 1
+      beste = {
+        x: fx + nx * soll * seite,
+        y: fy + ny * soll * seite,
+        drehung: gerastet,
+        abweichung
+      }
+    })
+
+    if (beste) {
+      const b = beste as { x: number; y: number; drehung: number }
+      return { x: Math.round(b.x), y: Math.round(b.y), drehung: b.drehung }
+    }
+    return {
+      x: Math.round(x / EINRAST_RASTER_CM) * EINRAST_RASTER_CM,
+      y: Math.round(y / EINRAST_RASTER_CM) * EINRAST_RASTER_CM,
+      drehung
+    }
+  }
+
+  /**
+   * Der Zeiger zeigt, dass hier etwas zu greifen ist (W2) — dieselbe Sprache,
+   * die die Doppelklick-Datei beim Drehen des Blattes schon spricht
+   * (`grab`/`grabbing`).
+   *
+   * Gesetzt wird INLINE am Canvas und nicht über eine Klasse: der Kern kennt
+   * die Stilvorlagen seiner beiden Welten nicht (Planer und Doppelklick-Datei),
+   * und zwei Stellen, die dasselbe meinen, laufen auseinander. Ist nichts zu
+   * greifen, wird der Inline-Stil LEER gesetzt statt auf `default` — dann gilt
+   * wieder, was die Seite selbst vorgibt (Fadenkreuz beim Zeichnen).
+   */
+  private zeigerStilSetzen(): void {
+    let stil = ''
+    if (this.mode == floorplannerModes.MOVE) {
+      if (this.zugKennung) {
+        stil = 'grabbing'
+      } else if (this.activeAusstattung) {
+        stil = 'grab'
+      }
+    }
+    if (this.canvasElement.style.cursor !== stil) {
+      this.canvasElement.style.cursor = stil
+    }
+  }
+
+  /**
+   * Dreht das Stück unter dem Zeiger um `schritte` mal 15° (W2).
+   *
+   * WARUM ÜBER DIE TASTATUR (Q/E) UND NICHT ÜBER ZWEI KNÖPFE IN DER LEISTE:
+   * gedreht wird immer DAS STÜCK UNTER DEM ZEIGER — das ist dieselbe Regel wie
+   * beim Greifen und beim Löschen, es gibt in diesem Planer keine Auswahl, die
+   * einen Klick überdauert. Ein Knopf in der Leiste verlangte aber genau die:
+   * auf dem Weg zum Knopf verlässt der Zeiger das Möbel, und das Ziel wäre
+   * verloren. Man müsste dafür eine Auswahl einführen (anklicken, markiert
+   * halten, wieder abwählen) — eine zweite Bedienidee neben dem Ziehen, für
+   * eine Drehung um 15°. Die Hand bleibt stattdessen dort, wo die Arbeit ist,
+   * und das Drehen läuft AUCH MITTEN IM ZIEHEN: anfassen, drehen, ablegen.
+   * BEKANNTE GRENZE: am Handy gibt es keine Tastatur — dort ist auch das Ziehen
+   * von Möbeln noch nicht gelöst (der eine Finger schiebt die Ansicht).
+   *
+   * Rückgabe meldet, ob wirklich gedreht wurde (VERIFIED-EFFECT statt stillem
+   * No-Op).
+   */
+  public dreheAktives(schritte: number): boolean {
+    if (this.mode != floorplannerModes.MOVE || !this.activeAusstattung) {
+      return false
+    }
+    const el = this.floorplan.findeAusstattung(this.activeAusstattung)
+    if (!el) {
+      return false
+    }
+    // Während eines Zuges ist längst gesichert — die Drehung gehört dann zu
+    // DIESEM Zug und darf kein eigener Schritt sein. Ausserhalb ist jede
+    // Drehung ein eigener Zug, wie jeder gesetzte Zeichenpunkt auch.
+    if (!(this.mouseDown && this.zugGesichert)) {
+      this.undoManager?.snapshot()
+    }
+    const zwei = Math.PI * 2
+    const neu = (((el.drehung ?? 0) + schritte * DREH_SCHRITT) % zwei + zwei) % zwei
+    const ok = this.floorplan.dreheAusstattung(el.id, neu)
+    this.view.draw()
+    return ok
+  }
+
+  /** Schaltet das Einrasten um und meldet es der Oberfläche (W2). */
+  public setzeEinrasten(an: boolean): void {
+    this.einrasten = an
+    this.einrastCallbacks.forEach((cb) => cb(an))
+  }
+
+  /** Für die Oberfläche: rastet gerade ein? */
+  public istEinrasten(): boolean {
+    return this.einrasten
+  }
+
+  /** Die Oberfläche hängt sich hier ein, um ihren Knopf mitzuführen (W2). */
+  public addEinrastCallback(callback: (an: boolean) => void): void {
+    this.einrastCallbacks.push(callback)
   }
 
   // ---------------------------------------------------------------- Zoom (T7)
@@ -1249,7 +1491,12 @@ export class Floorplanner {
     // Wechsel etwas anbieten, das der Nutzer gar nicht mehr im Sinn hat.
     this.loeschungAbbrechen()
     this.activeAusstattung = null
+    // Ein Werkzeugwechsel beendet auch einen laufenden Möbelzug (W2) —
+    // `setMode` läuft unter anderem nach jedem Rückgängig, und danach ist das
+    // gezogene Stück ein anderes Objekt.
+    this.zugKennung = null
     this.mode = mode
+    this.zeigerStilSetzen()
     this.modeResetCallbacks.forEach((callback) => callback(mode))
     this.updateTarget()
   }

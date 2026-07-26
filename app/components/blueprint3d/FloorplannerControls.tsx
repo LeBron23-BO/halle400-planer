@@ -1,6 +1,6 @@
 'use client'
 
-import { Move, Pencil, Trash2, Check, Undo2, Redo2, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react'
+import { Move, Pencil, Trash2, Check, Undo2, Redo2, ZoomIn, ZoomOut, Maximize2, Magnet } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useTranslations } from 'next-intl'
@@ -19,6 +19,9 @@ interface FloorplannerControlsProps {
   onZoomIn: () => void
   onZoomOut: () => void
   onFitAll: () => void
+  /** Einrasten gezogener Moebel (W2) */
+  einrasten: boolean
+  onEinrastenChange: (an: boolean) => void
 }
 
 export function FloorplannerControls({
@@ -31,7 +34,9 @@ export function FloorplannerControls({
   onRedo,
   onZoomIn,
   onZoomOut,
-  onFitAll
+  onFitAll,
+  einrasten,
+  onEinrastenChange
 }: FloorplannerControlsProps) {
   const t = useTranslations('BluePrint.floorplanner')
   const isMobile = useIsMobile()
@@ -102,14 +107,46 @@ export function FloorplannerControls({
     </>
   )
 
+  // Einrasten (W2). Ein SCHALTER, kein Werkzeug: er wechselt nicht, was der
+  // Zeiger tut, sondern wie genau ein Zug endet. Er steht darum bei der
+  // Ansicht und nicht bei Verschieben/Zeichnen/Loeschen.
+  const einrastKnopf = (
+    <Button
+      size="icon"
+      variant={einrasten ? 'default' : 'secondary'}
+      onClick={() => onEinrastenChange(!einrasten)}
+      className={cn(isMobile && 'h-11 w-11 shadow-lg active:scale-95 transition-transform')}
+      title={t('snap')}
+      aria-label={t('snap')}
+      aria-pressed={einrasten}
+    >
+      <Magnet className={cn(isMobile ? 'h-5 w-5' : 'h-4 w-4')} />
+    </Button>
+  )
+
   const trenner = <div className="w-px self-stretch bg-border/70 mx-0.5" aria-hidden="true" />
 
   return (
     <div className={cn('absolute left-0 top-0 w-full z-[60] pointer-events-none', isMobile ? 'my-3 px-3' : 'my-3 px-5')}>
       {/* flex-wrap: auf schmalen Geraeten rutscht die Zeile um, statt dass
           Schaltflaechen aus dem Bild laufen (Halle 400 wird am Handy bedient). */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className={cn('flex pointer-events-auto', isMobile ? 'gap-1.5' : 'gap-2')}>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        {/* max-w + flex-wrap sind PFLICHT, nicht Geschmack — GEMESSEN bei 1440 px:
+            der Ansichts-Umschalter (2D/3D/Axonometrie) der Kopfleiste ist mittig
+            absolut positioniert und rund 296 px breit, liegt also von 532 bis
+            828 px. Diese Werkzeugzeile lief bis 740 px und deckte die linke
+            Kante von "Axonometrie" bereits ab; mit dem Einrast-Schalter (761 bis
+            797) lag sie MITTEN darauf, und der Umschalter war nicht mehr
+            ausloesbar (Playwright: "intercepts pointer events"). Die Grenze ist
+            die halbe Breite minus der halben Umschalter-Breite plus Rand — ab
+            rund 1700 px bleibt alles wie bisher in einer Zeile, darunter
+            rutscht die Zeile um, statt etwas zu verdecken. */}
+        <div
+          className={cn(
+            'flex flex-wrap pointer-events-auto',
+            isMobile ? 'gap-1.5' : 'gap-2 max-w-[calc(50%-170px)]'
+          )}
+        >
           <Button
             size={isMobile ? 'icon' : 'sm'}
             variant={mode === 'move' ? 'default' : 'secondary'}
@@ -156,6 +193,11 @@ export function FloorplannerControls({
             <Trash2 className={cn(isMobile ? 'h-5 w-5' : 'h-4 w-4')} />
             {!isMobile && t('deleteWalls')}
           </Button>
+          {/* Der Einrast-Schalter steht bei den WERKZEUGEN und nicht bei der
+              Ansicht: er aendert, wie ein Zug im Verschieben-Werkzeug endet —
+              er gehoert zum Bearbeiten, nicht zum Hinsehen. Ohne eigenen
+              Trennstrich, damit er beim Umbruch mit seiner Gruppe wandert. */}
+          {einrastKnopf}
 
           {/* Am Schreibtisch direkt neben den Werkzeugen, getrennt durch einen
               Strich: Rueckgaengig/Wiederholen sind keine Werkzeuge, sondern

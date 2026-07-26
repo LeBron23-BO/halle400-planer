@@ -22,7 +22,8 @@
       "drawWalls": "绘制墙体",
       "deleteWalls": "删除墙体",
       "done": "完成",
-      "escHint": "按\"Esc\"键停止绘制墙体"
+      "escHint": "按\"Esc\"键停止绘制墙体",
+      "snap": "對齊 — 讓家具貼齊牆面與 5 公分格線"
     },
     "viewToggle": {
       "3d": "3D",
