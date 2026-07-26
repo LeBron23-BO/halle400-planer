@@ -332,6 +332,14 @@ export class FloorplannerView {
         this.context.setLineDash(GESETZT_STRICH)
       }
       this.zeichneAusstattung(el, detail)
+      // Die `flaeche` (Loggia, Kiesbett) wird bewusst OHNE Rand gezeichnet — sie
+      // ist Untergrund, kein Möbel. Genau dadurch wäre eine GESETZTE Fläche von
+      // einer gemessenen nicht zu unterscheiden, und das ist der eine Fall, den
+      // die Strichelung nicht abdecken darf. Sie bekommt ihren Rand deshalb
+      // hier, und nur wenn sie gesetzt ist.
+      if (gesetzt && el.typ === 'flaeche') {
+        this.ausRechteck(el, null, true)
+      }
       if (gesetzt) {
         this.context.setLineDash([])
       }
