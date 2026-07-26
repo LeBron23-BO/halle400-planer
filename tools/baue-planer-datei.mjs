@@ -779,6 +779,8 @@ let axoVeraltet = true;
    AUS. Er macht aus dem billigen Koerper-Tausch den teuren vollen Neubau
    und beweist damit, dass das Gate den Unterschied ueberhaupt misst. */
 let vollNeubauImZug = false;
+/* Das beiseitegelegte Blatt-Bild fuer die Pixel-Probe des Gates (s. \`axoMerken\`). */
+let axoMerk = null;
 
 /* ── Aufbau ─────────────────────────────────────────────────────────
    Die Reihenfolge ist zwingend: Configuration VOR dem Laden (Wall liest seine
@@ -1120,10 +1122,13 @@ const axoBearbeitung = {
   greife: function(id, wx, wy){ return zeichner.zugBeginnen(id, wx, wy); },
   ziehe: function(wx, wy){
     if (!zeichner.zugSchritt(wx, wy)) return null;
-    /* NUR fuer die Gegenprobe des Kosten-Gates: derselbe Zug mit dem vollen
-       Szenen-Neubau je Bewegung. Ein Waechter, der nie rot wird, ist keiner —
-       das Gate muss beweisen koennen, dass es 16 ms ueberhaupt bemerkt. */
-    if (vollNeubauImZug) { axoNeuBauen(); return null; }
+    /* NUR fuer die Gegenprobe des Kosten-Gates: der NAIVE Weg, den dieser Bau
+       ausdruecklich nicht geht — \`Floorplan.update()\` (Raeume, Halbkanten,
+       Texturen, Oeffnungs-Versoehnung) plus voller Szenen-Neubau, und das bei
+       JEDER Zeigerbewegung. Ein Waechter, der nie rot wird, ist keiner: das
+       Gate muss beweisen koennen, dass es diesen Unterschied ueberhaupt
+       bemerkt. Im Betrieb ist dieser Zweig aus. */
+    if (vollNeubauImZug) { grundriss.update(); axoNeuBauen(); return null; }
     const stueck = grundriss.findeAusstattung(zeichner.zugLaeuft());
     /* NUR dieser eine Koerper — aus DERSELBEN Funktion, aus der \`baueSzene\` ihn
        baut. Ein hier nachgebautes Vieleck waere eine zweite Wahrheit ueber das
@@ -2643,23 +2648,38 @@ window.__planerDatei = {
   },
   /* Der KILL-SCHALTER fuer die Kosten-Gegenprobe (s. \`vollNeubauImZug\`). */
   axoVollNeubau: function(an){ vollNeubauImZug = !!an; },
-  /* Schwerpunkt der Bildpunkte, die einer Materialfarbe nahe kommen — die
-     „Pixel-Tinte" des Gates. Gerechnet auf dem GERENDERTEN Blatt: eine
-     Modellzahl bewiese nur, dass das Modell sich geaendert hat, nicht dass man
-     es sieht. */
-  axoSchwerpunkt: function(farbe, umkreis){
+  /* DIE PIXEL-TINTE: was hat sich auf dem GERENDERTEN Blatt geaendert, und WO?
+     \`axoMerken\` legt das Bild beiseite, \`axoAenderung\` vergleicht es mit dem
+     jetzigen und liefert Zahl und Schwerpunkt der veraenderten Bildpunkte, in
+     CSS-Pixeln. Der Vergleich laeuft IN DER SEITE — 1440x900 Bildpunkte ueber
+     die Messbruecke zu tragen waere fuenf Megabyte je Messung.
+
+     Warum ueberhaupt Pixel: eine Modellzahl bewiese nur, dass sich das MODELL
+     geaendert hat. Ob man es SIEHT, und ob an der richtigen Stelle, sagt allein
+     das Bild. Der Schwerpunkt der Aenderung liegt zwischen dem alten und dem
+     neuen Ort des Stuecks — beide Stellen aendern sich ja. */
+  axoMerken: function(){
+    const g = axoCanvas.getContext('2d');
+    axoMerk = g.getImageData(0, 0, axoCanvas.width, axoCanvas.height).data.slice();
+    return axoMerk.length;
+  },
+  axoAenderung: function(schwelle){
+    if (!axoMerk) return null;
     const g = axoCanvas.getContext('2d');
     const d = g.getImageData(0, 0, axoCanvas.width, axoCanvas.height).data;
+    if (d.length !== axoMerk.length) return null;
+    const grenze = schwelle == null ? 24 : schwelle;
     const dpr = axoCanvas.width / Math.max(1, axoCanvas.getBoundingClientRect().width);
     let sx = 0, sy = 0, n = 0;
     for (let i = 0; i < d.length; i += 4) {
-      if (Math.abs(d[i] - farbe[0]) + Math.abs(d[i+1] - farbe[1]) + Math.abs(d[i+2] - farbe[2]) > umkreis) continue;
+      const anders = Math.abs(d[i] - axoMerk[i]) + Math.abs(d[i+1] - axoMerk[i+1]) + Math.abs(d[i+2] - axoMerk[i+2]);
+      if (anders <= grenze) continue;
       const p = (i / 4) | 0;
       sx += p % axoCanvas.width;
       sy += (p / axoCanvas.width) | 0;
       n++;
     }
-    return n ? { x: sx / n / dpr, y: sy / n / dpr, n: n } : null;
+    return { n: n, x: n ? sx / n / dpr : null, y: n ? sy / n / dpr : null };
   },
   bildPlan: function(){ return bildmass(document.getElementById('grundriss-canvas')); },
   maus: function(typ, x, y){

@@ -1187,12 +1187,33 @@ export class Floorplanner {
       this.zugKennung = null
       return false
     }
+    const drehung = el.drehung ?? 0
     const ziel = this.moebelEinrasten(el, zielX, zielY)
+    /**
+     * NICHTS SCHREIBEN, WENN SICH NICHTS ÄNDERT (W7).
+     *
+     * GEMESSEN: ein Druck auf ein Möbel ohne jede Bewegung machte daraus ein
+     * `gesetzt`-Stück — im Blatt sichtbar (gestrichelt, zurückgenommen), im
+     * Kopf gezählt („1 Stück frei gesetzt"), und im Rückweg ins Projekt eine
+     * Setzung, die der Nutzer nie gemacht hat. 798 geänderte Bildpunkte für
+     * eine Handlung, die keine war.
+     *
+     * Und der Schnappschuss hängt daran: er wird erst gezogen, wenn wirklich
+     * etwas passiert. Sonst stünde in der Historie ein Schritt, der nichts
+     * zurücknimmt — bemerkt erst beim nächsten Strg+Z.
+     */
+    if (ziel.x === el.x && ziel.y === el.y && ziel.drehung === drehung) {
+      return false
+    }
+    if (!this.zugGesichert) {
+      this.undoManager?.snapshot()
+      this.zugGesichert = true
+    }
     const bewegt = this.floorplan.verschiebeAusstattung(el.id, ziel.x, ziel.y)
-    if (ziel.drehung !== (el.drehung ?? 0)) {
+    if (ziel.drehung !== drehung) {
       this.floorplan.dreheAusstattung(el.id, ziel.drehung)
     }
-    return bewegt
+    return bewegt || ziel.drehung !== drehung
   }
 
   /**
@@ -1242,17 +1263,13 @@ export class Floorplanner {
   }
 
   /**
-   * Ein Schritt des laufenden Zugs. Der Schnappschuss wird beim ERSTEN Schritt
-   * gezogen und nicht beim Greifen: ein Druck ohne Bewegung ändert nichts und
-   * soll die Historie nicht mit Leerschritten füllen (W2 Punkt 3).
+   * Ein Schritt des laufenden Zugs. Der Schnappschuss wird beim ersten Schritt
+   * gezogen, DER WIRKLICH ETWAS ÄNDERT (`moebelAufPunkt`) — ein Druck ohne
+   * Bewegung soll die Historie nicht mit Leerschritten füllen (W2 Punkt 3).
    */
   public zugSchritt(weltX: number, weltY: number): boolean {
     if (!this.zugKennung) {
       return false
-    }
-    if (!this.zugGesichert) {
-      this.undoManager?.snapshot()
-      this.zugGesichert = true
     }
     return this.moebelAufPunkt(weltX + this.zugVersatzX, weltY + this.zugVersatzY)
   }
