@@ -14,6 +14,7 @@
  */
 
 import { PALETTE, SCHRIFT, BLICK_START, LICHT, SCHATTEN, DARSTELLUNG, BESCHRIFTUNG, SAEULEN } from './axo-kontrakt.js'
+import { umkehreAuf, koerperUnter, NEIGUNG_MIN_ZIEHEN } from './axo-treffer.js'
 
 /** Flaechenhelligkeit aus dem Winkel zum Streiflicht. [uebersicht.html:560] */
 /** Hex nach [r,g,b]. */
@@ -57,9 +58,21 @@ function toenen(hex, n, zurueck) {
  * @param {object} szene Ergebnis von `baueSzene`
  * @param {{dunkel?:boolean, namen?:'alle'|'saeulen'|'aus', randRechts?:number, randOben?:number}} [opt]
  */
-export function erzeugeAxonometrie(canvas, szene, opt = {}) {
+export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
   const ctx = canvas.getContext('2d')
+  /* Die Szene ist seit W7 AUSTAUSCHBAR (`setzeSzene`). Vorher war sie der
+     Parameter und damit fest: wer ein neues Bild brauchte, musste einen zweiten
+     Renderer auf demselben Canvas erzeugen — und weil der seine Zeiger-Abos nie
+     abmeldete, stapelten sie sich (B3). Gemessen: nach drei Neubauten drehte
+     ein Zug viermal so schnell. */
+  let szene = szeneEingang
   const blick = { ...BLICK_START, schiebX: 0, schiebY: 0 }
+  /* Ein einziger Abbruch-Griff fuer ALLE Abos dieses Renderers. Ohne ihn gibt
+     es keinen Weg, einen Renderer wieder loszuwerden — `removeEventListener`
+     braeuchte die Funktionsreferenzen, und die liegen hier drin. */
+  const abbruch = new AbortController()
+  const amCanvas = (typ, hoerer, weiter) =>
+    canvas.addEventListener(typ, hoerer, { ...(weiter || {}), signal: abbruch.signal })
   let breite = 0
   let hoehe = 0
   let dunkel = !!opt.dunkel
@@ -95,6 +108,35 @@ export function erzeugeAxonometrie(canvas, szene, opt = {}) {
 
   function kameraRichtung() {
     return [cosE * sinA, sinE, cosE * cosA]
+  }
+
+  /**
+   * ALLE Groessen, die `projiziere` benutzt — als schlichtes Objekt (W7).
+   *
+   * WARUM DAS EIN BEFUND WAR: bis hierher blieben `ox/oy/massstab/sinA/sinE`
+   * in diesem Verschluss eingesperrt. Eine Huelle konnte damit keinen einzigen
+   * Bildpunkt zurueckrechnen — nicht, weil die Rechnung fehlte, sondern weil
+   * ihre Zahlen niemand herausgab. Ohne sie gibt es kein Bearbeiten in dieser
+   * Ansicht, und mit ihnen ist es eine geschlossene Formel (`umkehreAuf`).
+   *
+   * Eine ABSCHRIFT und keine Referenz: die Werte werden bei jedem Bild neu
+   * gesetzt, ein gehaltenes Objekt waere sonst nach der naechsten Drehung eine
+   * Luege ueber die Kamera.
+   */
+  function kamera() {
+    return {
+      ox,
+      oy,
+      massstab,
+      sinA,
+      cosA,
+      sinE,
+      cosE,
+      mitteX: szene.mitte.x,
+      mitteZ: szene.mitte.z,
+      mitteY,
+      richtung: kameraRichtung()
+    }
   }
 
   /** Massstab so, dass der ganze Baukoerper ins Bild passt — bei jeder Drehung. */
@@ -159,7 +201,11 @@ export function erzeugeAxonometrie(canvas, szene, opt = {}) {
     if (richtung[1] > 0.001) {
       let tiefe = 0
       for (const q of oben) tiefe += q.p
-      raus.push({ pts: oben, col: toenen(farbe, [0, 1, 0], zurueck), depth: tiefe / n, gesetzt: !!k.gesetzt })
+      // `id` reicht den Rueckverweis bis in die gemalte Flaeche durch (W7):
+      // wer eine Flaechenliste in der Hand hat, kann seither sagen, zu WELCHEM
+      // Stueck sie gehoert. Kostet ein Feld je Flaeche und macht den Malvorgang
+      // nachpruefbar.
+      raus.push({ id: k.id, pts: oben, col: toenen(farbe, [0, 1, 0], zurueck), depth: tiefe / n, gesetzt: !!k.gesetzt })
     }
 
     if (k.istBoden) return // Boeden sind flach; ihre Kanten lohnen nicht
@@ -194,6 +240,7 @@ export function erzeugeAxonometrie(canvas, szene, opt = {}) {
         projiziere(a.x, k.y0, a.z)
       ]
       raus.push({
+        id: k.id,
         pts: q,
         col: toenen(farbe, [nx, 0, nz], zurueck),
         depth: (q[0].p + q[1].p + q[2].p + q[3].p) / 4,
@@ -437,7 +484,7 @@ export function erzeugeAxonometrie(canvas, szene, opt = {}) {
   let zeiger = new Map()
   let spanne = 0
 
-  canvas.addEventListener('pointerdown', (e) => {
+  amCanvas('pointerdown', (e) => {
     zeiger.set(e.pointerId, [e.clientX, e.clientY])
     if (zeiger.size > 1) {
       zieht = false
@@ -454,7 +501,7 @@ export function erzeugeAxonometrie(canvas, szene, opt = {}) {
     }
   })
 
-  canvas.addEventListener('pointermove', (e) => {
+  amCanvas('pointermove', (e) => {
     if (zeiger.has(e.pointerId)) zeiger.set(e.pointerId, [e.clientX, e.clientY])
     if (zeiger.size === 2) {
       const v = [...zeiger.values()]
@@ -492,10 +539,10 @@ export function erzeugeAxonometrie(canvas, szene, opt = {}) {
     schnell = false
     zeichne()
   }
-  canvas.addEventListener('pointerup', beenden)
-  canvas.addEventListener('pointercancel', beenden)
+  amCanvas('pointerup', beenden)
+  amCanvas('pointercancel', beenden)
 
-  canvas.addEventListener(
+  amCanvas(
     'wheel',
     (e) => {
       e.preventDefault()
@@ -509,6 +556,44 @@ export function erzeugeAxonometrie(canvas, szene, opt = {}) {
   return {
     zeichne,
     passeAn,
+    kamera,
+    projiziere,
+    /**
+     * Ein Bildpunkt zurueck in die Welt — auf einer BEKANNTEN Hoehe (W7).
+     *
+     * Die Hoehe ist das ganze Geheimnis: ein Klick trifft einen Sehstrahl, aber
+     * fuer einen Koerper mit bekannter Ober- und Unterkante ist dieser Strahl
+     * eine ENDLICHE Strecke. Nichts wird geraten. Wer keine Hoehe hat, bekommt
+     * hier auch keine Antwort, die so tut.
+     */
+    umkehre(X, Y, h) {
+      return umkehreAuf(kamera(), X, Y, h)
+    },
+    /**
+     * Andere Szene, gleicher Renderer (W7) — Blick, Zoom und Verschiebung
+     * bleiben stehen. Genau darum geht es: die Doppelklick-Datei tauschte
+     * bisher das ganze Canvas aus, um die gestapelten Abos loszuwerden, und
+     * verlor dabei jedes Mal die Ansicht des Nutzers.
+     */
+    setzeSzene(neu) {
+      szene = neu
+      zeichne()
+    },
+    /** Die aktuelle Szene — der Treffer-Test braucht ihre Koerper. */
+    get szene() {
+      return szene
+    },
+    /**
+     * Meldet ALLE Abos ab (B3). Ohne diesen Griff war jeder zweite Renderer auf
+     * demselben Canvas ein Leck: `erzeugeAxonometrie` haengte fuenf Zuhoerer an
+     * und nahm sie nie zurueck — gemessen drehte ein Zug nach drei Neubauten
+     * viermal so schnell. Ein AbortController schliesst alle auf einmal; eine
+     * Liste von Hand gepflegter Referenzen verlaeuft sich beim ersten neuen
+     * Ereignis, das jemand vergisst einzutragen.
+     */
+    zerstoere() {
+      abbruch.abort()
+    },
     setzeBlick(az, el) {
       blick.az = az
       blick.el = el

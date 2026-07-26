@@ -4187,7 +4187,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "c8051b95fb22";
-const BAU_STEMPEL = "2026-07-26 22:36";
+const BAU_STEMPEL = "2026-07-26 23:11";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -5972,6 +5972,19 @@ class Floorplan {
     }
     fireOnUpdatedRooms(callback) {
         this.updated_rooms.add(callback);
+    }
+    /**
+     * Meldet einen Zuhörer wieder ab (W7).
+     *
+     * Es gab ihn nicht, und das war ein echter Fehler: `AxonometrieAnsicht`
+     * hängte bei JEDEM Neubau einen neuen Rückruf an und nahm nie einen zurück
+     * (`EventEmitter.remove` existiert seit jeher, `core/events.ts:26`). Nach
+     * drei Klicks auf die Legende lief derselbe Neubau viermal je Änderung.
+     * Ohne Bearbeitung war das lästig; mit ihr ist es fatal — ein Zug zeichnete
+     * dann vier Bilder je Zeigerbewegung.
+     */
+    entferneUpdatedRooms(callback) {
+        this.updated_rooms.remove(callback);
     }
     /**
      * Creates a new wall.
@@ -8668,13 +8681,9 @@ class Floorplanner {
         // um deren Weg verfälscht — das Möbel spränge um genau diesen Betrag.
         this.zugKennung = null;
         if (this.mode == floorplannerModes.MOVE && this.activeAusstattung) {
-            const el = this.floorplan.findeAusstattung(this.activeAusstattung);
-            if (el) {
-                this.zugKennung = el.id;
-                this.zugVersatzX = el.x - this.mouseX;
-                this.zugVersatzY = el.y - this.mouseY;
-            }
-            else {
+            // Über DIESELBE Methode wie der Axonometrie-Weg (W7): der Versatz wird
+            // an genau einer Stelle gerechnet.
+            if (!this.zugBeginnen(this.activeAusstattung, this.mouseX, this.mouseY)) {
                 // Das überdeckte Stück gibt es nicht mehr (gelöscht, zurückgespielt).
                 // Die Merkung MUSS weg, sonst bliebe sie liegen und sperrte über die
                 // Schwenk-Bedingung unten die Ansicht — ein Fleck, in dem der Zeiger
@@ -8903,7 +8912,10 @@ class Floorplanner {
             // Erst hier sichern, nicht schon bei mousedown: ein Druck auf eine Wand
             // ohne Bewegung (oder ein Schwenk der Ansicht) aendert nichts und soll
             // die Historie nicht mit Leerschritten fuellen.
-            if ((this.activeCorner || this.activeWall || this.zugKennung) && !this.zugGesichert) {
+            // Das MÖBEL steht hier nicht mehr: seinen Schnappschuss zieht `zugSchritt`
+            // selbst (W7), damit der Axonometrie-Weg dieselbe Regel bekommt und nicht
+            // eine zweite daneben. Ecke und Wand haben keinen zweiten Weg und bleiben.
+            if ((this.activeCorner || this.activeWall) && !this.zugGesichert) {
                 this.undoManager?.snapshot();
                 this.zugGesichert = true;
             }
@@ -8932,7 +8944,7 @@ class Floorplanner {
         // Das gezogene Stück ist abgelegt. Die Merkung MUSS hier fallen, auch wenn
         // gar nichts bewegt wurde — sonst zöge der nächste Druck irgendwo im Bild
         // stillschweigend dasselbe Möbel weiter.
-        this.zugKennung = null;
+        this.zugBeenden();
         // --- Öffnung: ein beendeter ZUG setzt nichts Neues (W4).
         //
         // Ohne diese Unterscheidung entstünde beim Loslassen einer gerade
@@ -8982,7 +8994,7 @@ class Floorplanner {
         // ein `mouseup` ausserhalb bekommt der Canvas nicht mehr zu sehen. Ohne
         // dieses Aufräumen führte das Möbel beim Wiedereintritt einen Zug fort,
         // den der Nutzer längst beendet hat.
-        this.zugKennung = null;
+        this.zugBeenden();
         // Die Öffnung ebenso — und ihr Geist auch: er stünde sonst am Bildrand
         // stehen, wo der Zeiger die Fläche verlassen hat.
         this.zugOeffnung = null;
@@ -9009,22 +9021,92 @@ class Floorplanner {
      * keiner Liste mehr steht: sichtbar bliebe das Möbel stehen, gemeldet würde
      * nichts, und der Nutzer zöge minutenlang an einer Leiche.
      */
-    moebelZiehen() {
+    moebelAufPunkt(zielX, zielY) {
         if (!this.zugKennung) {
-            return;
+            return false;
         }
         const el = this.floorplan.findeAusstattung(this.zugKennung);
         if (!el) {
             // Das Stück ist unterwegs verschwunden. Den Zug beenden statt bei jeder
             // Bewegung erneut ins Leere zu greifen.
             this.zugKennung = null;
-            return;
+            return false;
         }
-        const ziel = this.moebelEinrasten(el, this.mouseX + this.zugVersatzX, this.mouseY + this.zugVersatzY);
-        this.floorplan.verschiebeAusstattung(el.id, ziel.x, ziel.y);
+        const ziel = this.moebelEinrasten(el, zielX, zielY);
+        const bewegt = this.floorplan.verschiebeAusstattung(el.id, ziel.x, ziel.y);
         if (ziel.drehung !== (el.drehung ?? 0)) {
             this.floorplan.dreheAusstattung(el.id, ziel.drehung);
         }
+        return bewegt;
+    }
+    /**
+     * Der Maus-Weg im Grundriss — Zielpunkt aus Zeiger und Griff-Versatz.
+     * Nichts als eine Umrechnung: die Arbeit macht `zugSchritt`, damit der
+     * Axonometrie-Weg dieselbe Rechnung benutzt und nicht eine zweite daneben.
+     */
+    moebelZiehen() {
+        this.zugSchritt(this.mouseX, this.mouseY);
+    }
+    /* ────────────── Der Zug als ÖFFENTLICHE Geste (W7) ──────────────────
+       Bis W6 steckte das Möbelziehen ganz in den Maus-Rückrufen dieses Zeichners
+       und zog seine Koordinaten aus `this.mouseX`. Für die Axonometrie ist das
+       unbrauchbar: dort kommt der Weltpunkt aus einer Rückrechnung des Bildes,
+       nicht aus einem Canvas-Zeiger.
+  
+       Der billige Weg wäre gewesen, dort ein zweites Ziehen zu schreiben. Genau
+       das darf nicht passieren: Einrasten (`moebelEinrasten`), Griff-Versatz und
+       der EINE Schnappschuss je Zug sind Festlegungen aus W2, und zwei Fassungen
+       davon laufen beim ersten Nachbessern auseinander — im Grundriss rastete es
+       dann anders ein als im Blatt, für dieselbe Bewegung. Deshalb drei kurze
+       öffentliche Methoden, die BEIDE Wege benutzen. */
+    /**
+     * Ein Möbelzug beginnt: Kennung merken und den Griff-Versatz festhalten.
+     *
+     * @param id KENNUNG des Stücks (nie eine Objektreferenz — ein Rückgängig lädt
+     *        den Grundriss komplett neu)
+     * @param weltX Anfasspunkt in cm
+     * @param weltY dito
+     * @returns ob wirklich etwas gegriffen wurde
+     */
+    zugBeginnen(id, weltX, weltY) {
+        const el = this.floorplan.findeAusstattung(id);
+        if (!el) {
+            return false;
+        }
+        this.zugKennung = el.id;
+        // Ohne den Versatz spränge das Stück mit seiner Mitte unter den Zeiger —
+        // bei einer 3-m-Tischplatte um anderthalb Meter (W2 Punkt 2).
+        this.zugVersatzX = el.x - weltX;
+        this.zugVersatzY = el.y - weltY;
+        this.zugGesichert = false;
+        this.zeigerStilSetzen();
+        return true;
+    }
+    /**
+     * Ein Schritt des laufenden Zugs. Der Schnappschuss wird beim ERSTEN Schritt
+     * gezogen und nicht beim Greifen: ein Druck ohne Bewegung ändert nichts und
+     * soll die Historie nicht mit Leerschritten füllen (W2 Punkt 3).
+     */
+    zugSchritt(weltX, weltY) {
+        if (!this.zugKennung) {
+            return false;
+        }
+        if (!this.zugGesichert) {
+            this.undoManager?.snapshot();
+            this.zugGesichert = true;
+        }
+        return this.moebelAufPunkt(weltX + this.zugVersatzX, weltY + this.zugVersatzY);
+    }
+    /** Der Zug ist zu Ende — losgelassen, abgebrochen oder das Fenster verlassen. */
+    zugBeenden() {
+        this.zugKennung = null;
+        this.zugGesichert = false;
+        this.zeigerStilSetzen();
+    }
+    /** Läuft gerade ein Möbelzug? Die Oberfläche fragt das, um Drehen und
+     *  Schwenken auszusetzen, solange etwas in der Hand ist. */
+    zugLaeuft() {
+        return this.zugKennung;
     }
     /**
      * Wohin ein gezogenes Möbel WIRKLICH gelegt wird (W2) — zwei Hilfen, in
@@ -9389,10 +9471,32 @@ class Floorplanner {
             // dieselbe Strenge wie im Export (`tools/export_blueprint.py`).
             return null;
         }
-        // Umkehrung von `convertX`/`convertY`. Bewusst hier ausgeschrieben und
-        // nicht als zweite öffentliche Methode: es gibt genau diesen einen Aufrufer.
+        // Umkehrung von `convertX`/`convertY`.
         const weltX = bildX * this.cmPerPixel + this.originX * this.cmPerPixel;
         const weltY = bildY * this.cmPerPixel + this.originY * this.cmPerPixel;
+        return this.stueckAblegenWelt(weltX, weltY, vorlage);
+    }
+    /**
+     * Dasselbe Ablegen, aber auf einem WELT-Punkt (W7).
+     *
+     * Der Grundriss rechnet seinen Bildpunkt selbst um; die Axonometrie kann das
+     * nicht — dort kommt der Weltpunkt aus der Rückrechnung des Sehstrahls auf
+     * y = 0. Das ist eine GESETZTE Annahme und keine geratene: ein neu
+     * hingestelltes Stück steht auf dem Boden, und der Puppenhaus-Schnitt legt
+     * den Boden vor jeder Wandkrone frei.
+     *
+     * Die Grenzprüfung (Zeichenfläche) bleibt beim Bild-Weg: in der Welt gibt es
+     * keinen Rand, an dem etwas „daneben" wäre.
+     */
+    stueckAblegenWelt(weltX, weltY, vorlage) {
+        if (!Number.isFinite(weltX) || !Number.isFinite(weltY)) {
+            return null;
+        }
+        if (!(vorlage.breite > 0) || !(vorlage.tiefe > 0)) {
+            // Ein Stück ohne Ausdehnung wäre unsichtbar und nicht mehr greifbar —
+            // dieselbe Strenge wie im Export (`tools/export_blueprint.py`).
+            return null;
+        }
         // Der Schnappschuss GENAU EINMAL und erst jetzt — das Ablegen ist EIN
         // Rückgängig-Schritt, nicht drei (hinstellen, verschieben, drehen).
         this.undoManager?.snapshot();
@@ -9479,14 +9583,29 @@ class Floorplanner {
         if (this.mode != floorplannerModes.MOVE || !this.activeAusstattung) {
             return false;
         }
-        const el = this.floorplan.findeAusstattung(this.activeAusstattung);
+        return this.dreheStueck(this.activeAusstattung, schritte);
+    }
+    /**
+     * Dreht EIN benanntes Stück um `schritte` mal 15° (W7).
+     *
+     * Die eigentliche Drehung, seit es zwei Wege dorthin gibt: den Zeiger im
+     * Grundriss (`dreheAktives`) und den Griff in der Axonometrie. Eine Drehung
+     * ist eine reine Modell-Operation — keine Geometrie im Bild, keine
+     * Rückrechnung, keine Annahme über eine Höhe. Sie ist deshalb die einzige
+     * der drei Bearbeitungen, die auch bei flach gekipptem Blatt sauber bleibt.
+     */
+    dreheStueck(id, schritte) {
+        const el = this.floorplan.findeAusstattung(id);
         if (!el) {
             return false;
         }
         // Während eines Zuges ist längst gesichert — die Drehung gehört dann zu
         // DIESEM Zug und darf kein eigener Schritt sein. Ausserhalb ist jede
-        // Drehung ein eigener Zug, wie jeder gesetzte Zeichenpunkt auch.
-        if (!(this.mouseDown && this.zugGesichert)) {
+        // Drehung ein eigener Zug, wie jeder gesetzte Zeichenpunkt auch. Gemessen
+        // wird am ZUG und nicht mehr an `mouseDown`: in der Axonometrie gibt es
+        // keinen gedrückten Zeiger auf dieser Zeichenfläche, und die Regel gilt
+        // trotzdem.
+        if (!(this.zugKennung && this.zugGesichert)) {
             this.undoManager?.snapshot();
         }
         const zwei = Math.PI * 2;
@@ -9494,6 +9613,30 @@ class Floorplanner {
         const ok = this.floorplan.dreheAusstattung(el.id, neu);
         this.view.draw();
         return ok;
+    }
+    /**
+     * Schlägt EIN benanntes Stück zum Löschen vor (W7) — dieselbe Rückfrage, die
+     * das Verweilen im Grundriss auslöst.
+     *
+     * Ausdrücklich über `loeschKandidat` und die vorhandenen Rückrufe und NICHT
+     * über `entferneAusstattung`: es darf keinen zweiten Weg geben, auf dem etwas
+     * ohne Nachfrage verschwindet. Die Oberfläche fragt, der Kern führt aus —
+     * genau wie in E1 festgelegt.
+     */
+    loeschStueckVorschlagen(id) {
+        const el = this.floorplan.findeAusstattung(id);
+        if (!el) {
+            return false;
+        }
+        const ziel = {
+            art: 'ausstattung',
+            kennung: el.id,
+            beschreibung: AUSSTATTUNG_NAME[el.typ] ?? el.typ
+        };
+        this.loeschKandidat = ziel;
+        this.view.draw();
+        this.loeschAnfrageCallbacks.forEach((cb) => cb(ziel));
+        return true;
     }
     /** Schaltet das Einrasten um und meldet es der Oberfläche (W2). */
     setzeEinrasten(an) {
@@ -10386,6 +10529,200 @@ function leiteRaeumeAb(corners, walls) {
   return einmalig.filter((m) => !imUhrzeigersinn(m))
 }
 
+/* ══════ axo-treffer.js ══════ */
+/**
+ * AXONOMETRIE — TREFFER UND UMKEHRUNG (W7)
+ * ========================================
+ *
+ * Die REINE RECHNUNG hinter dem Bearbeiten im Blatt: ein Bildpunkt zurueck in
+ * die Welt, und die Frage „welches Stueck liegt darunter?". Kein Canvas, kein
+ * DOM, kein Browser — deshalb ist dieses Modul das einzige Stueck der ganzen
+ * Ansicht, das sich in `node` messen laesst.
+ *
+ * DIE FESTLEGUNG, DIE HIER PRAEZISIERT WIRD
+ * `CLAUDE.md` sagte: „In der Axonometrie wird nicht bearbeitet — ein Klick
+ * trifft keinen Punkt, sondern einen Sehstrahl; die Zielhoehe waere geraten."
+ * Ueber die PROJEKTION war der Satz nie falsch. Ueber den UMFANG war er zu
+ * weit: **fuer einen Koerper mit bekannter Ober- und Unterkante ist der
+ * Sehstrahl keine unendliche Gerade, sondern eine endliche Strecke.** Jeder
+ * Koerper der Szene kennt sein `y0`/`y1` (`bauformFuer`), und die Hoehen kommen
+ * aus der Tabelle des Projekts (`src/three/ausstattung.ts`). Es wird also
+ * nichts geraten, sondern gegen die EIGENE Hoehe jedes Kandidaten geprueft.
+ *
+ * Wo der Satz WOERTLICH gilt, gilt er weiter: ein frei in die Luft gesetzter
+ * Punkt (eine neue Wand zeichnen, eine Hoehe zeigen) hat keine bekannte Hoehe.
+ * Dafuer gibt es hier bewusst keine Funktion.
+ *
+ * DIE MATHEMATIK, OFFENGELEGT
+ * `projiziere` (axo-zeichnen.js) rechnet mit dx = x−mx, dz = z−mz, dy = y−0,6:
+ *
+ *     xr = dx·cosA − dz·sinA        zr = dx·sinA + dz·cosA
+ *     X  = ox + m·xr                Y  = oy + m·(zr·sinE − dy·cosE)
+ *     p  = zr·cosE + dy·sinE        (Tiefe, nur zum Sortieren)
+ *
+ * Auf einer BEKANNTEN Hoehe y = h ist das geschlossen umkehrbar, ohne
+ * Iteration:
+ *
+ *     xr = (X−ox)/m                 zr = ((Y−oy)/m + dy·cosE)/sinE
+ *     dx = xr·cosA + zr·sinA        dz = −xr·sinA + zr·cosA
+ *
+ * Die Jacobi-Determinante von (dx,dz) → (X,Y) ist **m²·sinE — unabhaengig vom
+ * Azimut**. Eindeutig umkehrbar fuer jeden Blickwinkel; entartet allein bei
+ * sinE → 0. Kein Blickwinkel der Leiste entartet (el 0,50 bis 1,44); entartet
+ * ist nur, was der Nutzer selbst herstellen kann, indem er das Blatt flach
+ * kippt (`neigeMin` 0,10 → 1 px sind 75 cm Tiefe). Genau dort sperrt die
+ * Oberflaeche das Ziehen — und sagt es, statt still zu verweigern.
+ */
+
+/**
+ * Ab dieser Neigung ist ein Bildpunkt keine Auskunft mehr ueber die Tiefe (W7).
+ *
+ * GEMESSEN und nicht gewaehlt: bei el = 0,35 bedeutet 1 Bildpunkt rund 22 cm
+ * Tiefe — mehr als vier Raster-Schritte (`EINRAST_RASTER_CM = 5`). Ein Zittern
+ * der Hand von drei Pixeln legte das Stueck also zwei Drittel Meter weiter
+ * hinten ab, ohne dass man es im Bild saehe. Zum Vergleich die Blicke der
+ * Leiste: nord/sued 0,62 (13,0 cm/px), west 0,50 (14,7), plan 1,44 (7,7).
+ * Alle vier liegen deutlich darueber; die Sperre trifft nur den flach
+ * gekippten Sonderfall.
+ */
+const NEIGUNG_MIN_ZIEHEN = 0.35
+
+/** Der Tiefenfehler einer GERATENEN Hoehe, in Metern: h · cot(el).
+ *
+ *  Nicht Zierat, sondern die Begruendung dieses ganzen Moduls in einer Zeile —
+ *  und die Gegenprobe des Gates rechnet damit: wer die Hoehe auf 0 raet, liegt
+ *  bei einem Tisch (74 cm) um 1,04 m daneben, bei einem Schrank (200 cm) um
+ *  2,80 m und bei einer Wandkrone (1,16 m) um 1,63 m. */
+function tiefenFehler(hoehe, el) {
+  return hoehe * (Math.cos(el) / Math.sin(el))
+}
+
+/**
+ * Ein Bildpunkt (X, Y) zurueck in die Welt, auf der bekannten Hoehe `h`.
+ *
+ * @param {{ox:number,oy:number,massstab:number,sinA:number,cosA:number,sinE:number,cosE:number,mitteX:number,mitteZ:number,mitteY:number}} kamera
+ *        Die Groessen aus `erzeugeAxonometrie(...).kamera()` — eine Abschrift,
+ *        kein Verweis: sie aendern sich bei jedem Bild.
+ * @param {number} X Bildpunkt in CSS-Pixeln (links oben = 0,0)
+ * @param {number} Y dito
+ * @param {number} h Hoehe in METERN, auf der zurueckgerechnet wird
+ * @returns {{x:number,z:number,tiefe:number}|null} Weltpunkt in Metern (x, z)
+ *          und der Tiefenwert; `null`, wenn die Kamera entartet ist.
+ */
+function umkehreAuf(kamera, X, Y, h) {
+  const m = kamera.massstab
+  // sinE === 0 hiesse: der Blick liegt exakt in der Grundebene. Dann bildet die
+  // Projektion die ganze Tiefe auf EINE Bildzeile ab und ist nicht mehr
+  // umkehrbar. `null` statt Unendlich: eine Zahl, die aus einer Division durch
+  // (fast) Null faellt, saehe aus wie eine Auskunft.
+  if (!(m > 1e-9) || Math.abs(kamera.sinE) < 1e-9) {
+    return null
+  }
+  const dy = h - kamera.mitteY
+  const xr = (X - kamera.ox) / m
+  const zr = ((Y - kamera.oy) / m + dy * kamera.cosE) / kamera.sinE
+  const dx = xr * kamera.cosA + zr * kamera.sinA
+  const dz = -xr * kamera.sinA + zr * kamera.cosA
+  return {
+    x: dx + kamera.mitteX,
+    z: dz + kamera.mitteZ,
+    tiefe: zr * kamera.cosE + dy * kamera.sinE
+  }
+}
+
+/** Liegt (x, z) im Vieleck? Strahlverfahren, wie `liegtIn` in `axo-zyklen.js`,
+ *  aber auf der (x,z)-Ebene des Renderers statt auf (x,y) des Planers. */
+function imVieleck(x, z, punkte) {
+  let drin = false
+  for (let i = 0, j = punkte.length - 1; i < punkte.length; j = i++) {
+    const a = punkte[i]
+    const b = punkte[j]
+    if (a.z > z !== b.z > z && x < ((b.x - a.x) * (z - a.z)) / (b.z - a.z) + a.x) drin = !drin
+  }
+  return drin
+}
+
+/**
+ * Wie weit OBEN auf der Strecke p0→p1 liegt der letzte Punkt im Vieleck?
+ *
+ * Rueckgabe ist der groesste Parameter t ∈ [0,1], an dem die Strecke das
+ * Vieleck noch beruehrt, oder `null` bei keinem Treffer. Der GROESSTE, weil
+ * die Tiefe entlang des Sehstrahls streng mit der Hoehe waechst
+ * (p = [cosE·(Y−oy)/m + dy] / sinE, und sinE > 0): der hoechste getroffene
+ * Punkt eines Koerpers ist der, der der Kamera am naechsten liegt — und damit
+ * der, den man wirklich sieht.
+ */
+function obersterTreffer(p0, p1, punkte) {
+  const dx = p1.x - p0.x
+  const dz = p1.z - p0.z
+  // Ein flacher Koerper (Matte: 2 cm) macht daraus fast einen Punkt. Dann ist
+  // die Streckenrechnung numerisch wertlos und die Punktprobe die richtige.
+  if (Math.hypot(dx, dz) < 1e-9) {
+    return imVieleck(p1.x, p1.z, punkte) ? 1 : null
+  }
+  // Das obere Ende ist der beste denkbare Fall — liegt es drin, ist Schluss.
+  if (imVieleck(p1.x, p1.z, punkte)) {
+    return 1
+  }
+  let bestes = imVieleck(p0.x, p0.z, punkte) ? 0 : null
+  for (let i = 0, j = punkte.length - 1; i < punkte.length; j = i++) {
+    const a = punkte[j]
+    const b = punkte[i]
+    const ex = b.x - a.x
+    const ez = b.z - a.z
+    const nenner = dx * ez - dz * ex
+    if (Math.abs(nenner) < 1e-12) continue // parallel
+    const t = ((a.x - p0.x) * ez - (a.z - p0.z) * ex) / nenner
+    const s = ((a.x - p0.x) * dz - (a.z - p0.z) * dx) / nenner
+    if (t < 0 || t > 1 || s < 0 || s > 1) continue
+    if (bestes === null || t > bestes) bestes = t
+  }
+  return bestes
+}
+
+/**
+ * Welches AUSSTATTUNGS-Stueck liegt unter dem Bildpunkt (X, Y)?
+ *
+ * WARUM NICHT `isPointInPath` RUECKWAERTS und warum kein Farb-Puffer: gemessen
+ * baut ein Bild 1638 Fuellungen auf (reiner JS-Anteil 1,71 ms). Sie zum Testen
+ * noch einmal aufzubauen kostet denselben Preis bei JEDER Zeigerbewegung, auch
+ * beim Klick ins Leere. Ein Farb-Puffer im Nebencanvas waere eine ZWEITE
+ * Zeichenvorschrift — genau die zweite Wahrheit, die dieses Projekt verbietet.
+ * Diese Rueckrechnung braucht 289 Strecke-gegen-Vieleck-Tests, gemessen unter
+ * 0,1 ms, und laeuft ohne Canvas.
+ *
+ * NUR MOEBEL. Boden, Buehne und Wand liefern bewusst `null` — dort dreht der
+ * Zug das Blatt, wie bisher. Eine Wand laesst sich rechnerisch ebenso treffen,
+ * aber nicht sinnvoll ZIEHEN: der Klick auf ihre Krone liegt 1,63 m neben ihrem
+ * Fusspunkt, und eine verschobene gemessene Ecke bricht den Rueckweg ins
+ * Projekt (W5) hart ab. Eine Bedienung, die in einen abgelehnten Zustand
+ * fuehrt, ist keine.
+ *
+ * @returns {{id:string, typ:string, tiefe:number, y0:number, y1:number, hoehe:number}|null}
+ */
+function koerperUnter(szene, kamera, X, Y) {
+  if (!szene || !kamera) return null
+  let bester = null
+  for (const k of szene.moebel || []) {
+    if (!k.id) continue // ohne Rueckverweis kein Bearbeiten — lieber nichts
+    const p0 = umkehreAuf(kamera, X, Y, k.y0)
+    const p1 = umkehreAuf(kamera, X, Y, k.y1)
+    if (!p0 || !p1) return null // entartete Kamera: fuer KEIN Stueck eine Aussage
+    const t = obersterTreffer(p0, p1, k.punkte)
+    if (t === null) continue
+    const hoehe = k.y0 + (k.y1 - k.y0) * t
+    const tiefe = p0.tiefe + (p1.tiefe - p0.tiefe) * t
+    // Bei Mehrfachtreffern gewinnt der GROESSTE Tiefenwert. Das ist per
+    // Konstruktion das, was zuletzt gemalt wurde (`oben.sort` nach `depth`) —
+    // also das, was man sieht. Ein Stuhl unter einem Tisch bleibt so greifbar,
+    // sobald man auf seine Lehnenseite zeigt statt auf die Platte.
+    if (!bester || tiefe > bester.tiefe) {
+      bester = { id: k.id, typ: k.typ, tiefe, y0: k.y0, y1: k.y1, hoehe }
+    }
+  }
+  return bester
+}
+
 /* ══════ axo-szene.js ══════ */
 /**
  * SZENE AUS DEN ECHTEN PLANDATEN (X2)
@@ -10414,7 +10751,7 @@ function leiteRaeumeAb(corners, walls) {
 
 
 /** @typedef {{x:number,z:number}} Punkt */
-/** @typedef {{punkte:Punkt[], y0:number, y1:number, material:string, normale?:number[], istBoden?:boolean}} Koerper */
+/** @typedef {{punkte:Punkt[], y0:number, y1:number, material:string, normale?:number[], istBoden?:boolean, id?:string, typ?:string, wandId?:string}} Koerper */
 
 /** Rechteck um einen Mittelpunkt, gedreht. Masse in Metern. */
 function rechteck(cx, cz, breite, tiefe, drehung) {
@@ -10446,7 +10783,7 @@ function rund(cx, cz, breite, tiefe, ecken = 12) {
  * 78 m lange Nordwand EINEN Tiefenwert (den ihrer Mitte) und verdeckte alles,
  * was hinter diesem Punkt liegt (uebersicht.html:412).
  */
-function wandStuecke(a, b, dicke, y1, material, normale, oeffnungen = []) {
+function wandStuecke(a, b, dicke, y1, material, normale, oeffnungen = [], wandId = undefined) {
   const laenge = Math.hypot(b.x - a.x, b.z - a.z)
   if (laenge < 1e-6) return []
   const ex = (b.x - a.x) / laenge
@@ -10470,7 +10807,15 @@ function wandStuecke(a, b, dicke, y1, material, normale, oeffnungen = []) {
       y0: 0,
       y1: yTop,
       material,
-      normale
+      normale,
+      /* W7 — DER RUECKVERWEIS VOM BILD INS MODELL.
+         Ohne ihn ist ein Wandstueck im Bild ein anonymes Vieleck: man kann
+         darauf zeigen und nicht sagen, WORAUF. Eine Zeile, und sie kostet
+         nichts — die Kennung liegt beim Aufrufer ohnehin in der Hand.
+         Gezogen wird an einer Wand trotzdem nicht (die Krone liegt 1,63 m
+         neben dem Fusspunkt); der Verweis sagt „hier ist Mauerwerk, kein
+         Moebel" und trennt damit Greifen von Drehen. */
+      wandId
     })
   }
 
@@ -10527,6 +10872,12 @@ function wandStuecke(a, b, dicke, y1, material, normale, oeffnungen = []) {
  * aussieht, sagt sein Umriss. Mehr steht nicht fest, also wird mehr nicht
  * gezeigt.
  *
+ * OEFFENTLICH seit W7, damit ein laufender Zug GENAU EINEN Koerper austauschen
+ * kann statt die ganze Szene neu zu bauen. `baueSzene` kostet gemessen 16,2 ms
+ * — bei 60 Zeigerbewegungen je Sekunde ist das eine Sekunde Rechenzeit fuer
+ * eine Sekunde Ziehen. Wer hier einen zweiten Weg baute, haette zwei Wahrheiten
+ * darueber, wie ein Moebel aussieht; deshalb dieselbe Funktion.
+ *
  * @param {object} el Element aus `floorplan.ausstattung`, Masse in cm
  * @param {{oberkante:object, koerper:object}} hoehen
  */
@@ -10540,6 +10891,16 @@ function ausstattungsKoerper(el, hoehen) {
   const dr = el.drehung || 0
   return [
     {
+      /* W7 — DER RUECKVERWEIS VOM BILD INS MODELL.
+         Bis hierher lieferte diese Funktion ein Vieleck ohne Namen: man konnte
+         das Stueck sehen, treffen und trotzdem nicht sagen, WELCHES es ist.
+         Genau daran scheiterte jedes Bearbeiten in der Axonometrie.
+         Die KENNUNG und nicht der Listenindex — dieselbe Regel wie ueberall in
+         diesem Planer (W2 Punkt 1): ein Typ ohne `AUSSTATTUNG_STIL` liefert
+         `null` und faellt oben heraus, die Indizes von `fp.ausstattung` und
+         `szene.moebel` liefen also lautlos auseinander. */
+      id: el.id,
+      typ: el.typ,
       punkte: form.rund ? rund(cx, cz, b, t) : rechteck(cx, cz, b, t, dr),
       y0: form.y0,
       y1: form.y1,
@@ -10705,7 +11066,8 @@ function baueSzene(plan, opt = {}) {
         aussen ? DARSTELLUNGSHOEHE.wandAussen : DARSTELLUNGSHOEHE.wandInnen,
         aussen ? 'wandAussen' : 'wand',
         normale,
-        oeffnungenJeWand.get(w.id) || []
+        oeffnungenJeWand.get(w.id) || [],
+        w.id
       )
     )
   }
@@ -10758,6 +11120,7 @@ function baueSzene(plan, opt = {}) {
 
 
 
+
 /** Flaechenhelligkeit aus dem Winkel zum Streiflicht. [uebersicht.html:560] */
 /** Hex nach [r,g,b]. */
 function zahlen(hex) {
@@ -10800,9 +11163,21 @@ function toenen(hex, n, zurueck) {
  * @param {object} szene Ergebnis von `baueSzene`
  * @param {{dunkel?:boolean, namen?:'alle'|'saeulen'|'aus', randRechts?:number, randOben?:number}} [opt]
  */
-function erzeugeAxonometrie(canvas, szene, opt = {}) {
+function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
   const ctx = canvas.getContext('2d')
+  /* Die Szene ist seit W7 AUSTAUSCHBAR (`setzeSzene`). Vorher war sie der
+     Parameter und damit fest: wer ein neues Bild brauchte, musste einen zweiten
+     Renderer auf demselben Canvas erzeugen — und weil der seine Zeiger-Abos nie
+     abmeldete, stapelten sie sich (B3). Gemessen: nach drei Neubauten drehte
+     ein Zug viermal so schnell. */
+  let szene = szeneEingang
   const blick = { ...BLICK_START, schiebX: 0, schiebY: 0 }
+  /* Ein einziger Abbruch-Griff fuer ALLE Abos dieses Renderers. Ohne ihn gibt
+     es keinen Weg, einen Renderer wieder loszuwerden — `removeEventListener`
+     braeuchte die Funktionsreferenzen, und die liegen hier drin. */
+  const abbruch = new AbortController()
+  const amCanvas = (typ, hoerer, weiter) =>
+    canvas.addEventListener(typ, hoerer, { ...(weiter || {}), signal: abbruch.signal })
   let breite = 0
   let hoehe = 0
   let dunkel = !!opt.dunkel
@@ -10838,6 +11213,35 @@ function erzeugeAxonometrie(canvas, szene, opt = {}) {
 
   function kameraRichtung() {
     return [cosE * sinA, sinE, cosE * cosA]
+  }
+
+  /**
+   * ALLE Groessen, die `projiziere` benutzt — als schlichtes Objekt (W7).
+   *
+   * WARUM DAS EIN BEFUND WAR: bis hierher blieben `ox/oy/massstab/sinA/sinE`
+   * in diesem Verschluss eingesperrt. Eine Huelle konnte damit keinen einzigen
+   * Bildpunkt zurueckrechnen — nicht, weil die Rechnung fehlte, sondern weil
+   * ihre Zahlen niemand herausgab. Ohne sie gibt es kein Bearbeiten in dieser
+   * Ansicht, und mit ihnen ist es eine geschlossene Formel (`umkehreAuf`).
+   *
+   * Eine ABSCHRIFT und keine Referenz: die Werte werden bei jedem Bild neu
+   * gesetzt, ein gehaltenes Objekt waere sonst nach der naechsten Drehung eine
+   * Luege ueber die Kamera.
+   */
+  function kamera() {
+    return {
+      ox,
+      oy,
+      massstab,
+      sinA,
+      cosA,
+      sinE,
+      cosE,
+      mitteX: szene.mitte.x,
+      mitteZ: szene.mitte.z,
+      mitteY,
+      richtung: kameraRichtung()
+    }
   }
 
   /** Massstab so, dass der ganze Baukoerper ins Bild passt — bei jeder Drehung. */
@@ -10902,7 +11306,11 @@ function erzeugeAxonometrie(canvas, szene, opt = {}) {
     if (richtung[1] > 0.001) {
       let tiefe = 0
       for (const q of oben) tiefe += q.p
-      raus.push({ pts: oben, col: toenen(farbe, [0, 1, 0], zurueck), depth: tiefe / n, gesetzt: !!k.gesetzt })
+      // `id` reicht den Rueckverweis bis in die gemalte Flaeche durch (W7):
+      // wer eine Flaechenliste in der Hand hat, kann seither sagen, zu WELCHEM
+      // Stueck sie gehoert. Kostet ein Feld je Flaeche und macht den Malvorgang
+      // nachpruefbar.
+      raus.push({ id: k.id, pts: oben, col: toenen(farbe, [0, 1, 0], zurueck), depth: tiefe / n, gesetzt: !!k.gesetzt })
     }
 
     if (k.istBoden) return // Boeden sind flach; ihre Kanten lohnen nicht
@@ -10937,6 +11345,7 @@ function erzeugeAxonometrie(canvas, szene, opt = {}) {
         projiziere(a.x, k.y0, a.z)
       ]
       raus.push({
+        id: k.id,
         pts: q,
         col: toenen(farbe, [nx, 0, nz], zurueck),
         depth: (q[0].p + q[1].p + q[2].p + q[3].p) / 4,
@@ -11180,7 +11589,7 @@ function erzeugeAxonometrie(canvas, szene, opt = {}) {
   let zeiger = new Map()
   let spanne = 0
 
-  canvas.addEventListener('pointerdown', (e) => {
+  amCanvas('pointerdown', (e) => {
     zeiger.set(e.pointerId, [e.clientX, e.clientY])
     if (zeiger.size > 1) {
       zieht = false
@@ -11197,7 +11606,7 @@ function erzeugeAxonometrie(canvas, szene, opt = {}) {
     }
   })
 
-  canvas.addEventListener('pointermove', (e) => {
+  amCanvas('pointermove', (e) => {
     if (zeiger.has(e.pointerId)) zeiger.set(e.pointerId, [e.clientX, e.clientY])
     if (zeiger.size === 2) {
       const v = [...zeiger.values()]
@@ -11235,10 +11644,10 @@ function erzeugeAxonometrie(canvas, szene, opt = {}) {
     schnell = false
     zeichne()
   }
-  canvas.addEventListener('pointerup', beenden)
-  canvas.addEventListener('pointercancel', beenden)
+  amCanvas('pointerup', beenden)
+  amCanvas('pointercancel', beenden)
 
-  canvas.addEventListener(
+  amCanvas(
     'wheel',
     (e) => {
       e.preventDefault()
@@ -11252,6 +11661,44 @@ function erzeugeAxonometrie(canvas, szene, opt = {}) {
   return {
     zeichne,
     passeAn,
+    kamera,
+    projiziere,
+    /**
+     * Ein Bildpunkt zurueck in die Welt — auf einer BEKANNTEN Hoehe (W7).
+     *
+     * Die Hoehe ist das ganze Geheimnis: ein Klick trifft einen Sehstrahl, aber
+     * fuer einen Koerper mit bekannter Ober- und Unterkante ist dieser Strahl
+     * eine ENDLICHE Strecke. Nichts wird geraten. Wer keine Hoehe hat, bekommt
+     * hier auch keine Antwort, die so tut.
+     */
+    umkehre(X, Y, h) {
+      return umkehreAuf(kamera(), X, Y, h)
+    },
+    /**
+     * Andere Szene, gleicher Renderer (W7) — Blick, Zoom und Verschiebung
+     * bleiben stehen. Genau darum geht es: die Doppelklick-Datei tauschte
+     * bisher das ganze Canvas aus, um die gestapelten Abos loszuwerden, und
+     * verlor dabei jedes Mal die Ansicht des Nutzers.
+     */
+    setzeSzene(neu) {
+      szene = neu
+      zeichne()
+    },
+    /** Die aktuelle Szene — der Treffer-Test braucht ihre Koerper. */
+    get szene() {
+      return szene
+    },
+    /**
+     * Meldet ALLE Abos ab (B3). Ohne diesen Griff war jeder zweite Renderer auf
+     * demselben Canvas ein Leck: `erzeugeAxonometrie` haengte fuenf Zuhoerer an
+     * und nahm sie nie zurueck — gemessen drehte ein Zug nach drei Neubauten
+     * viermal so schnell. Ein AbortController schliesst alle auf einmal; eine
+     * Liste von Hand gepflegter Referenzen verlaeuft sich beim ersten neuen
+     * Ereignis, das jemand vergisst einzutragen.
+     */
+    zerstoere() {
+      abbruch.abort()
+    },
     setzeBlick(az, el) {
       blick.az = az
       blick.el = el
@@ -11362,7 +11809,9 @@ let bearbeiten = false;
 let vollausbau = false;
 let tafelAn = true;
 let namenModus = 'alle';
-let axoCanvas = el('axo-canvas');
+/* W7: `const`, seit das Canvas nicht mehr getauscht wird (s. `axoNeuBauen`).
+   Ein `let` hier hiesse, dass irgendwo doch noch ein Tausch lauert. */
+const axoCanvas = el('axo-canvas');
 let axoAnsicht = null;
 let szene = null;
 let axoUhr = null;
@@ -11682,33 +12131,36 @@ planEl.addEventListener('pointermove', function(e){
 addEventListener('blur', leseZugBeenden);
 
 /* ── Axonometrie ────────────────────────────────────────────────────
-   Sie ist ein FENSTER, kein Werkzeug: bearbeitet wird im Grundriss, die
-   Axonometrie folgt. Bei jedem Neubau bekommt sie ein FRISCHES Canvas — der
-   Renderer meldet seine Zeiger-Abos nie ab (src/axo/axo-zeichnen.js:392-459),
-   ein zweiter Aufruf auf demselben Canvas stapelte sie, und jedes Ziehen
-   drehte danach doppelt so schnell. Mit dem alten Canvas sterben seine Abos.
-   Der Blickwinkel wird uebernommen, Zoom und Verschiebung nicht — die kennt
-   nur der Renderer selbst. */
+   W7 — DAS CANVAS BLEIBT STEHEN. Bis hierher bekam die Ansicht bei JEDEM
+   Neubau ein frisches Canvas, und zwar aus einem einzigen Grund: der Renderer
+   meldete seine Zeiger-Abos nie ab, ein zweiter Aufruf auf demselben Canvas
+   stapelte sie, und jedes Ziehen drehte danach doppelt so schnell. Der Preis
+   war hoch und wurde jedes Mal bezahlt — mit dem Canvas starben auch Zoom und
+   Verschiebung des Nutzers.
+
+   Seit `erzeugeAxonometrie` ein `zerstoere()` und ein `setzeSzene()` anbietet,
+   ist beides weg: EIN Renderer, EIN Canvas, und ein Neubau tauscht nur noch
+   die Szene. Wer mitten im Ziehen ist, sieht das Blatt an derselben Stelle
+   weiterlaufen. */
 function tafelRand(){ return (tafelAn && innerWidth > 900) ? 294 : 0; }
 
 function axoNeuBauen(){
-  const blickVorher = axoAnsicht ? axoAnsicht.blick : null;
-  const frisch = document.createElement('canvas');
-  frisch.id = 'axo-canvas';
-  axoCanvas.parentNode.replaceChild(frisch, axoCanvas);
-  axoCanvas = frisch;
-
   szene = baueSzene(
     { floorplan: grundriss.saveFloorplan(), labels: labels },
     { wandDicke: WAND_DICKE_CM, nurKernSaeulen: !vollausbau, hoehen: HOEHEN }
   );
-  axoAnsicht = erzeugeAxonometrie(axoCanvas, szene, { namen: namenModus, randRechts: tafelRand() });
-  if (blickVorher) axoAnsicht.setzeBlick(blickVorher.az, blickVorher.el);
-  axoAnsicht.passeAn();
-  axoCanvas.addEventListener('pointerdown', function(){ axoCanvas.classList.add('zieht'); });
-  ['pointerup','pointercancel'].forEach(function(t){
-    axoCanvas.addEventListener(t, function(){ axoCanvas.classList.remove('zieht'); });
-  });
+  if (axoAnsicht) {
+    axoAnsicht.setzeSzene(szene);
+  } else {
+    axoAnsicht = erzeugeAxonometrie(axoCanvas, szene, { namen: namenModus, randRechts: tafelRand() });
+    axoAnsicht.passeAn();
+    /* EINMALIG, nicht je Neubau: das Canvas wechselt nicht mehr, also wechseln
+       auch seine Zuhoerer nicht. */
+    axoCanvas.addEventListener('pointerdown', function(){ axoCanvas.classList.add('zieht'); });
+    ['pointerup','pointercancel'].forEach(function(t){
+      axoCanvas.addEventListener(t, function(){ axoCanvas.classList.remove('zieht'); });
+    });
+  }
   tafelZeichnen();
   axoVeraltet = false;
 }

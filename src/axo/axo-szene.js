@@ -25,7 +25,7 @@ import { CM, DARSTELLUNGSHOEHE, DARSTELLUNG, bauformFuer, saeuleFuer } from './a
 import { leiteRaeumeAb, flaecheVon, mitteVon, liegtIn } from './axo-zyklen.js'
 
 /** @typedef {{x:number,z:number}} Punkt */
-/** @typedef {{punkte:Punkt[], y0:number, y1:number, material:string, normale?:number[], istBoden?:boolean}} Koerper */
+/** @typedef {{punkte:Punkt[], y0:number, y1:number, material:string, normale?:number[], istBoden?:boolean, id?:string, typ?:string, wandId?:string}} Koerper */
 
 /** Rechteck um einen Mittelpunkt, gedreht. Masse in Metern. */
 function rechteck(cx, cz, breite, tiefe, drehung) {
@@ -57,7 +57,7 @@ function rund(cx, cz, breite, tiefe, ecken = 12) {
  * 78 m lange Nordwand EINEN Tiefenwert (den ihrer Mitte) und verdeckte alles,
  * was hinter diesem Punkt liegt (uebersicht.html:412).
  */
-function wandStuecke(a, b, dicke, y1, material, normale, oeffnungen = []) {
+function wandStuecke(a, b, dicke, y1, material, normale, oeffnungen = [], wandId = undefined) {
   const laenge = Math.hypot(b.x - a.x, b.z - a.z)
   if (laenge < 1e-6) return []
   const ex = (b.x - a.x) / laenge
@@ -81,7 +81,15 @@ function wandStuecke(a, b, dicke, y1, material, normale, oeffnungen = []) {
       y0: 0,
       y1: yTop,
       material,
-      normale
+      normale,
+      /* W7 — DER RUECKVERWEIS VOM BILD INS MODELL.
+         Ohne ihn ist ein Wandstueck im Bild ein anonymes Vieleck: man kann
+         darauf zeigen und nicht sagen, WORAUF. Eine Zeile, und sie kostet
+         nichts — die Kennung liegt beim Aufrufer ohnehin in der Hand.
+         Gezogen wird an einer Wand trotzdem nicht (die Krone liegt 1,63 m
+         neben dem Fusspunkt); der Verweis sagt „hier ist Mauerwerk, kein
+         Moebel" und trennt damit Greifen von Drehen. */
+      wandId
     })
   }
 
@@ -138,10 +146,16 @@ function wandStuecke(a, b, dicke, y1, material, normale, oeffnungen = []) {
  * aussieht, sagt sein Umriss. Mehr steht nicht fest, also wird mehr nicht
  * gezeigt.
  *
+ * OEFFENTLICH seit W7, damit ein laufender Zug GENAU EINEN Koerper austauschen
+ * kann statt die ganze Szene neu zu bauen. `baueSzene` kostet gemessen 16,2 ms
+ * — bei 60 Zeigerbewegungen je Sekunde ist das eine Sekunde Rechenzeit fuer
+ * eine Sekunde Ziehen. Wer hier einen zweiten Weg baute, haette zwei Wahrheiten
+ * darueber, wie ein Moebel aussieht; deshalb dieselbe Funktion.
+ *
  * @param {object} el Element aus `floorplan.ausstattung`, Masse in cm
  * @param {{oberkante:object, koerper:object}} hoehen
  */
-function ausstattungsKoerper(el, hoehen) {
+export function ausstattungsKoerper(el, hoehen) {
   const form = bauformFuer(el, hoehen)
   if (!form) return [] // unbekannter Typ: lieber nichts als etwas Erfundenes
   const cx = el.x * CM
@@ -151,6 +165,16 @@ function ausstattungsKoerper(el, hoehen) {
   const dr = el.drehung || 0
   return [
     {
+      /* W7 — DER RUECKVERWEIS VOM BILD INS MODELL.
+         Bis hierher lieferte diese Funktion ein Vieleck ohne Namen: man konnte
+         das Stueck sehen, treffen und trotzdem nicht sagen, WELCHES es ist.
+         Genau daran scheiterte jedes Bearbeiten in der Axonometrie.
+         Die KENNUNG und nicht der Listenindex — dieselbe Regel wie ueberall in
+         diesem Planer (W2 Punkt 1): ein Typ ohne `AUSSTATTUNG_STIL` liefert
+         `null` und faellt oben heraus, die Indizes von `fp.ausstattung` und
+         `szene.moebel` liefen also lautlos auseinander. */
+      id: el.id,
+      typ: el.typ,
       punkte: form.rund ? rund(cx, cz, b, t) : rechteck(cx, cz, b, t, dr),
       y0: form.y0,
       y1: form.y1,
@@ -316,7 +340,8 @@ export function baueSzene(plan, opt = {}) {
         aussen ? DARSTELLUNGSHOEHE.wandAussen : DARSTELLUNGSHOEHE.wandInnen,
         aussen ? 'wandAussen' : 'wand',
         normale,
-        oeffnungenJeWand.get(w.id) || []
+        oeffnungenJeWand.get(w.id) || [],
+        w.id
       )
     )
   }

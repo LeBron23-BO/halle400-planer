@@ -531,6 +531,20 @@ export class Floorplan {
   }
 
   /**
+   * Meldet einen Zuhörer wieder ab (W7).
+   *
+   * Es gab ihn nicht, und das war ein echter Fehler: `AxonometrieAnsicht`
+   * hängte bei JEDEM Neubau einen neuen Rückruf an und nahm nie einen zurück
+   * (`EventEmitter.remove` existiert seit jeher, `core/events.ts:26`). Nach
+   * drei Klicks auf die Legende lief derselbe Neubau viermal je Änderung.
+   * Ohne Bearbeitung war das lästig; mit ihr ist es fatal — ein Zug zeichnete
+   * dann vier Bilder je Zeigerbewegung.
+   */
+  public entferneUpdatedRooms(callback: () => void): void {
+    this.updated_rooms.remove(callback)
+  }
+
+  /**
    * Creates a new wall.
    * @param start The start corner.
    * @param end he end corner.

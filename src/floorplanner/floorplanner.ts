@@ -806,12 +806,9 @@ export class Floorplanner {
     // um deren Weg verfälscht — das Möbel spränge um genau diesen Betrag.
     this.zugKennung = null
     if (this.mode == floorplannerModes.MOVE && this.activeAusstattung) {
-      const el = this.floorplan.findeAusstattung(this.activeAusstattung)
-      if (el) {
-        this.zugKennung = el.id
-        this.zugVersatzX = el.x - this.mouseX
-        this.zugVersatzY = el.y - this.mouseY
-      } else {
+      // Über DIESELBE Methode wie der Axonometrie-Weg (W7): der Versatz wird
+      // an genau einer Stelle gerechnet.
+      if (!this.zugBeginnen(this.activeAusstattung, this.mouseX, this.mouseY)) {
         // Das überdeckte Stück gibt es nicht mehr (gelöscht, zurückgespielt).
         // Die Merkung MUSS weg, sonst bliebe sie liegen und sperrte über die
         // Schwenk-Bedingung unten die Ansicht — ein Fleck, in dem der Zeiger
@@ -1064,7 +1061,10 @@ export class Floorplanner {
       // Erst hier sichern, nicht schon bei mousedown: ein Druck auf eine Wand
       // ohne Bewegung (oder ein Schwenk der Ansicht) aendert nichts und soll
       // die Historie nicht mit Leerschritten fuellen.
-      if ((this.activeCorner || this.activeWall || this.zugKennung) && !this.zugGesichert) {
+      // Das MÖBEL steht hier nicht mehr: seinen Schnappschuss zieht `zugSchritt`
+      // selbst (W7), damit der Axonometrie-Weg dieselbe Regel bekommt und nicht
+      // eine zweite daneben. Ecke und Wand haben keinen zweiten Weg und bleiben.
+      if ((this.activeCorner || this.activeWall) && !this.zugGesichert) {
         this.undoManager?.snapshot()
         this.zugGesichert = true
       }
@@ -1095,7 +1095,7 @@ export class Floorplanner {
     // Das gezogene Stück ist abgelegt. Die Merkung MUSS hier fallen, auch wenn
     // gar nichts bewegt wurde — sonst zöge der nächste Druck irgendwo im Bild
     // stillschweigend dasselbe Möbel weiter.
-    this.zugKennung = null
+    this.zugBeenden()
 
     // --- Öffnung: ein beendeter ZUG setzt nichts Neues (W4).
     //
@@ -1147,7 +1147,7 @@ export class Floorplanner {
     // ein `mouseup` ausserhalb bekommt der Canvas nicht mehr zu sehen. Ohne
     // dieses Aufräumen führte das Möbel beim Wiedereintritt einen Zug fort,
     // den der Nutzer längst beendet hat.
-    this.zugKennung = null
+    this.zugBeenden()
     // Die Öffnung ebenso — und ihr Geist auch: er stünde sonst am Bildrand
     // stehen, wo der Zeiger die Fläche verlassen hat.
     this.zugOeffnung = null
@@ -1176,22 +1176,98 @@ export class Floorplanner {
    * keiner Liste mehr steht: sichtbar bliebe das Möbel stehen, gemeldet würde
    * nichts, und der Nutzer zöge minutenlang an einer Leiche.
    */
-  private moebelZiehen(): void {
+  private moebelAufPunkt(zielX: number, zielY: number): boolean {
     if (!this.zugKennung) {
-      return
+      return false
     }
     const el = this.floorplan.findeAusstattung(this.zugKennung)
     if (!el) {
       // Das Stück ist unterwegs verschwunden. Den Zug beenden statt bei jeder
       // Bewegung erneut ins Leere zu greifen.
       this.zugKennung = null
-      return
+      return false
     }
-    const ziel = this.moebelEinrasten(el, this.mouseX + this.zugVersatzX, this.mouseY + this.zugVersatzY)
-    this.floorplan.verschiebeAusstattung(el.id, ziel.x, ziel.y)
+    const ziel = this.moebelEinrasten(el, zielX, zielY)
+    const bewegt = this.floorplan.verschiebeAusstattung(el.id, ziel.x, ziel.y)
     if (ziel.drehung !== (el.drehung ?? 0)) {
       this.floorplan.dreheAusstattung(el.id, ziel.drehung)
     }
+    return bewegt
+  }
+
+  /**
+   * Der Maus-Weg im Grundriss — Zielpunkt aus Zeiger und Griff-Versatz.
+   * Nichts als eine Umrechnung: die Arbeit macht `zugSchritt`, damit der
+   * Axonometrie-Weg dieselbe Rechnung benutzt und nicht eine zweite daneben.
+   */
+  private moebelZiehen(): void {
+    this.zugSchritt(this.mouseX, this.mouseY)
+  }
+
+  /* ────────────── Der Zug als ÖFFENTLICHE Geste (W7) ──────────────────
+     Bis W6 steckte das Möbelziehen ganz in den Maus-Rückrufen dieses Zeichners
+     und zog seine Koordinaten aus `this.mouseX`. Für die Axonometrie ist das
+     unbrauchbar: dort kommt der Weltpunkt aus einer Rückrechnung des Bildes,
+     nicht aus einem Canvas-Zeiger.
+
+     Der billige Weg wäre gewesen, dort ein zweites Ziehen zu schreiben. Genau
+     das darf nicht passieren: Einrasten (`moebelEinrasten`), Griff-Versatz und
+     der EINE Schnappschuss je Zug sind Festlegungen aus W2, und zwei Fassungen
+     davon laufen beim ersten Nachbessern auseinander — im Grundriss rastete es
+     dann anders ein als im Blatt, für dieselbe Bewegung. Deshalb drei kurze
+     öffentliche Methoden, die BEIDE Wege benutzen. */
+
+  /**
+   * Ein Möbelzug beginnt: Kennung merken und den Griff-Versatz festhalten.
+   *
+   * @param id KENNUNG des Stücks (nie eine Objektreferenz — ein Rückgängig lädt
+   *        den Grundriss komplett neu)
+   * @param weltX Anfasspunkt in cm
+   * @param weltY dito
+   * @returns ob wirklich etwas gegriffen wurde
+   */
+  public zugBeginnen(id: string, weltX: number, weltY: number): boolean {
+    const el = this.floorplan.findeAusstattung(id)
+    if (!el) {
+      return false
+    }
+    this.zugKennung = el.id
+    // Ohne den Versatz spränge das Stück mit seiner Mitte unter den Zeiger —
+    // bei einer 3-m-Tischplatte um anderthalb Meter (W2 Punkt 2).
+    this.zugVersatzX = el.x - weltX
+    this.zugVersatzY = el.y - weltY
+    this.zugGesichert = false
+    this.zeigerStilSetzen()
+    return true
+  }
+
+  /**
+   * Ein Schritt des laufenden Zugs. Der Schnappschuss wird beim ERSTEN Schritt
+   * gezogen und nicht beim Greifen: ein Druck ohne Bewegung ändert nichts und
+   * soll die Historie nicht mit Leerschritten füllen (W2 Punkt 3).
+   */
+  public zugSchritt(weltX: number, weltY: number): boolean {
+    if (!this.zugKennung) {
+      return false
+    }
+    if (!this.zugGesichert) {
+      this.undoManager?.snapshot()
+      this.zugGesichert = true
+    }
+    return this.moebelAufPunkt(weltX + this.zugVersatzX, weltY + this.zugVersatzY)
+  }
+
+  /** Der Zug ist zu Ende — losgelassen, abgebrochen oder das Fenster verlassen. */
+  public zugBeenden(): void {
+    this.zugKennung = null
+    this.zugGesichert = false
+    this.zeigerStilSetzen()
+  }
+
+  /** Läuft gerade ein Möbelzug? Die Oberfläche fragt das, um Drehen und
+   *  Schwenken auszusetzen, solange etwas in der Hand ist. */
+  public zugLaeuft(): string | null {
+    return this.zugKennung
   }
 
   /**
@@ -1659,10 +1735,37 @@ export class Floorplanner {
       return null
     }
 
-    // Umkehrung von `convertX`/`convertY`. Bewusst hier ausgeschrieben und
-    // nicht als zweite öffentliche Methode: es gibt genau diesen einen Aufrufer.
+    // Umkehrung von `convertX`/`convertY`.
     const weltX = bildX * this.cmPerPixel + this.originX * this.cmPerPixel
     const weltY = bildY * this.cmPerPixel + this.originY * this.cmPerPixel
+    return this.stueckAblegenWelt(weltX, weltY, vorlage)
+  }
+
+  /**
+   * Dasselbe Ablegen, aber auf einem WELT-Punkt (W7).
+   *
+   * Der Grundriss rechnet seinen Bildpunkt selbst um; die Axonometrie kann das
+   * nicht — dort kommt der Weltpunkt aus der Rückrechnung des Sehstrahls auf
+   * y = 0. Das ist eine GESETZTE Annahme und keine geratene: ein neu
+   * hingestelltes Stück steht auf dem Boden, und der Puppenhaus-Schnitt legt
+   * den Boden vor jeder Wandkrone frei.
+   *
+   * Die Grenzprüfung (Zeichenfläche) bleibt beim Bild-Weg: in der Welt gibt es
+   * keinen Rand, an dem etwas „daneben" wäre.
+   */
+  public stueckAblegenWelt(
+    weltX: number,
+    weltY: number,
+    vorlage: { typ: AusstattungTyp; breite: number; tiefe: number }
+  ): AusstattungElement | null {
+    if (!Number.isFinite(weltX) || !Number.isFinite(weltY)) {
+      return null
+    }
+    if (!(vorlage.breite > 0) || !(vorlage.tiefe > 0)) {
+      // Ein Stück ohne Ausdehnung wäre unsichtbar und nicht mehr greifbar —
+      // dieselbe Strenge wie im Export (`tools/export_blueprint.py`).
+      return null
+    }
 
     // Der Schnappschuss GENAU EINMAL und erst jetzt — das Ablegen ist EIN
     // Rückgängig-Schritt, nicht drei (hinstellen, verschieben, drehen).
@@ -1757,14 +1860,30 @@ export class Floorplanner {
     if (this.mode != floorplannerModes.MOVE || !this.activeAusstattung) {
       return false
     }
-    const el = this.floorplan.findeAusstattung(this.activeAusstattung)
+    return this.dreheStueck(this.activeAusstattung, schritte)
+  }
+
+  /**
+   * Dreht EIN benanntes Stück um `schritte` mal 15° (W7).
+   *
+   * Die eigentliche Drehung, seit es zwei Wege dorthin gibt: den Zeiger im
+   * Grundriss (`dreheAktives`) und den Griff in der Axonometrie. Eine Drehung
+   * ist eine reine Modell-Operation — keine Geometrie im Bild, keine
+   * Rückrechnung, keine Annahme über eine Höhe. Sie ist deshalb die einzige
+   * der drei Bearbeitungen, die auch bei flach gekipptem Blatt sauber bleibt.
+   */
+  public dreheStueck(id: string, schritte: number): boolean {
+    const el = this.floorplan.findeAusstattung(id)
     if (!el) {
       return false
     }
     // Während eines Zuges ist längst gesichert — die Drehung gehört dann zu
     // DIESEM Zug und darf kein eigener Schritt sein. Ausserhalb ist jede
-    // Drehung ein eigener Zug, wie jeder gesetzte Zeichenpunkt auch.
-    if (!(this.mouseDown && this.zugGesichert)) {
+    // Drehung ein eigener Zug, wie jeder gesetzte Zeichenpunkt auch. Gemessen
+    // wird am ZUG und nicht mehr an `mouseDown`: in der Axonometrie gibt es
+    // keinen gedrückten Zeiger auf dieser Zeichenfläche, und die Regel gilt
+    // trotzdem.
+    if (!(this.zugKennung && this.zugGesichert)) {
       this.undoManager?.snapshot()
     }
     const zwei = Math.PI * 2
@@ -1772,6 +1891,31 @@ export class Floorplanner {
     const ok = this.floorplan.dreheAusstattung(el.id, neu)
     this.view.draw()
     return ok
+  }
+
+  /**
+   * Schlägt EIN benanntes Stück zum Löschen vor (W7) — dieselbe Rückfrage, die
+   * das Verweilen im Grundriss auslöst.
+   *
+   * Ausdrücklich über `loeschKandidat` und die vorhandenen Rückrufe und NICHT
+   * über `entferneAusstattung`: es darf keinen zweiten Weg geben, auf dem etwas
+   * ohne Nachfrage verschwindet. Die Oberfläche fragt, der Kern führt aus —
+   * genau wie in E1 festgelegt.
+   */
+  public loeschStueckVorschlagen(id: string): boolean {
+    const el = this.floorplan.findeAusstattung(id)
+    if (!el) {
+      return false
+    }
+    const ziel: LoeschZiel = {
+      art: 'ausstattung',
+      kennung: el.id,
+      beschreibung: AUSSTATTUNG_NAME[el.typ] ?? el.typ
+    }
+    this.loeschKandidat = ziel
+    this.view.draw()
+    this.loeschAnfrageCallbacks.forEach((cb) => cb(ziel))
+    return true
   }
 
   /** Schaltet das Einrasten um und meldet es der Oberfläche (W2). */

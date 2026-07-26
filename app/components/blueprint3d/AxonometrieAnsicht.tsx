@@ -45,6 +45,17 @@ const TAFEL_BREITE = 270
 export function AxonometrieAnsicht({ blueprint3d, labels, aktiv }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const axoRef = useRef<any>(null)
+  /**
+   * ZU WELCHEM Canvas der Renderer gehört (W7).
+   *
+   * GEMESSEN und nicht vorausgesehen: `if (!aktiv) return null` nimmt nur das
+   * Markup weg, die Komponente selbst bleibt stehen — `axoRef` überlebt einen
+   * Ansichtswechsel also, das Canvas-Element aber NICHT. Ohne diesen Vergleich
+   * malte der zurückgekehrte Renderer weiter in ein Canvas, das kein Dokument
+   * mehr hat: das Blatt blieb leer, und `pruefe-ziehen.mjs` Gate g sah zwei
+   * verschiedene Prüfsummen für zweimal dasselbe Nichtstun.
+   */
+  const axoCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const [blickIndex, setBlickIndex] = useState(0)
   const [namen, setNamen] = useState<NamenModus>('alle')
   const [tafelOffen, setTafelOffen] = useState(true)
@@ -73,11 +84,27 @@ export function AxonometrieAnsicht({ blueprint3d, labels, aktiv }: Props) {
       (!document.documentElement.classList.contains('light') &&
         globalThis.matchMedia?.('(prefers-color-scheme: dark)').matches)
 
+    // W7 — DENSELBEN Renderer weiterbenutzen, solange er zu DIESEM Canvas
+    // gehört. Blick, Zoom und Verschiebung des Nutzers bleiben damit über eine
+    // Änderung des Grundrisses hinweg stehen; vorher entstand bei jeder
+    // Änderung ein zweiter Renderer auf demselben Canvas, dessen Zeiger-Abos
+    // sich zu denen des ersten stapelten (B3).
+    if (axoRef.current && axoCanvasRef.current === canvas) {
+      axoRef.current.setzeSzene(szene)
+      axoRef.current.setzeNamen(namen)
+      axoRef.current.setzeDunkel(!!dunkel)
+      axoRef.current.setzeRandRechts(tafelOffen ? TAFEL_BREITE + 24 : 0)
+      return
+    }
+    // Anderes Canvas: der alte Renderer nimmt seine Abos mit, statt sie an
+    // einem verwaisten Element liegen zu lassen.
+    axoRef.current?.zerstoere?.()
     axoRef.current = erzeugeAxonometrie(canvas, szene, {
       namen,
       dunkel: !!dunkel,
       randRechts: tafelOffen ? TAFEL_BREITE + 24 : 0
     })
+    axoCanvasRef.current = canvas
     axoRef.current.passeAn()
   }, [blueprint3d, labels, namen, tafelOffen, vollausbau])
 
@@ -90,7 +117,22 @@ export function AxonometrieAnsicht({ blueprint3d, labels, aktiv }: Props) {
     // Der Zeichner meldet jede Aenderung ueber dieses Ereignis; die Ansicht
     // haengt sich daran, statt in einem Zeitgeber nachzusehen.
     fp.fireOnUpdatedRooms(baue)
+    // ... und meldet sich wieder ab. Ohne diese Zeile stapelten sich die
+    // Rueckrufe bei jedem Neubau (B3): jeder Klick auf „Legende" oder „Namen"
+    // erzeugte ein neues `baue` und liess das alte haengen.
+    return () => fp.entferneUpdatedRooms?.(baue)
   }, [aktiv, baue, blueprint3d])
+
+  // Der Renderer gehoert zu DIESER Ansicht. Verlaesst sie das Dokument, muss
+  // er seine Abos mitnehmen — sonst haengen sie am Canvas, das gleich
+  // verschwindet, und der naechste Aufbau setzt einen zweiten daneben.
+  useEffect(() => {
+    return () => {
+      axoRef.current?.zerstoere?.()
+      axoRef.current = null
+      axoCanvasRef.current = null
+    }
+  }, [])
 
   useEffect(() => {
     if (!aktiv) return

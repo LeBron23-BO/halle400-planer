@@ -753,7 +753,9 @@ let bearbeiten = false;
 let vollausbau = false;
 let tafelAn = true;
 let namenModus = 'alle';
-let axoCanvas = el('axo-canvas');
+/* W7: \`const\`, seit das Canvas nicht mehr getauscht wird (s. \`axoNeuBauen\`).
+   Ein \`let\` hier hiesse, dass irgendwo doch noch ein Tausch lauert. */
+const axoCanvas = el('axo-canvas');
 let axoAnsicht = null;
 let szene = null;
 let axoUhr = null;
@@ -1073,33 +1075,36 @@ planEl.addEventListener('pointermove', function(e){
 addEventListener('blur', leseZugBeenden);
 
 /* ── Axonometrie ────────────────────────────────────────────────────
-   Sie ist ein FENSTER, kein Werkzeug: bearbeitet wird im Grundriss, die
-   Axonometrie folgt. Bei jedem Neubau bekommt sie ein FRISCHES Canvas — der
-   Renderer meldet seine Zeiger-Abos nie ab (src/axo/axo-zeichnen.js:392-459),
-   ein zweiter Aufruf auf demselben Canvas stapelte sie, und jedes Ziehen
-   drehte danach doppelt so schnell. Mit dem alten Canvas sterben seine Abos.
-   Der Blickwinkel wird uebernommen, Zoom und Verschiebung nicht — die kennt
-   nur der Renderer selbst. */
+   W7 — DAS CANVAS BLEIBT STEHEN. Bis hierher bekam die Ansicht bei JEDEM
+   Neubau ein frisches Canvas, und zwar aus einem einzigen Grund: der Renderer
+   meldete seine Zeiger-Abos nie ab, ein zweiter Aufruf auf demselben Canvas
+   stapelte sie, und jedes Ziehen drehte danach doppelt so schnell. Der Preis
+   war hoch und wurde jedes Mal bezahlt — mit dem Canvas starben auch Zoom und
+   Verschiebung des Nutzers.
+
+   Seit \`erzeugeAxonometrie\` ein \`zerstoere()\` und ein \`setzeSzene()\` anbietet,
+   ist beides weg: EIN Renderer, EIN Canvas, und ein Neubau tauscht nur noch
+   die Szene. Wer mitten im Ziehen ist, sieht das Blatt an derselben Stelle
+   weiterlaufen. */
 function tafelRand(){ return (tafelAn && innerWidth > 900) ? 294 : 0; }
 
 function axoNeuBauen(){
-  const blickVorher = axoAnsicht ? axoAnsicht.blick : null;
-  const frisch = document.createElement('canvas');
-  frisch.id = 'axo-canvas';
-  axoCanvas.parentNode.replaceChild(frisch, axoCanvas);
-  axoCanvas = frisch;
-
   szene = baueSzene(
     { floorplan: grundriss.saveFloorplan(), labels: labels },
     { wandDicke: WAND_DICKE_CM, nurKernSaeulen: !vollausbau, hoehen: HOEHEN }
   );
-  axoAnsicht = erzeugeAxonometrie(axoCanvas, szene, { namen: namenModus, randRechts: tafelRand() });
-  if (blickVorher) axoAnsicht.setzeBlick(blickVorher.az, blickVorher.el);
-  axoAnsicht.passeAn();
-  axoCanvas.addEventListener('pointerdown', function(){ axoCanvas.classList.add('zieht'); });
-  ['pointerup','pointercancel'].forEach(function(t){
-    axoCanvas.addEventListener(t, function(){ axoCanvas.classList.remove('zieht'); });
-  });
+  if (axoAnsicht) {
+    axoAnsicht.setzeSzene(szene);
+  } else {
+    axoAnsicht = erzeugeAxonometrie(axoCanvas, szene, { namen: namenModus, randRechts: tafelRand() });
+    axoAnsicht.passeAn();
+    /* EINMALIG, nicht je Neubau: das Canvas wechselt nicht mehr, also wechseln
+       auch seine Zuhoerer nicht. */
+    axoCanvas.addEventListener('pointerdown', function(){ axoCanvas.classList.add('zieht'); });
+    ['pointerup','pointercancel'].forEach(function(t){
+      axoCanvas.addEventListener(t, function(){ axoCanvas.classList.remove('zieht'); });
+    });
+  }
   tafelZeichnen();
   axoVeraltet = false;
 }
