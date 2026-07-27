@@ -1231,7 +1231,10 @@ const axoBearbeitung = {
        Bildpunkt ueber 22 cm Tiefe — ein Zittern der Hand legte das Stueck einen
        halben Meter weiter hinten ab, ohne dass man es saehe. */
     meldung('Das Blatt liegt zu flach zum Verschieben — ein Bildpunkt wäre hier über 22 cm Tiefe. ' +
-      'Blatt aufrichten oder „Plan“ wählen. Drehen mit Q und E geht weiter.', false);
+      'Blatt aufrichten oder „Plan“ wählen.' +
+      /* Am Handy gibt es kein Q und kein E; dort ist „Drehen geht weiter" keine
+         Auskunft, sondern eine Suche. */
+      (schmal() ? '' : ' Drehen mit Q und E geht weiter.'), false);
     arbeitshinweisPflegen();
   }
 };
@@ -1243,6 +1246,15 @@ const axoBearbeitung = {
    EINE Zahl an zwei Stellen ist eine zu viel; sie steht hier, weil CSS sie
    nicht herausgeben kann, und traegt darum den Verweis. */
 function schmal(){ return innerWidth <= 900; }
+
+/* Wie man einen Schritt zurueck nimmt — am Rechner eine Taste, am Handy ein
+   Knopf. Eine Meldung, die „Strg+Z" nennt, schickt den Nutzer eines Telefons
+   suchen; sie beschaedigt genau die Zusage, die sie geben will („keine Sorge,
+   das laesst sich zurueckholen"). EINE Stelle, weil derselbe Satz an drei
+   Meldungen haengt. */
+function rueckgaengigSatz(){
+  return schmal() ? 'Rückgängig mit dem Knopf in der Leiste.' : 'Rückgängig mit Strg+Z.';
+}
 
 function arbeitshinweisPflegen(){
   const flach = !!axoAnsicht && !axoAnsicht.ziehbar;
@@ -1805,8 +1817,13 @@ zeichner.addOeffnungsCallback(function(art){ markiere('[data-oeffnung]', art); }
 /* Was ein Klick bewirkt hat — sonst bliebe ein abgelehnter Versuch stumm. */
 zeichner.addOeffnungGesetztCallback(function(o){
   if (o) {
+    /* Q und E gibt es am Handy nicht — dort wird der Anschlag (noch) gar nicht
+       gewendet, und ihn zu nennen waere ein Versprechen ohne Deckung. Was
+       stattdessen dort steht, ist wahr und nuetzlich: dass es rueckgaengig
+       geht. Das Wenden per Finger bleibt offen (s. CLAUDE.md, W8). */
     meldung((OEFFNUNG_NAME[o.art] || o.art) + ' gesetzt — frei gesetzt, kein Aufmaß. ' +
-      'Q wendet den Anschlag, E die Aufschlagseite. Rückgängig mit Strg+Z.', false);
+      (schmal() ? '' : 'Q wendet den Anschlag, E die Aufschlagseite. ') +
+      rueckgaengigSatz(), false);
   } else {
     meldung('Hier passt keine Öffnung hin — an dieser Stelle liegt schon eine, ' +
       'oder die Wand ist zu kurz.', false);
@@ -2054,7 +2071,7 @@ function stueckAblegen(v, clientX, clientY){
      Zeile bliebe das neue Stueck ungesichert und das Blatt zeigte es nicht. */
   bemerkeAenderung();
   meldung((AUSSTATTUNG_NAME[v.typ] || v.typ) + ' hingestellt — frei gesetzt, kein Aufmaß. ' +
-    'Rückgängig mit Strg+Z.', false);
+    rueckgaengigSatz(), false);
   return stueck;
 }
 
