@@ -327,9 +327,12 @@ gibt es dort nicht, und jeder Ersatz wäre ein NEUES Bedienkonzept: ein Knopf
 bräuchte eine Auswahl, die den Griff überdauert (in diesem Planer gibt es
 keine, W2 Punkt 5), eine Zwei-Finger-Drehung kollidierte mit dem Zoomen, und
 ein Langdruck im Verschieben-Werkzeug ist bereits mit dem Löschen belegt. Was
-es am Handy sehr wohl gibt: **an eine Wand ziehen dreht mit** — das Einrasten
-übernimmt den Wandwinkel (W2 Punkt 4), und der Finger geht durch dieselbe
-Rechnung (`pruefe-finger.mjs` A8/A9 mit Gegenprobe).
+es am Handy sehr wohl gibt: **an eine Wand ziehen legt bündig an und übernimmt
+dabei den Wandwinkel** (W2 Punkt 4). Dass der Finger durch genau diese Rechnung
+geht, ist gemessen — `pruefe-finger.mjs` A8/A9: derselbe Fingerweg legt das
+Stück mit Einrasten anders ab als ohne (3935 statt 3938 cm) und der Rand liegt
+danach 0,25 cm von der Wandflanke. Den Wandwinkel selbst belegt
+`pruefe-ziehen.mjs` f) am Maus-Weg — es ist dieselbe Funktion.
 
 ## Moebel ziehen (W2, 2026-07-26)
 
