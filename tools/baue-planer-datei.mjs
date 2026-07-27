@@ -182,6 +182,15 @@ const html = `<!DOCTYPE html>
        max-width:calc(100vw - 24px);z-index:5}
   .grp{display:flex;gap:2px;align-items:center}
   .grp + .grp{border-left:1px solid var(--panel-line);padding-left:5px;margin-left:2px}
+  /* V7 — DIE LEISTE SPRINGT NICHT.
+     Eine Gruppe, deren PLATZ bleibt, waehrend ihr Inhalt geht. \`visibility\`
+     nimmt die Sichtbarkeit UND jeden Zeiger, laesst den Raum aber stehen —
+     \`display:none\` und \`hidden\` nehmen den Raum mit, und genau daran bewegten
+     sich beim Werkzeugwechsel 13 von 24 Knoepfen um bis zu 520 px. Der Trenner
+     zur Nachbargruppe geht mit: eine leere Spalte mit senkrechtem Strich saehe
+     aus wie ein Fehler. */
+  .grp.platzhalter{visibility:hidden}
+  .grp.platzhalter + .grp{border-left-color:transparent}
   button{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
        color:var(--ink-dim);background:transparent;border:1px solid transparent;
        padding:9px 11px;min-height:38px;cursor:pointer;white-space:nowrap;
@@ -606,16 +615,27 @@ const html = `<!DOCTYPE html>
          \`title\` und geht damit nicht verloren. -->
     <div class="grp" id="grpWerkzeug">
       <span class="lbl">Werkzeug</span>
-      <button type="button" id="wzMove" title="Verschieben — Ecken, Wände und Möbel ziehen. Am Rechner drehen Q und E das Möbel unter dem Zeiger um 15°; am Handy zieht ein Finger das Möbel, zwei Finger zoomen." aria-pressed="true">Verschieben</button>
-      <button type="button" id="wzDraw" title="Wände zeichnen — Punkt für Punkt" aria-pressed="false"><span class="lang">Wände zeichnen</span><span class="kurz">Wände</span></button>
+      <button type="button" id="wzMove" title="Verschieben — Möbel ziehen. Wände und Ecken bleiben hier unberührt; dafür gibt es „Wände verschieben“. Am Rechner drehen Q und E das Möbel unter dem Zeiger um 15°; am Handy zieht ein Finger das Möbel, zwei Finger zoomen." aria-pressed="true"><span class="lang">Möbel verschieben</span><span class="kurz">Möbel</span></button>
+      <button type="button" id="wzWand" title="Wände verschieben — Ecken und Wände ziehen. Ein eigenes Werkzeug, weil eine verschobene Wand das Aufmaß aufgibt: das soll man wollen müssen." aria-pressed="false"><span class="lang">Wände verschieben</span><span class="kurz">Wände</span></button>
+      <button type="button" id="wzDraw" title="Wände zeichnen — Punkt für Punkt" aria-pressed="false"><span class="lang">Wände zeichnen</span><span class="kurz">Zeichnen</span></button>
       <button type="button" id="wzOeffnung" title="Türen &amp; Fenster — auf eine Wand zeigen, klicken setzt. Q wendet den Anschlag, E die Aufschlagseite." aria-pressed="false"><span class="lang">Türen &amp; Fenster</span><span class="kurz">Türen</span></button>
       <button type="button" id="wzDelete" title="Löschen — mit Rückfrage" aria-pressed="false">Löschen</button>
     </div>
-    <!-- Die Arten der Öffnung. Sie erscheinen NUR mit dem Werkzeug: vier
-         weitere Knöpfe in einer ohnehin breiten Leiste wären sonst dauerhaft
-         im Weg, ohne je etwas zu bewirken. Ein Klick wählt die Art UND greift
-         das Werkzeug — wer „Fenster" drückt, will ein Fenster setzen. -->
-    <div class="grp" id="oeffnungsArten" hidden>
+    <!-- Die Arten der Öffnung. Sie sind NUR mit ihrem Werkzeug BEDIENBAR, ihr
+         Platz bleibt aber DAUERHAFT reserviert (V7).
+
+         Bis W9 stand hier \`hidden\`, und die Zeile wurde beim Werkzeugwechsel
+         eingeschoben. Gemessen: dabei bewegten sich 13 von 24 Knöpfen, bis zu
+         520 px — der alte Platz von „Laden" lag danach unter „Zurücksetzen",
+         dem gefährlichsten Knopf der Datei. Eine Leiste, die unter der Hand
+         wegläuft, macht aus einem gelernten Griff einen Fehlgriff.
+
+         \`visibility:hidden\` statt \`display:none\`: der Platz bleibt belegt,
+         die Knöpfe sind weder sichtbar noch anklickbar noch mit Tab
+         erreichbar. \`aria-hidden\` und \`inert\` sagen dasselbe noch einmal für
+         Vorlesegeräte — eine unsichtbare Schaltfläche, die eine Ansage macht,
+         wäre schlimmer als gar keine. -->
+    <div class="grp platzhalter" id="oeffnungsArten" aria-hidden="true" inert>
       <span class="lbl">Öffnung</span>
       <button type="button" data-oeffnung="tuer" aria-pressed="true">Tür</button>
       <button type="button" data-oeffnung="doppeltuer" aria-pressed="false">Doppeltür</button>
@@ -1772,11 +1792,13 @@ function pruefePlan(roh){
 /* ── Bedienung: Grundriss ──────────────────────────────────────────── */
 const werkzeugKnopf = { };
 werkzeugKnopf[floorplannerModes.MOVE] = el('wzMove');
+werkzeugKnopf[floorplannerModes.WAND] = el('wzWand');
 werkzeugKnopf[floorplannerModes.DRAW] = el('wzDraw');
 werkzeugKnopf[floorplannerModes.DELETE] = el('wzDelete');
 werkzeugKnopf[floorplannerModes.OEFFNUNG] = el('wzOeffnung');
 
 el('wzMove').addEventListener('click', function(){ zeichner.setMode(floorplannerModes.MOVE); });
+el('wzWand').addEventListener('click', function(){ zeichner.setMode(floorplannerModes.WAND); });
 el('wzDraw').addEventListener('click', function(){ zeichner.setMode(floorplannerModes.DRAW); });
 el('wzDelete').addEventListener('click', function(){ zeichner.setMode(floorplannerModes.DELETE); });
 el('wzOeffnung').addEventListener('click', function(){ zeichner.setMode(floorplannerModes.OEFFNUNG); });

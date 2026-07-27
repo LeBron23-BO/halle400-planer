@@ -9,6 +9,10 @@ import type { Floorplanner } from './floorplanner'
 
 /** */
 export const floorplannerModes = {
+  /**
+   * Möbel verschieben. Seit W9 NUR noch Möbel — Wand-Ecken und Wände sind hier
+   * nicht mehr greifbar (s. `WAND`).
+   */
   MOVE: 0,
   DRAW: 1,
   DELETE: 2,
@@ -18,7 +22,28 @@ export const floorplannerModes = {
    * Geister-Öffnung auf der nächsten Wand statt zu greifen. Zwei Bedeutungen in
    * einem Werkzeug hiessen raten, welche gemeint war.
    */
-  OEFFNUNG: 3
+  OEFFNUNG: 3,
+  /**
+   * WÄNDE VERSCHIEBEN (W9) — Ecken und Wände ziehen, sonst nichts.
+   *
+   * WARUM EIN EIGENES WERKZEUG UND KEIN ZUSATZ ZUM VERSCHIEBEN: gemessen wurde,
+   * dass ein Zug auf eine Wand-Ecke im Verschieben-Werkzeug — dieselbe Geste
+   * wie beim Möbelziehen, ohne Werkzeugwechsel und ohne Rückfrage — die
+   * Aussenwand um 2,24 m verschob; danach stand auf dem Blatt „kein Aufmaß".
+   * Die Greifzone ist im Startzoom 8 px = 41 cm breit, ein Stuhl misst 45 cm
+   * (8,9 px): die Fehlertoleranz ist so gross wie der Gegenstand. Solange
+   * dieselbe Geste beides bedeuten kann, entscheidet der Zufall, was passiert.
+   *
+   * Es ist DIESELBE Trennung, die der Finger seit W8 hat: er greift nur
+   * Ausstattung, nie Ecke oder Wand (W8 Punkt 3). Dort war die Begründung, dass
+   * der Finger nichts überfliegen kann; hier ist sie, dass die Folge eines
+   * Fehlgriffs unverhältnismässig ist. Und es ist NICHT das Zeichnen-Werkzeug
+   * geworden: dort ist der Ecken-Fang (E2) die tragende Bedienung — wer eine
+   * Trennwand an die Aussenwand anschliessen will, DRÜCKT auf deren Ecke.
+   * Würde ein Druck dort die Ecke verschieben, wäre genau der wichtigste Fall
+   * des Zeichnens nicht mehr zu bedienen.
+   */
+  WAND: 4
 }
 
 // grid parameters

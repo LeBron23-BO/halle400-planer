@@ -901,6 +901,18 @@ export class Floorplanner {
     // (gedrehten) Möbel-Rechtecks. Wer knapp daneben zielt, trifft weiterhin
     // zuerst Ecke und Wand — die Wand bleibt also unverändert gut greifbar,
     // solange kein Möbel im Weg steht.
+    //
+    // Seit W9 hat diese Kette nur noch im LÖSCHEN-Werkzeug beide Seiten (dort
+    // sind Möbel UND Bausubstanz greifbar) — im Verschieben gibt es keine
+    // Bausubstanz mehr zu verlieren, im Wand-Werkzeug keine Möbel. Sie bleibt
+    // trotzdem hier und wird dort gemessen: das Löschen ist der Fall, in dem
+    // ein Fehlgriff am teuersten ist.
+    //
+    // GRIFF NACH DEM KLEINSTEN TREFFER, nicht nach dem nächstgelegenen: liegt
+    // der Zeiger in mehreren Möbel-Rechtecken (Stuhl unter Tisch — in einer
+    // echten Aufstellung der Normalfall), gewinnt das mit der kleinsten
+    // Fläche. Diese Regel steht in `Floorplan.overlappedAusstattung` und gilt
+    // damit für Maus, Finger und Blatt in EINER Fassung.
     const drauf = ausstattungGreifbar
       ? this.floorplan.overlappedAusstattung(this.mouseX, this.mouseY, 0)
       : null
@@ -911,26 +923,40 @@ export class Floorplanner {
     // Warum ganz vorne: eine Öffnung liegt IN einer Wand. Ohne Vorrang gewänne
     // immer die Wand, und eine Tür wäre weder zu löschen noch zu ziehen —
     // stattdessen zöge man die Wand, in der sie sitzt. Warum nur in diesen
-    // beiden Werkzeugen: im Verschieben soll ein Griff auf die Wand weiterhin
-    // die WAND bewegen (mit der Tür darin), und im Zeichnen nähme der Vorrang
-    // dem Ecken-Fang die Sicht.
+    // beiden Werkzeugen: im Wand-Werkzeug soll ein Griff auf die Wand die WAND
+    // bewegen (mit der Tür darin), und im Zeichnen nähme der Vorrang dem
+    // Ecken-Fang die Sicht.
     const oeffnungGreifbar =
       this.mode == floorplannerModes.DELETE || this.mode == floorplannerModes.OEFFNUNG
     const hoverOeffnung = oeffnungGreifbar
       ? this.floorplan.overlappedOeffnung(this.mouseX, this.mouseY, toleranz)
       : null
 
-    const hoverCorner = hoverOeffnung
-      ? null
-      : drauf
-      ? null
-      : this.floorplan.overlappedCorner(this.mouseX, this.mouseY, toleranz)
+    // --- BAUSUBSTANZ ist nur da greifbar, wo ein Griff auch gemeint sein kann
+    // (W9). Im VERSCHIEBEN-Werkzeug ist sie es seit W9 NICHT mehr: dort werden
+    // Möbel gezogen, und derselbe Zug auf eine Ecke verschob gemessen die
+    // Aussenwand um 2,24 m. Wer eine Wand bewegen will, greift das
+    // Wand-Werkzeug — dieselbe Trennung, die der Finger seit W8 hat.
+    //
+    // Die Sperre sitzt HIER und nicht erst im Zug: `activeCorner`/`activeWall`
+    // tragen ausser dem Ziehen noch drei Bedeutungen — die Hervorhebung im
+    // Bild, den Löschvorschlag und die Schwenk-Sperre in `mousemove`. Würde
+    // nur der Zug abgeklemmt, leuchtete die Wand im Verschieben weiter auf und
+    // der Plan liesse sich über ihr nicht mehr schwenken: ein Fleck, in dem
+    // der Zeiger nichts tut und niemand wüsste, warum.
+    const bausubstanzGreifbar =
+      this.mode == floorplannerModes.DELETE || this.mode == floorplannerModes.WAND
+
+    const hoverCorner =
+      hoverOeffnung || drauf || !bausubstanzGreifbar
+        ? null
+        : this.floorplan.overlappedCorner(this.mouseX, this.mouseY, toleranz)
     const hoverWall =
       // `hoverOeffnung` MUSS hier stehen, nicht nur bei der Ecke: eine Öffnung
       // liegt IN einer Wand, und ohne diese Zeile gewinnt die Wand jedes Mal.
       // Gemessen, nicht vermutet — genau das meldete das Gate beim ersten Lauf:
       // der Zeiger fand die Tür, die Rückfrage bot trotzdem „diese Wand" an.
-      hoverOeffnung || drauf || hoverCorner // corner takes precendence
+      hoverOeffnung || drauf || hoverCorner || !bausubstanzGreifbar // corner takes precendence
         ? null
         : this.floorplan.overlappedWall(this.mouseX, this.mouseY, toleranz)
     // Ausserhalb jedes Möbels gilt die alte Reihenfolge: erst Ecke, dann Wand,
@@ -974,7 +1000,8 @@ export class Floorplanner {
     // update target (snapped position of actual mouse)
     if (
       this.mode == floorplannerModes.DRAW ||
-      (this.mode == floorplannerModes.MOVE && this.mouseDown)
+      ((this.mode == floorplannerModes.MOVE || this.mode == floorplannerModes.WAND) &&
+        this.mouseDown)
     ) {
       this.updateTarget()
     }
@@ -1056,24 +1083,32 @@ export class Floorplanner {
       this.view.draw()
     }
 
-    // dragging
+    // dragging — MÖBEL im Verschieben-Werkzeug
+    //
+    // Die Kette „Möbel, sonst Ecke, sonst Wand" ist mit W9 in zwei Werkzeuge
+    // zerlegt. Sie stand hier, weil beides dasselbe Werkzeug war; getrennt
+    // braucht keiner der beiden Zweige mehr ein `else`, und ein Zug kann schon
+    // von der Bauart her nicht mehr das Falsche treffen.
     if (this.mode == floorplannerModes.MOVE && this.mouseDown) {
+      // Den Schnappschuss zieht `zugSchritt` selbst (W7), und zwar erst beim
+      // ersten Schritt, der WIRKLICH etwas ändert — damit der Axonometrie-Weg
+      // dieselbe Regel bekommt und nicht eine zweite daneben.
+      if (this.zugKennung) {
+        this.moebelZiehen()
+        this.view.draw()
+      }
+    }
+
+    // dragging — BAUSUBSTANZ im Wand-Werkzeug (W9)
+    if (this.mode == floorplannerModes.WAND && this.mouseDown) {
       // Erst hier sichern, nicht schon bei mousedown: ein Druck auf eine Wand
       // ohne Bewegung (oder ein Schwenk der Ansicht) aendert nichts und soll
       // die Historie nicht mit Leerschritten fuellen.
-      // Das MÖBEL steht hier nicht mehr: seinen Schnappschuss zieht `zugSchritt`
-      // selbst (W7), damit der Axonometrie-Weg dieselbe Regel bekommt und nicht
-      // eine zweite daneben. Ecke und Wand haben keinen zweiten Weg und bleiben.
       if ((this.activeCorner || this.activeWall) && !this.zugGesichert) {
         this.undoManager?.snapshot()
         this.zugGesichert = true
       }
-      // Das Möbel zuerst: es hat beim Greifen schon den Vorrang bekommen
-      // (`trefferBestimmen`), und dieselbe Reihenfolge hier hält beides
-      // zusammen. Ein Zug bewegt IMMER genau eine Sache.
-      if (this.zugKennung) {
-        this.moebelZiehen()
-      } else if (this.activeCorner) {
+      if (this.activeCorner) {
         this.activeCorner.move(this.mouseX, this.mouseY)
         this.activeCorner.snapToAxis(snapTolerance)
       } else if (this.activeWall) {
@@ -1841,6 +1876,17 @@ export class Floorplanner {
       } else if (this.activeAusstattung) {
         stil = 'grab'
       }
+    } else if (this.mode == floorplannerModes.WAND) {
+      // W9 — dieselbe Sprache für die Bausubstanz. Sie fehlte ihr bisher als
+      // Einziges: über einem Möbel sagte der Zeiger `grab`, über einer Ecke,
+      // über einer Wand und über dem Leerraum sagte er dasselbe (nämlich
+      // nichts) — gemessen. Wer nicht sieht, dass er gleich Mauerwerk in der
+      // Hand hat, kann es auch nicht lassen.
+      if (this.mouseDown && (this.activeCorner || this.activeWall)) {
+        stil = 'grabbing'
+      } else if (this.activeCorner || this.activeWall) {
+        stil = 'grab'
+      }
     } else if (this.mode == floorplannerModes.OEFFNUNG) {
       // Dieselbe Sprache wie beim Möbel (W4): eine vorhandene Öffnung lässt
       // sich greifen und schieben, überall sonst wird gesetzt.
@@ -2131,6 +2177,13 @@ export class Floorplanner {
       // das, weil sie vorher schwebt und am Rahmen sieht, was sie greift — der
       // Finger sieht nichts und trifft mit einer breiten Kuppe. Am Handy waere
       // das ein stiller Griff ins Aufmass.
+      //
+      // W9 hat diese Trennung fuer die MAUS nachgezogen (`floorplannerModes.
+      // WAND`) — der Finger bleibt damit unveraendert und ist nicht mehr der
+      // Sonderfall, sondern die Regel. Im Wand-Werkzeug schiebt er weiterhin
+      // nur die Ansicht: `bearbeitetMitEinemFinger` nennt allein Zeichnen und
+      // Loeschen. Das ist die bewusst konservative Seite — eine Wand mit der
+      // Kuppe zu verschieben bliebe auch mit Werkzeugwahl ein blinder Griff.
       if (this.mode == floorplannerModes.MOVE) {
         this.zeigerSetzen(this.fingerX, this.fingerY)
         this.trefferBestimmen()
@@ -2374,6 +2427,15 @@ export class Floorplanner {
     // Wechsel etwas anbieten, das der Nutzer gar nicht mehr im Sinn hat.
     this.loeschungAbbrechen()
     this.activeAusstattung = null
+    // Ecke und Wand MÜSSEN seit W9 hier mit weg. Vorher waren sie in jedem
+    // Werkzeug, in dem sie überhaupt gesetzt wurden, auch greifbar — jetzt
+    // nicht mehr: wer aus dem Wand-Werkzeug ins Verschieben wechselt, während
+    // der Zeiger auf einer Wand steht, nähme die Merkung mit hinüber. Dort
+    // greift sie nichts mehr, sperrt aber über die Schwenk-Bedingung in
+    // `mousemove` die Ansicht — genau der Fleck, in dem der Zeiger nichts
+    // bewirkt und niemand wüsste, warum (dieselbe Begründung wie in `reset`).
+    this.activeCorner = null
+    this.activeWall = null
     // Ein Werkzeugwechsel beendet auch einen laufenden Möbelzug (W2) —
     // `setMode` läuft unter anderem nach jedem Rückgängig, und danach ist das
     // gezogene Stück ein anderes Objekt. Der FINGER muss mit: bliebe seine
