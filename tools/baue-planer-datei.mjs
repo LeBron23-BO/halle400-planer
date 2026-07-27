@@ -1674,7 +1674,92 @@ function ladeGrundriss(fp, neueLabels, alsEigenerStand){
   }
 }
 
+/* ── Was „Zurücksetzen" WEGNIMMT, in Zahlen (C3) ────────────────────
+   Die Rueckfrage sagte bis W9 nur „alle eigenen Änderungen verwerfen". Das ist
+   wahr und nutzlos: wer nicht weiss, WIE VIEL er verliert, kann die Frage
+   nicht beantworten. Danach ist ausserdem das Rueckgaengig abgeschaltet (der
+   Kern raeumt die Historie beim Laden ab) — es ist die einzige Handlung dieser
+   Datei, die sich mit ihren eigenen Mitteln nicht zuruecknehmen laesst.
+
+   Gezaehlt wird an DENSELBEN Quellen wie der Blattkopf (`gesetztZeigen`), nicht
+   an einer zweiten Rechnung daneben: sonst nennte die Rueckfrage eine andere
+   Zahl als die Zeile, die der Nutzer eine Sekunde vorher gelesen hat. */
+function verlustBeimZuruecksetzen(){
+  const teile = [];
+  const stueck = grundriss.zaehleGesetzte();
+  if (stueck > 0) teile.push(stueck + (stueck === 1 ? ' gesetztes Stück' : ' gesetzte Stücke'));
+  const w = grundrissAbweichung();
+  if (w.gesetzt > 0) teile.push(w.gesetzt + (w.gesetzt === 1 ? ' gezeichnete oder verschobene Wand' : ' gezeichnete oder verschobene Wände'));
+  if (w.fehlen > 0) teile.push(w.fehlen + (w.fehlen === 1 ? ' gelöschte gemessene Wand' : ' gelöschte gemessene Wände'));
+  const o = grundriss.zaehleOeffnungen();
+  if (o > 0) teile.push(o + (o === 1 ? ' Öffnung' : ' Öffnungen'));
+  return teile;
+}
+
+function zurueckFrageZeigen(){
+  const teile = verlustBeimZuruecksetzen();
+  el('zurueckFrageUmfang').textContent = teile.length === 0
+    ? 'Es ist nichts Eigenes da — die Datei steht schon auf dem gemessenen Plan.'
+    : teile.join(', ') + ' ' + (teile.length === 1 && !/\\s/.test('') ? 'geht' : 'gehen') + ' verloren.';
+  frageZeigen(zurueckFrage);
+  el('btnZurueckNein').focus();
+}
+
+/* Der Stand VOR dem Zuruecksetzen, unter einem EIGENEN Schluessel (C3).
+   Warum ueberhaupt: „Zurücksetzen" liegt in derselben Leiste wie „Laden" und
+   rueckte beim Werkzeugwechsel gemessen bis zu 520 px — der gefaehrlichste
+   Knopf der Datei landete unter dem alten Platz des harmlosesten. Die
+   Leiste steht seit V7 still; ein Fehlgriff bleibt trotzdem moeglich, und
+   danach gibt es kein Rueckgaengig mehr. Eine Sicherung kostet einen
+   Speicherplatz und rettet eine Arbeitsstunde.
+
+   EIGENER Schluessel und nicht der Stand-Schluessel: der wird ja gerade
+   geloescht. Genau EINE Sicherung, immer die letzte — eine Historie im
+   localStorage waere bei 4,8 MB fuer ALLE file://-Seiten zusammen der sichere
+   Weg in einen stillen Schreibfehler (s. Kopf „Speicher"). */
+function sicherungAnlegen(){
+  if (!speicher) return false;
+  try {
+    speicher.setItem(SCHLUESSEL_SICHERUNG, JSON.stringify({
+      fassung: 1,
+      planAbdruck: PLAN_ABDRUCK,
+      bauStempel: BAU_STEMPEL,
+      ort: ORT_KLARTEXT,
+      gesichertAm: new Date().toISOString(),
+      floorplan: grundriss.saveFloorplan(),
+      labels: labels,
+      items: items
+    }));
+    return true;
+  } catch (e) {
+    /* Kein stiller Fehlschlag: wer glaubt, es liege eine Sicherung, klickt
+       sorgloser. Der Aufrufer sagt es weiter. */
+    return false;
+  }
+}
+
+function sicherungZurueckholen(){
+  if (!speicher) return false;
+  let s = null;
+  try { s = JSON.parse(speicher.getItem(SCHLUESSEL_SICHERUNG)); } catch (e) { return false; }
+  if (!s || !s.floorplan || !s.floorplan.corners) return false;
+  if (Array.isArray(s.items)) items = s.items;
+  try {
+    ladeGrundriss(s.floorplan, s.labels, true);
+  } catch (e) {
+    meldung('Die Sicherung ließ sich nicht öffnen (' + ((e && e.message) ? e.message : String(e)) + ').', true);
+    return false;
+  }
+  meldung('Der Stand von vor dem Zurücksetzen ist wieder da: ' +
+    grundriss.getCorners().length + ' Ecken, ' + grundriss.getWalls().length + ' Wände, ' +
+    grundriss.zaehleGesetzte() + ' gesetzte Stücke.', false);
+  return true;
+}
+
 function zuruecksetzen(){
+  /* ERST sichern, dann loeschen (C3). Die Reihenfolge ist der ganze Punkt:
+     nach `ladeGrundriss` gibt es nichts mehr zu sichern. */
+  const gesichert = sicherungAnlegen();
   /* M7 — ALLE Schluessel, nicht nur einer. Gemessen: „Zurücksetzen" loeschte
      den Plan-Schluessel und liess den Bearbeiten-Schluessel stehen; nach einem
      Neuladen standen wieder Grundriss und Werkzeuge da. Ein einziger
