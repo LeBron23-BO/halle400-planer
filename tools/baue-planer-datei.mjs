@@ -358,18 +358,37 @@ const html = `<!DOCTYPE html>
     .kopf .sub{font-size:9px;letter-spacing:.11em;line-height:1.6}
     .strich{margin:7px 0 6px;max-width:180px}
     .leiste{bottom:10px;padding:5px;gap:4px}
-    /* ── DIE LEISTE MUSS AUCH INNEN UMBRECHEN (Handy-Welle) ────────────────
+    /* ── DIE WERKZEUGE MUESSEN ERREICHBAR SEIN (Handy-Welle) ───────────────
        GEMESSEN am Standbild bei 390 x 800, nicht vermutet: \`.leiste\` bricht
-       zwar um, ihre GRUPPEN aber nicht — und die erste Gruppe ist mit vier
-       Werkzeugknoepfen rund 440 px breit. Bei 366 px verfuegbarer Breite lag
-       „Löschen" damit vollstaendig ausserhalb der Anzeige: das Loeschen-
-       Werkzeug war am Handy NICHT ERREICHBAR, und mit ihm der einzige Weg,
+       zwar um, ihre GRUPPEN aber nicht — und die Werkzeug-Gruppe ist mit ihren
+       vier Knoepfen rund 440 px breit. Bei 366 px verfuegbarer Breite lag
+       „Löschen" damit VOLLSTAENDIG ausserhalb der Anzeige: das Loeschen-
+       Werkzeug war am Handy nicht erreichbar, und mit ihm der einzige Weg,
        am Telefon etwas zu entfernen (Langdruck, E3).
 
-       Eine Leiste, die zwei Reihen hoch ist, kostet Platz; eine, deren
-       Knoepfe man nicht erreicht, kostet die Bedienung. \`justify-content\`
-       haelt die umgebrochene zweite Reihe mittig unter der ersten. */
-    .grp{flex-wrap:wrap;justify-content:center}
+       Zwei Massnahmen, in dieser Reihenfolge:
+
+       1. KUERZERE AUFSCHRIFTEN (s. \`.lang\`/\`.kurz\` in der Leiste). „Wände
+          zeichnen" -> „Wände", „Türen & Fenster" -> „Türen". Die volle Aussage
+          bleibt im \`title\`. Das spart Breite, ohne die Leiste hoeher zu machen
+          — und Hoehe ist am Telefon das Knappe: die Leiste nimmt schon so ein
+          Fuenftel der Anzeige.
+       2. Und wenn es trotzdem nicht reicht, DARF diese eine Gruppe umbrechen.
+          \`flex-basis:100%\` ist dabei Bedingung und nicht Zierde: ohne sie
+          schrumpft der Flex-Umbruch jede Gruppe auf ihren breitesten Knopf
+          zusammen, und die Leiste wird zu einer Saeule, die zwei Drittel der
+          Zeichenflaeche verdeckt. AM STANDBILD GEMESSEN — genau das ist beim
+          ersten Versuch passiert.
+
+       Ausdruecklich NUR diese beiden Gruppen: \`.grp\` global umbrechen zu
+       lassen zerlegte auch die Kopfleiste („Axonometrie" rutschte unter
+       „Grundriss"). */
+    #grpWerkzeug,#oeffnungsArten{flex-basis:100%;flex-wrap:wrap;justify-content:center}
+    /* Die Beschriftung der Gruppe kostet 58 px fuer eine Auskunft, die die
+       gedrueckte Schaltflaeche selbst gibt. */
+    #grpWerkzeug > .lbl,#oeffnungsArten > .lbl{display:none}
+    .leiste .lang{display:none}
+    .leiste .kurz{display:inline}
     button{padding:8px 9px;font-size:10px}
     .lbl{padding:0 4px 0 2px;font-size:9px}
     /* ── Die Palette AM HANDY (Handy-Welle) ──────────────────────────────
