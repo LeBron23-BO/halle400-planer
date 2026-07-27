@@ -63,6 +63,13 @@ node tools/pruefe-palette.mjs     # W3: die PALETTE — 66 Pruefungen in der Dop
                                   #        muss ERKANNT werden
 node tools/pruefe-axonometrie.mjs  # X2/X3: 6 Gates — Raumableitung == Planer-Kern, Szene vollstaendig,
                                    #        Bild gezeichnet (mit Gegenprobe), Ansicht folgt dem Grundriss
+node tools/pruefe-finger.mjs       # W8: BEARBEITEN MIT DEM FINGER — 61 Pruefungen an der
+                                   #        Doppelklick-Datei bei 390 x 800, jede mit Gegenprobe.
+                                   #        ECHTE Beruehrungen ueber CDP `Input.dispatchTouchEvent`
+                                   #        (nicht `dispatchEvent`: das Blatt hoert Zeiger-Ereignisse
+                                   #        ab und saehe davon nichts). Standbilder nach
+                                   #        data/standbilder/finger-*.png
+                                   #        --nur grundriss | blatt | ruhe | palette | leiste
 node tools/pruefe-axo-bearbeiten.mjs # W7: BEARBEITEN IM BLATT — 58 Pruefungen, jede mit Gegenprobe.
                                    #        A+B laufen OHNE Browser (die Rechnung steht in
                                    #        src/axo/axo-treffer.js): Hin-und-zurueck ueber alle
@@ -246,8 +253,83 @@ aendert nichts mehr** — er machte aus einem gemessenen Stueck bisher ein
 `gesetzt`-Stueck, sichtbar im Blatt und gezaehlt im Kopf, fuer eine Handlung,
 die keine war.
 
-**Am Handy** gibt es kein Q/E und kein Entf (keine Tastatur) — dieselbe offene
-Stelle wie im Grundriss seit W2. Gezogen wird dort auch im Blatt.
+**Am Handy** gibt es kein Q/E und kein Entf (keine Tastatur). **Gezogen wird
+dort seit W8 auch im Blatt** — der Renderer hört `pointerdown/move/up` ab, und
+die tragen jede Fingerkuppe mit, sobald `touch-action:none` gesetzt ist (das
+war es schon). Zu bauen war deshalb nicht das Ziehen, sondern die
+RÜCKMELDUNG: am Rechner sagt der Zeiger `grabbing`, am Telefon sagt es nichts.
+
+## Bearbeiten MIT DEM FINGER (W8, 2026-07-27)
+
+Der Nutzer arbeitet oft vom Handy, und dort ging bis hierher **nichts zu
+ziehen**: `bearbeitetMitEinemFinger` deckte nur Zeichnen und Löschen ab, ein
+Finger schob sonst die Ansicht. Betroffen waren Möbel (W2), die Palette (W3),
+die Türen (W4) und das Ziehen im Blatt (W7). Sechs Festlegungen:
+
+1. **Die Absicht wird beim AUFSETZEN entschieden, nie später** (`fingerGreift`
+   in `floorplanner.ts`). Am Handy gibt es kein Schweben: die Absicht lässt
+   sich vorher nicht ablesen, also muss sie im ersten Augenblick feststehen.
+   Finger auf einem Möbel → ziehen · Finger auf leerer Fläche → Ansicht
+   schieben (Grundriss) bzw. drehen (Blatt) · zwei Finger → zoomen. Das ist
+   **dieselbe** Trennung wie bei der Maus, nur an einem anderen Augenblick
+   abgelesen: dort steht sie als `!activeAusstattung` in der Schwenk-Bedingung
+   von `mousemove` und als `zugBeginnen` in `mousedown`.
+2. **EINE Zieh-Rechnung.** Der Finger ruft `zugBeginnen`/`zugSchritt`/
+   `zugBeenden` — dieselben drei öffentlichen Methoden, die Maus und Blatt seit
+   W7 benutzen. Damit erbt er Griff-Versatz, Einrasten und den EINEN
+   Schnappschuss je Zug, ohne dass eine Zeile davon ein zweites Mal dasteht.
+   GEMESSEN: 0,24 cm Abweichung vom Fingerweg im Grundriss, 0,45 cm im Blatt.
+3. **Der Finger greift NUR Ausstattung** — nicht Ecke, nicht Wand. Kein
+   Vergessen, sondern die Lehre aus W5: eine verschobene gemessene Ecke bricht
+   den Rückweg ins Projekt hart ab. Die Maus darf es, weil sie vorher schwebt
+   und am Rahmen sieht, was sie greift; der Finger sieht nichts und trifft mit
+   einer breiten Kuppe.
+4. **Was in der Hand ist, MUSS man sehen.** Am Rechner sagt es der Zeiger
+   (`grabbing`), am Telefon verdeckt die Kuppe genau das Stück, um das es geht.
+   Im Grundriss bekommt das gegriffene Stück deshalb einen kräftigeren Rahmen
+   in **derselben** Hover-Farbe (`#008cba`, Stärke 3,5 statt 2) plus eine sehr
+   schwache Füllung — keine neue Farbe, nur die zweite Stufe derselben Aussage:
+   „greifbar" → „gegriffen". Im Blatt wird die Kante des Körpers voll
+   ausgezogen, in der **Tinte des Blattes** (`griffKanteBreite: 1.8`), nicht in
+   einer Signalfarbe. Gemessen: 11 930 geänderte Bildpunkte im Grundriss,
+   Schwerpunkt 2 px vom Mittelpunkt des Stücks; 802 im Blatt.
+5. **Die Palette gibt es am Handy wieder** — sie hört jetzt selbst auf
+   `touchstart/move/end` (`touch*` und nicht `pointer*`, weil der Kern am Canvas
+   dieselbe Sprache spricht und `preventDefault` dort die Maus-Emulation
+   unterdrückt). Am Standbild bei 390 × 800 eingezogen: 102 px breit statt 134,
+   ohne Maßzeile, mit dem kurzen Fuß-Satz — sie endet bei y = 472 und berührt
+   die Werkzeugleiste nicht.
+6. **Der Auslieferungszustand bleibt unangetastet.** K3 trägt auch den Finger:
+   ohne „Bearbeiten" nimmt die Zeichenfläche keine Zeiger-Ereignisse an, und im
+   ruhenden Blatt greift `pointerdown` nichts. Gemessen mit Gegenprobe
+   (`pruefe-finger.mjs` E) — ein Finger-Weg, der diese Sperre umginge, wäre
+   schlimmer als gar kein Finger-Weg.
+
+**Zwei Funde, die keine 624 Prüfungen gesehen hatten**, beide am Standbild:
+
+- **„Löschen" lag bei 390 px vollständig ausserhalb der Anzeige.** `.leiste`
+  bricht um, ihre `.grp` aber nicht — und die Werkzeug-Gruppe ist rund 440 px
+  breit. Das Löschen-Werkzeug war am Handy **nicht erreichbar**, und mit ihm
+  der einzige Weg, dort etwas zu entfernen. Behoben mit kurzen Aufschriften
+  („Wände", „Türen"; die volle Aussage bleibt im `title`), voller Leistenbreite
+  und einem Umbruch als Rückfall. Die Leiste ist danach unverändert 22 % hoch.
+  **`.grp` global umbrechen zu lassen war der falsche Fix** — dann schrumpft
+  jede Gruppe auf ihren breitesten Knopf und die Leiste wird zur Säule über
+  zwei Dritteln der Zeichenfläche (am Standbild gemessen, verworfen).
+- **Die Hinweise versprachen Tasten, die es am Handy nicht gibt** („Q und E
+  drehen, Entf löscht", „Rückgängig mit Strg+Z · Abbrechen mit Esc"). Ein
+  Hinweis, der eine Bedienung verschweigt, ist schlimm; einer, der eine
+  verspricht, die es nicht gibt, ist schlimmer — der Nutzer sucht den Fehler
+  bei sich. Zwei Fassungen je Satz (`.lang`/`.kurz`), die Medienabfrage wählt.
+
+**Was am Handy weiter fehlt, und warum:** das **Drehen um freie Winkel**. Q/E
+gibt es dort nicht, und jeder Ersatz wäre ein NEUES Bedienkonzept: ein Knopf
+bräuchte eine Auswahl, die den Griff überdauert (in diesem Planer gibt es
+keine, W2 Punkt 5), eine Zwei-Finger-Drehung kollidierte mit dem Zoomen, und
+ein Langdruck im Verschieben-Werkzeug ist bereits mit dem Löschen belegt. Was
+es am Handy sehr wohl gibt: **an eine Wand ziehen dreht mit** — das Einrasten
+übernimmt den Wandwinkel (W2 Punkt 4), und der Finger geht durch dieselbe
+Rechnung (`pruefe-finger.mjs` A8/A9 mit Gegenprobe).
 
 ## Moebel ziehen (W2, 2026-07-26)
 
@@ -274,8 +356,10 @@ beide aus derselben Quelle (`src/floorplanner/floorplanner.ts`). Fuenf Festlegun
 5. **Gedreht wird mit Q/E** (15°-Schritte, am Stueck UNTER DEM ZEIGER, auch mitten
    im Ziehen). Begruendung im Code (`dreheAktives`): es gibt in diesem Planer keine
    Auswahl, die einen Klick ueberdauert — ein Knopf in der Leiste braeuchte eine,
-   denn auf dem Weg dorthin verlaesst der Zeiger das Moebel. Am Handy gibt es
-   deshalb (noch) kein Drehen; dort ist auch das Ziehen von Moebeln offen.
+   denn auf dem Weg dorthin verlaesst der Zeiger das Moebel. **Am Handy gibt es
+   deshalb weiterhin kein freies Drehen** (Begruendung in „Bearbeiten mit dem
+   Finger", W8); das ZIEHEN ist dort seit W8 geloest, und an eine Wand gezogen
+   dreht das Einrasten mit.
 
 Jedes gezogene oder gedrehte Stueck wird `quelle: 'gesetzt'`, wird im Grundriss
 GESTRICHELT gezeichnet, und das Blatt sagt es im Kopf: „N Stueck frei gesetzt —
@@ -305,9 +389,10 @@ mit DERSELBEN Rechnung ein wie ein gezogenes (`Floorplanner.stueckAblegen` ruft
    widerlegt und im Code als widerlegt gekennzeichnet. `quelle: 'gesetzt'` ist
    fest verdrahtet: ein zur Laufzeit entstandenes Stueck kann nicht aus der PDF
    stammen.
-5. **Am Handy gibt es die Palette nicht** (`@media (max-width:900px)`): das
-   Hineinziehen laeuft ueber Maus-Ereignisse. Dieselbe offene Stelle wie beim
-   Ziehen vorhandener Moebel (W2).
+5. ~~**Am Handy gibt es die Palette nicht**~~ — **seit W8 gibt es sie dort**.
+   Der Grund für ihr Fehlen (das Hineinziehen lief über Maus-Ereignisse) ist
+   weg; sie hört jetzt selbst auf `touchstart/move/end`. Am Standbild bei
+   390 × 800 eingezogen: 102 px breit, ohne Maßzeile, kurzer Fuß-Satz.
 
 ### Die NEUN Stellen einer Typ-Kette
 
@@ -459,9 +544,11 @@ ungesichertem Zug (M6) · „Zurücksetzen" löscht BEIDE Speicher-Schlüssel un
 stellt den Auslieferungszustand her (M7) · ein Stand desselben Plans an einem
 anderen Ablageort wird beim Start angeboten (M8).
 
-**Offen und bewusst nicht geschlossen:** Möbel und Türen per Finger ziehen; auf
-dem BILDSCHIRM bleibt die Fussnote unter 900 px verborgen (die Zähler im
-Blattkopf tragen die Aussage dort). Beides gehört in die Handy-Welle.
+**Offen und bewusst nicht geschlossen (Stand W6):** Möbel und Türen per Finger
+ziehen; auf dem BILDSCHIRM bleibt die Fussnote unter 900 px verborgen (die
+Zähler im Blattkopf tragen die Aussage dort). — Das MÖBELZIEHEN per Finger ist
+mit **W8** geschlossen (s. „Bearbeiten mit dem Finger"); Türen per Finger und
+die Fussnote bleiben offen.
 
 ## Der Rueckweg: die Bearbeitung zurueck ins Projekt (W5, 2026-07-26)
 

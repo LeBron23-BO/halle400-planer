@@ -328,6 +328,37 @@ try {
         `C4 GEGENPROBE: ein ZWEITES Rueckgaengig findet vom Zug nichts mehr (${nachZweimal ? nachZweimal.x + ',' + nachZweimal.y : '—'}) — der Zug war EIN Schritt`
       )
 
+      /* --- A8/A9 · DAS EINRASTEN GILT AUCH FUER DEN FINGER
+         Und damit gibt es am Handy sehr wohl eine Drehung: an eine Wand
+         gezogen uebernimmt das Stueck den Wandwinkel (W2 Punkt 4). Beides
+         haengt daran, dass der Finger durch `moebelEinrasten` geht und nicht
+         an ihm vorbei — geprueft wird das mit DEMSELBEN Fingerweg wie oben,
+         nur mit eingeschaltetem Einrasten. Der Lauf oben, mit ausgeschaltetem
+         Einrasten, IST die Gegenprobe. */
+      await page.evaluate(() => window.__planerDatei.setzeEinrasten(true))
+      const jetzt = await page.evaluate((id) => window.__planerDatei.stueck(id), ziel.id)
+      await hand.wische({ x: jetzt.bx, y: jetzt.by }, wegPx)
+      const mitRasten = await page.evaluate((id) => window.__planerDatei.stueck(id), ziel.id)
+      const aufRaster = mitRasten.x % 5 === 0 && mitRasten.y % 5 === 0
+      const gedreht = (mitRasten.drehung || 0) !== (jetzt.drehung || 0)
+      log(
+        `    Mit Einrasten: ${jetzt.x},${jetzt.y} -> ${mitRasten.x},${mitRasten.y} cm ` +
+          `(auf 5-cm-Raster: ${aufRaster}, Drehung uebernommen: ${gedreht})`
+      )
+      pruefe(
+        mitRasten.x !== nach.x || mitRasten.y !== nach.y,
+        `A8 MIT Einrasten legt derselbe Fingerweg das Stueck anders ab als ohne (${mitRasten.x},${mitRasten.y} statt ${nach.x},${nach.y}) — der Finger geht durch dieselbe Rechnung`
+      )
+      pruefe(
+        aufRaster || gedreht,
+        `A9 und zwar nach EINER der beiden Regeln aus W2: 5-cm-Raster (${aufRaster}) oder Wandwinkel (${gedreht})`
+      )
+      await page.evaluate(() => {
+        window.__planerDatei.undoJetzt()
+        window.__planerDatei.setzeEinrasten(false)
+      })
+      await page.waitForTimeout(300)
+
       // --- A · GEGENPROBE: derselbe Wisch auf LEERER Flaeche
       const leer = await leerePunkte(page)
       pruefe(leer.length > 0, `A4 ein leerer Punkt auf der Zeichenflaeche gefunden (${leer.length} Kandidaten)`)
