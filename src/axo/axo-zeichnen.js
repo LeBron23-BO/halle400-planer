@@ -279,7 +279,21 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
          Und IMMER, nicht erst ab `kanteAbMassstab`: die Schwelle entscheidet,
          ob Kanten sich LOHNEN — ob eine Herkunft genannt wird, entscheidet
          sie nicht. */
-      if (f.gesetzt) {
+      /* WAS IN DER HAND IST, MUSS MAN SEHEN (Handy-Welle). Diese Kante steht
+         VOR der Herkunfts-Strichelung, und das ist Absicht: „gesetzt" ist eine
+         Dauer-Aussage ueber das Stueck, „in der Hand" eine ueber den Augenblick
+         — und im Augenblick des Greifens ist die zweite die dringendere. Sie
+         gilt nur, solange der Finger liegt, danach malt derselbe Zweig wieder
+         die Strichelung. Und IMMER, nicht erst ab `kanteAbMassstab`: die
+         Schwelle entscheidet, ob Kanten sich LOHNEN — ob eine Hand gemeldet
+         wird, entscheidet sie nicht. */
+      if (greift && f.id === greift) {
+        ctx.setLineDash([])
+        ctx.strokeStyle = farben.tinte
+        ctx.globalAlpha = 1
+        ctx.lineWidth = DARSTELLUNG.griffKanteBreite
+        ctx.stroke()
+      } else if (f.gesetzt) {
         ctx.setLineDash(DARSTELLUNG.gesetztStrich)
         ctx.strokeStyle = farben.tinteMatt
         ctx.globalAlpha = DARSTELLUNG.gesetztKanteDeckkraft
@@ -584,6 +598,11 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
             // Bild -> Welt, und das Stueck driftete unter dem Zeiger weg.
             griffHoehe = treffer.hoehe
             zeigerPflegen(treffer)
+            /* Die Griff-Kante gehoert in DIESEN Augenblick, nicht erst in die
+               erste Bewegung: am Handy will man wissen, dass man etwas hat,
+               BEVOR man zieht — sonst wischt man versuchsweise und verschiebt
+               dabei ein Stueck, das man nur pruefen wollte. */
+            zeichne()
             try {
               canvas.setPointerCapture(e.pointerId)
             } catch (_) {
@@ -608,6 +627,12 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
   function griffBeenden() {
     if (!greift) return
     greift = null
+    /* SOFORT neu malen, nicht erst beim naechsten Anlass. Die Griff-Kante ist
+       eine Aussage ueber den Augenblick; der volle Neubau aus `lassLos` kommt
+       erst nach der Ruhe-Frist (150 ms), und so lange stuende eine Hand im
+       Bild, die es nicht mehr gibt. Am Handy ist das der einzige Unterschied
+       zwischen „abgelegt" und „haengt noch". */
+    zeichne()
     bearbeitung?.lassLos?.()
     zeigerPflegen(null)
   }

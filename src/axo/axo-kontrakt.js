@@ -226,6 +226,21 @@ export const DARSTELLUNG = {
   gesetztKanteDeckkraft: 0.55,
   gesetztKanteBreite: 0.75,
 
+  /* ── WAS IN DER HAND IST (Handy-Welle) ───────────────────────────────
+     Am Rechner sagt es der Zeiger: er steht auf `grabbing`, sobald ein Stueck
+     gegriffen ist. Am Handy gibt es keinen Zeiger, und die Fingerkuppe deckt
+     genau das Stueck zu, um das es geht — ohne eine zweite Auskunft weiss man
+     nicht, ob der Wisch das Blatt dreht oder ein Moebel schiebt.
+
+     Es wird KEINE Farbe eingefuehrt: die Kante des gegriffenen Koerpers wird
+     voll ausgezogen, in der TINTE des Blattes, dreimal so breit wie eine
+     gewoehnliche. Eine Signalfarbe waere in diesem Bild ein Fremdkoerper und
+     im Ausdruck (M5) ein Fleck. Der Wert ist am Standbild bei 390 x 800
+     abgestimmt: 1,8 traegt neben einer Fingerkuppe, 1,2 verschwand darunter.
+     Die Deckkraft ist ausdruecklich 1 — die 0,2 der gewoehnlichen Kante ist
+     der Grund, warum ein blosses Verbreitern nichts brachte. */
+  griffKanteBreite: 1.8,
+
   /** Zoom-Grenzen und Empfindlichkeit.       [uebersicht.html:777-778,792] */
   zoomMin: 0.45,
   zoomMax: 4.2,

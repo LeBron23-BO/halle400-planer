@@ -358,15 +358,48 @@ const html = `<!DOCTYPE html>
     .kopf .sub{font-size:9px;letter-spacing:.11em;line-height:1.6}
     .strich{margin:7px 0 6px;max-width:180px}
     .leiste{bottom:10px;padding:5px;gap:4px}
+    /* ── DIE LEISTE MUSS AUCH INNEN UMBRECHEN (Handy-Welle) ────────────────
+       GEMESSEN am Standbild bei 390 x 800, nicht vermutet: \`.leiste\` bricht
+       zwar um, ihre GRUPPEN aber nicht — und die erste Gruppe ist mit vier
+       Werkzeugknoepfen rund 440 px breit. Bei 366 px verfuegbarer Breite lag
+       „Löschen" damit vollstaendig ausserhalb der Anzeige: das Loeschen-
+       Werkzeug war am Handy NICHT ERREICHBAR, und mit ihm der einzige Weg,
+       am Telefon etwas zu entfernen (Langdruck, E3).
+
+       Eine Leiste, die zwei Reihen hoch ist, kostet Platz; eine, deren
+       Knoepfe man nicht erreicht, kostet die Bedienung. \`justify-content\`
+       haelt die umgebrochene zweite Reihe mittig unter der ersten. */
+    .grp{flex-wrap:wrap;justify-content:center}
     button{padding:8px 9px;font-size:10px}
     .lbl{padding:0 4px 0 2px;font-size:9px}
-    /* Auf schmalen Anzeigen KEINE Palette. Das Hineinziehen laeuft ueber
-       Maus-Ereignisse; ein Finger loest sie erst beim Loslassen aus, der Zug
-       waere also nicht zu verfolgen. Dieselbe offene Stelle wie beim Ziehen
-       vorhandener Moebel (W2, "am Handy noch nicht geloest"). Eine sichtbare
-       Palette, die auf Fingerdruck nichts tut, waere schlimmer als keine:
-       sie behauptet eine Bedienung, die es hier nicht gibt. */
-    .palette{display:none}
+    /* ── Die Palette AM HANDY (Handy-Welle) ──────────────────────────────
+       Bis hierher stand hier \`display:none\` mit der Begruendung, das
+       Hineinziehen laufe ueber Maus-Ereignisse und ein Finger loese sie erst
+       beim Loslassen aus. Der Grund ist weg (die Palette hoert jetzt selbst
+       auf \`touchstart/move/end\`), die Platzfrage aber nicht — und die
+       entscheidet sich am Standbild, nicht am Wunsch.
+
+       GEMESSEN bei 390 x 800: die Leisten belegen oben 52 px (Blattkopf) und
+       unten ab 626 px (Werkzeugleiste, drei Reihen) — dazwischen liegen rund
+       570 px freie Hoehe. In der Breite ist es eng: 134 px waeren gut ein
+       Drittel der Anzeige. Also SCHMALER und HOEHER statt breit — eine Spalte
+       am linken Rand, wie am grossen Bildschirm, nur auf das Noetigste
+       eingezogen. Die Vorschau bleibt, sie ist der Sinn der Palette; der
+       Massstab darunter faellt weg, weil er im Titel des Knopfes steht und am
+       Handy nur Zeile kostet.
+
+       Die Knopfhoehe bleibt ueber 44 px (Vorschau 88 x 34 plus Name) — unter
+       einer Fingerkuppe waere eine kleinere Flaeche ein Glueckstreffer. */
+    .palette{left:8px;top:96px;width:102px;max-height:calc(100vh - 300px)}
+    .palette-kopf{padding:8px 8px 6px;font-size:9px;letter-spacing:.11em}
+    .palette-leib{padding:3px 3px 4px}
+    .pstueck{padding:4px 2px;font-size:10.5px}
+    .pstueck canvas{width:88px;height:34px}
+    /* Der Massstab steht im Titel des Knopfes und in der Vorschau — am Handy
+       waere er eine dritte Zeile fuer eine Auskunft, die schon zweimal da ist. */
+    .pstueck .pmass{display:none}
+    .palette-fuss{padding:6px 8px 8px;font-size:9.5px;line-height:1.4}
+    .palette-fuss .lang{display:none}
   }
   @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
 
@@ -523,8 +556,14 @@ const html = `<!DOCTYPE html>
   <aside class="palette" id="palette" hidden>
     <div class="palette-kopf">Hinstellen</div>
     <div class="palette-leib" id="paletteLeib"></div>
-    <div class="palette-fuss">In den Grundriss ziehen. Was so entsteht, ist
-      <b>frei gesetzt</b> und wird gestrichelt gezeichnet — kein Aufmaß.</div>
+    <!-- Zwei Saetze, damit der zweite am Handy wegfallen kann: dort kostete er
+         gemessen 100 px Hoehe (sechs Zeilen bei 102 px Breite) fuer eine
+         Auskunft, die im Augenblick des Ablegens ohnehin als Meldung erscheint
+         („… hingestellt — frei gesetzt, kein Aufmaß"). Die ANWEISUNG bleibt:
+         ohne sie waere die Palette am Telefon ein Raetsel. -->
+    <div class="palette-fuss">In den Grundriss ziehen.<span class="lang"> Was so
+      entsteht, ist <b>frei gesetzt</b> und wird gestrichelt gezeichnet — kein
+      Aufmaß.</span></div>
   </aside>
 
   <div class="leiste" id="werkzeuge" role="toolbar" aria-label="Grundriss bearbeiten" hidden>
@@ -779,8 +818,12 @@ let axoVeraltet = true;
    AUS. Er macht aus dem billigen Koerper-Tausch den teuren vollen Neubau
    und beweist damit, dass das Gate den Unterschied ueberhaupt misst. */
 let vollNeubauImZug = false;
-/* Das beiseitegelegte Blatt-Bild fuer die Pixel-Probe des Gates (s. \`axoMerken\`). */
+/* Die beiseitegelegten Bilder fuer die Pixel-Probe der Gates (s. \`bildMerken\`) —
+   je eines fuer das Blatt und fuer den Grundriss. Zwei Speicher, weil beide
+   Ansichten gleichzeitig im Dokument stehen und ein Gate sie nacheinander
+   befragt. */
 let axoMerk = null;
+let planMerk = null;
 
 /* ── Aufbau ─────────────────────────────────────────────────────────
    Die Reihenfolge ist zwingend: Configuration VOR dem Laden (Wall liest seine
@@ -1156,11 +1199,24 @@ const axoBearbeitung = {
 /* Was der Hinweis oben gerade sagen MUSS. Er haengt an der Neigung: ein
    flachgekipptes Blatt kann nicht ziehen, und das soll man lesen koennen,
    BEVOR man es versucht. */
+/* Schmale Anzeige — dieselbe Grenze wie die Medienabfrage im Kopf (900 px).
+   EINE Zahl an zwei Stellen ist eine zu viel; sie steht hier, weil CSS sie
+   nicht herausgeben kann, und traegt darum den Verweis. */
+function schmal(){ return innerWidth <= 900; }
+
 function arbeitshinweisPflegen(){
   const flach = !!axoAnsicht && !axoAnsicht.ziehbar;
+  /* AM HANDY GIBT ES KEINE TASTATUR (Handy-Welle). Bis hierher versprach diese
+     Zeile dort „Q und E drehen, Entf löscht" — beides Tasten, die auf einem
+     Telefon nicht existieren. Ein Hinweis, der eine Bedienung verschweigt, die
+     es gibt, ist schlimm; einer, der eine verspricht, die es nicht gibt, ist
+     schlimmer: der Nutzer sucht dann den Fehler bei sich. */
+  const tasten = schmal() ? '' : ', Q und E drehen, Entf löscht';
   el('arbeitshinweisWas').textContent = flach
-    ? '— zu flach zum Ziehen. Q und E drehen, Entf löscht.'
-    : '— Möbel ziehen, Q und E drehen, Entf löscht.';
+    ? (schmal()
+        ? '— zu flach zum Ziehen: Blatt aufrichten.'
+        : '— zu flach zum Ziehen. Q und E drehen, Entf löscht.')
+    : '— Möbel ziehen' + tasten + '.';
   el('arbeitshinweisWarum').textContent = flach
     ? 'Ein Bildpunkt bedeutet hier über 22 cm Tiefe — Blatt aufrichten oder „Plan“ wählen.'
     : 'Wände, Türen und Fenster gehören in den Grundriss.';
@@ -1838,17 +1894,24 @@ function paletteZugAbbrechen(){
   document.querySelectorAll('.pstueck.zieht').forEach(function(k){ k.classList.remove('zieht'); });
 }
 
-palette.addEventListener('mousedown', function(e){
-  const knopf = e.target && e.target.closest ? e.target.closest('.pstueck') : null;
-  if (!knopf) return;
+/* Der Zug beginnt — EINE Fassung fuer Maus und Finger. Was die beiden
+   unterscheidet, ist allein die Frage, WO der Punkt steht; alles danach ist
+   dasselbe. Zwei Fassungen waeren zwei Antworten auf „wo landet das Stueck". */
+function paletteZugBeginnen(ziel, x, y){
+  const knopf = ziel && ziel.closest ? ziel.closest('.pstueck') : null;
+  if (!knopf) return false;
   const v = vorlageFuer(knopf.dataset.typ);
-  if (!v) return;
-  // Ohne das startet der Browser sein eigenes Ziehen (Bild/Auswahl) und
-  // verschluckt die weiteren Maus-Ereignisse.
-  e.preventDefault();
+  if (!v) return false;
   paletteZug = v;
   knopf.classList.add('zieht');
-  geistZeigen(e.clientX, e.clientY, AUSSTATTUNG_NAME[v.typ] || v.typ);
+  geistZeigen(x, y, AUSSTATTUNG_NAME[v.typ] || v.typ);
+  return true;
+}
+
+palette.addEventListener('mousedown', function(e){
+  // Ohne das startet der Browser sein eigenes Ziehen (Bild/Auswahl) und
+  // verschluckt die weiteren Maus-Ereignisse.
+  if (paletteZugBeginnen(e.target, e.clientX, e.clientY)) e.preventDefault();
 });
 
 document.addEventListener('mousemove', function(e){
@@ -1861,6 +1924,54 @@ document.addEventListener('mouseup', function(e){
   paletteZugAbbrechen();
   stueckAblegen(v, e.clientX, e.clientY);
 });
+
+/* ── Die Palette MIT DEM FINGER (Handy-Welle) ────────────────────────
+   Bis hierher lief das Hineinziehen ausschliesslich ueber Maus-Ereignisse,
+   und die Palette war unter 900 px darum ausgeblendet: ein Finger loest sie
+   erst beim Loslassen aus (die Maus-Emulation kommt nach dem \`touchend\`),
+   der Zug waere also nicht zu verfolgen gewesen — man haette blind gezielt.
+
+   Warum \`touch*\` und nicht \`pointer*\`: der KERN hoert am Canvas
+   \`touchstart\` ab und ruft dort \`preventDefault\`, gerade damit KEINE
+   Maus-Emulation nachkommt (E3). Beide Welten muessen dieselbe Sprache
+   sprechen, sonst zaehlt ein Loslassen ueber der Zeichenflaeche zweimal.
+
+   \`preventDefault\` beim Aufsetzen ist Bedingung, nicht Feinheit: ohne es
+   scrollt der Browser die Palette, sobald der Finger sie verlaesst, und der
+   Zug bricht mitten in der Bewegung ab. */
+palette.addEventListener('touchstart', function(e){
+  if (e.touches.length !== 1) {
+    /* Ein zweiter Finger heisst „zoomen" und ist kein Ablegen — dieselbe Regel
+       wie im Kern (\`fingerStart\`) und im Blatt. Der angefangene Zug wird
+       VERWORFEN und nicht etwa beim naechsten Abheben ausgefuehrt: sonst legte
+       eine Zoom-Geste ein Stueck dorthin, wo zufaellig ein Finger abhob. */
+    paletteZugAbbrechen();
+    return;
+  }
+  const t = e.touches[0];
+  if (paletteZugBeginnen(t.target, t.clientX, t.clientY)) e.preventDefault();
+}, { passive: false });
+
+document.addEventListener('touchmove', function(e){
+  if (!paletteZug || e.touches.length !== 1) return;
+  e.preventDefault();
+  geistBewegen(e.touches[0].clientX, e.touches[0].clientY);
+}, { passive: false });
+
+document.addEventListener('touchend', function(e){
+  if (!paletteZug) return;
+  const v = paletteZug;
+  paletteZugAbbrechen();
+  /* \`changedTouches\` und nicht \`touches\`: der abgehobene Finger steht in
+     \`touches\` nicht mehr drin — dort waere die Liste leer und der Ablegepunkt
+     unbekannt. */
+  const t = e.changedTouches && e.changedTouches[0];
+  if (t) stueckAblegen(v, t.clientX, t.clientY);
+});
+
+/* Ein zweiter Finger heisst „zoomen" und ist kein Ablegen — dieselbe Regel
+   wie im Kern und im Blatt. Der Zug wird verworfen, nicht ausgefuehrt. */
+document.addEventListener('touchcancel', paletteZugAbbrechen);
 
 /* Esc bricht den Zug ab — dieselbe Taste, mit der der Kern ein angefangenes
    Zeichnen zuruecknimmt. */
@@ -2125,7 +2236,14 @@ addEventListener('beforeunload', function(e){
   return '';
 });
 
-addEventListener('resize', function(){ if (axoAnsicht && ansicht === 'axo') axoAnsicht.passeAn(); });
+addEventListener('resize', function(){
+  if (axoAnsicht && ansicht === 'axo') axoAnsicht.passeAn();
+  /* Der Arbeitshinweis haengt seit der Handy-Welle an der BREITE (die Tasten
+     Q/E/Entf gibt es dort nicht). Wer das Fenster ueber die 900-px-Grenze
+     zieht, bekaeme sonst einen Satz zu lesen, der fuer die andere Anzeige
+     geschrieben wurde. */
+  arbeitshinweisPflegen();
+});
 
 /* ── Start ──────────────────────────────────────────────────────────
    Auf schmalen Anzeigen laengs statt quer blicken: der 78-m-Riegel laeuft dann
@@ -2285,6 +2403,42 @@ function sichtbar(e){
 function angezeigt(e){
   return !!e && getComputedStyle(e).display !== 'none';
 }
+
+/* ── Die Pixel-Probe, EINMAL fuer beide Zeichenflaechen ──────────────
+   \`bildMerken\` legt das Bild beiseite, \`bildAenderung\` vergleicht es mit dem
+   jetzigen und liefert Zahl UND Schwerpunkt der veraenderten Bildpunkte, in
+   CSS-Pixeln. Der Vergleich laeuft IN DER SEITE — 1440x900 Bildpunkte ueber
+   die Messbruecke zu tragen waere fuenf Megabyte je Messung.
+
+   Warum ueberhaupt Pixel: eine Modellzahl bewiese nur, dass sich das MODELL
+   geaendert hat. Ob man es SIEHT, und ob an der richtigen Stelle, sagt allein
+   das Bild. Bis zur Handy-Welle stand diese Rechnung nur fuer das Blatt da;
+   die Rueckmeldung „was in der Hand ist" muss aber in BEIDEN Ansichten
+   nachweisbar sein, und zwei Fassungen derselben Rechnung waeren zwei
+   Messgeraete mit zwei Eichungen. */
+function bildMerken(canvas){
+  return canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data.slice();
+}
+
+function bildAenderung(canvas, merk, schwelle){
+  if (!merk) return null;
+  const d = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+  if (d.length !== merk.length) return null;
+  const grenze = schwelle == null ? 24 : schwelle;
+  const dpr = canvas.width / Math.max(1, canvas.getBoundingClientRect().width);
+  let sx = 0, sy = 0, n = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    const anders = Math.abs(d[i] - merk[i]) + Math.abs(d[i+1] - merk[i+1]) + Math.abs(d[i+2] - merk[i+2]);
+    if (anders <= grenze) continue;
+    const p = (i / 4) | 0;
+    sx += p % canvas.width;
+    sy += (p / canvas.width) | 0;
+    n++;
+  }
+  return { n: n, x: n ? sx / n / dpr : null, y: n ? sy / n / dpr : null };
+}
+
+function planCanvas(){ return document.getElementById('grundriss-canvas'); }
 
 function bildmass(canvas){
   const g = canvas.getContext('2d');
@@ -2658,29 +2812,16 @@ window.__planerDatei = {
      geaendert hat. Ob man es SIEHT, und ob an der richtigen Stelle, sagt allein
      das Bild. Der Schwerpunkt der Aenderung liegt zwischen dem alten und dem
      neuen Ort des Stuecks — beide Stellen aendern sich ja. */
-  axoMerken: function(){
-    const g = axoCanvas.getContext('2d');
-    axoMerk = g.getImageData(0, 0, axoCanvas.width, axoCanvas.height).data.slice();
-    return axoMerk.length;
-  },
-  axoAenderung: function(schwelle){
-    if (!axoMerk) return null;
-    const g = axoCanvas.getContext('2d');
-    const d = g.getImageData(0, 0, axoCanvas.width, axoCanvas.height).data;
-    if (d.length !== axoMerk.length) return null;
-    const grenze = schwelle == null ? 24 : schwelle;
-    const dpr = axoCanvas.width / Math.max(1, axoCanvas.getBoundingClientRect().width);
-    let sx = 0, sy = 0, n = 0;
-    for (let i = 0; i < d.length; i += 4) {
-      const anders = Math.abs(d[i] - axoMerk[i]) + Math.abs(d[i+1] - axoMerk[i+1]) + Math.abs(d[i+2] - axoMerk[i+2]);
-      if (anders <= grenze) continue;
-      const p = (i / 4) | 0;
-      sx += p % axoCanvas.width;
-      sy += (p / axoCanvas.width) | 0;
-      n++;
-    }
-    return { n: n, x: n ? sx / n / dpr : null, y: n ? sy / n / dpr : null };
-  },
+  axoMerken: function(){ axoMerk = bildMerken(axoCanvas); return axoMerk.length; },
+  axoAenderung: function(schwelle){ return bildAenderung(axoCanvas, axoMerk, schwelle); },
+  /* DASSELBE fuer den GRUNDRISS (Handy-Welle). Es gab bis hierher nur
+     \`bildPlan()\`, eine Pruefsumme: sie sagt, DASS sich etwas geaendert hat,
+     nie WO. Fuer die Rueckmeldung am Handy ist genau das die Frage — der
+     Rahmen um das gegriffene Stueck muss AN DIESEM STUECK erscheinen und
+     nirgends sonst. Eine Pruefsumme haette auch dann gemeldet, wenn die
+     Markierung am falschen Ende der Halle laege. */
+  planMerken: function(){ planMerk = bildMerken(planCanvas()); return planMerk.length; },
+  planAenderung: function(schwelle){ return bildAenderung(planCanvas(), planMerk, schwelle); },
   bildPlan: function(){ return bildmass(document.getElementById('grundriss-canvas')); },
   maus: function(typ, x, y){
     const c = document.getElementById('grundriss-canvas');

@@ -48,6 +48,15 @@ const deleteColor = '#ff0000'
 const loeschFuellung = 'rgba(255, 0, 0, 0.22)'
 
 /**
+ * Füllung des GEGRIFFENEN Ausstattungs-Zeichens (Handy-Welle) — dieselbe Farbe
+ * wie der Hover-Rahmen (`#008cba` = 0,140,186), nur sehr schwach. Am Handy
+ * liegt die Fingerkuppe auf dem Stück; ohne eine Fläche wäre der Rahmen bei
+ * einem 40-cm-Stuhl vollständig verdeckt. Schwächer als die Lösch-Füllung
+ * (0,14 gegen 0,22), weil „in der Hand" ein Zustand ist und keine Warnung.
+ */
+const griffFuellung = 'rgba(0, 140, 186, 0.14)'
+
+/**
  * Ring um eine Ecke, auf die der nächste Zeichenpunkt einrastet (E2). Grün,
  * bewusst NICHT die Hover-Farbe: Hover heisst „das könntest du greifen",
  * Einrasten heisst „hier landet der Punkt wirklich" — zwei verschiedene
@@ -360,6 +369,21 @@ export class FloorplannerView {
       this.viewmodel.loeschKandidat?.art === 'ausstattung'
         ? this.viewmodel.loeschKandidat.kennung
         : null
+    /**
+     * WAS IN DER HAND IST, MUSS MAN SEHEN (Handy-Welle).
+     *
+     * Am Rechner sagt es der Zeiger: er wechselt auf `grabbing`, sobald ein
+     * Stück gegriffen ist (`zeigerStilSetzen`). Am Handy gibt es keinen Zeiger,
+     * und der Finger verdeckt genau das Stück, um das es geht — es bliebe also
+     * ohne jede Rückmeldung, ob der Wisch die Ansicht schiebt oder ein Möbel.
+     *
+     * Deshalb bekommt das gegriffene Stück einen kräftigeren Rahmen, und zwar
+     * in DERSELBEN Farbe wie das blosse Überfahren. Eine neue Farbe wäre eine
+     * neue Aussage; hier ist es dieselbe Aussage in einer zweiten Stufe:
+     * „greifbar" -> „gegriffen". Der Rahmen liegt um den Umriss und ist damit
+     * auch dann noch zu sehen, wenn die Kuppe die Mitte verdeckt.
+     */
+    const inDerHand = this.viewmodel.zugLaeuft()
     this.floorplan.getAusstattung().forEach((el) => {
       // GESETZT wird gestrichelt gezeichnet, GEMESSEN durchgezogen (Projekt-DNA:
       // die PDF ist die Grundwahrheit). Ein frei hingestelltes Stück sieht sonst
@@ -388,16 +412,21 @@ export class FloorplannerView {
       // Zeichenvorschriften: eine Stelle, die für jede Signatur gilt, kann
       // nicht bei der zwölften vergessen werden.
       if (el.id === kandidat) {
-        this.markiereAusstattung(el, true)
+        this.markiereAusstattung(el, 'loeschen')
+      } else if (el.id === inDerHand) {
+        this.markiereAusstattung(el, 'griff')
       } else if (el.id === this.viewmodel.activeAusstattung) {
-        this.markiereAusstattung(el, false)
+        this.markiereAusstattung(el, 'zeiger')
       }
     })
   }
 
   /**
-   * Rahmen um ein Ausstattungs-Zeichen. `fest` = es steht zur Löschung an
-   * (kräftig, rot gefüllt), sonst liegt nur der Zeiger darüber (dünn).
+   * Rahmen um ein Ausstattungs-Zeichen — in drei Stufen:
+   *
+   *   `zeiger`   der Zeiger liegt darüber (dünn)
+   *   `griff`    es ist GEGRIFFEN und folgt gerade (kräftig, zart gefüllt)
+   *   `loeschen` es steht zur Löschung an (kräftig, rot gefüllt)
    *
    * Die FARBE des blossen Überfahrens richtet sich nach dem Werkzeug (W2). Rot
    * heisst in dieser Oberfläche „das verschwindet gleich" — im Löschen-Werkzeug
@@ -406,8 +435,14 @@ export class FloorplannerView {
    * greifbar ist, bekäme man beim blossen Zielen auf einen Stuhl einen roten
    * Rahmen zu sehen und zöge lieber die Hand zurück. Also dieselbe Hover-Farbe
    * wie bei Wand und Ecke (`#008cba`) — „das könntest du greifen".
+   *
+   * `griff` benutzt GENAU DIESE Farbe weiter und ändert nur ihre Stärke: eine
+   * dritte Farbe wäre eine dritte Aussage, gemeint ist aber die zweite Stufe
+   * derselben. Die Füllung ist bewusst schwach (0,14) — sie soll die Signatur
+   * darunter nicht zudecken, sondern dem Auge sagen, welche Fläche gerade
+   * unter der Fingerkuppe liegt.
    */
-  private markiereAusstattung(el: AusstattungElement, fest: boolean) {
+  private markiereAusstattung(el: AusstattungElement, stufe: 'zeiger' | 'griff' | 'loeschen') {
     const hb = el.breite / 2
     const ht = el.tiefe / 2
     const ecken: Array<[number, number]> = [
@@ -417,14 +452,16 @@ export class FloorplannerView {
       this.ausPunkt(el, -hb, ht)
     ]
     const greifbar = this.viewmodel.mode == floorplannerModes.MOVE
+    const loescht = stufe === 'loeschen'
+    const gegriffen = stufe === 'griff'
     this.drawPolygon(
       ecken.map((p) => p[0]),
       ecken.map((p) => p[1]),
-      fest,
-      loeschFuellung,
+      loescht || gegriffen,
+      loescht ? loeschFuellung : griffFuellung,
       true,
-      fest || !greifbar ? deleteColor : wallColorHover,
-      fest ? 3 : 2
+      loescht || !greifbar ? deleteColor : wallColorHover,
+      loescht ? 3 : gegriffen ? 3.5 : 2
     )
   }
 

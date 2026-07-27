@@ -2091,6 +2091,21 @@ export class Floorplanner {
   /** Laeuft, solange ein Finger auf einem loeschbaren Objekt ruht (E3). */
   private langdruckTimer: ReturnType<typeof setTimeout> | null = null
 
+  /**
+   * Haelt der EINE Finger gerade ein MOEBEL? (Handy-Welle)
+   *
+   * Getrennt von `zugKennung` gefuehrt, obwohl beide zusammen fallen: der Zug
+   * gehoert dem KERN und wird auch von der Maus und vom Blatt begonnen. Diese
+   * Angabe gehoert dem FINGER und beantwortet die eine Frage, die jedes
+   * `touchmove` stellt — schiebe ich die ANSICHT oder das STUECK?
+   *
+   * Sie wird beim AUFSETZEN entschieden und nie spaeter. Am Handy gibt es kein
+   * Schweben: die Absicht laesst sich vorher nicht ablesen, also muss sie im
+   * ersten Augenblick feststehen. Sonst begaenne jeder Wisch mehrdeutig, und
+   * die ersten Pixel gingen entweder dem Plan oder dem Moebel verloren.
+   */
+  private fingerGreift = false
+
   /** */
   private fingerStart(e: TouchEvent): void {
     e.preventDefault()
@@ -2100,6 +2115,40 @@ export class Floorplanner {
       this.fingerStartX = this.fingerX
       this.fingerStartY = this.fingerY
       this.fingerHatGeschoben = false
+
+      // --- MOEBEL MIT DEM FINGER ZIEHEN (Handy-Welle)
+      //
+      // Die Absichts-Trennung ist DIESELBE, die die Maus schon hat, nur an
+      // einem anderen Augenblick abgelesen: `mousemove` sperrt das Schwenken,
+      // solange `activeAusstattung` steht (`mousemove`, Abschnitt „panning"),
+      // und `mousedown` greift ueber `zugBeginnen`. Beim Finger fallen Zielen
+      // und Druecken in EINEN Augenblick zusammen, also faellt hier auch die
+      // Entscheidung: Treffer auf ein Moebel -> ziehen, sonst -> schieben.
+      //
+      // Gegriffen wird ausschliesslich AUSSTATTUNG, nicht Ecke und nicht Wand.
+      // Das ist kein Vergessen, sondern die Lehre aus W5: eine verschobene
+      // GEMESSENE Ecke bricht den Rueckweg ins Projekt hart ab. Die Maus darf
+      // das, weil sie vorher schwebt und am Rahmen sieht, was sie greift — der
+      // Finger sieht nichts und trifft mit einer breiten Kuppe. Am Handy waere
+      // das ein stiller Griff ins Aufmass.
+      if (this.mode == floorplannerModes.MOVE) {
+        this.zeigerSetzen(this.fingerX, this.fingerY)
+        this.trefferBestimmen()
+        this.fingerGreift =
+          this.activeAusstattung !== null &&
+          this.zugBeginnen(this.activeAusstattung, this.mouseX, this.mouseY)
+        if (!this.fingerGreift) {
+          // Nichts in der Hand: die Marken MUESSEN weg. Am Handy raeumt kein
+          // Wegfahren sie ab — ein liegen gebliebener Rahmen behauptete einen
+          // Griff, den es nicht gibt, und die Schwenk-Sperre unten haenge an
+          // ihm fest.
+          this.activeAusstattung = null
+          this.activeCorner = null
+          this.activeWall = null
+        }
+        this.view.draw()
+        return
+      }
 
       if (this.bearbeitetMitEinemFinger()) {
         // Der Finger arbeitet: Zeiger dorthin setzen, damit Treffer und
@@ -2126,8 +2175,12 @@ export class Floorplanner {
       }
     } else if (e.touches.length === 2) {
       // Zweiter Finger: das ist Navigation, keine Bearbeitung. Ein angefangener
-      // Langdruck wird damit hinfaellig.
+      // Langdruck wird damit hinfaellig — und ein angefangener MOEBELZUG
+      // ebenso. Zwei Finger heissen in diesem Planer „zoomen", und beides
+      // zugleich waere keine Geste. Dieselbe Regel gilt im Blatt
+      // (`axo-zeichnen.js`, `pointerdown` bei `zeiger.size > 1`).
       this.langdruckAbbrechen()
+      this.fingerZugBeenden()
       this.fingerAbstand = this.abstandZwischen(e)
       this.fingerMitteX = (e.touches[0].clientX + e.touches[1].clientX) / 2
       this.fingerMitteY = (e.touches[0].clientY + e.touches[1].clientY) / 2
@@ -2146,6 +2199,24 @@ export class Floorplanner {
       ) {
         this.fingerHatGeschoben = true
         this.langdruckAbbrechen()
+      }
+
+      // --- Ein Stueck in der Hand: es folgt, die Ansicht steht still.
+      //
+      // Der Ruecksprung ist die Schwenk-Sperre des Maus-Weges, nur an dieser
+      // Stelle: dort steht sie als `!this.activeAusstattung` in der
+      // Schwenk-Bedingung. GEMESSEN wurde sie dort — ohne sie legt derselbe
+      // Zug das Stueck rund doppelt so weit, weil Moebel UND Plan wandern.
+      // Gezogen wird ueber `zugSchritt`, also ueber DIESELBE Einrast-Rechnung
+      // wie Maus und Blatt; eine zweite gaebe es hier nicht umsonst, sondern
+      // ab dem ersten Nachbessern als zweites Ergebnis fuer dieselbe Bewegung.
+      if (this.fingerGreift) {
+        this.zeigerSetzen(x, y)
+        this.zugSchritt(this.mouseX, this.mouseY)
+        this.fingerX = x
+        this.fingerY = y
+        this.view.draw()
+        return
       }
 
       if (this.bearbeitetMitEinemFinger()) {
@@ -2202,6 +2273,7 @@ export class Floorplanner {
   private fingerEnde(): void {
     this.fingerAbstand = 0
     this.langdruckAbbrechen()
+    this.fingerZugBeenden()
 
     // Kurzes Tippen im Zeichnen-Werkzeug setzt einen Punkt (E3) — das
     // Gegenstueck zum Klick. Bei der Maus erledigt das `mouseup`, das am Handy
@@ -2225,9 +2297,33 @@ export class Floorplanner {
   }
 
   /**
-   * Arbeitet der EINE Finger gerade, statt die Ansicht zu schieben? Im
-   * Verschieben-Werkzeug bleibt es beim Schieben (dort gibt es nichts zu
-   * tippen), in Zeichnen und Loeschen bearbeitet er.
+   * Einen laufenden Finger-Moebelzug beenden — losgelassen, zweiter Finger
+   * dazugekommen oder Beruehrung abgebrochen.
+   *
+   * Die MARKE faellt mit dem Finger, und das ist kein Beiwerk: sie ist am Handy
+   * die einzige Rueckmeldung, dass etwas in der Hand war (es gibt keinen
+   * Zeiger, der `grabbing` zeigen koennte). Bliebe sie liegen, behauptete das
+   * Bild dauerhaft einen Griff.
+   */
+  private fingerZugBeenden(): void {
+    if (!this.fingerGreift) {
+      return
+    }
+    this.fingerGreift = false
+    this.zugBeenden()
+    this.activeAusstattung = null
+    this.view.draw()
+  }
+
+  /**
+   * Arbeitet der EINE Finger gerade, statt die Ansicht zu schieben? In Zeichnen
+   * und Loeschen immer.
+   *
+   * Das Verschieben-Werkzeug steht bewusst NICHT hier: dort haengt die Antwort
+   * nicht am Werkzeug, sondern am TREFFER — Finger auf einem Moebel zieht,
+   * Finger auf leerer Flaeche schiebt die Ansicht. Diese Unterscheidung
+   * entscheidet `fingerStart` und merkt sie sich in `fingerGreift`; sie hier
+   * mit zu beantworten hiesse, den Treffer ein zweites Mal zu bestimmen.
    */
   private bearbeitetMitEinemFinger(): boolean {
     return this.mode == floorplannerModes.DRAW || this.mode == floorplannerModes.DELETE
@@ -2280,8 +2376,11 @@ export class Floorplanner {
     this.activeAusstattung = null
     // Ein Werkzeugwechsel beendet auch einen laufenden Möbelzug (W2) —
     // `setMode` läuft unter anderem nach jedem Rückgängig, und danach ist das
-    // gezogene Stück ein anderes Objekt.
+    // gezogene Stück ein anderes Objekt. Der FINGER muss mit: bliebe seine
+    // Merkung stehen, schöbe der nächste Wisch ein Möbel, das der Nutzer nie
+    // angefasst hat (Handy-Welle).
     this.zugKennung = null
+    this.fingerGreift = false
     // Dasselbe für die Öffnungen (W4). Der Geist MUSS mit: er zeigt eine
     // Öffnung, die es nicht gibt — nach dem Wechsel auf ein anderes Werkzeug
     // wäre er ein Versprechen, das der Zeiger dort nicht einlöst.
