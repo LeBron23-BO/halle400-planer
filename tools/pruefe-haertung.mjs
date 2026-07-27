@@ -908,37 +908,60 @@ log('\n── M8: verschoben ──')
    Die wichtigste Lehre: `element.hidden` ist blind fuer `display:none` aus
    einer Medienabfrage. `paletteSichtbar()` meldete `true` fuer eine Palette,
    die gar nicht zu sehen war — und 67 Pruefungen fussten darauf.
+
+   SEIT W8 IST DIE PALETTE SELBST NICHT MEHR DAS BEISPIEL: sie ist am Handy
+   wieder da (sie hoert jetzt selbst auf Beruehrungen). Die LEHRE bleibt, also
+   braucht sie ein Beispiel, das noch gilt — die MASSZEILE IN DER PALETTE
+   (`.pmass`), die unter 900 px per Medienabfrage verschwindet, waehrend ihr
+   `hidden`-Attribut unveraendert `false` bleibt. Sie liegt im Grundriss-
+   Umschlag und ist damit in genau derselben Lage wie die Palette es war.
+   Ein Gate, dessen Beispiel weggefallen ist, ohne dass jemand es merkt, ist
+   genau der Zustand, den W6 abgeschafft hat: darum steht der Umschwung hier
+   ausdruecklich als eigene Pruefung.
    ══════════════════════════════════════════════════════════════════════ */
 log('\n── MG: die Messgroesse ──')
 {
   const { ctx, page, konsole } = await fenster(null, { viewport: { width: 1440, height: 900 } })
   await bearbeitenAn(page)
-  const breit = await page.evaluate(() => ({
-    palette: window.__planerDatei.paletteSichtbar(),
-    attribut: !document.getElementById('palette').hidden
-  }))
+  const messe = () =>
+    page.evaluate(() => {
+      const sicht = (e) =>
+        !!e &&
+        e.checkVisibility({ contentVisibilityAuto: true, opacityProperty: true, visibilityProperty: true })
+      const mass = document.querySelector('#paletteLeib .pstueck .pmass')
+      return {
+        masszeile: sicht(mass),
+        attribut: !!mass && !mass.hidden,
+        palette: window.__planerDatei.paletteSichtbar()
+      }
+    })
+  const breit = await messe()
   pruefe(
-    breit.palette === true && breit.attribut === true,
-    `MG: GEGENPROBE ZUERST — am breiten Fenster ist die Palette wirklich da (${JSON.stringify(breit)})`
+    breit.masszeile === true && breit.attribut === true,
+    `MG: GEGENPROBE ZUERST — am breiten Fenster ist die Masszeile der Palette wirklich da (${JSON.stringify(breit)})`
   )
 
   await page.setViewportSize({ width: 390, height: 800 })
   await page.waitForTimeout(700)
-  const schmal = await page.evaluate(() => ({
-    palette: window.__planerDatei.paletteSichtbar(),
-    attribut: !document.getElementById('palette').hidden
-  }))
+  const schmal = await messe()
   pruefe(
-    schmal.palette === false,
+    schmal.masszeile === false,
     `MG: am schmalen Fenster meldet die Messung ehrlich „nicht sichtbar" (${JSON.stringify(schmal)})`
   )
   pruefe(
     schmal.attribut === true,
     'MG: … waehrend das ALTE Mass (`hidden`) hier weiterhin `true` sagen wuerde — genau der blinde Fleck'
   )
+  /* W8: was frueher an dieser Stelle stand, gilt umgekehrt. Festgehalten und
+     nicht stillschweigend entfernt — sonst wuesste in drei Wochen niemand mehr,
+     ob die Palette am Handy fehlen SOLL oder nur kaputt ist. */
+  pruefe(
+    breit.palette === true && schmal.palette === true,
+    `MG: W8 — die Palette ist jetzt in BEIDEN Breiten da (breit ${breit.palette}, schmal ${schmal.palette})`
+  )
 
-  /* W7 am Handy: die Werkzeuge sind hier ohnehin fern (keine Palette, kein
-     Fingerziehen) — umso mehr muss die ruhige Zeile SAGEN, wo gezeichnet wird.
+  /* W7 am Handy: die ruhige Zeile muss SAGEN, wo gezeichnet wird — und seit W8
+     sagt sie es dort ohne Tastenversprechen (kein Q/E, kein Entf).
      Gemessen wird ihre LAGE, nicht nur ihr Dasein. Der Grund steht im
      Bauwerkzeug: als schwebende Leiste lag sie bei 390 px erst im Titel
      (52-137 gegen 60-172), nach dem Verschieben nach unten in der Blick-Leiste
