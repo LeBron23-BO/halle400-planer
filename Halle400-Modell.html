@@ -95,6 +95,15 @@
   button:disabled{opacity:.32;cursor:default}
   .lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
        color:var(--ink-mute);padding:0 7px 0 3px;user-select:none;font-variant-numeric:tabular-nums}
+  /* ZWEI FASSUNGEN EINES SATZES, damit die Medienabfrage die passende waehlen
+     kann. Am breiten Bildschirm steht die lange da — dort ist Platz, und
+     „Wände zeichnen" sagt mehr als „Wände". Am Handy die kurze, und nicht aus
+     Bequemlichkeit: dort war „Löschen" sonst ausserhalb der Anzeige, und die
+     Tastenhinweise („Strg+Z", „Esc") versprachen etwas, das ein Telefon nicht
+     hat. Ein Umschalten in JS gaebe es dafuer nicht umsonst — es muesste bei
+     jeder Groessenaenderung nachgezogen werden, und wer es einmal vergisst,
+     hat zwei Wahrheiten. */
+  .kurz{display:none}
 
   /* Kopfleiste: Umschalter + der unauffaellige Bearbeiten-Schalter. */
   .kopfleiste{position:fixed;top:10px;left:50%;transform:translateX(-50%);
@@ -260,19 +269,44 @@
     .kopf{padding:10px 14px;max-width:none}
     .kopf .sub{font-size:9px;letter-spacing:.11em;line-height:1.6}
     .strich{margin:7px 0 6px;max-width:180px}
-    .leiste{bottom:10px;padding:5px;gap:4px}
-    /* ── DIE LEISTE MUSS AUCH INNEN UMBRECHEN (Handy-Welle) ────────────────
+    /* GANZE BREITE, nicht nur hoechstens. GEMESSEN: mit `max-width` allein
+       richtete sich die Leiste nach ihrer breitesten Gruppe (255 px) — und die
+       Werkzeug-Gruppe, die mit `flex-basis:100%` genau diese 255 px erbt,
+       brach dadurch trotz kurzer Aufschriften um. Eine Leiste, die schmaler
+       ist als die Anzeige, verschenkt am Handy Hoehe, und Hoehe ist hier das
+       Knappe. */
+    .leiste{bottom:10px;padding:5px;gap:4px;width:calc(100vw - 16px);max-width:none}
+    /* ── DIE WERKZEUGE MUESSEN ERREICHBAR SEIN (Handy-Welle) ───────────────
        GEMESSEN am Standbild bei 390 x 800, nicht vermutet: `.leiste` bricht
-       zwar um, ihre GRUPPEN aber nicht — und die erste Gruppe ist mit vier
-       Werkzeugknoepfen rund 440 px breit. Bei 366 px verfuegbarer Breite lag
-       „Löschen" damit vollstaendig ausserhalb der Anzeige: das Loeschen-
-       Werkzeug war am Handy NICHT ERREICHBAR, und mit ihm der einzige Weg,
+       zwar um, ihre GRUPPEN aber nicht — und die Werkzeug-Gruppe ist mit ihren
+       vier Knoepfen rund 440 px breit. Bei 366 px verfuegbarer Breite lag
+       „Löschen" damit VOLLSTAENDIG ausserhalb der Anzeige: das Loeschen-
+       Werkzeug war am Handy nicht erreichbar, und mit ihm der einzige Weg,
        am Telefon etwas zu entfernen (Langdruck, E3).
 
-       Eine Leiste, die zwei Reihen hoch ist, kostet Platz; eine, deren
-       Knoepfe man nicht erreicht, kostet die Bedienung. `justify-content`
-       haelt die umgebrochene zweite Reihe mittig unter der ersten. */
-    .grp{flex-wrap:wrap;justify-content:center}
+       Zwei Massnahmen, in dieser Reihenfolge:
+
+       1. KUERZERE AUFSCHRIFTEN (s. `.lang`/`.kurz` in der Leiste). „Wände
+          zeichnen" -> „Wände", „Türen & Fenster" -> „Türen". Die volle Aussage
+          bleibt im `title`. Das spart Breite, ohne die Leiste hoeher zu machen
+          — und Hoehe ist am Telefon das Knappe: die Leiste nimmt schon so ein
+          Fuenftel der Anzeige.
+       2. Und wenn es trotzdem nicht reicht, DARF diese eine Gruppe umbrechen.
+          `flex-basis:100%` ist dabei Bedingung und nicht Zierde: ohne sie
+          schrumpft der Flex-Umbruch jede Gruppe auf ihren breitesten Knopf
+          zusammen, und die Leiste wird zu einer Saeule, die zwei Drittel der
+          Zeichenflaeche verdeckt. AM STANDBILD GEMESSEN — genau das ist beim
+          ersten Versuch passiert.
+
+       Ausdruecklich NUR diese beiden Gruppen: `.grp` global umbrechen zu
+       lassen zerlegte auch die Kopfleiste („Axonometrie" rutschte unter
+       „Grundriss"). */
+    #grpWerkzeug,#oeffnungsArten{flex-basis:100%;flex-wrap:wrap;justify-content:center}
+    /* Die Beschriftung der Gruppe kostet 58 px fuer eine Auskunft, die die
+       gedrueckte Schaltflaeche selbst gibt. */
+    #grpWerkzeug > .lbl,#oeffnungsArten > .lbl{display:none}
+    .leiste .lang,.frage .lang,.palette-fuss .lang{display:none}
+    .kurz{display:inline}
     button{padding:8px 9px;font-size:10px}
     .lbl{padding:0 4px 0 2px;font-size:9px}
     /* ── Die Palette AM HANDY (Handy-Welle) ──────────────────────────────
@@ -302,7 +336,6 @@
        waere er eine dritte Zeile fuer eine Auskunft, die schon zweimal da ist. */
     .pstueck .pmass{display:none}
     .palette-fuss{padding:6px 8px 8px;font-size:9.5px;line-height:1.4}
-    .palette-fuss .lang{display:none}
   }
   @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
 
@@ -470,11 +503,15 @@
   </aside>
 
   <div class="leiste" id="werkzeuge" role="toolbar" aria-label="Grundriss bearbeiten" hidden>
-    <div class="grp">
+    <!-- Die kurzen Aufschriften sind KEINE Abkürzung aus Bequemlichkeit: bei
+         390 px lag „Löschen" sonst ausserhalb der Anzeige (s. CSS, „Die
+         Werkzeuge müssen erreichbar sein"). Die volle Aussage steht im
+         `title` und geht damit nicht verloren. -->
+    <div class="grp" id="grpWerkzeug">
       <span class="lbl">Werkzeug</span>
-      <button type="button" id="wzMove" title="Verschieben — Ecken, Wände und Möbel ziehen. Q und E drehen das Möbel unter dem Zeiger um 15°." aria-pressed="true">Verschieben</button>
-      <button type="button" id="wzDraw" title="Wände zeichnen — Punkt für Punkt" aria-pressed="false">Wände zeichnen</button>
-      <button type="button" id="wzOeffnung" title="Türen &amp; Fenster — auf eine Wand zeigen, klicken setzt. Q wendet den Anschlag, E die Aufschlagseite." aria-pressed="false">Türen &amp; Fenster</button>
+      <button type="button" id="wzMove" title="Verschieben — Ecken, Wände und Möbel ziehen. Am Rechner drehen Q und E das Möbel unter dem Zeiger um 15°; am Handy zieht ein Finger das Möbel, zwei Finger zoomen." aria-pressed="true">Verschieben</button>
+      <button type="button" id="wzDraw" title="Wände zeichnen — Punkt für Punkt" aria-pressed="false"><span class="lang">Wände zeichnen</span><span class="kurz">Wände</span></button>
+      <button type="button" id="wzOeffnung" title="Türen &amp; Fenster — auf eine Wand zeigen, klicken setzt. Q wendet den Anschlag, E die Aufschlagseite." aria-pressed="false"><span class="lang">Türen &amp; Fenster</span><span class="kurz">Türen</span></button>
       <button type="button" id="wzDelete" title="Löschen — mit Rückfrage" aria-pressed="false">Löschen</button>
     </div>
     <!-- Die Arten der Öffnung. Sie erscheinen NUR mit dem Werkzeug: vier
@@ -537,7 +574,10 @@
     <button type="button" id="btnAbbrechen">Abbrechen</button>
     <button type="button" id="btnEntfernen" class="ernst">Entfernen</button>
   </span>
-  <span class="fuss">Rückgängig mit Strg+Z &middot; Abbrechen mit Esc</span>
+  <!-- Am Handy gibt es weder Strg+Z noch Esc. Beide Wege stehen dort aber als
+       Schaltfläche bereit („Abbrechen" hier, „Rückgängig" in der Leiste) — der
+       kurze Satz sagt darum die Zusage und nicht den Tastendruck. -->
+  <span class="fuss"><span class="lang">Rückgängig mit Strg+Z &middot; Abbrechen mit Esc</span><span class="kurz">Rückgängig geht auch danach noch.</span></span>
 </div>
 
 <div class="kopfleiste" role="toolbar" aria-label="Ansicht wählen">
@@ -4240,7 +4280,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "c8051b95fb22";
-const BAU_STEMPEL = "2026-07-27 21:20";
+const BAU_STEMPEL = "2026-07-27 21:31";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */

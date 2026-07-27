@@ -757,6 +757,30 @@ try {
     )
     await page.screenshot({ path: path.join(STANDBILDER, 'finger-14-leiste.png') })
 
+    /* WIE VIEL DER ANZEIGE FRISST SIE? Die Erreichbarkeit oben ist nur die
+       halbe Frage — eine Leiste, die alle Knoepfe zeigt und dafuer die
+       Zeichenflaeche verdeckt, hat das Problem nur verschoben. 35 % ist die
+       Grenze, unter der bei 800 px Hoehe noch ueber 500 px Plan bleiben; die
+       Fassung vor der Handy-Welle lag bei 22 % und hatte dafuer einen Knopf
+       ausserhalb der Anzeige. Und die PALETTE darf sie nicht beruehren: zwei
+       einander ueberlappende Bedienflaechen sind eine Falle. */
+    const platz = await page.evaluate(() => {
+      const l = document.querySelector('#werkzeuge').getBoundingClientRect()
+      const p = document.getElementById('palette').getBoundingClientRect()
+      return {
+        leiste: { oben: Math.round(l.top), hoehe: Math.round(l.height), breite: Math.round(l.width) },
+        palette: { unten: Math.round(p.bottom), rechts: Math.round(p.right) },
+        ueberlappt: !(l.top >= p.bottom || l.bottom <= p.top || l.left >= p.right || l.right <= p.left)
+      }
+    })
+    const anteil = (platz.leiste.hoehe / HOEHE) * 100
+    log(
+      `    Werkzeugleiste: ${platz.leiste.breite} x ${platz.leiste.hoehe} px ab y=${platz.leiste.oben} ` +
+        `(${anteil.toFixed(1)} % der Hoehe) · Palette endet bei y=${platz.palette.unten}, x=${platz.palette.rechts}`
+    )
+    pruefe(anteil <= 35, `H1b und die Leiste frisst hoechstens 35 % der Hoehe (${anteil.toFixed(1)} %)`)
+    pruefe(platz.ueberlappt === false, 'H1c Leiste und Palette ueberlappen einander NICHT')
+
     /* Und der Beweis, dass das nicht nur Geometrie ist: mit dem FINGER auf
        „Löschen" tippen, ein Stueck per Langdruck vorschlagen (E3) und die
        Rueckfrage bestaetigen. */

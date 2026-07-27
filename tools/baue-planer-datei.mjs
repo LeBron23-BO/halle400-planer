@@ -192,11 +192,15 @@ const html = `<!DOCTYPE html>
   button:disabled{opacity:.32;cursor:default}
   .lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
        color:var(--ink-mute);padding:0 7px 0 3px;user-select:none;font-variant-numeric:tabular-nums}
-  /* Zwei Aufschriften je Knopf, damit die Medienabfrage die kuerzere waehlen
-     kann (s. „Die Werkzeuge muessen erreichbar sein"). Am breiten Bildschirm
-     steht die lange da — dort ist Platz, und „Wände zeichnen" sagt mehr als
-     „Wände". */
-  .leiste .kurz{display:none}
+  /* ZWEI FASSUNGEN EINES SATZES, damit die Medienabfrage die passende waehlen
+     kann. Am breiten Bildschirm steht die lange da — dort ist Platz, und
+     „Wände zeichnen" sagt mehr als „Wände". Am Handy die kurze, und nicht aus
+     Bequemlichkeit: dort war „Löschen" sonst ausserhalb der Anzeige, und die
+     Tastenhinweise („Strg+Z", „Esc") versprachen etwas, das ein Telefon nicht
+     hat. Ein Umschalten in JS gaebe es dafuer nicht umsonst — es muesste bei
+     jeder Groessenaenderung nachgezogen werden, und wer es einmal vergisst,
+     hat zwei Wahrheiten. */
+  .kurz{display:none}
 
   /* Kopfleiste: Umschalter + der unauffaellige Bearbeiten-Schalter. */
   .kopfleiste{position:fixed;top:10px;left:50%;transform:translateX(-50%);
@@ -362,7 +366,13 @@ const html = `<!DOCTYPE html>
     .kopf{padding:10px 14px;max-width:none}
     .kopf .sub{font-size:9px;letter-spacing:.11em;line-height:1.6}
     .strich{margin:7px 0 6px;max-width:180px}
-    .leiste{bottom:10px;padding:5px;gap:4px}
+    /* GANZE BREITE, nicht nur hoechstens. GEMESSEN: mit \`max-width\` allein
+       richtete sich die Leiste nach ihrer breitesten Gruppe (255 px) — und die
+       Werkzeug-Gruppe, die mit \`flex-basis:100%\` genau diese 255 px erbt,
+       brach dadurch trotz kurzer Aufschriften um. Eine Leiste, die schmaler
+       ist als die Anzeige, verschenkt am Handy Hoehe, und Hoehe ist hier das
+       Knappe. */
+    .leiste{bottom:10px;padding:5px;gap:4px;width:calc(100vw - 16px);max-width:none}
     /* ── DIE WERKZEUGE MUESSEN ERREICHBAR SEIN (Handy-Welle) ───────────────
        GEMESSEN am Standbild bei 390 x 800, nicht vermutet: \`.leiste\` bricht
        zwar um, ihre GRUPPEN aber nicht — und die Werkzeug-Gruppe ist mit ihren
@@ -392,8 +402,8 @@ const html = `<!DOCTYPE html>
     /* Die Beschriftung der Gruppe kostet 58 px fuer eine Auskunft, die die
        gedrueckte Schaltflaeche selbst gibt. */
     #grpWerkzeug > .lbl,#oeffnungsArten > .lbl{display:none}
-    .leiste .lang{display:none}
-    .leiste .kurz{display:inline}
+    .leiste .lang,.frage .lang,.palette-fuss .lang{display:none}
+    .kurz{display:inline}
     button{padding:8px 9px;font-size:10px}
     .lbl{padding:0 4px 0 2px;font-size:9px}
     /* ── Die Palette AM HANDY (Handy-Welle) ──────────────────────────────
@@ -423,7 +433,6 @@ const html = `<!DOCTYPE html>
        waere er eine dritte Zeile fuer eine Auskunft, die schon zweimal da ist. */
     .pstueck .pmass{display:none}
     .palette-fuss{padding:6px 8px 8px;font-size:9.5px;line-height:1.4}
-    .palette-fuss .lang{display:none}
   }
   @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
 
@@ -594,7 +603,7 @@ const html = `<!DOCTYPE html>
     <!-- Die kurzen Aufschriften sind KEINE Abkürzung aus Bequemlichkeit: bei
          390 px lag „Löschen" sonst ausserhalb der Anzeige (s. CSS, „Die
          Werkzeuge müssen erreichbar sein"). Die volle Aussage steht im
-         `title` und geht damit nicht verloren. -->
+         \`title\` und geht damit nicht verloren. -->
     <div class="grp" id="grpWerkzeug">
       <span class="lbl">Werkzeug</span>
       <button type="button" id="wzMove" title="Verschieben — Ecken, Wände und Möbel ziehen. Am Rechner drehen Q und E das Möbel unter dem Zeiger um 15°; am Handy zieht ein Finger das Möbel, zwei Finger zoomen." aria-pressed="true">Verschieben</button>
@@ -662,7 +671,10 @@ const html = `<!DOCTYPE html>
     <button type="button" id="btnAbbrechen">Abbrechen</button>
     <button type="button" id="btnEntfernen" class="ernst">Entfernen</button>
   </span>
-  <span class="fuss">Rückgängig mit Strg+Z &middot; Abbrechen mit Esc</span>
+  <!-- Am Handy gibt es weder Strg+Z noch Esc. Beide Wege stehen dort aber als
+       Schaltfläche bereit („Abbrechen" hier, „Rückgängig" in der Leiste) — der
+       kurze Satz sagt darum die Zusage und nicht den Tastendruck. -->
+  <span class="fuss"><span class="lang">Rückgängig mit Strg+Z &middot; Abbrechen mit Esc</span><span class="kurz">Rückgängig geht auch danach noch.</span></span>
 </div>
 
 <div class="kopfleiste" role="toolbar" aria-label="Ansicht wählen">
