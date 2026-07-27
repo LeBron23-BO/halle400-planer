@@ -85,6 +85,15 @@
        max-width:calc(100vw - 24px);z-index:5}
   .grp{display:flex;gap:2px;align-items:center}
   .grp + .grp{border-left:1px solid var(--panel-line);padding-left:5px;margin-left:2px}
+  /* V7 — DIE LEISTE SPRINGT NICHT.
+     Eine Gruppe, deren PLATZ bleibt, waehrend ihr Inhalt geht. `visibility`
+     nimmt die Sichtbarkeit UND jeden Zeiger, laesst den Raum aber stehen —
+     `display:none` und `hidden` nehmen den Raum mit, und genau daran bewegten
+     sich beim Werkzeugwechsel 13 von 24 Knoepfen um bis zu 520 px. Der Trenner
+     zur Nachbargruppe geht mit: eine leere Spalte mit senkrechtem Strich saehe
+     aus wie ein Fehler. */
+  .grp.platzhalter{visibility:hidden}
+  .grp.platzhalter + .grp{border-left-color:transparent}
   button{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
        color:var(--ink-dim);background:transparent;border:1px solid transparent;
        padding:9px 11px;min-height:38px;cursor:pointer;white-space:nowrap;
@@ -157,6 +166,12 @@
        background:var(--panel);border:1px solid var(--panel-line);
        font-size:12.5px;line-height:1.45;color:var(--ink)}
   .meldung.warnt{border-color:var(--rot);color:var(--rot)}
+  /* Der Knopf IN der Meldung (C3) — sie ist die einzige Zeile, die etwas
+     anbieten kann, ohne wie eine Rueckfrage auszusehen. Klein und in derselben
+     Zeile: das Angebot gehoert zum Satz und nicht daneben. */
+  .meldung button{margin-left:8px;border:1px solid var(--panel-line);min-height:32px;
+       padding:6px 10px;background:var(--sage-deep);border-color:var(--sage-deep);color:var(--paper)}
+  .meldung button:hover{background:var(--ink-dim);color:var(--paper)}
 
   /* Rueckfragen liegen unten mittig und NICHT am Zeiger: am Zeiger verdeckten
      sie genau das Objekt, ueber das sie eine Auskunft verlangen (E1). */
@@ -172,6 +187,26 @@
   .frage button.ernst:hover{background:#8d2f21;color:#fff}
   .frage .fuss{flex-basis:100%;text-align:center;font-family:var(--mono);
        font-size:9.5px;letter-spacing:.08em;color:var(--ink-mute)}
+
+  /* ── Ein ANGEBOT ist keine Rueckfrage (C1) ────────────────────────────
+     Dieselbe Bauform, aber im Farbklima des Blattes statt in der Warnfarbe.
+     Rot heisst in dieser Oberflaeche „hier verschwindet gleich etwas" — beim
+     Fund eines liegen gebliebenen Standes ist genau das Gegenteil der Fall.
+     Dieselbe Ueberlegung wie beim Moebel-Rahmen in W2: die Farbe muss die
+     Aussage tragen, nicht die Aufmerksamkeit maximieren. */
+  .frage.ruhig{border-color:var(--panel-line)}
+  .frage.ruhig .txt b{color:var(--ink-dim)}
+  .frage.ruhig button.ernst{background:var(--sage-deep);border-color:var(--sage-deep)}
+  .frage.ruhig button.ernst:hover{background:var(--ink-dim)}
+  /* Die Kenndaten eines Standes: Zeitpunkt, Ordner, Groesse. In der Schreibmaschinen-
+     Schrift, weil es MESSWERTE sind und keine Prosa — dieselbe Regel wie bei den
+     Massangaben und den Zaehlern im Blattkopf. */
+  .frage .wert{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-dim)}
+  .frage .weitere{flex-basis:100%;display:flex;flex-direction:column;gap:4px;
+       border-top:1px solid var(--panel-line);padding-top:8px;margin-top:2px}
+  .frage .ortZeile{display:flex;align-items:center;gap:8px;font-family:var(--mono);
+       font-size:11px;letter-spacing:.04em;color:var(--ink-dim)}
+  .frage .ortZeile button{margin-left:auto;min-height:32px;padding:6px 9px;font-size:9.5px}
 
   .tafel{position:fixed;top:104px;right:20px;width:270px;max-height:calc(100vh - 220px);
        background:var(--panel);border:1px solid var(--panel-line);
@@ -509,16 +544,27 @@
          `title` und geht damit nicht verloren. -->
     <div class="grp" id="grpWerkzeug">
       <span class="lbl">Werkzeug</span>
-      <button type="button" id="wzMove" title="Verschieben — Ecken, Wände und Möbel ziehen. Am Rechner drehen Q und E das Möbel unter dem Zeiger um 15°; am Handy zieht ein Finger das Möbel, zwei Finger zoomen." aria-pressed="true">Verschieben</button>
-      <button type="button" id="wzDraw" title="Wände zeichnen — Punkt für Punkt" aria-pressed="false"><span class="lang">Wände zeichnen</span><span class="kurz">Wände</span></button>
+      <button type="button" id="wzMove" title="Verschieben — Möbel ziehen. Wände und Ecken bleiben hier unberührt; dafür gibt es „Wände verschieben“. Am Rechner drehen Q und E das Möbel unter dem Zeiger um 15°; am Handy zieht ein Finger das Möbel, zwei Finger zoomen." aria-pressed="true"><span class="lang">Möbel verschieben</span><span class="kurz">Möbel</span></button>
+      <button type="button" id="wzWand" title="Wände verschieben — Ecken und Wände ziehen. Ein eigenes Werkzeug, weil eine verschobene Wand das Aufmaß aufgibt: das soll man wollen müssen." aria-pressed="false"><span class="lang">Wände verschieben</span><span class="kurz">Wände</span></button>
+      <button type="button" id="wzDraw" title="Wände zeichnen — Punkt für Punkt" aria-pressed="false"><span class="lang">Wände zeichnen</span><span class="kurz">Zeichnen</span></button>
       <button type="button" id="wzOeffnung" title="Türen &amp; Fenster — auf eine Wand zeigen, klicken setzt. Q wendet den Anschlag, E die Aufschlagseite." aria-pressed="false"><span class="lang">Türen &amp; Fenster</span><span class="kurz">Türen</span></button>
       <button type="button" id="wzDelete" title="Löschen — mit Rückfrage" aria-pressed="false">Löschen</button>
     </div>
-    <!-- Die Arten der Öffnung. Sie erscheinen NUR mit dem Werkzeug: vier
-         weitere Knöpfe in einer ohnehin breiten Leiste wären sonst dauerhaft
-         im Weg, ohne je etwas zu bewirken. Ein Klick wählt die Art UND greift
-         das Werkzeug — wer „Fenster" drückt, will ein Fenster setzen. -->
-    <div class="grp" id="oeffnungsArten" hidden>
+    <!-- Die Arten der Öffnung. Sie sind NUR mit ihrem Werkzeug BEDIENBAR, ihr
+         Platz bleibt aber DAUERHAFT reserviert (V7).
+
+         Bis W9 stand hier `hidden`, und die Zeile wurde beim Werkzeugwechsel
+         eingeschoben. Gemessen: dabei bewegten sich 13 von 24 Knöpfen, bis zu
+         520 px — der alte Platz von „Laden" lag danach unter „Zurücksetzen",
+         dem gefährlichsten Knopf der Datei. Eine Leiste, die unter der Hand
+         wegläuft, macht aus einem gelernten Griff einen Fehlgriff.
+
+         `visibility:hidden` statt `display:none`: der Platz bleibt belegt,
+         die Knöpfe sind weder sichtbar noch anklickbar noch mit Tab
+         erreichbar. `aria-hidden` und `inert` sagen dasselbe noch einmal für
+         Vorlesegeräte — eine unsichtbare Schaltfläche, die eine Ansage macht,
+         wäre schlimmer als gar keine. -->
+    <div class="grp platzhalter" id="oeffnungsArten" aria-hidden="true" inert>
       <span class="lbl">Öffnung</span>
       <button type="button" data-oeffnung="tuer" aria-pressed="true">Tür</button>
       <button type="button" data-oeffnung="doppeltuer" aria-pressed="false">Doppeltür</button>
@@ -547,13 +593,17 @@
     </div>
   </div>
 
+  <!-- C3: die Rückfrage nennt den UMFANG in Zahlen. „Alle eigenen Änderungen
+       verwerfen" allein ist wahr und nutzlos — wer nicht weiss, wie viel er
+       verliert, kann nicht entscheiden. Die Zahlen kommen aus denselben
+       Zählern wie der Blattkopf (`verlustBeimZuruecksetzen`). -->
   <div class="frage" id="zurueckFrage" role="alertdialog" aria-live="assertive" aria-label="Zurücksetzen bestätigen" hidden>
-    <span class="txt"><b>Zurücksetzen:</b> alle eigenen Änderungen verwerfen und den gemessenen Plan zeigen?</span>
+    <span class="txt"><b>Zurücksetzen:</b> den gemessenen Plan zeigen? <span id="zurueckFrageUmfang" class="wert"></span></span>
     <span class="knoepfe">
       <button type="button" id="btnZurueckNein">Abbrechen</button>
       <button type="button" id="btnZurueckJa" class="ernst">Zurücksetzen</button>
     </span>
-    <span class="fuss">Das lässt sich nicht rückgängig machen. Vorher „Sichern“ legt den Stand als Datei ab.</span>
+    <span class="fuss">Rückgängig ist danach abgeschaltet. Der Stand wird vorher gesichert und lässt sich einmal zurückholen; „Sichern“ legt ihn zusätzlich als Datei ab.</span>
   </div>
 </div>
 
@@ -601,17 +651,25 @@
   </span>
 </div>
 
-<!-- M8: derselbe Plan, anderer Ablageort. Der Speicherschlüssel trägt den
-     Ablageort (nötig, damit zwei Kopien sich nicht ins Gehege kommen) — wer
-     die Datei verschiebt, sieht seine Arbeit sonst nicht mehr. Gemessen:
-     289 Stück waren weg, ohne einen Hinweis. -->
-<div class="frage" id="ortFrage" role="alertdialog" aria-live="assertive" aria-label="Stand von einem anderen Ablageort" hidden>
-  <span class="txt"><b>Anderer Ablageort:</b> <span id="ortFrageText"></span></span>
+<!-- M8/C1: es liegt Arbeit im Browser, die nicht zu DIESER Datei gehört —
+     anderer Ablageort oder andere Bau-Fassung. Der Speicherschlüssel trägt
+     beides (nötig, damit zwei Kopien sich nicht ins Gehege kommen), und wer
+     die Datei verschiebt oder neu baut, sieht seine Arbeit sonst nicht mehr.
+     Gemessen: vier gesetzte Stücke wurden null, ohne einen Hinweis.
+
+     RUHIG, nicht dringlich: `role="status"` und `aria-live="polite"` statt
+     `alertdialog`/`assertive`, und der Rahmen im Panel-Ton statt in Rot. Hier
+     ist nichts kaputt und nichts zu bestätigen — es liegt etwas bereit. Ein
+     Alarm für ein Angebot wäre dieselbe Übertreibung wie ein roter Rahmen um
+     ein Möbel, das man nur greifen könnte (W2). -->
+<div class="frage ruhig" id="ortFrage" role="status" aria-live="polite" aria-label="Gespeicherte Stände" hidden>
+  <span class="txt"><b>Gespeicherte Arbeit:</b> <span id="ortFrageText"></span><span id="ortFrageErster" class="wert"></span></span>
   <span class="knoepfe">
     <button type="button" id="btnOrtNein">Nein danke</button>
-    <button type="button" id="btnOrtJa" class="ernst">Stand übernehmen</button>
+    <button type="button" id="btnOrtJa" class="ernst">Stand holen</button>
   </span>
-  <span class="fuss">Der Stand bleibt am alten Ablageort liegen — hier entsteht eine Kopie.</span>
+  <span class="weitere" id="ortFrageWeitere" hidden></span>
+  <span class="fuss">Der Stand bleibt liegen, wo er ist — hier entsteht eine Kopie.</span>
 </div>
 
 <!-- Lade-Rückfrage (K1). Sie fehlte, und das war der schwerste Fund des
@@ -630,13 +688,12 @@
 </div>
 
 
-<div class="frage" id="standFrage" role="alertdialog" aria-live="assertive" aria-label="Gespeicherten Stand prüfen" hidden>
-  <span class="txt"><b>Gespeicherter Stand:</b> <span id="standFrageText"></span></span>
-  <span class="knoepfe">
-    <button type="button" id="btnStandVerwerfen">Gemessenen Plan zeigen</button>
-    <button type="button" id="btnStandLaden">Stand laden</button>
-  </span>
-</div>
+<!-- Hier stand bis W9 `#standFrage` — „dieser Stand passt nicht zum eingebauten
+     Plan, laden oder verwerfen?". Sie ist ersatzlos weg, weil sie nicht
+     auslösen KONNTE: der Speicherschlüssel trägt den Plan-Abdruck, also hat
+     alles, was unter ihm liegt, denselben. Ihre eigentliche Aufgabe — einen
+     Stand aus einer anderen Bau-Fassung anbieten — erledigt `#ortFrage`, das
+     jetzt über ALLE Abdrücke sucht. -->
 
 <div class="meldung" id="meldung" role="status" aria-live="polite" hidden></div>
 
@@ -4280,7 +4337,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "c8051b95fb22";
-const BAU_STEMPEL = "2026-07-27 23:02";
+const BAU_STEMPEL = "2026-07-27 23:38";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -7082,6 +7139,10 @@ class Floorplan {
 /* ══════ floorplanner/floorplanner_view.js ══════ */
 /** */
 const floorplannerModes = {
+    /**
+     * Möbel verschieben. Seit W9 NUR noch Möbel — Wand-Ecken und Wände sind hier
+     * nicht mehr greifbar (s. `WAND`).
+     */
     MOVE: 0,
     DRAW: 1,
     DELETE: 2,
@@ -7091,7 +7152,28 @@ const floorplannerModes = {
      * Geister-Öffnung auf der nächsten Wand statt zu greifen. Zwei Bedeutungen in
      * einem Werkzeug hiessen raten, welche gemeint war.
      */
-    OEFFNUNG: 3
+    OEFFNUNG: 3,
+    /**
+     * WÄNDE VERSCHIEBEN (W9) — Ecken und Wände ziehen, sonst nichts.
+     *
+     * WARUM EIN EIGENES WERKZEUG UND KEIN ZUSATZ ZUM VERSCHIEBEN: gemessen wurde,
+     * dass ein Zug auf eine Wand-Ecke im Verschieben-Werkzeug — dieselbe Geste
+     * wie beim Möbelziehen, ohne Werkzeugwechsel und ohne Rückfrage — die
+     * Aussenwand um 2,24 m verschob; danach stand auf dem Blatt „kein Aufmaß".
+     * Die Greifzone ist im Startzoom 8 px = 41 cm breit, ein Stuhl misst 45 cm
+     * (8,9 px): die Fehlertoleranz ist so gross wie der Gegenstand. Solange
+     * dieselbe Geste beides bedeuten kann, entscheidet der Zufall, was passiert.
+     *
+     * Es ist DIESELBE Trennung, die der Finger seit W8 hat: er greift nur
+     * Ausstattung, nie Ecke oder Wand (W8 Punkt 3). Dort war die Begründung, dass
+     * der Finger nichts überfliegen kann; hier ist sie, dass die Folge eines
+     * Fehlgriffs unverhältnismässig ist. Und es ist NICHT das Zeichnen-Werkzeug
+     * geworden: dort ist der Ecken-Fang (E2) die tragende Bedienung — wer eine
+     * Trennwand an die Aussenwand anschliessen will, DRÜCKT auf deren Ecke.
+     * Würde ein Druck dort die Ecke verschieben, wäre genau der wichtigste Fall
+     * des Zeichnens nicht mehr zu bedienen.
+     */
+    WAND: 4
 };
 // grid parameters
 const gridSpacing = 20; // pixels
@@ -8913,6 +8995,18 @@ class Floorplanner {
         // (gedrehten) Möbel-Rechtecks. Wer knapp daneben zielt, trifft weiterhin
         // zuerst Ecke und Wand — die Wand bleibt also unverändert gut greifbar,
         // solange kein Möbel im Weg steht.
+        //
+        // Seit W9 hat diese Kette nur noch im LÖSCHEN-Werkzeug beide Seiten (dort
+        // sind Möbel UND Bausubstanz greifbar) — im Verschieben gibt es keine
+        // Bausubstanz mehr zu verlieren, im Wand-Werkzeug keine Möbel. Sie bleibt
+        // trotzdem hier und wird dort gemessen: das Löschen ist der Fall, in dem
+        // ein Fehlgriff am teuersten ist.
+        //
+        // GRIFF NACH DEM KLEINSTEN TREFFER, nicht nach dem nächstgelegenen: liegt
+        // der Zeiger in mehreren Möbel-Rechtecken (Stuhl unter Tisch — in einer
+        // echten Aufstellung der Normalfall), gewinnt das mit der kleinsten
+        // Fläche. Diese Regel steht in `Floorplan.overlappedAusstattung` und gilt
+        // damit für Maus, Finger und Blatt in EINER Fassung.
         const drauf = ausstattungGreifbar
             ? this.floorplan.overlappedAusstattung(this.mouseX, this.mouseY, 0)
             : null;
@@ -8922,24 +9016,35 @@ class Floorplanner {
         // Warum ganz vorne: eine Öffnung liegt IN einer Wand. Ohne Vorrang gewänne
         // immer die Wand, und eine Tür wäre weder zu löschen noch zu ziehen —
         // stattdessen zöge man die Wand, in der sie sitzt. Warum nur in diesen
-        // beiden Werkzeugen: im Verschieben soll ein Griff auf die Wand weiterhin
-        // die WAND bewegen (mit der Tür darin), und im Zeichnen nähme der Vorrang
-        // dem Ecken-Fang die Sicht.
+        // beiden Werkzeugen: im Wand-Werkzeug soll ein Griff auf die Wand die WAND
+        // bewegen (mit der Tür darin), und im Zeichnen nähme der Vorrang dem
+        // Ecken-Fang die Sicht.
         const oeffnungGreifbar = this.mode == floorplannerModes.DELETE || this.mode == floorplannerModes.OEFFNUNG;
         const hoverOeffnung = oeffnungGreifbar
             ? this.floorplan.overlappedOeffnung(this.mouseX, this.mouseY, toleranz)
             : null;
-        const hoverCorner = hoverOeffnung
+        // --- BAUSUBSTANZ ist nur da greifbar, wo ein Griff auch gemeint sein kann
+        // (W9). Im VERSCHIEBEN-Werkzeug ist sie es seit W9 NICHT mehr: dort werden
+        // Möbel gezogen, und derselbe Zug auf eine Ecke verschob gemessen die
+        // Aussenwand um 2,24 m. Wer eine Wand bewegen will, greift das
+        // Wand-Werkzeug — dieselbe Trennung, die der Finger seit W8 hat.
+        //
+        // Die Sperre sitzt HIER und nicht erst im Zug: `activeCorner`/`activeWall`
+        // tragen ausser dem Ziehen noch drei Bedeutungen — die Hervorhebung im
+        // Bild, den Löschvorschlag und die Schwenk-Sperre in `mousemove`. Würde
+        // nur der Zug abgeklemmt, leuchtete die Wand im Verschieben weiter auf und
+        // der Plan liesse sich über ihr nicht mehr schwenken: ein Fleck, in dem
+        // der Zeiger nichts tut und niemand wüsste, warum.
+        const bausubstanzGreifbar = this.mode == floorplannerModes.DELETE || this.mode == floorplannerModes.WAND;
+        const hoverCorner = hoverOeffnung || drauf || !bausubstanzGreifbar
             ? null
-            : drauf
-                ? null
-                : this.floorplan.overlappedCorner(this.mouseX, this.mouseY, toleranz);
+            : this.floorplan.overlappedCorner(this.mouseX, this.mouseY, toleranz);
         const hoverWall = 
         // `hoverOeffnung` MUSS hier stehen, nicht nur bei der Ecke: eine Öffnung
         // liegt IN einer Wand, und ohne diese Zeile gewinnt die Wand jedes Mal.
         // Gemessen, nicht vermutet — genau das meldete das Gate beim ersten Lauf:
         // der Zeiger fand die Tür, die Rückfrage bot trotzdem „diese Wand" an.
-        hoverOeffnung || drauf || hoverCorner // corner takes precendence
+        hoverOeffnung || drauf || hoverCorner || !bausubstanzGreifbar // corner takes precendence
             ? null
             : this.floorplan.overlappedWall(this.mouseX, this.mouseY, toleranz);
         // Ausserhalb jedes Möbels gilt die alte Reihenfolge: erst Ecke, dann Wand,
@@ -8978,7 +9083,8 @@ class Floorplanner {
         this.zeigerSetzen(event.clientX, event.clientY);
         // update target (snapped position of actual mouse)
         if (this.mode == floorplannerModes.DRAW ||
-            (this.mode == floorplannerModes.MOVE && this.mouseDown)) {
+            ((this.mode == floorplannerModes.MOVE || this.mode == floorplannerModes.WAND) &&
+                this.mouseDown)) {
             this.updateTarget();
         }
         // update object target
@@ -9051,25 +9157,31 @@ class Floorplanner {
             this.oeffnungZiehen();
             this.view.draw();
         }
-        // dragging
+        // dragging — MÖBEL im Verschieben-Werkzeug
+        //
+        // Die Kette „Möbel, sonst Ecke, sonst Wand" ist mit W9 in zwei Werkzeuge
+        // zerlegt. Sie stand hier, weil beides dasselbe Werkzeug war; getrennt
+        // braucht keiner der beiden Zweige mehr ein `else`, und ein Zug kann schon
+        // von der Bauart her nicht mehr das Falsche treffen.
         if (this.mode == floorplannerModes.MOVE && this.mouseDown) {
+            // Den Schnappschuss zieht `zugSchritt` selbst (W7), und zwar erst beim
+            // ersten Schritt, der WIRKLICH etwas ändert — damit der Axonometrie-Weg
+            // dieselbe Regel bekommt und nicht eine zweite daneben.
+            if (this.zugKennung) {
+                this.moebelZiehen();
+                this.view.draw();
+            }
+        }
+        // dragging — BAUSUBSTANZ im Wand-Werkzeug (W9)
+        if (this.mode == floorplannerModes.WAND && this.mouseDown) {
             // Erst hier sichern, nicht schon bei mousedown: ein Druck auf eine Wand
             // ohne Bewegung (oder ein Schwenk der Ansicht) aendert nichts und soll
             // die Historie nicht mit Leerschritten fuellen.
-            // Das MÖBEL steht hier nicht mehr: seinen Schnappschuss zieht `zugSchritt`
-            // selbst (W7), damit der Axonometrie-Weg dieselbe Regel bekommt und nicht
-            // eine zweite daneben. Ecke und Wand haben keinen zweiten Weg und bleiben.
             if ((this.activeCorner || this.activeWall) && !this.zugGesichert) {
                 this.undoManager?.snapshot();
                 this.zugGesichert = true;
             }
-            // Das Möbel zuerst: es hat beim Greifen schon den Vorrang bekommen
-            // (`trefferBestimmen`), und dieselbe Reihenfolge hier hält beides
-            // zusammen. Ein Zug bewegt IMMER genau eine Sache.
-            if (this.zugKennung) {
-                this.moebelZiehen();
-            }
-            else if (this.activeCorner) {
+            if (this.activeCorner) {
                 this.activeCorner.move(this.mouseX, this.mouseY);
                 this.activeCorner.snapToAxis(snapTolerance);
             }
@@ -9708,6 +9820,19 @@ class Floorplanner {
                 stil = 'grab';
             }
         }
+        else if (this.mode == floorplannerModes.WAND) {
+            // W9 — dieselbe Sprache für die Bausubstanz. Sie fehlte ihr bisher als
+            // Einziges: über einem Möbel sagte der Zeiger `grab`, über einer Ecke,
+            // über einer Wand und über dem Leerraum sagte er dasselbe (nämlich
+            // nichts) — gemessen. Wer nicht sieht, dass er gleich Mauerwerk in der
+            // Hand hat, kann es auch nicht lassen.
+            if (this.mouseDown && (this.activeCorner || this.activeWall)) {
+                stil = 'grabbing';
+            }
+            else if (this.activeCorner || this.activeWall) {
+                stil = 'grab';
+            }
+        }
         else if (this.mode == floorplannerModes.OEFFNUNG) {
             // Dieselbe Sprache wie beim Möbel (W4): eine vorhandene Öffnung lässt
             // sich greifen und schieben, überall sonst wird gesetzt.
@@ -9933,6 +10058,13 @@ class Floorplanner {
             // das, weil sie vorher schwebt und am Rahmen sieht, was sie greift — der
             // Finger sieht nichts und trifft mit einer breiten Kuppe. Am Handy waere
             // das ein stiller Griff ins Aufmass.
+            //
+            // W9 hat diese Trennung fuer die MAUS nachgezogen (`floorplannerModes.
+            // WAND`) — der Finger bleibt damit unveraendert und ist nicht mehr der
+            // Sonderfall, sondern die Regel. Im Wand-Werkzeug schiebt er weiterhin
+            // nur die Ansicht: `bearbeitetMitEinemFinger` nennt allein Zeichnen und
+            // Loeschen. Das ist die bewusst konservative Seite — eine Wand mit der
+            // Kuppe zu verschieben bliebe auch mit Werkzeugwahl ein blinder Griff.
             if (this.mode == floorplannerModes.MOVE) {
                 this.zeigerSetzen(this.fingerX, this.fingerY);
                 this.trefferBestimmen();
@@ -10158,6 +10290,15 @@ class Floorplanner {
         // Wechsel etwas anbieten, das der Nutzer gar nicht mehr im Sinn hat.
         this.loeschungAbbrechen();
         this.activeAusstattung = null;
+        // Ecke und Wand MÜSSEN seit W9 hier mit weg. Vorher waren sie in jedem
+        // Werkzeug, in dem sie überhaupt gesetzt wurden, auch greifbar — jetzt
+        // nicht mehr: wer aus dem Wand-Werkzeug ins Verschieben wechselt, während
+        // der Zeiger auf einer Wand steht, nähme die Merkung mit hinüber. Dort
+        // greift sie nichts mehr, sperrt aber über die Schwenk-Bedingung in
+        // `mousemove` die Ansicht — genau der Fleck, in dem der Zeiger nichts
+        // bewirkt und niemand wüsste, warum (dieselbe Begründung wie in `reset`).
+        this.activeCorner = null;
+        this.activeWall = null;
         // Ein Werkzeugwechsel beendet auch einen laufenden Möbelzug (W2) —
         // `setMode` läuft unter anderem nach jedem Rückgängig, und danach ist das
         // gezogene Stück ein anderes Objekt. Der FINGER muss mit: bliebe seine
@@ -12224,8 +12365,16 @@ function kurzHash(text){
   for (let i = 0; i < text.length; i++) h = ((h * 33) ^ text.charCodeAt(i)) >>> 0;
   return h.toString(36);
 }
-const ORT_ABDRUCK = kurzHash(decodeURIComponent(location.pathname).toLowerCase());
-const SCHLUESSEL = 'halle400-planer-datei:plan:' + PLAN_ABDRUCK + ':' + ORT_ABDRUCK;
+const ORT_KLARTEXT = decodeURIComponent(location.pathname);
+const ORT_ABDRUCK = kurzHash(ORT_KLARTEXT.toLowerCase());
+/* Der gemeinsame Anfang ALLER Stand-Schluessel dieser Datei — ohne Plan-Abdruck
+   und ohne Ablageort. Er ist seit W9 die Suchbasis beim Start (s.
+   `alleStaende`) und darum eine eigene Angabe: er stand vorher zweimal
+   ausgeschrieben da, einmal mit Abdruck (Suche) und einmal ohne (Aufraeumen) —
+   und genau diese eine Stelle zu viel war die Ursache dafuer, dass ein Stand
+   aus einer anderen Bau-Fassung beim Start nicht gefunden wurde. */
+const STAND_PRAEFIX = 'halle400-planer-datei:plan:';
+const SCHLUESSEL = STAND_PRAEFIX + PLAN_ABDRUCK + ':' + ORT_ABDRUCK;
 const SCHLUESSEL_BEARBEITEN = 'halle400-planer-datei:bearbeiten:' + ORT_ABDRUCK;
 /* W7 — EIGENER Schluessel fuer die zuletzt angesehene Ansicht. Bis hierher
    brauchte es ihn nicht: der Bearbeiten-Schalter WAR die Ansichtswahl (an =
@@ -12237,6 +12386,12 @@ const SCHLUESSEL_BEARBEITEN = 'halle400-planer-datei:bearbeiten:' + ORT_ABDRUCK;
    Aufraeumen weiter EINE Regel ist: alles, was so beginnt, gehoert dieser
    Datei. */
 const SCHLUESSEL_ANSICHT = 'halle400-planer-datei:ansicht:' + ORT_ABDRUCK;
+/* C3 — die Sicherung VOR einem „Zurücksetzen". Eigener Praefix (`sicherung:`
+   statt `plan:`), damit die Startsuche ueber alle Staende sie nicht als
+   fremden Ablageort anbietet: sie gehoert DIESER Datei und wird an genau einer
+   Stelle angeboten, naemlich in der Meldung direkt nach dem Zuruecksetzen.
+   Genau EINE, immer die letzte — der Platz unter `file://` ist knapp. */
+const SCHLUESSEL_SICHERUNG = 'halle400-planer-datei:sicherung:' + ORT_ABDRUCK;
 
 const speicher = (function(){
   try {
@@ -12266,7 +12421,6 @@ const arbeitshinweis = el('arbeitshinweis');
 const tafel = el('tafel');
 const rueckfrage = el('rueckfrage');
 const zurueckFrage = el('zurueckFrage');
-const standFrage = el('standFrage');
 const standleiste = el('standleiste');
 const meldungEl = el('meldung');
 const dateiWahl = el('dateiWahl');
@@ -12317,10 +12471,15 @@ let gesichertAm = null;
 let speicherFehler = speicher ? null : 'merkt-nichts';
 let sichernGesperrt = true;
 let sicherUhr = null;
-let standFragt = null;
 
 /* Liegt ein eigener Stand? Er muss zum eingebauten Plan passen — sonst wird
-   NICHT still geladen, sondern ruhig gefragt. */
+   NICHT still geladen, sondern beim Start ruhig ANGEBOTEN (s. `alleStaende`).
+   Bis W9 stand hier eine eigene Rueckfrage (`standFragt`) fuer genau diesen
+   Fall. Sie ist ersatzlos weg, und zwar nicht aus Sparsamkeit: sie konnte
+   nicht ausloesen. Der Schluessel traegt den Plan-Abdruck — was unter ihm
+   liegt, hat also immer denselben. Sie bewachte einen Fall, den es unter
+   diesem Schluessel nicht geben kann, und der Fall, den es WIRKLICH gibt (der
+   Stand liegt unter einem ANDEREN Schluessel), lief an ihr vorbei. */
 let start = null;
 if (speicher) {
   try {
@@ -12329,12 +12488,10 @@ if (speicher) {
       const stand = JSON.parse(roh);
       if (stand && stand.floorplan && stand.floorplan.corners && stand.planAbdruck === PLAN_ABDRUCK) {
         start = stand;
-      } else if (stand && stand.floorplan) {
-        standFragt = stand;
       }
     }
   } catch (e) {
-    standFragt = null;
+    start = null;
   }
 }
 if (start) {
@@ -12913,6 +13070,14 @@ function sichereJetzt(){
       fassung: 1,
       planAbdruck: PLAN_ABDRUCK,
       bauStempel: BAU_STEMPEL,
+      /* WO dieser Stand entstanden ist — im Klartext, nicht als Hash (W9).
+         Der Schluessel traegt nur `ORT_ABDRUCK`, und aus einem Hash laesst
+         sich kein Satz bauen: das Angebot beim Start konnte darum bis W9 nur
+         „an einem anderen Ablageort" sagen. Wer zwischen drei Kopien
+         entscheiden soll, braucht aber den Ordner, nicht die Auskunft, dass es
+         irgendeinen gibt. Ein Dateipfad auf dem eigenen Rechner, abgelegt im
+         eigenen Browser — das verlaesst diese Maschine nie. */
+      ort: ORT_KLARTEXT,
       gesichertAm: jetzt,
       floorplan: grundriss.saveFloorplan(),
       labels: labels,
@@ -12997,6 +13162,29 @@ function meldung(text, warnt){
   meldungUhr = setTimeout(function(){ meldungEl.hidden = true; }, 9000);
 }
 
+/* Eine Meldung, die etwas ANBIETET (C3) — mit einem Knopf, und OHNE die Uhr.
+   Die 9 Sekunden sind fuer eine Auskunft richtig („Tür gesetzt") und fuer ein
+   Angebot falsch: wer gerade eine unwiderrufliche Handlung ausgeloest hat,
+   liest nicht in neun Sekunden und entscheidet. Sie bleibt stehen, bis sie
+   geschlossen oder angenommen wird. `textContent` leert dabei auch den alten
+   Knopf — sonst stapelten sich zwei Angebote in einer Zeile. */
+function meldungMitKnopf(text, knopfText, tun){
+  clearTimeout(meldungUhr);
+  meldungEl.textContent = text + ' ';
+  meldungEl.classList.remove('warnt');
+  const knopf = document.createElement('button');
+  knopf.type = 'button';
+  knopf.id = 'btnMeldung';
+  knopf.textContent = knopfText;
+  knopf.addEventListener('click', function(){
+    meldungEl.hidden = true;
+    meldungEl.textContent = '';
+    tun();
+  });
+  meldungEl.appendChild(knopf);
+  meldungEl.hidden = false;
+}
+
 /* Laedt einen Grundriss und laesst dabei nichts Eigenes zurueck. Die Historie
    raeumt der Kern selbst ab (UndoManager haengt an roomLoadedCallbacks) — ein
    Undo ueber einen Plan-Wechsel hinweg spielte sonst fremde Waende ein. */
@@ -13041,7 +13229,96 @@ function ladeGrundriss(fp, neueLabels, alsEigenerStand){
   }
 }
 
+/* ── Was „Zurücksetzen" WEGNIMMT, in Zahlen (C3) ────────────────────
+   Die Rueckfrage sagte bis W9 nur „alle eigenen Änderungen verwerfen". Das ist
+   wahr und nutzlos: wer nicht weiss, WIE VIEL er verliert, kann die Frage
+   nicht beantworten. Danach ist ausserdem das Rueckgaengig abgeschaltet (der
+   Kern raeumt die Historie beim Laden ab) — es ist die einzige Handlung dieser
+   Datei, die sich mit ihren eigenen Mitteln nicht zuruecknehmen laesst.
+
+   Gezaehlt wird an DENSELBEN Quellen wie der Blattkopf (`gesetztZeigen`), nicht
+   an einer zweiten Rechnung daneben: sonst nennte die Rueckfrage eine andere
+   Zahl als die Zeile, die der Nutzer eine Sekunde vorher gelesen hat. */
+function verlustBeimZuruecksetzen(){
+  const teile = [];
+  const stueck = grundriss.zaehleGesetzte();
+  if (stueck > 0) teile.push(stueck + (stueck === 1 ? ' gesetztes Stück' : ' gesetzte Stücke'));
+  const w = grundrissAbweichung();
+  if (w.gesetzt > 0) teile.push(w.gesetzt + (w.gesetzt === 1 ? ' gezeichnete oder verschobene Wand' : ' gezeichnete oder verschobene Wände'));
+  if (w.fehlen > 0) teile.push(w.fehlen + (w.fehlen === 1 ? ' gelöschte gemessene Wand' : ' gelöschte gemessene Wände'));
+  const o = grundriss.zaehleOeffnungen();
+  if (o > 0) teile.push(o + (o === 1 ? ' Öffnung' : ' Öffnungen'));
+  return teile;
+}
+
+function zurueckFrageZeigen(){
+  const teile = verlustBeimZuruecksetzen();
+  /* „Verloren gehen: …" statt „… gehen verloren": so muss der Satz sich nicht
+     nach der Zahl des LETZTEN Listenglieds richten („1 Öffnung geht" gegen
+     „2 Öffnungen gehen"). Eine Aufzaehlung, die sich selbst konjugieren
+     muesste, wird beim naechsten neuen Zaehler falsch. */
+  el('zurueckFrageUmfang').textContent = teile.length === 0
+    ? 'Es ist nichts Eigenes da — die Datei steht schon auf dem gemessenen Plan.'
+    : 'Verloren gehen: ' + teile.join(', ') + '.';
+  frageZeigen(zurueckFrage);
+  el('btnZurueckNein').focus();
+}
+
+/* Der Stand VOR dem Zuruecksetzen, unter einem EIGENEN Schluessel (C3).
+   Warum ueberhaupt: „Zurücksetzen" liegt in derselben Leiste wie „Laden" und
+   rueckte beim Werkzeugwechsel gemessen bis zu 520 px — der gefaehrlichste
+   Knopf der Datei landete unter dem alten Platz des harmlosesten. Die
+   Leiste steht seit V7 still; ein Fehlgriff bleibt trotzdem moeglich, und
+   danach gibt es kein Rueckgaengig mehr. Eine Sicherung kostet einen
+   Speicherplatz und rettet eine Arbeitsstunde.
+
+   EIGENER Schluessel und nicht der Stand-Schluessel: der wird ja gerade
+   geloescht. Genau EINE Sicherung, immer die letzte — eine Historie im
+   localStorage waere bei 4,8 MB fuer ALLE file://-Seiten zusammen der sichere
+   Weg in einen stillen Schreibfehler (s. Kopf „Speicher"). */
+function sicherungAnlegen(){
+  if (!speicher) return false;
+  try {
+    speicher.setItem(SCHLUESSEL_SICHERUNG, JSON.stringify({
+      fassung: 1,
+      planAbdruck: PLAN_ABDRUCK,
+      bauStempel: BAU_STEMPEL,
+      ort: ORT_KLARTEXT,
+      gesichertAm: new Date().toISOString(),
+      floorplan: grundriss.saveFloorplan(),
+      labels: labels,
+      items: items
+    }));
+    return true;
+  } catch (e) {
+    /* Kein stiller Fehlschlag: wer glaubt, es liege eine Sicherung, klickt
+       sorgloser. Der Aufrufer sagt es weiter. */
+    return false;
+  }
+}
+
+function sicherungZurueckholen(){
+  if (!speicher) return false;
+  let s = null;
+  try { s = JSON.parse(speicher.getItem(SCHLUESSEL_SICHERUNG)); } catch (e) { return false; }
+  if (!s || !s.floorplan || !s.floorplan.corners) return false;
+  if (Array.isArray(s.items)) items = s.items;
+  try {
+    ladeGrundriss(s.floorplan, s.labels, true);
+  } catch (e) {
+    meldung('Die Sicherung ließ sich nicht öffnen (' + ((e && e.message) ? e.message : String(e)) + ').', true);
+    return false;
+  }
+  meldung('Der Stand von vor dem Zurücksetzen ist wieder da: ' +
+    grundriss.getCorners().length + ' Ecken, ' + grundriss.getWalls().length + ' Wände, ' +
+    grundriss.zaehleGesetzte() + ' gesetzte Stücke.', false);
+  return true;
+}
+
 function zuruecksetzen(){
+  /* ERST sichern, dann loeschen (C3). Die Reihenfolge ist der ganze Punkt:
+     nach `ladeGrundriss` gibt es nichts mehr zu sichern. */
+  const gesichert = sicherungAnlegen();
   /* M7 — ALLE Schluessel, nicht nur einer. Gemessen: „Zurücksetzen" loeschte
      den Plan-Schluessel und liess den Bearbeiten-Schluessel stehen; nach einem
      Neuladen standen wieder Grundriss und Werkzeuge da. Ein einziger
@@ -13068,7 +13345,22 @@ function zuruecksetzen(){
      Grundriss stehen — der Auslieferungszustand ist aber das ruhige Blatt. */
   zeigeAnsicht('axo', false);
   ungesichert = false;
-  meldung('Der gemessene Plan aus der PDF ist wieder hergestellt — die Datei ist wie am ersten Tag.', false);
+  /* Die Meldung BIETET den alten Stand an (C3). Ein Knopf in der Meldungszeile
+     und keine zweite Rueckfrage: gefragt wurde eben, jetzt ist gehandelt — und
+     ein zweiter Dialog direkt nach dem ersten lehrt nur, Dialoge wegzuklicken.
+     Sie bleibt stehen, bis der Nutzer sie schliesst; die uebliche 9-Sekunden-
+     Uhr waere hier eine Frist auf einer unwiderruflichen Handlung. */
+  if (gesichert) {
+    meldungMitKnopf(
+      'Der gemessene Plan aus der PDF ist wieder hergestellt — die Datei ist wie am ersten Tag. Dein Stand von vorher ist gesichert.',
+      'Stand zurückholen',
+      function(){ sicherungZurueckholen(); }
+    );
+  } else {
+    meldung('Der gemessene Plan aus der PDF ist wieder hergestellt — die Datei ist wie am ersten Tag. ' +
+      (speicher ? 'Eine Sicherung des alten Standes ließ sich NICHT ablegen (der Speicher ist voll).'
+                : 'Dieser Browser merkt sich hier nichts, es gibt darum keine Sicherung.'), !speicher ? false : true);
+  }
 }
 
 /* ── Als Datei sichern ──────────────────────────────────────────────
@@ -13204,11 +13496,13 @@ function pruefePlan(roh){
 /* ── Bedienung: Grundriss ──────────────────────────────────────────── */
 const werkzeugKnopf = { };
 werkzeugKnopf[floorplannerModes.MOVE] = el('wzMove');
+werkzeugKnopf[floorplannerModes.WAND] = el('wzWand');
 werkzeugKnopf[floorplannerModes.DRAW] = el('wzDraw');
 werkzeugKnopf[floorplannerModes.DELETE] = el('wzDelete');
 werkzeugKnopf[floorplannerModes.OEFFNUNG] = el('wzOeffnung');
 
 el('wzMove').addEventListener('click', function(){ zeichner.setMode(floorplannerModes.MOVE); });
+el('wzWand').addEventListener('click', function(){ zeichner.setMode(floorplannerModes.WAND); });
 el('wzDraw').addEventListener('click', function(){ zeichner.setMode(floorplannerModes.DRAW); });
 el('wzDelete').addEventListener('click', function(){ zeichner.setMode(floorplannerModes.DELETE); });
 el('wzOeffnung').addEventListener('click', function(){ zeichner.setMode(floorplannerModes.OEFFNUNG); });
@@ -13225,8 +13519,15 @@ zeichner.addModeResetCallback(function(m){
   document.body.classList.toggle('zeichnet', m === floorplannerModes.DRAW);
   document.body.classList.toggle('loescht', m === floorplannerModes.DELETE);
   document.body.classList.toggle('oeffnet', m === floorplannerModes.OEFFNUNG);
-  // Die Arten-Gruppe erscheint mit ihrem Werkzeug und verschwindet mit ihm.
-  el('oeffnungsArten').hidden = m !== floorplannerModes.OEFFNUNG;
+  /* Die Arten-Gruppe wird mit ihrem Werkzeug BEDIENBAR — ihr Platz bleibt
+     dauerhaft reserviert (V7, s. `.grp.platzhalter` im CSS). `inert` nimmt
+     Klick und Tab-Reihenfolge, `aria-hidden` die Ansage; beides zusammen mit
+     `visibility:hidden`, damit nicht drei Angaben auseinanderlaufen koennen. */
+  const artenAn = m === floorplannerModes.OEFFNUNG;
+  const arten = el('oeffnungsArten');
+  arten.classList.toggle('platzhalter', !artenAn);
+  arten.inert = !artenAn;
+  arten.setAttribute('aria-hidden', String(!artenAn));
 });
 
 /* ── Öffnungen: Art wählen (W4) ─────────────────────────────────────
@@ -13577,7 +13878,7 @@ function ladeBestaetigen(){
 el('btnLadeNein').addEventListener('click', ladeAbbrechen);
 el('btnLadeJa').addEventListener('click', ladeBestaetigen);
 
-el('btnZurueck').addEventListener('click', function(){ frageZeigen(zurueckFrage); el('btnZurueckNein').focus(); });
+el('btnZurueck').addEventListener('click', function(){ zurueckFrageZeigen(); });
 el('btnZurueckNein').addEventListener('click', function(){ zurueckFrage.hidden = true; });
 el('btnZurueckJa').addEventListener('click', function(){ zurueckFrage.hidden = true; zuruecksetzen(); });
 el('btnStandZurueck').addEventListener('click', function(){
@@ -13591,8 +13892,7 @@ el('btnStandZurueck').addEventListener('click', function(){
   // Der Hinweis liegt oben, die Rueckfrage unten: dazwischen muss die
   // Werkzeugleiste sichtbar sein, sonst fragt etwas Unsichtbares.
   if (!bearbeiten) setzeBearbeiten(true, true);
-  frageZeigen(zurueckFrage);
-  el('btnZurueckNein').focus();
+  zurueckFrageZeigen();
 });
 
 /* Tastatur: Rueckgaengig/Wiederholen macht die HUELLE. Escape registriert der
@@ -13757,76 +14057,142 @@ gesetztZeigen();
    zeigen sähe aus, als wäre die Arbeit verloren. */
 if (standFehler) meldung(standFehler, true);
 
-if (standFragt) {
-  const d = standFragt.gesichertAm ? new Date(standFragt.gesichertAm) : null;
-  el('standFrageText').textContent = 'Es liegt ein Stand' +
-    (d ? ' vom ' + d.toLocaleDateString('de-DE') + ', ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' Uhr' : '') +
-    ', der nicht zum eingebauten Plan passt. Laden oder den gemessenen Plan zeigen?';
-  standFrage.hidden = false;
-  el('btnStandLaden').addEventListener('click', function(){
-    standFrage.hidden = true;
-    ladeGrundriss(standFragt.floorplan, standFragt.labels, true);
-  });
-  el('btnStandVerwerfen').addEventListener('click', function(){
-    standFrage.hidden = true;
-    if (speicher) { try { speicher.removeItem(SCHLUESSEL); } catch (e) { /* egal */ } }
-  });
-}
-
-/* ── Derselbe Plan, ein anderer Ablageort (M8) ──────────────────────
+/* ── Wo liegt sonst noch Arbeit? (M8, in W9 repariert) ──────────────
    Der Speicherschluessel traegt den Ablageort — noetig, weil `file://` EIN
    Ursprung fuer die ganze Festplatte ist und zwei Kopien sich sonst ins Gehege
    kaemen. Der Preis: wer die Datei in einen anderen Ordner schiebt, oeffnet ein
    leeres Blatt. Gemessen: 289 Stück waren weg, ohne einen einzigen Hinweis.
 
-   Hier wird deshalb einmal beim Start nachgesehen, ob derselbe eingebaute Plan
-   (gleicher Abdruck!) anderswo einen Stand hat, und der juengste RUHIG
-   angeboten. Nicht geladen: welche Kopie gilt, weiss nur der Nutzer. Der alte
-   Stand bleibt liegen — hier entstuende eine Kopie, dort verschwindet nichts. */
-function staendeAnderswo(){
+   WARUM DIE RETTUNG BIS W9 IM WICHTIGSTEN FALL NICHT AUSLOESTE — die Ursache,
+   nicht das Symptom: der Abdruck des eingebauten Plans stand im SUCH-Praefix.
+   Gesucht wurde also nur unter Staenden DERSELBEN Bau-Fassung. Genau die eine
+   Groesse, die sich bei einem neuen Bau aendert (der Plan wird neu exportiert,
+   `PLAN_ABDRUCK` kippt), war damit die Bedingung des Findens. Ergebnis,
+   dreimal gemessen: ein Stand mit vier gesetzten Stuecken lag unberuehrt im
+   Speicher, die Datei fand 0 und startete wortlos bei null. Die zweite Haelfte
+   desselben Fehlers: `standFragt` — die Rueckfrage „dieser Stand passt nicht
+   zum eingebauten Plan" — kann so gar nicht ausloesen, denn was unter DIESEM
+   Schluessel liegt, hat zwangslaeufig DIESEN Abdruck. Ein Waechter, der nur
+   den Fall bewacht, den es nicht geben kann.
+
+   Gesucht wird darum jetzt ueber `STAND_PRAEFIX` — ALLE Staende dieser Datei,
+   gleich welcher Plan-Abdruck und gleich welcher Ablageort. Angeboten wird
+   RUHIG und vollstaendig, geladen wird nichts von selbst: welche Kopie gilt,
+   weiss nur der Nutzer. Der alte Stand bleibt liegen — hier entstuende eine
+   Kopie, dort verschwindet nichts. */
+function alleStaende(){
   if (!speicher) return [];
-  const praefix = 'halle400-planer-datei:plan:' + PLAN_ABDRUCK + ':';
   const gefunden = [];
   try {
     for (let i = 0; i < speicher.length; i++) {
       const k = speicher.key(i);
-      if (!k || k.indexOf(praefix) !== 0 || k === SCHLUESSEL) continue;
+      if (!k || k.indexOf(STAND_PRAEFIX) !== 0) continue;
+      /* Der EIGENE Schluessel wird uebergangen — aber nur, wenn sein Inhalt
+         auch wirklich angenommen wurde. Liegt dort etwas, das nicht zum
+         eingebauten Plan passt (von Hand veraendert, halb geschrieben), wird
+         es hier ANGEBOTEN statt verschwiegen. Das ist die Aufgabe, die bis W9
+         `standFragt` haben sollte und die es nie erfuellen konnte. */
+      if (k === SCHLUESSEL && start) continue;
+      /* Die SICHERUNG vor einem „Zuruecksetzen" ist kein Stand von anderswo
+         (C3) — sie gehoert dieser Datei und wird in der Meldungszeile
+         angeboten, nicht hier. Ihr Praefix ist ein anderer; die Zeile steht
+         trotzdem hier, weil ein spaeter hinzukommender Schluessel unter
+         `plan:` sonst still in dieser Liste landete. */
+      if (k === SCHLUESSEL_SICHERUNG) continue;
       let s = null;
       try { s = JSON.parse(speicher.getItem(k)); } catch (e) { continue; }
       if (!s || !s.floorplan || !s.floorplan.corners) continue;
-      gefunden.push({ schluessel: k, stand: s, gesichertAm: s.gesichertAm || '' });
+      gefunden.push({
+        schluessel: k,
+        stand: s,
+        gesichertAm: s.gesichertAm || '',
+        /* Passt der Stand zum eingebauten Plan? Wenn nicht, ist er aus einer
+           anderen BAU-FASSUNG — er laedt trotzdem (der Kern prueft die Form),
+           aber der Nutzer muss es wissen, bevor er ihn holt. */
+        gleicherPlan: s.planAbdruck === PLAN_ABDRUCK,
+        ort: typeof s.ort === 'string' ? s.ort : ''
+      });
     }
   } catch (e) { /* ein Speicher, der sich nicht durchzaehlen laesst: dann eben nicht */ }
   gefunden.sort(function(a, b){ return a.gesichertAm < b.gesichertAm ? 1 : -1; });
   return gefunden;
 }
 
+/* „C:/Users/…/Desktop/Halle400-Modell.html" -> „Desktop". Der ganze Pfad waere
+   in einer Zeile nicht zu lesen und in einer Kopfleiste erst recht nicht; der
+   ORDNER ist das, was die Kopien unterscheidet. Fehlt die Angabe (ein Stand
+   aus einer Fassung vor W9), wird das gesagt statt geraten. */
+function ordnerName(pfad){
+  if (!pfad) return '';
+  const teile = pfad.split('/').filter(Boolean);
+  return teile.length >= 2 ? teile[teile.length - 2] : '';
+}
+
+function standZeile(e){
+  const d = e.gesichertAm ? new Date(e.gesichertAm) : null;
+  const ordner = ordnerName(e.ort);
+  const zahl = Object.keys(e.stand.floorplan.corners).length;
+  return (d ? d.toLocaleDateString('de-DE') + ', ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' Uhr' : 'ohne Zeitangabe') +
+    (ordner ? ' · Ordner „' + ordner + '"' : ' · Ablageort unbekannt') +
+    ' · ' + zahl + ' Ecken' +
+    (e.gleicherPlan ? '' : ' · andere Bau-Fassung');
+}
+
+function standHolen(e){
+  el('ortFrage').hidden = true;
+  if (Array.isArray(e.stand.items)) items = e.stand.items;
+  try {
+    ladeGrundriss(e.stand.floorplan, e.stand.labels, true);
+    meldung('Übernommen: ' + grundriss.getCorners().length + ' Ecken, ' +
+      grundriss.getWalls().length + ' Wände' +
+      (ordnerName(e.ort) ? ' aus dem Ordner „' + ordnerName(e.ort) + '"' : ' von einem anderen Ablageort') +
+      '. Dort bleibt der Stand unverändert liegen.', false);
+  } catch (err) {
+    meldung('Der Stand ließ sich nicht öffnen (' +
+      ((err && err.message) ? err.message : String(err)) + ').', true);
+  }
+}
+
 /* NUR wenn hier noch nichts liegt: wer an diesem Ablageort schon gearbeitet
    hat, will nicht gefragt werden, ob er stattdessen etwas Fremdes moechte. */
-if (!start && !standFragt && speicher) {
-  const anderswo = staendeAnderswo();
-  if (anderswo.length) {
-    const a = anderswo[0];
-    const d = a.gesichertAm ? new Date(a.gesichertAm) : null;
-    const zahl = Object.keys(a.stand.floorplan.corners).length;
-    el('ortFrageText').textContent = 'An einem anderen Ablageort liegt ein Stand desselben Plans' +
-      (d ? ' vom ' + d.toLocaleDateString('de-DE') + ', ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' Uhr' : '') +
-      ' (' + zahl + ' Ecken)' + (anderswo.length > 1 ? ' — der jüngste von ' + anderswo.length : '') +
-      '. Wurde diese Datei verschoben oder kopiert? Dann ist das deine Arbeit.';
+if (!start && speicher) {
+  const gefunden = alleStaende();
+  if (gefunden.length) {
+    const a = gefunden[0];
+    el('ortFrageText').textContent = gefunden.length === 1
+      ? 'Es liegt ein Stand deiner Arbeit im Browser, aber nicht zu dieser Datei hier: '
+      : 'Es liegen ' + gefunden.length + ' Stände deiner Arbeit im Browser, aber keiner zu dieser Datei hier. Der jüngste: ';
+    el('ortFrageErster').textContent = standZeile(a);
     el('ortFrage').hidden = false;
     el('btnOrtNein').addEventListener('click', function(){ el('ortFrage').hidden = true; });
-    el('btnOrtJa').addEventListener('click', function(){
-      el('ortFrage').hidden = true;
-      if (Array.isArray(a.stand.items)) items = a.stand.items;
-      try {
-        ladeGrundriss(a.stand.floorplan, a.stand.labels, true);
-        meldung('Übernommen: ' + grundriss.getCorners().length + ' Ecken, ' +
-          grundriss.getWalls().length + ' Wände vom anderen Ablageort. Dort bleibt er unverändert liegen.', false);
-      } catch (e) {
-        meldung('Der Stand vom anderen Ablageort ließ sich nicht öffnen (' +
-          ((e && e.message) ? e.message : String(e)) + ').', true);
-      }
+    el('btnOrtJa').addEventListener('click', function(){ standHolen(a); });
+
+    /* Die WEITEREN Staende. Sie stehen als eigene Zeilen darunter und nicht in
+       einem Auswahlfeld: ein Auswahlfeld verbirgt, WIE VIELE es sind, und
+       genau das ist hier die Aussage — der Nutzer soll sehen, dass seine
+       Arbeit nicht weg ist. Mehr als drei werden nur gezaehlt; wer sechs
+       Kopien herumliegen hat, braucht eine Aufraeumung und keine Liste. */
+    const weitere = el('ortFrageWeitere');
+    gefunden.slice(1, 4).forEach(function(e){
+      const zeile = document.createElement('span');
+      zeile.className = 'ortZeile';
+      const txt = document.createElement('span');
+      txt.textContent = standZeile(e);
+      const knopf = document.createElement('button');
+      knopf.type = 'button';
+      knopf.textContent = 'Diesen holen';
+      knopf.addEventListener('click', function(){ standHolen(e); });
+      zeile.appendChild(txt);
+      zeile.appendChild(knopf);
+      weitere.appendChild(zeile);
     });
+    if (gefunden.length > 4) {
+      const rest = document.createElement('span');
+      rest.className = 'ortZeile';
+      rest.textContent = 'und ' + (gefunden.length - 4) + ' weitere, ältere Stände.';
+      weitere.appendChild(rest);
+    }
+    weitere.hidden = gefunden.length < 2;
   }
 }
 
@@ -13974,8 +14340,25 @@ window.__planerDatei = {
   standleisteText: function(){
     return sichtbar(standleiste) ? el('standText').textContent : null;
   },
-  staendeAnderswo: function(){ return staendeAnderswo().length; },
+  staendeAnderswo: function(){ return alleStaende().length; },
+  /* C1 — was die Startsuche WIRKLICH gefunden hat, nicht nur wie viel. Ein
+     Gate, das nur die Zahl kennt, kann nicht unterscheiden, ob der Stand
+     desselben Plans oder der einer anderen Bau-Fassung gefunden wurde — und
+     genau der zweite Fall war der stille. */
+  staendeUebersicht: function(){
+    return alleStaende().map(function(e){
+      return { schluessel: e.schluessel, gesichertAm: e.gesichertAm, gleicherPlan: e.gleicherPlan, ort: e.ort };
+    });
+  },
   ortFrageOffen: function(){ return sichtbar(el('ortFrage')); },
+  ortFrageText: function(){ return sichtbar(el('ortFrage')) ? el('ortFrage').textContent.replace(/\s+/g, ' ').trim() : null; },
+  /* C3 — der Umfang, den die Rueckfrage nennt, und ob eine Sicherung liegt. */
+  zurueckFrageOffen: function(){ return sichtbar(zurueckFrage); },
+  zurueckFrageUmfang: function(){ return el('zurueckFrageUmfang').textContent; },
+  sicherungBytes: function(){
+    if (!speicher) return 0;
+    try { return (speicher.getItem(SCHLUESSEL_SICHERUNG) || '').length; } catch (e) { return 0; }
+  },
   ladeFrageOffen: function(){ return sichtbar(el('ladeFrage')); },
   ladeFrageText: function(){ return el('ladeFrageText').textContent; },
   druckZeile: function(){ return el('druckZeile').textContent; },

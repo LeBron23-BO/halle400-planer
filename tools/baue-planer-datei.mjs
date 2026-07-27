@@ -263,6 +263,12 @@ const html = `<!DOCTYPE html>
        background:var(--panel);border:1px solid var(--panel-line);
        font-size:12.5px;line-height:1.45;color:var(--ink)}
   .meldung.warnt{border-color:var(--rot);color:var(--rot)}
+  /* Der Knopf IN der Meldung (C3) — sie ist die einzige Zeile, die etwas
+     anbieten kann, ohne wie eine Rueckfrage auszusehen. Klein und in derselben
+     Zeile: das Angebot gehoert zum Satz und nicht daneben. */
+  .meldung button{margin-left:8px;border:1px solid var(--panel-line);min-height:32px;
+       padding:6px 10px;background:var(--sage-deep);border-color:var(--sage-deep);color:var(--paper)}
+  .meldung button:hover{background:var(--ink-dim);color:var(--paper)}
 
   /* Rueckfragen liegen unten mittig und NICHT am Zeiger: am Zeiger verdeckten
      sie genau das Objekt, ueber das sie eine Auskunft verlangen (E1). */
@@ -684,13 +690,17 @@ const html = `<!DOCTYPE html>
     </div>
   </div>
 
+  <!-- C3: die Rückfrage nennt den UMFANG in Zahlen. „Alle eigenen Änderungen
+       verwerfen" allein ist wahr und nutzlos — wer nicht weiss, wie viel er
+       verliert, kann nicht entscheiden. Die Zahlen kommen aus denselben
+       Zählern wie der Blattkopf (\`verlustBeimZuruecksetzen\`). -->
   <div class="frage" id="zurueckFrage" role="alertdialog" aria-live="assertive" aria-label="Zurücksetzen bestätigen" hidden>
-    <span class="txt"><b>Zurücksetzen:</b> alle eigenen Änderungen verwerfen und den gemessenen Plan zeigen?</span>
+    <span class="txt"><b>Zurücksetzen:</b> den gemessenen Plan zeigen? <span id="zurueckFrageUmfang" class="wert"></span></span>
     <span class="knoepfe">
       <button type="button" id="btnZurueckNein">Abbrechen</button>
       <button type="button" id="btnZurueckJa" class="ernst">Zurücksetzen</button>
     </span>
-    <span class="fuss">Das lässt sich nicht rückgängig machen. Vorher „Sichern“ legt den Stand als Datei ab.</span>
+    <span class="fuss">Rückgängig ist danach abgeschaltet. Der Stand wird vorher gesichert und lässt sich einmal zurückholen; „Sichern“ legt ihn zusätzlich als Datei ab.</span>
   </div>
 </div>
 
@@ -744,8 +754,8 @@ const html = `<!DOCTYPE html>
      die Datei verschiebt oder neu baut, sieht seine Arbeit sonst nicht mehr.
      Gemessen: vier gesetzte Stücke wurden null, ohne einen Hinweis.
 
-     RUHIG, nicht dringlich: `role="status"` und `aria-live="polite"` statt
-     `alertdialog`/`assertive`, und der Rahmen im Panel-Ton statt in Rot. Hier
+     RUHIG, nicht dringlich: \`role="status"\` und \`aria-live="polite"\` statt
+     \`alertdialog\`/\`assertive\`, und der Rahmen im Panel-Ton statt in Rot. Hier
      ist nichts kaputt und nichts zu bestätigen — es liegt etwas bereit. Ein
      Alarm für ein Angebot wäre dieselbe Übertreibung wie ein roter Rahmen um
      ein Möbel, das man nur greifen könnte (W2). -->
@@ -775,11 +785,11 @@ const html = `<!DOCTYPE html>
 </div>
 
 
-<!-- Hier stand bis W9 `#standFrage` — „dieser Stand passt nicht zum eingebauten
+<!-- Hier stand bis W9 \`#standFrage\` — „dieser Stand passt nicht zum eingebauten
      Plan, laden oder verwerfen?". Sie ist ersatzlos weg, weil sie nicht
      auslösen KONNTE: der Speicherschlüssel trägt den Plan-Abdruck, also hat
      alles, was unter ihm liegt, denselben. Ihre eigentliche Aufgabe — einen
-     Stand aus einer anderen Bau-Fassung anbieten — erledigt `#ortFrage`, das
+     Stand aus einer anderen Bau-Fassung anbieten — erledigt \`#ortFrage\`, das
      jetzt über ALLE Abdrücke sucht. -->
 
 <div class="meldung" id="meldung" role="status" aria-live="polite" hidden></div>
@@ -860,6 +870,12 @@ const SCHLUESSEL_BEARBEITEN = 'halle400-planer-datei:bearbeiten:' + ORT_ABDRUCK;
    Aufraeumen weiter EINE Regel ist: alles, was so beginnt, gehoert dieser
    Datei. */
 const SCHLUESSEL_ANSICHT = 'halle400-planer-datei:ansicht:' + ORT_ABDRUCK;
+/* C3 — die Sicherung VOR einem „Zurücksetzen". Eigener Praefix (\`sicherung:\`
+   statt \`plan:\`), damit die Startsuche ueber alle Staende sie nicht als
+   fremden Ablageort anbietet: sie gehoert DIESER Datei und wird an genau einer
+   Stelle angeboten, naemlich in der Meldung direkt nach dem Zuruecksetzen.
+   Genau EINE, immer die letzte — der Platz unter \`file://\` ist knapp. */
+const SCHLUESSEL_SICHERUNG = 'halle400-planer-datei:sicherung:' + ORT_ABDRUCK;
 
 const speicher = (function(){
   try {
@@ -1630,6 +1646,29 @@ function meldung(text, warnt){
   meldungUhr = setTimeout(function(){ meldungEl.hidden = true; }, 9000);
 }
 
+/* Eine Meldung, die etwas ANBIETET (C3) — mit einem Knopf, und OHNE die Uhr.
+   Die 9 Sekunden sind fuer eine Auskunft richtig („Tür gesetzt") und fuer ein
+   Angebot falsch: wer gerade eine unwiderrufliche Handlung ausgeloest hat,
+   liest nicht in neun Sekunden und entscheidet. Sie bleibt stehen, bis sie
+   geschlossen oder angenommen wird. \`textContent\` leert dabei auch den alten
+   Knopf — sonst stapelten sich zwei Angebote in einer Zeile. */
+function meldungMitKnopf(text, knopfText, tun){
+  clearTimeout(meldungUhr);
+  meldungEl.textContent = text + ' ';
+  meldungEl.classList.remove('warnt');
+  const knopf = document.createElement('button');
+  knopf.type = 'button';
+  knopf.id = 'btnMeldung';
+  knopf.textContent = knopfText;
+  knopf.addEventListener('click', function(){
+    meldungEl.hidden = true;
+    meldungEl.textContent = '';
+    tun();
+  });
+  meldungEl.appendChild(knopf);
+  meldungEl.hidden = false;
+}
+
 /* Laedt einen Grundriss und laesst dabei nichts Eigenes zurueck. Die Historie
    raeumt der Kern selbst ab (UndoManager haengt an roomLoadedCallbacks) — ein
    Undo ueber einen Plan-Wechsel hinweg spielte sonst fremde Waende ein. */
@@ -1681,7 +1720,7 @@ function ladeGrundriss(fp, neueLabels, alsEigenerStand){
    Kern raeumt die Historie beim Laden ab) — es ist die einzige Handlung dieser
    Datei, die sich mit ihren eigenen Mitteln nicht zuruecknehmen laesst.
 
-   Gezaehlt wird an DENSELBEN Quellen wie der Blattkopf (`gesetztZeigen`), nicht
+   Gezaehlt wird an DENSELBEN Quellen wie der Blattkopf (\`gesetztZeigen\`), nicht
    an einer zweiten Rechnung daneben: sonst nennte die Rueckfrage eine andere
    Zahl als die Zeile, die der Nutzer eine Sekunde vorher gelesen hat. */
 function verlustBeimZuruecksetzen(){
@@ -1698,9 +1737,13 @@ function verlustBeimZuruecksetzen(){
 
 function zurueckFrageZeigen(){
   const teile = verlustBeimZuruecksetzen();
+  /* „Verloren gehen: …" statt „… gehen verloren": so muss der Satz sich nicht
+     nach der Zahl des LETZTEN Listenglieds richten („1 Öffnung geht" gegen
+     „2 Öffnungen gehen"). Eine Aufzaehlung, die sich selbst konjugieren
+     muesste, wird beim naechsten neuen Zaehler falsch. */
   el('zurueckFrageUmfang').textContent = teile.length === 0
     ? 'Es ist nichts Eigenes da — die Datei steht schon auf dem gemessenen Plan.'
-    : teile.join(', ') + ' ' + (teile.length === 1 && !/\\s/.test('') ? 'geht' : 'gehen') + ' verloren.';
+    : 'Verloren gehen: ' + teile.join(', ') + '.';
   frageZeigen(zurueckFrage);
   el('btnZurueckNein').focus();
 }
@@ -1758,7 +1801,7 @@ function sicherungZurueckholen(){
 
 function zuruecksetzen(){
   /* ERST sichern, dann loeschen (C3). Die Reihenfolge ist der ganze Punkt:
-     nach `ladeGrundriss` gibt es nichts mehr zu sichern. */
+     nach \`ladeGrundriss\` gibt es nichts mehr zu sichern. */
   const gesichert = sicherungAnlegen();
   /* M7 — ALLE Schluessel, nicht nur einer. Gemessen: „Zurücksetzen" loeschte
      den Plan-Schluessel und liess den Bearbeiten-Schluessel stehen; nach einem
@@ -1786,7 +1829,22 @@ function zuruecksetzen(){
      Grundriss stehen — der Auslieferungszustand ist aber das ruhige Blatt. */
   zeigeAnsicht('axo', false);
   ungesichert = false;
-  meldung('Der gemessene Plan aus der PDF ist wieder hergestellt — die Datei ist wie am ersten Tag.', false);
+  /* Die Meldung BIETET den alten Stand an (C3). Ein Knopf in der Meldungszeile
+     und keine zweite Rueckfrage: gefragt wurde eben, jetzt ist gehandelt — und
+     ein zweiter Dialog direkt nach dem ersten lehrt nur, Dialoge wegzuklicken.
+     Sie bleibt stehen, bis der Nutzer sie schliesst; die uebliche 9-Sekunden-
+     Uhr waere hier eine Frist auf einer unwiderruflichen Handlung. */
+  if (gesichert) {
+    meldungMitKnopf(
+      'Der gemessene Plan aus der PDF ist wieder hergestellt — die Datei ist wie am ersten Tag. Dein Stand von vorher ist gesichert.',
+      'Stand zurückholen',
+      function(){ sicherungZurueckholen(); }
+    );
+  } else {
+    meldung('Der gemessene Plan aus der PDF ist wieder hergestellt — die Datei ist wie am ersten Tag. ' +
+      (speicher ? 'Eine Sicherung des alten Standes ließ sich NICHT ablegen (der Speicher ist voll).'
+                : 'Dieser Browser merkt sich hier nichts, es gibt darum keine Sicherung.'), !speicher ? false : true);
+  }
 }
 
 /* ── Als Datei sichern ──────────────────────────────────────────────
@@ -2304,7 +2362,7 @@ function ladeBestaetigen(){
 el('btnLadeNein').addEventListener('click', ladeAbbrechen);
 el('btnLadeJa').addEventListener('click', ladeBestaetigen);
 
-el('btnZurueck').addEventListener('click', function(){ frageZeigen(zurueckFrage); el('btnZurueckNein').focus(); });
+el('btnZurueck').addEventListener('click', function(){ zurueckFrageZeigen(); });
 el('btnZurueckNein').addEventListener('click', function(){ zurueckFrage.hidden = true; });
 el('btnZurueckJa').addEventListener('click', function(){ zurueckFrage.hidden = true; zuruecksetzen(); });
 el('btnStandZurueck').addEventListener('click', function(){
@@ -2318,8 +2376,7 @@ el('btnStandZurueck').addEventListener('click', function(){
   // Der Hinweis liegt oben, die Rueckfrage unten: dazwischen muss die
   // Werkzeugleiste sichtbar sein, sonst fragt etwas Unsichtbares.
   if (!bearbeiten) setzeBearbeiten(true, true);
-  frageZeigen(zurueckFrage);
-  el('btnZurueckNein').focus();
+  zurueckFrageZeigen();
 });
 
 /* Tastatur: Rueckgaengig/Wiederholen macht die HUELLE. Escape registriert der
@@ -2767,8 +2824,25 @@ window.__planerDatei = {
   standleisteText: function(){
     return sichtbar(standleiste) ? el('standText').textContent : null;
   },
-  staendeAnderswo: function(){ return staendeAnderswo().length; },
+  staendeAnderswo: function(){ return alleStaende().length; },
+  /* C1 — was die Startsuche WIRKLICH gefunden hat, nicht nur wie viel. Ein
+     Gate, das nur die Zahl kennt, kann nicht unterscheiden, ob der Stand
+     desselben Plans oder der einer anderen Bau-Fassung gefunden wurde — und
+     genau der zweite Fall war der stille. */
+  staendeUebersicht: function(){
+    return alleStaende().map(function(e){
+      return { schluessel: e.schluessel, gesichertAm: e.gesichertAm, gleicherPlan: e.gleicherPlan, ort: e.ort };
+    });
+  },
   ortFrageOffen: function(){ return sichtbar(el('ortFrage')); },
+  ortFrageText: function(){ return sichtbar(el('ortFrage')) ? el('ortFrage').textContent.replace(/\\s+/g, ' ').trim() : null; },
+  /* C3 — der Umfang, den die Rueckfrage nennt, und ob eine Sicherung liegt. */
+  zurueckFrageOffen: function(){ return sichtbar(zurueckFrage); },
+  zurueckFrageUmfang: function(){ return el('zurueckFrageUmfang').textContent; },
+  sicherungBytes: function(){
+    if (!speicher) return 0;
+    try { return (speicher.getItem(SCHLUESSEL_SICHERUNG) || '').length; } catch (e) { return 0; }
+  },
   ladeFrageOffen: function(){ return sichtbar(el('ladeFrage')); },
   ladeFrageText: function(){ return el('ladeFrageText').textContent; },
   druckZeile: function(){ return el('druckZeile').textContent; },
