@@ -4240,7 +4240,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "c8051b95fb22";
-const BAU_STEMPEL = "2026-07-27 21:15";
+const BAU_STEMPEL = "2026-07-27 21:20";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -14225,6 +14225,15 @@ window.__planerDatei = {
     if (!axoAnsicht) return null;
     const p = axoAnsicht.projiziere(weltX * CM, hoeheM, weltY * CM);
     return { x: p.x, y: p.y, tiefe: p.p };
+  },
+  /* Die UMKEHRUNG, in Zentimetern — der Weg, den auch der Renderer nimmt
+     (`weltAuf`). Ein Gate, das den Sollpunkt eines Blatt-Zuges selbst
+     ausrechnete, haette eine ZWEITE Fassung der Projektion und pruefte am Ende
+     sich selbst gegen sich selbst. */
+  axoRueck: function(bildX, bildY, hoeheM){
+    if (!axoAnsicht) return null;
+    const p = axoAnsicht.umkehre(bildX, bildY, hoeheM);
+    return p ? { x: p.x / CM, y: p.z / CM } : null;
   },
   axoMoebel: function(){
     if (!szene) return null;

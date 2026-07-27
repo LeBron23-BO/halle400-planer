@@ -2794,6 +2794,15 @@ window.__planerDatei = {
     const p = axoAnsicht.projiziere(weltX * CM, hoeheM, weltY * CM);
     return { x: p.x, y: p.y, tiefe: p.p };
   },
+  /* Die UMKEHRUNG, in Zentimetern — der Weg, den auch der Renderer nimmt
+     (\`weltAuf\`). Ein Gate, das den Sollpunkt eines Blatt-Zuges selbst
+     ausrechnete, haette eine ZWEITE Fassung der Projektion und pruefte am Ende
+     sich selbst gegen sich selbst. */
+  axoRueck: function(bildX, bildY, hoeheM){
+    if (!axoAnsicht) return null;
+    const p = axoAnsicht.umkehre(bildX, bildY, hoeheM);
+    return p ? { x: p.x / CM, y: p.z / CM } : null;
+  },
   axoMoebel: function(){
     if (!szene) return null;
     return szene.moebel.map(function(k){

@@ -769,10 +769,9 @@ try {
     await page.waitForTimeout(80)
     await hand.ab()
     await page.waitForTimeout(350)
-    pruefe(
-      (await page.evaluate(() => window.__planerDatei.werkzeug())) === 3,
-      `H2 der Finger erreicht „Löschen" und waehlt es (Werkzeug ${await page.evaluate(() => window.__planerDatei.werkzeug())})`
-    )
+    /* 2 = DELETE (`floorplannerModes` in `floorplanner_view.ts`). */
+    const werkzeugNach = await page.evaluate(() => window.__planerDatei.werkzeug())
+    pruefe(werkzeugNach === 2, `H2 der Finger erreicht „Löschen" und waehlt es (Werkzeug ${werkzeugNach})`)
 
     const ziel = await zielImGrundriss(page, 1.2)
     pruefe(!!ziel, `H3 ein Moebel zum Loeschen${ziel ? ` (${ziel.id})` : ''}`)
