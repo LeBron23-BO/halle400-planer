@@ -63,6 +63,12 @@ node tools/pruefe-palette.mjs     # W3: die PALETTE — 66 Pruefungen in der Dop
                                   #        muss ERKANNT werden
 node tools/pruefe-axonometrie.mjs  # X2/X3: 6 Gates — Raumableitung == Planer-Kern, Szene vollstaendig,
                                    #        Bild gezeichnet (mit Gegenprobe), Ansicht folgt dem Grundriss
+node tools/pruefe-axo-bearbeiten.mjs # W7: BEARBEITEN IM BLATT — 43 Pruefungen, jede mit Gegenprobe.
+                                   #        A+B laufen OHNE Browser (die Rechnung steht in
+                                   #        src/axo/axo-treffer.js): Hin-und-zurueck ueber alle
+                                   #        Blicke, Selbsttreffer aller 289 Stuecke. C-G an der
+                                   #        Doppelklick-Datei mit ECHTEN Zeiger-Ereignissen.
+                                   #        --nur rechnung | --nur datei grenzt ein.
 
 # Die Doppelklick-Datei fuer die Bank — eine Datei, kein Netz, kein Server
 node tools/baue-planer-datei.mjs   # -> Halle400-Modell.html (~670 KB): BEARBEITBAR (W1)
@@ -84,6 +90,9 @@ Businessplan. Dieselbe Axonometrie ist auch die Bank-Datei.
 src/axo/axo-kontrakt.js   Farbklima, Projektion, Licht, Beschriftungs-Metrik
                           (Optik aus app/public/uebersicht.html, je Wert belegt)
 src/axo/axo-zyklen.js     Raumflaechen aus den Waenden ableiten
+src/axo/axo-treffer.js    Projektion HIN und ZURUECK + „welcher Koerper liegt
+                          unter diesem Bildpunkt?" — reine Rechnung, ohne
+                          Canvas, als Einziges in node pruefbar (W7)
 src/axo/axo-szene.js      Plandaten -> Koerper (ein ausgezogenes Vieleck je Stueck)
 src/axo/axo-zeichnen.js   Koerper -> Canvas-2D (Projektion, Maler, Fuehrungslinien)
 ```
@@ -99,9 +108,14 @@ Drei Festlegungen, die man kennen muss, bevor man hier etwas aendert:
 2. **Gestutzte Waende sind Absicht.** 1,16 m aussen / 0,94 m innen statt der
    gesetzten 300 cm — der Puppenhaus-Schnitt, der den Blick in die Raeume
    freigibt. Die Ansicht behauptet keine niedrige Halle, sie schneidet sie auf.
-3. **In der Axonometrie wird nicht bearbeitet.** In einer schraegen Parallel-
-   projektion trifft ein Klick keinen Punkt, sondern einen Sehstrahl; die
-   Zielhoehe waere geraten. Bearbeitet wird in 2D, die Axonometrie folgt.
+3. **In der Axonometrie werden MOEBEL bearbeitet — sonst nichts.** Bis W6 stand
+   hier „in der Axonometrie wird nicht bearbeitet". Ueber die PROJEKTION war
+   das nie falsch (ein Klick trifft keinen Punkt, sondern einen Sehstrahl),
+   ueber den UMFANG war es zu weit: **fuer einen Koerper mit bekanntem
+   `y0`/`y1` ist der Sehstrahl eine ENDLICHE Strecke**, und jedes
+   Ausstattungs-Stueck kennt seine Hoehe (`bauformFuer`). Es wird also nichts
+   geraten. Ziehen, drehen (Q/E) und loeschen (Entf) gehen seit W7 im Blatt;
+   Waende, Tueren und Fenster nicht (s. „Bearbeiten im Blatt").
 
 Planer-Ansicht und Bank-Datei benutzen dieselben vier Module — die Bank-Datei
 setzt sie nur ohne Modulgrenzen aneinander, weil `file://` kein Nachladen
@@ -179,6 +193,61 @@ er **nur** die Werkzeuge; welche Ansicht vorn ist, entscheiden allein
 K3 bleibt unberuehrt: `body.bearbeitet` allein macht die Zeichenflaeche scharf.
 Dass sie das nun auch tut, waehrend das Blatt vorn ist, aendert nichts — die
 ruhende Ansicht ist `visibility:hidden` und nimmt keinen Zeiger an.
+
+## Bearbeiten IM BLATT (W7, 2026-07-27)
+
+Der Satz „in der Axonometrie wird nicht bearbeitet" war ueber die PROJEKTION
+nie falsch und ueber den UMFANG zu weit. **Fuer einen Koerper mit bekannter
+Ober- und Unterkante ist der Sehstrahl keine unendliche Gerade, sondern eine
+endliche Strecke** — es wird nichts geraten, sondern gegen die eigene Hoehe
+jedes Kandidaten geprueft. Sieben Festlegungen:
+
+1. **Die Umkehrung ist GESCHLOSSEN, kein Iterieren** (`axo-treffer.js`):
+   `xr = (X−ox)/m`, `zr = ((Y−oy)/m + dy·cosE)/sinE`, dann zurueckdrehen. Die
+   Jacobi-Determinante ist **m²·sinE — unabhaengig vom Azimut**; entartet allein
+   bei `sinE → 0`. Kein Blick der Leiste entartet (el 0,50 bis 1,44).
+2. **Hin und Zurueck kommen aus EINER Quelle.** `projiziereAuf` steht ebenfalls
+   in `axo-treffer.js`; der Renderer ruft es, statt die Formel ein zweites Mal
+   zu fuehren. Zwei Fassungen liefen erst nach einer Aenderung auseinander —
+   und dann saesse jedes gezogene Moebel neben dem Zeiger.
+3. **Getroffen wird GERECHNET, nicht gemalt.** 289 Strecke-gegen-Vieleck-Tests,
+   gemessen 0,06 ms je Frage. `isPointInPath` rueckwaerts kostete 1638 neu
+   aufgebaute Pfade je Zeigerbewegung; ein Farb-Puffer im Nebencanvas waere eine
+   ZWEITE Zeichenvorschrift. Bei Mehrfachtreffern gewinnt der groesste
+   Tiefenwert — also das, was zuletzt gemalt wurde und was man sieht.
+4. **EINE Einrast-Rechnung.** `Floorplanner.zugBeginnen/zugSchritt/zugBeenden`
+   sind oeffentlich; Maus-Weg (Grundriss) und Blatt-Weg teilen sie sich, samt
+   Griff-Versatz und dem EINEN Schnappschuss je Zug. Ebenso `dreheStueck`,
+   `loeschStueckVorschlagen`, `stueckAblegenWelt`.
+5. **`update()` laeuft NICHT im Zug** (gemessen 19 ms je Bewegung mit, 4 ms
+   ohne). Im Zug wird EIN Koerper getauscht (`tauscheKoerper`), der volle
+   Neubau kommt beim Loslassen. `pruefe-axo-bearbeiten.mjs` F beweist das mit
+   der Gegenprobe: mit `update()` je Bewegung MUSS das Gate rot werden.
+6. **Die Sperre unter Neigung 0,35** (`NEIGUNG_MIN_ZIEHEN`): dort bedeutet ein
+   Bildpunkt ueber 22 cm Tiefe. Es wird nur gedreht, und das Blatt SAGT es —
+   vorher in der Hinweiszeile, beim Versuch als Meldung. Der Fehler einer
+   geratenen Hoehe ist exakt `h·cot(el)`: Tisch 1,04 m, Wandkrone 1,63 m.
+7. **Was es NICHT gibt, und warum.** Wand verschieben: eine verschobene
+   gemessene Ecke bricht den Rueckweg (W5) hart ab — eine Bedienung, die in
+   einen abgelehnten Zustand fuehrt, ist keine. Wand zeichnen: ein Punkt in
+   leerer Luft hat keine bekannte Hoehe. Tuer setzen: Anschlag und
+   Aufschlagseite sind in diesem Bild unsichtbar. Hoehe per Zeiger: nie.
+
+Drei Befunde wurden dabei geschlossen, die vorher niemand sah: ein gezeichneter
+Koerper trug **keine Kennung** (jetzt `id`/`typ`, Wandstuecke `wandId`), die
+**Kameragroessen kamen nicht heraus** (jetzt `kamera()`), und der Renderer
+meldete seine **Zeiger-Abos nie ab** (jetzt `zerstoere()` ueber einen
+`AbortController` plus `Floorplan.entferneUpdatedRooms`). Die Doppelklick-Datei
+tauscht ihr Canvas darum nicht mehr aus und behaelt Zoom und Verschiebung.
+
+Die **Loesch-Rueckfrage liegt seit W7 ausserhalb beider Ansichten**: eine Frage,
+die zu beiden gehoert, gehoert in keine von beiden. Und ein **Druck ohne Weg
+aendert nichts mehr** — er machte aus einem gemessenen Stueck bisher ein
+`gesetzt`-Stueck, sichtbar im Blatt und gezaehlt im Kopf, fuer eine Handlung,
+die keine war.
+
+**Am Handy** gibt es kein Q/E und kein Entf (keine Tastatur) — dieselbe offene
+Stelle wie im Grundriss seit W2. Gezogen wird dort auch im Blatt.
 
 ## Moebel ziehen (W2, 2026-07-26)
 

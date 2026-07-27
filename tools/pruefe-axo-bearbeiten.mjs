@@ -429,7 +429,22 @@ try {
         `C1 GEGENPROBE: ein Zug ohne Weg laesst das Blatt stehen (${ruhe ? ruhe.n : '?'} geaenderte Bildpunkte < 200)`
       )
 
-      // --- Der echte Zug.
+      // --- Der echte Zug. VORHER und NACHHER als Standbild: kein
+      // Geometrie-Gate dieses Projekts ist bestanden, ohne dass jemand ins Bild
+      // gesehen hat (Projekt-DNA Punkt 2). Ein gezogenes Moebel, das im Bild an
+      // der falschen Stelle sitzt, besteht jede Zahlenpruefung.
+      const bilderOrdner = path.join(WURZEL, 'data/standbilder')
+      fs.mkdirSync(bilderOrdner, { recursive: true })
+      const ausschnitt = {
+        x: Math.max(0, Math.round(ziel.bx) - 200),
+        y: Math.max(0, Math.round(ziel.by) - 160),
+        width: 480,
+        height: 320
+      }
+      await page.mouse.move(kasten.left + 8, kasten.top + 8)
+      await page.waitForTimeout(150)
+      await page.screenshot({ path: path.join(bilderOrdner, 'w7-axo-1-vor-zug.png'), clip: ausschnitt })
+
       const weg = { x: 90, y: 45 }
       await page.evaluate(() => window.__planerDatei.axoMerken())
       const sollVor = await page.evaluate(
@@ -445,6 +460,7 @@ try {
         { x: nachher.x, y: nachher.y, h: ziel.y1 }
       )
       const aend = await page.evaluate(() => window.__planerDatei.axoAenderung(24))
+      await page.screenshot({ path: path.join(bilderOrdner, 'w7-axo-2-nach-zug.png'), clip: ausschnitt })
 
       // C2 — DER BILDWEG IST DER ZEIGERWEG. Das ist die eigentliche Probe auf
       // die Rueckrechnung: der Griff-Versatz liegt im Weltmass fest, die
@@ -874,15 +890,18 @@ try {
     )
     pruefe(konsole.length === 0, `G keine Konsolenfehler (${konsole.length}${konsole.length ? ': ' + konsole[0] : ''})`)
 
-    /* STANDBILDER zum ANSEHEN (Projekt-DNA Punkt 2): kein Geometrie-Gate ist
-       bestanden, ohne dass jemand ins Bild gesehen hat. Ein gezogenes Moebel,
-       das im Bild an der falschen Stelle sitzt, besteht jede Zahlenpruefung. */
+    /* Das GANZE Blatt im Bearbeiten-Zustand — damit auch die Zeile oben, der
+       Zaehler im Blattkopf und die Strichelung der gesetzten Stuecke einmal
+       gesehen werden koennen und nicht nur gezaehlt. */
     const bilder = path.join(WURZEL, 'data/standbilder')
     fs.mkdirSync(bilder, { recursive: true })
+    await page.evaluate(() => window.__planerDatei.axoSetzeBlick(-0.52, 0.62))
     await page.mouse.move(kasten.left + 8, kasten.top + 8)
-    await page.waitForTimeout(200)
-    await page.screenshot({ path: path.join(bilder, 'w7-axo-nach-zug.png') })
-    log(`\nStandbild: data/standbilder/w7-axo-nach-zug.png`)
+    await page.waitForTimeout(300)
+    await page.screenshot({ path: path.join(bilder, 'w7-axo-3-blatt.png') })
+    log(
+      `\nStandbilder: data/standbilder/w7-axo-1-vor-zug.png · w7-axo-2-nach-zug.png · w7-axo-3-blatt.png — ANSEHEN.`
+    )
     await ctx.close()
   }
 } finally {
