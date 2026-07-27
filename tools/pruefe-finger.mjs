@@ -341,17 +341,43 @@ try {
       const mitRasten = await page.evaluate((id) => window.__planerDatei.stueck(id), ziel.id)
       const aufRaster = mitRasten.x % 5 === 0 && mitRasten.y % 5 === 0
       const gedreht = (mitRasten.drehung || 0) !== (jetzt.drehung || 0)
+      /* WIE WEIT LIEGT DER RAND VON DER NAECHSTEN WANDFLANKE? Die erste W2-Regel
+         legt den RAND buendig an (`moebelEinrasten`): Sollabstand der MITTE zur
+         Wandachse ist `quer + dicke/2`, wobei `quer` je nach rechtwinkliger
+         Lage die halbe Tiefe oder die halbe Breite ist. Bleibt davon nichts
+         uebrig, war es die zweite Regel (5-cm-Raster). */
+      const buendig = await page.evaluate((st) => {
+        let best = null
+        for (const w of window.__planerDatei.waende()) {
+          const dx = w.wbx - w.wax
+          const dy = w.wby - w.way
+          const l = Math.hypot(dx, dy)
+          if (!l) continue
+          const t = ((st.x - w.wax) * dx + (st.y - w.way) * dy) / (l * l)
+          if (t < -0.5 || t > 1.5) continue
+          const fx = w.wax + dx * t
+          const fy = w.way + dy * t
+          const winkel = Math.atan2(dy, dx)
+          const viertel = Math.round(((st.drehung || 0) - winkel) / (Math.PI / 2))
+          const quer = Math.abs(viertel) % 2 === 0 ? st.tiefe / 2 : st.breite / 2
+          const rest = Math.abs(Math.hypot(st.x - fx, st.y - fy) - (quer + w.dicke / 2))
+          if (best === null || rest < best) best = rest
+        }
+        return best
+      }, mitRasten)
       log(
         `    Mit Einrasten: ${jetzt.x},${jetzt.y} -> ${mitRasten.x},${mitRasten.y} cm ` +
-          `(auf 5-cm-Raster: ${aufRaster}, Drehung uebernommen: ${gedreht})`
+          `(5-cm-Raster: ${aufRaster} · Wandwinkel uebernommen: ${gedreht} · ` +
+          `Rand zur Wandflanke: ${buendig === null ? '—' : buendig.toFixed(2) + ' cm'})`
       )
       pruefe(
         mitRasten.x !== nach.x || mitRasten.y !== nach.y,
         `A8 MIT Einrasten legt derselbe Fingerweg das Stueck anders ab als ohne (${mitRasten.x},${mitRasten.y} statt ${nach.x},${nach.y}) — der Finger geht durch dieselbe Rechnung`
       )
       pruefe(
-        aufRaster || gedreht,
-        `A9 und zwar nach EINER der beiden Regeln aus W2: 5-cm-Raster (${aufRaster}) oder Wandwinkel (${gedreht})`
+        aufRaster || gedreht || (buendig !== null && buendig < 1),
+        `A9 und zwar nach EINER der W2-Regeln: 5-cm-Raster (${aufRaster}) · Wandwinkel (${gedreht}) · ` +
+          `Rand buendig an der Wand (${buendig === null ? '—' : buendig.toFixed(2) + ' cm'})`
       )
       await page.evaluate(() => {
         window.__planerDatei.undoJetzt()
