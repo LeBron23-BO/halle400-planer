@@ -1,6 +1,6 @@
 'use client'
 
-import { Move, Pencil, Trash2, Check, Undo2, Redo2, ZoomIn, ZoomOut, Maximize2, Magnet, DoorOpen } from 'lucide-react'
+import { Move, MoveDiagonal, Pencil, Trash2, Check, Undo2, Redo2, ZoomIn, ZoomOut, Maximize2, Magnet, DoorOpen } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useTranslations } from 'next-intl'
@@ -8,8 +8,8 @@ import { useIsMobile } from "@/hooks/use-media-query"
 import type { OeffnungsArt } from '@blueprint3d/model/floorplan'
 
 interface FloorplannerControlsProps {
-  mode: 'move' | 'draw' | 'delete' | 'oeffnung'
-  onModeChange: (mode: 'move' | 'draw' | 'delete' | 'oeffnung') => void
+  mode: 'move' | 'wand' | 'draw' | 'delete' | 'oeffnung'
+  onModeChange: (mode: 'move' | 'wand' | 'draw' | 'delete' | 'oeffnung') => void
   onDone: () => void
   /** Rueckgaengig/Wiederholen (T5a) */
   canUndo: boolean
@@ -192,11 +192,31 @@ export function FloorplannerControls({
               // Mobile: 44x44px touch target with better visual feedback
               isMobile && 'h-11 w-11 shadow-lg active:scale-95 transition-transform'
             )}
-            title={isMobile ? t('moveWalls') : undefined}
-            aria-label={t('moveWalls')}
+            title={isMobile ? t('moveFurniture') : undefined}
+            aria-label={t('moveFurniture')}
             aria-pressed={mode === 'move'}
           >
             <Move className={cn(isMobile ? 'h-5 w-5' : 'h-4 w-4')} />
+            {!isMobile && t('moveFurniture')}
+          </Button>
+          {/* Wände verschieben (W9). Ein EIGENES Werkzeug neben dem
+              Verschieben: gemessen wurde, dass derselbe Zug, mit dem man einen
+              Stuhl umstellt, ohne Rückfrage die Aussenwand um 2,24 m schob und
+              damit das Aufmaß aufgab. Wer Mauerwerk bewegen will, soll es
+              sagen müssen. */}
+          <Button
+            size={isMobile ? 'icon' : 'sm'}
+            variant={mode === 'wand' ? 'default' : 'secondary'}
+            onClick={() => onModeChange('wand')}
+            className={cn(
+              !isMobile && 'flex items-center gap-2',
+              isMobile && 'h-11 w-11 shadow-lg active:scale-95 transition-transform'
+            )}
+            title={isMobile ? t('moveWalls') : undefined}
+            aria-label={t('moveWalls')}
+            aria-pressed={mode === 'wand'}
+          >
+            <MoveDiagonal className={cn(isMobile ? 'h-5 w-5' : 'h-4 w-4')} />
             {!isMobile && t('moveWalls')}
           </Button>
           <Button

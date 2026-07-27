@@ -83,9 +83,9 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
   )
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
-  const [floorplannerMode, setFloorplannerMode] = useState<'move' | 'draw' | 'delete' | 'oeffnung'>(
-    'move'
-  )
+  const [floorplannerMode, setFloorplannerMode] = useState<
+    'move' | 'wand' | 'draw' | 'delete' | 'oeffnung'
+  >('move')
   const [textureType, setTextureType] = useState<'floor' | 'wall' | null>(null)
   const [currentTarget, setCurrentTarget] = useState<HalfEdge | Room | null>(null)
   const [itemsLoading, setItemsLoading] = useState(0)
@@ -186,7 +186,9 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
             ? 'delete'
             : m === floorplannerModes.OEFFNUNG
               ? 'oeffnung'
-              : 'move'
+              : m === floorplannerModes.WAND
+                ? 'wand'
+                : 'move'
       )
     })
 
@@ -600,11 +602,12 @@ export function Blueprint3DAppBase({ config = {} }: Blueprint3DAppBaseProps) {
   )
 
   const handleFloorplannerModeChange = useCallback(
-    (mode: 'move' | 'draw' | 'delete' | 'oeffnung') => {
+    (mode: 'move' | 'wand' | 'draw' | 'delete' | 'oeffnung') => {
       setFloorplannerMode(mode)
       if (!blueprint3dRef.current) return
       const modeMap = {
         move: floorplannerModes.MOVE,
+        wand: floorplannerModes.WAND,
         draw: floorplannerModes.DRAW,
         delete: floorplannerModes.DELETE,
         oeffnung: floorplannerModes.OEFFNUNG

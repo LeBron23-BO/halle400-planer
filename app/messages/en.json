@@ -18,7 +18,8 @@
       "loadPlan": "Load Plan"
     },
     "floorplanner": {
-      "moveWalls": "Move Walls",
+      "moveFurniture": "Move furniture",
+      "moveWalls": "Move walls",
       "drawWalls": "Draw Walls",
       "deleteWalls": "Delete Walls",
       "done": "Done",

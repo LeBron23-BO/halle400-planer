@@ -18,6 +18,7 @@
       "loadPlan": "加载方案"
     },
     "floorplanner": {
+      "moveFurniture": "移动家具",
       "moveWalls": "移动墙体",
       "drawWalls": "绘制墙体",
       "deleteWalls": "删除墙体",

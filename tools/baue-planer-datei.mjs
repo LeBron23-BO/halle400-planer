@@ -812,8 +812,16 @@ function kurzHash(text){
   for (let i = 0; i < text.length; i++) h = ((h * 33) ^ text.charCodeAt(i)) >>> 0;
   return h.toString(36);
 }
-const ORT_ABDRUCK = kurzHash(decodeURIComponent(location.pathname).toLowerCase());
-const SCHLUESSEL = 'halle400-planer-datei:plan:' + PLAN_ABDRUCK + ':' + ORT_ABDRUCK;
+const ORT_KLARTEXT = decodeURIComponent(location.pathname);
+const ORT_ABDRUCK = kurzHash(ORT_KLARTEXT.toLowerCase());
+/* Der gemeinsame Anfang ALLER Stand-Schluessel dieser Datei — ohne Plan-Abdruck
+   und ohne Ablageort. Er ist seit W9 die Suchbasis beim Start (s.
+   \`alleStaende\`) und darum eine eigene Angabe: er stand vorher zweimal
+   ausgeschrieben da, einmal mit Abdruck (Suche) und einmal ohne (Aufraeumen) —
+   und genau diese eine Stelle zu viel war die Ursache dafuer, dass ein Stand
+   aus einer anderen Bau-Fassung beim Start nicht gefunden wurde. */
+const STAND_PRAEFIX = 'halle400-planer-datei:plan:';
+const SCHLUESSEL = STAND_PRAEFIX + PLAN_ABDRUCK + ':' + ORT_ABDRUCK;
 const SCHLUESSEL_BEARBEITEN = 'halle400-planer-datei:bearbeiten:' + ORT_ABDRUCK;
 /* W7 — EIGENER Schluessel fuer die zuletzt angesehene Ansicht. Bis hierher
    brauchte es ihn nicht: der Bearbeiten-Schalter WAR die Ansichtswahl (an =
@@ -1501,6 +1509,14 @@ function sichereJetzt(){
       fassung: 1,
       planAbdruck: PLAN_ABDRUCK,
       bauStempel: BAU_STEMPEL,
+      /* WO dieser Stand entstanden ist — im Klartext, nicht als Hash (W9).
+         Der Schluessel traegt nur \`ORT_ABDRUCK\`, und aus einem Hash laesst
+         sich kein Satz bauen: das Angebot beim Start konnte darum bis W9 nur
+         „an einem anderen Ablageort" sagen. Wer zwischen drei Kopien
+         entscheiden soll, braucht aber den Ordner, nicht die Auskunft, dass es
+         irgendeinen gibt. Ein Dateipfad auf dem eigenen Rechner, abgelegt im
+         eigenen Browser — das verlaesst diese Maschine nie. */
+      ort: ORT_KLARTEXT,
       gesichertAm: jetzt,
       floorplan: grundriss.saveFloorplan(),
       labels: labels,
@@ -1815,8 +1831,15 @@ zeichner.addModeResetCallback(function(m){
   document.body.classList.toggle('zeichnet', m === floorplannerModes.DRAW);
   document.body.classList.toggle('loescht', m === floorplannerModes.DELETE);
   document.body.classList.toggle('oeffnet', m === floorplannerModes.OEFFNUNG);
-  // Die Arten-Gruppe erscheint mit ihrem Werkzeug und verschwindet mit ihm.
-  el('oeffnungsArten').hidden = m !== floorplannerModes.OEFFNUNG;
+  /* Die Arten-Gruppe wird mit ihrem Werkzeug BEDIENBAR — ihr Platz bleibt
+     dauerhaft reserviert (V7, s. \`.grp.platzhalter\` im CSS). \`inert\` nimmt
+     Klick und Tab-Reihenfolge, \`aria-hidden\` die Ansage; beides zusammen mit
+     \`visibility:hidden\`, damit nicht drei Angaben auseinanderlaufen koennen. */
+  const artenAn = m === floorplannerModes.OEFFNUNG;
+  const arten = el('oeffnungsArten');
+  arten.classList.toggle('platzhalter', !artenAn);
+  arten.inert = !artenAn;
+  arten.setAttribute('aria-hidden', String(!artenAn));
 });
 
 /* ── Öffnungen: Art wählen (W4) ─────────────────────────────────────

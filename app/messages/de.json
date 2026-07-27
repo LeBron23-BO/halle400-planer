@@ -18,7 +18,8 @@
       "loadPlan": "Plan laden"
     },
     "floorplanner": {
-      "moveWalls": "Wände bewegen",
+      "moveFurniture": "Möbel verschieben",
+      "moveWalls": "Wände verschieben",
       "drawWalls": "Wände zeichnen",
       "deleteWalls": "Wände löschen",
       "done": "Fertig",
