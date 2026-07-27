@@ -63,7 +63,7 @@ node tools/pruefe-palette.mjs     # W3: die PALETTE — 66 Pruefungen in der Dop
                                   #        muss ERKANNT werden
 node tools/pruefe-axonometrie.mjs  # X2/X3: 6 Gates — Raumableitung == Planer-Kern, Szene vollstaendig,
                                    #        Bild gezeichnet (mit Gegenprobe), Ansicht folgt dem Grundriss
-node tools/pruefe-axo-bearbeiten.mjs # W7: BEARBEITEN IM BLATT — 43 Pruefungen, jede mit Gegenprobe.
+node tools/pruefe-axo-bearbeiten.mjs # W7: BEARBEITEN IM BLATT — 58 Pruefungen, jede mit Gegenprobe.
                                    #        A+B laufen OHNE Browser (die Rechnung steht in
                                    #        src/axo/axo-treffer.js): Hin-und-zurueck ueber alle
                                    #        Blicke, Selbsttreffer aller 289 Stuecke. C-G an der
