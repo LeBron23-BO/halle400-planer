@@ -279,6 +279,26 @@ const html = `<!DOCTYPE html>
   .frage .fuss{flex-basis:100%;text-align:center;font-family:var(--mono);
        font-size:9.5px;letter-spacing:.08em;color:var(--ink-mute)}
 
+  /* ── Ein ANGEBOT ist keine Rueckfrage (C1) ────────────────────────────
+     Dieselbe Bauform, aber im Farbklima des Blattes statt in der Warnfarbe.
+     Rot heisst in dieser Oberflaeche „hier verschwindet gleich etwas" — beim
+     Fund eines liegen gebliebenen Standes ist genau das Gegenteil der Fall.
+     Dieselbe Ueberlegung wie beim Moebel-Rahmen in W2: die Farbe muss die
+     Aussage tragen, nicht die Aufmerksamkeit maximieren. */
+  .frage.ruhig{border-color:var(--panel-line)}
+  .frage.ruhig .txt b{color:var(--ink-dim)}
+  .frage.ruhig button.ernst{background:var(--sage-deep);border-color:var(--sage-deep)}
+  .frage.ruhig button.ernst:hover{background:var(--ink-dim)}
+  /* Die Kenndaten eines Standes: Zeitpunkt, Ordner, Groesse. In der Schreibmaschinen-
+     Schrift, weil es MESSWERTE sind und keine Prosa — dieselbe Regel wie bei den
+     Massangaben und den Zaehlern im Blattkopf. */
+  .frage .wert{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-dim)}
+  .frage .weitere{flex-basis:100%;display:flex;flex-direction:column;gap:4px;
+       border-top:1px solid var(--panel-line);padding-top:8px;margin-top:2px}
+  .frage .ortZeile{display:flex;align-items:center;gap:8px;font-family:var(--mono);
+       font-size:11px;letter-spacing:.04em;color:var(--ink-dim)}
+  .frage .ortZeile button{margin-left:auto;min-height:32px;padding:6px 9px;font-size:9.5px}
+
   .tafel{position:fixed;top:104px;right:20px;width:270px;max-height:calc(100vh - 220px);
        background:var(--panel);border:1px solid var(--panel-line);
        backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
@@ -718,17 +738,25 @@ const html = `<!DOCTYPE html>
   </span>
 </div>
 
-<!-- M8: derselbe Plan, anderer Ablageort. Der Speicherschlüssel trägt den
-     Ablageort (nötig, damit zwei Kopien sich nicht ins Gehege kommen) — wer
-     die Datei verschiebt, sieht seine Arbeit sonst nicht mehr. Gemessen:
-     289 Stück waren weg, ohne einen Hinweis. -->
-<div class="frage" id="ortFrage" role="alertdialog" aria-live="assertive" aria-label="Stand von einem anderen Ablageort" hidden>
-  <span class="txt"><b>Anderer Ablageort:</b> <span id="ortFrageText"></span></span>
+<!-- M8/C1: es liegt Arbeit im Browser, die nicht zu DIESER Datei gehört —
+     anderer Ablageort oder andere Bau-Fassung. Der Speicherschlüssel trägt
+     beides (nötig, damit zwei Kopien sich nicht ins Gehege kommen), und wer
+     die Datei verschiebt oder neu baut, sieht seine Arbeit sonst nicht mehr.
+     Gemessen: vier gesetzte Stücke wurden null, ohne einen Hinweis.
+
+     RUHIG, nicht dringlich: `role="status"` und `aria-live="polite"` statt
+     `alertdialog`/`assertive`, und der Rahmen im Panel-Ton statt in Rot. Hier
+     ist nichts kaputt und nichts zu bestätigen — es liegt etwas bereit. Ein
+     Alarm für ein Angebot wäre dieselbe Übertreibung wie ein roter Rahmen um
+     ein Möbel, das man nur greifen könnte (W2). -->
+<div class="frage ruhig" id="ortFrage" role="status" aria-live="polite" aria-label="Gespeicherte Stände" hidden>
+  <span class="txt"><b>Gespeicherte Arbeit:</b> <span id="ortFrageText"></span><span id="ortFrageErster" class="wert"></span></span>
   <span class="knoepfe">
     <button type="button" id="btnOrtNein">Nein danke</button>
-    <button type="button" id="btnOrtJa" class="ernst">Stand übernehmen</button>
+    <button type="button" id="btnOrtJa" class="ernst">Stand holen</button>
   </span>
-  <span class="fuss">Der Stand bleibt am alten Ablageort liegen — hier entsteht eine Kopie.</span>
+  <span class="weitere" id="ortFrageWeitere" hidden></span>
+  <span class="fuss">Der Stand bleibt liegen, wo er ist — hier entsteht eine Kopie.</span>
 </div>
 
 <!-- Lade-Rückfrage (K1). Sie fehlte, und das war der schwerste Fund des
@@ -747,13 +775,12 @@ const html = `<!DOCTYPE html>
 </div>
 
 
-<div class="frage" id="standFrage" role="alertdialog" aria-live="assertive" aria-label="Gespeicherten Stand prüfen" hidden>
-  <span class="txt"><b>Gespeicherter Stand:</b> <span id="standFrageText"></span></span>
-  <span class="knoepfe">
-    <button type="button" id="btnStandVerwerfen">Gemessenen Plan zeigen</button>
-    <button type="button" id="btnStandLaden">Stand laden</button>
-  </span>
-</div>
+<!-- Hier stand bis W9 `#standFrage` — „dieser Stand passt nicht zum eingebauten
+     Plan, laden oder verwerfen?". Sie ist ersatzlos weg, weil sie nicht
+     auslösen KONNTE: der Speicherschlüssel trägt den Plan-Abdruck, also hat
+     alles, was unter ihm liegt, denselben. Ihre eigentliche Aufgabe — einen
+     Stand aus einer anderen Bau-Fassung anbieten — erledigt `#ortFrage`, das
+     jetzt über ALLE Abdrücke sucht. -->
 
 <div class="meldung" id="meldung" role="status" aria-live="polite" hidden></div>
 
@@ -862,7 +889,6 @@ const arbeitshinweis = el('arbeitshinweis');
 const tafel = el('tafel');
 const rueckfrage = el('rueckfrage');
 const zurueckFrage = el('zurueckFrage');
-const standFrage = el('standFrage');
 const standleiste = el('standleiste');
 const meldungEl = el('meldung');
 const dateiWahl = el('dateiWahl');
@@ -913,10 +939,15 @@ let gesichertAm = null;
 let speicherFehler = speicher ? null : 'merkt-nichts';
 let sichernGesperrt = true;
 let sicherUhr = null;
-let standFragt = null;
 
 /* Liegt ein eigener Stand? Er muss zum eingebauten Plan passen — sonst wird
-   NICHT still geladen, sondern ruhig gefragt. */
+   NICHT still geladen, sondern beim Start ruhig ANGEBOTEN (s. \`alleStaende\`).
+   Bis W9 stand hier eine eigene Rueckfrage (\`standFragt\`) fuer genau diesen
+   Fall. Sie ist ersatzlos weg, und zwar nicht aus Sparsamkeit: sie konnte
+   nicht ausloesen. Der Schluessel traegt den Plan-Abdruck — was unter ihm
+   liegt, hat also immer denselben. Sie bewachte einen Fall, den es unter
+   diesem Schluessel nicht geben kann, und der Fall, den es WIRKLICH gibt (der
+   Stand liegt unter einem ANDEREN Schluessel), lief an ihr vorbei. */
 let start = null;
 if (speicher) {
   try {
@@ -925,12 +956,10 @@ if (speicher) {
       const stand = JSON.parse(roh);
       if (stand && stand.floorplan && stand.floorplan.corners && stand.planAbdruck === PLAN_ABDRUCK) {
         start = stand;
-      } else if (stand && stand.floorplan) {
-        standFragt = stand;
       }
     }
   } catch (e) {
-    standFragt = null;
+    start = null;
   }
 }
 if (start) {
@@ -2370,76 +2399,142 @@ gesetztZeigen();
    zeigen sähe aus, als wäre die Arbeit verloren. */
 if (standFehler) meldung(standFehler, true);
 
-if (standFragt) {
-  const d = standFragt.gesichertAm ? new Date(standFragt.gesichertAm) : null;
-  el('standFrageText').textContent = 'Es liegt ein Stand' +
-    (d ? ' vom ' + d.toLocaleDateString('de-DE') + ', ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' Uhr' : '') +
-    ', der nicht zum eingebauten Plan passt. Laden oder den gemessenen Plan zeigen?';
-  standFrage.hidden = false;
-  el('btnStandLaden').addEventListener('click', function(){
-    standFrage.hidden = true;
-    ladeGrundriss(standFragt.floorplan, standFragt.labels, true);
-  });
-  el('btnStandVerwerfen').addEventListener('click', function(){
-    standFrage.hidden = true;
-    if (speicher) { try { speicher.removeItem(SCHLUESSEL); } catch (e) { /* egal */ } }
-  });
-}
-
-/* ── Derselbe Plan, ein anderer Ablageort (M8) ──────────────────────
+/* ── Wo liegt sonst noch Arbeit? (M8, in W9 repariert) ──────────────
    Der Speicherschluessel traegt den Ablageort — noetig, weil \`file://\` EIN
    Ursprung fuer die ganze Festplatte ist und zwei Kopien sich sonst ins Gehege
    kaemen. Der Preis: wer die Datei in einen anderen Ordner schiebt, oeffnet ein
    leeres Blatt. Gemessen: 289 Stück waren weg, ohne einen einzigen Hinweis.
 
-   Hier wird deshalb einmal beim Start nachgesehen, ob derselbe eingebaute Plan
-   (gleicher Abdruck!) anderswo einen Stand hat, und der juengste RUHIG
-   angeboten. Nicht geladen: welche Kopie gilt, weiss nur der Nutzer. Der alte
-   Stand bleibt liegen — hier entstuende eine Kopie, dort verschwindet nichts. */
-function staendeAnderswo(){
+   WARUM DIE RETTUNG BIS W9 IM WICHTIGSTEN FALL NICHT AUSLOESTE — die Ursache,
+   nicht das Symptom: der Abdruck des eingebauten Plans stand im SUCH-Praefix.
+   Gesucht wurde also nur unter Staenden DERSELBEN Bau-Fassung. Genau die eine
+   Groesse, die sich bei einem neuen Bau aendert (der Plan wird neu exportiert,
+   \`PLAN_ABDRUCK\` kippt), war damit die Bedingung des Findens. Ergebnis,
+   dreimal gemessen: ein Stand mit vier gesetzten Stuecken lag unberuehrt im
+   Speicher, die Datei fand 0 und startete wortlos bei null. Die zweite Haelfte
+   desselben Fehlers: \`standFragt\` — die Rueckfrage „dieser Stand passt nicht
+   zum eingebauten Plan" — kann so gar nicht ausloesen, denn was unter DIESEM
+   Schluessel liegt, hat zwangslaeufig DIESEN Abdruck. Ein Waechter, der nur
+   den Fall bewacht, den es nicht geben kann.
+
+   Gesucht wird darum jetzt ueber \`STAND_PRAEFIX\` — ALLE Staende dieser Datei,
+   gleich welcher Plan-Abdruck und gleich welcher Ablageort. Angeboten wird
+   RUHIG und vollstaendig, geladen wird nichts von selbst: welche Kopie gilt,
+   weiss nur der Nutzer. Der alte Stand bleibt liegen — hier entstuende eine
+   Kopie, dort verschwindet nichts. */
+function alleStaende(){
   if (!speicher) return [];
-  const praefix = 'halle400-planer-datei:plan:' + PLAN_ABDRUCK + ':';
   const gefunden = [];
   try {
     for (let i = 0; i < speicher.length; i++) {
       const k = speicher.key(i);
-      if (!k || k.indexOf(praefix) !== 0 || k === SCHLUESSEL) continue;
+      if (!k || k.indexOf(STAND_PRAEFIX) !== 0) continue;
+      /* Der EIGENE Schluessel wird uebergangen — aber nur, wenn sein Inhalt
+         auch wirklich angenommen wurde. Liegt dort etwas, das nicht zum
+         eingebauten Plan passt (von Hand veraendert, halb geschrieben), wird
+         es hier ANGEBOTEN statt verschwiegen. Das ist die Aufgabe, die bis W9
+         \`standFragt\` haben sollte und die es nie erfuellen konnte. */
+      if (k === SCHLUESSEL && start) continue;
+      /* Die SICHERUNG vor einem „Zuruecksetzen" ist kein Stand von anderswo
+         (C3) — sie gehoert dieser Datei und wird in der Meldungszeile
+         angeboten, nicht hier. Ihr Praefix ist ein anderer; die Zeile steht
+         trotzdem hier, weil ein spaeter hinzukommender Schluessel unter
+         \`plan:\` sonst still in dieser Liste landete. */
+      if (k === SCHLUESSEL_SICHERUNG) continue;
       let s = null;
       try { s = JSON.parse(speicher.getItem(k)); } catch (e) { continue; }
       if (!s || !s.floorplan || !s.floorplan.corners) continue;
-      gefunden.push({ schluessel: k, stand: s, gesichertAm: s.gesichertAm || '' });
+      gefunden.push({
+        schluessel: k,
+        stand: s,
+        gesichertAm: s.gesichertAm || '',
+        /* Passt der Stand zum eingebauten Plan? Wenn nicht, ist er aus einer
+           anderen BAU-FASSUNG — er laedt trotzdem (der Kern prueft die Form),
+           aber der Nutzer muss es wissen, bevor er ihn holt. */
+        gleicherPlan: s.planAbdruck === PLAN_ABDRUCK,
+        ort: typeof s.ort === 'string' ? s.ort : ''
+      });
     }
   } catch (e) { /* ein Speicher, der sich nicht durchzaehlen laesst: dann eben nicht */ }
   gefunden.sort(function(a, b){ return a.gesichertAm < b.gesichertAm ? 1 : -1; });
   return gefunden;
 }
 
+/* „C:/Users/…/Desktop/Halle400-Modell.html" -> „Desktop". Der ganze Pfad waere
+   in einer Zeile nicht zu lesen und in einer Kopfleiste erst recht nicht; der
+   ORDNER ist das, was die Kopien unterscheidet. Fehlt die Angabe (ein Stand
+   aus einer Fassung vor W9), wird das gesagt statt geraten. */
+function ordnerName(pfad){
+  if (!pfad) return '';
+  const teile = pfad.split('/').filter(Boolean);
+  return teile.length >= 2 ? teile[teile.length - 2] : '';
+}
+
+function standZeile(e){
+  const d = e.gesichertAm ? new Date(e.gesichertAm) : null;
+  const ordner = ordnerName(e.ort);
+  const zahl = Object.keys(e.stand.floorplan.corners).length;
+  return (d ? d.toLocaleDateString('de-DE') + ', ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' Uhr' : 'ohne Zeitangabe') +
+    (ordner ? ' · Ordner „' + ordner + '"' : ' · Ablageort unbekannt') +
+    ' · ' + zahl + ' Ecken' +
+    (e.gleicherPlan ? '' : ' · andere Bau-Fassung');
+}
+
+function standHolen(e){
+  el('ortFrage').hidden = true;
+  if (Array.isArray(e.stand.items)) items = e.stand.items;
+  try {
+    ladeGrundriss(e.stand.floorplan, e.stand.labels, true);
+    meldung('Übernommen: ' + grundriss.getCorners().length + ' Ecken, ' +
+      grundriss.getWalls().length + ' Wände' +
+      (ordnerName(e.ort) ? ' aus dem Ordner „' + ordnerName(e.ort) + '"' : ' von einem anderen Ablageort') +
+      '. Dort bleibt der Stand unverändert liegen.', false);
+  } catch (err) {
+    meldung('Der Stand ließ sich nicht öffnen (' +
+      ((err && err.message) ? err.message : String(err)) + ').', true);
+  }
+}
+
 /* NUR wenn hier noch nichts liegt: wer an diesem Ablageort schon gearbeitet
    hat, will nicht gefragt werden, ob er stattdessen etwas Fremdes moechte. */
-if (!start && !standFragt && speicher) {
-  const anderswo = staendeAnderswo();
-  if (anderswo.length) {
-    const a = anderswo[0];
-    const d = a.gesichertAm ? new Date(a.gesichertAm) : null;
-    const zahl = Object.keys(a.stand.floorplan.corners).length;
-    el('ortFrageText').textContent = 'An einem anderen Ablageort liegt ein Stand desselben Plans' +
-      (d ? ' vom ' + d.toLocaleDateString('de-DE') + ', ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' Uhr' : '') +
-      ' (' + zahl + ' Ecken)' + (anderswo.length > 1 ? ' — der jüngste von ' + anderswo.length : '') +
-      '. Wurde diese Datei verschoben oder kopiert? Dann ist das deine Arbeit.';
+if (!start && speicher) {
+  const gefunden = alleStaende();
+  if (gefunden.length) {
+    const a = gefunden[0];
+    el('ortFrageText').textContent = gefunden.length === 1
+      ? 'Es liegt ein Stand deiner Arbeit im Browser, aber nicht zu dieser Datei hier: '
+      : 'Es liegen ' + gefunden.length + ' Stände deiner Arbeit im Browser, aber keiner zu dieser Datei hier. Der jüngste: ';
+    el('ortFrageErster').textContent = standZeile(a);
     el('ortFrage').hidden = false;
     el('btnOrtNein').addEventListener('click', function(){ el('ortFrage').hidden = true; });
-    el('btnOrtJa').addEventListener('click', function(){
-      el('ortFrage').hidden = true;
-      if (Array.isArray(a.stand.items)) items = a.stand.items;
-      try {
-        ladeGrundriss(a.stand.floorplan, a.stand.labels, true);
-        meldung('Übernommen: ' + grundriss.getCorners().length + ' Ecken, ' +
-          grundriss.getWalls().length + ' Wände vom anderen Ablageort. Dort bleibt er unverändert liegen.', false);
-      } catch (e) {
-        meldung('Der Stand vom anderen Ablageort ließ sich nicht öffnen (' +
-          ((e && e.message) ? e.message : String(e)) + ').', true);
-      }
+    el('btnOrtJa').addEventListener('click', function(){ standHolen(a); });
+
+    /* Die WEITEREN Staende. Sie stehen als eigene Zeilen darunter und nicht in
+       einem Auswahlfeld: ein Auswahlfeld verbirgt, WIE VIELE es sind, und
+       genau das ist hier die Aussage — der Nutzer soll sehen, dass seine
+       Arbeit nicht weg ist. Mehr als drei werden nur gezaehlt; wer sechs
+       Kopien herumliegen hat, braucht eine Aufraeumung und keine Liste. */
+    const weitere = el('ortFrageWeitere');
+    gefunden.slice(1, 4).forEach(function(e){
+      const zeile = document.createElement('span');
+      zeile.className = 'ortZeile';
+      const txt = document.createElement('span');
+      txt.textContent = standZeile(e);
+      const knopf = document.createElement('button');
+      knopf.type = 'button';
+      knopf.textContent = 'Diesen holen';
+      knopf.addEventListener('click', function(){ standHolen(e); });
+      zeile.appendChild(txt);
+      zeile.appendChild(knopf);
+      weitere.appendChild(zeile);
     });
+    if (gefunden.length > 4) {
+      const rest = document.createElement('span');
+      rest.className = 'ortZeile';
+      rest.textContent = 'und ' + (gefunden.length - 4) + ' weitere, ältere Stände.';
+      weitere.appendChild(rest);
+    }
+    weitere.hidden = gefunden.length < 2;
   }
 }
 
