@@ -192,6 +192,11 @@ const html = `<!DOCTYPE html>
   button:disabled{opacity:.32;cursor:default}
   .lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
        color:var(--ink-mute);padding:0 7px 0 3px;user-select:none;font-variant-numeric:tabular-nums}
+  /* Zwei Aufschriften je Knopf, damit die Medienabfrage die kuerzere waehlen
+     kann (s. „Die Werkzeuge muessen erreichbar sein"). Am breiten Bildschirm
+     steht die lange da — dort ist Platz, und „Wände zeichnen" sagt mehr als
+     „Wände". */
+  .leiste .kurz{display:none}
 
   /* Kopfleiste: Umschalter + der unauffaellige Bearbeiten-Schalter. */
   .kopfleiste{position:fixed;top:10px;left:50%;transform:translateX(-50%);
@@ -586,11 +591,15 @@ const html = `<!DOCTYPE html>
   </aside>
 
   <div class="leiste" id="werkzeuge" role="toolbar" aria-label="Grundriss bearbeiten" hidden>
-    <div class="grp">
+    <!-- Die kurzen Aufschriften sind KEINE Abkürzung aus Bequemlichkeit: bei
+         390 px lag „Löschen" sonst ausserhalb der Anzeige (s. CSS, „Die
+         Werkzeuge müssen erreichbar sein"). Die volle Aussage steht im
+         `title` und geht damit nicht verloren. -->
+    <div class="grp" id="grpWerkzeug">
       <span class="lbl">Werkzeug</span>
-      <button type="button" id="wzMove" title="Verschieben — Ecken, Wände und Möbel ziehen. Q und E drehen das Möbel unter dem Zeiger um 15°." aria-pressed="true">Verschieben</button>
-      <button type="button" id="wzDraw" title="Wände zeichnen — Punkt für Punkt" aria-pressed="false">Wände zeichnen</button>
-      <button type="button" id="wzOeffnung" title="Türen &amp; Fenster — auf eine Wand zeigen, klicken setzt. Q wendet den Anschlag, E die Aufschlagseite." aria-pressed="false">Türen &amp; Fenster</button>
+      <button type="button" id="wzMove" title="Verschieben — Ecken, Wände und Möbel ziehen. Am Rechner drehen Q und E das Möbel unter dem Zeiger um 15°; am Handy zieht ein Finger das Möbel, zwei Finger zoomen." aria-pressed="true">Verschieben</button>
+      <button type="button" id="wzDraw" title="Wände zeichnen — Punkt für Punkt" aria-pressed="false"><span class="lang">Wände zeichnen</span><span class="kurz">Wände</span></button>
+      <button type="button" id="wzOeffnung" title="Türen &amp; Fenster — auf eine Wand zeigen, klicken setzt. Q wendet den Anschlag, E die Aufschlagseite." aria-pressed="false"><span class="lang">Türen &amp; Fenster</span><span class="kurz">Türen</span></button>
       <button type="button" id="wzDelete" title="Löschen — mit Rückfrage" aria-pressed="false">Löschen</button>
     </div>
     <!-- Die Arten der Öffnung. Sie erscheinen NUR mit dem Werkzeug: vier
