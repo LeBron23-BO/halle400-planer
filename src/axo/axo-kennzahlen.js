@@ -21,7 +21,8 @@
  *    Das Aufmass wird NICHT bewertet. Gemessen am Auslieferungszustand:
  *    der gemessene Plan fuehrt 0 Oeffnungen — eine Pruefung „Raum ohne Tuer"
  *    ueber das Aufmass meldete sofort 24 Raeume; und 4 gemessene Stuecke haben
- *    ihren Mittelpunkt im Wandband (3 Lounge-Sessel, 1 Spuele) — eine Pruefung
+ *    ihren Mittelpunkt im Wandband (3 runde Tische — die Lounge-Sessel — und
+ *    1 Waschbecken, die Spuele; gemessen in `pruefe-kennzahlen.mjs` D10) — eine Pruefung
  *    „Moebel in Wand" ueber das Aufmass meldete sofort 4 Stueck. Das sind genau
  *    die Zeilen, die man nach dem zweiten Blick nicht mehr liest. Die PDF ist
  *    die Grundwahrheit (Projekt-DNA), kein Pruefling.
@@ -344,9 +345,19 @@ export function baueRaumbuch(plan, opt = {}) {
     // Aussage". `null` zwingt die Anzeige, das auch so zu schreiben.
     r.flaecheJeStuhl = r.stuehle > 0 ? r.flaeche / r.stuehle : null
     r.name = r.namensAnker.join(' · ')
+    /* GEMESSEN: 12 der 24 Raeume tragen ueberhaupt keinen Anker — die PDF
+       beschriftet nur die Haelfte. Sie brauchen trotzdem eine Zeile im
+       Raumbuch und einen Namen im Hinweis, sonst stuende dort „ , , ".
+
+       Der Ort steht mit BEIDEN Koordinaten da, nicht nur mit x. Im gemessenen
+       Plan liegen zwei namenlose Raeume 1 cm auseinander (x = 55,62 m und
+       55,63 m) — zwei uebereinander liegende Raeume derselben Achse haetten mit
+       x allein exakt DIESELBE Bezeichnung, und ein Hinweis nennte dann zweimal
+       denselben Namen fuer zwei verschiedene Raeume. Der Nutzer suchte im
+       falschen Raum, und das Werkzeug saehe dabei richtig aus. */
     r.bezeichnung = r.istErschliessung
       ? 'Erschließungszone'
-      : r.name || `Raum bei x = ${meterText(r.mitte.x)} m`
+      : r.name || `Raum bei x = ${meterText(r.mitte.x)} m, y = ${meterText(r.mitte.y)} m`
   })
 
   const stueckliste = [...jeTyp.values()].sort((a, b) => b.gesamt - a.gesamt || a.typ.localeCompare(b.typ))
@@ -480,7 +491,7 @@ export function pruefeHinweise(plan, raumbuch) {
 
   /* ── 3 · Moebel in einer Wand ──────────────────────────────────────
      GEMESSENE Stuecke sind ausgenommen. Nicht aus Nachlaessigkeit: gemessen
-     liegen 4 Mittelpunkte im Wandband (3 Lounge-Sessel, 1 Spuele), weil der
+     liegen 4 Mittelpunkte im Wandband (3 runde Tische, 1 Waschbecken), weil der
      Plan freihaendig gezeichnet ist und die Wandachse die belegungsgewichtete
      Mittellinie des Duktus ist — nicht die Pixelkante. Diese 4 zu melden hiesse,
      die Grundwahrheit zu ruegen (Doktrin-Regel 1). */

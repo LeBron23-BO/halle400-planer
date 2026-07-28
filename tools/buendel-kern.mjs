@@ -162,17 +162,19 @@ export function buendleKern(ausDir, namen = new Map()) {
   return teile.join('\n\n')
 }
 
-/** Die FUENF Axonometrie-Module — dieselben Dateien wie die Planer-Ansicht.
+/** Die SECHS Axonometrie-Module — dieselben Dateien wie die Planer-Ansicht.
  *
  *  Reihenfolge = Abhaengigkeit: `axo-treffer.js` steht VOR `axo-zeichnen.js`,
- *  das es benutzt. Wer hier eines vergisst, merkt es NICHT im Planer (dort
- *  laedt `import` nach), sondern erst in der Bank-Datei — und dort als tote
- *  Bedienung ohne Fehlermeldung. Genau darum steht diese Liste an einer
- *  Stelle und wird vom Gate `pruefe-axo-bearbeiten.mjs` gegen `src/axo/`
- *  gehalten. */
+ *  das es benutzt; `axo-kennzahlen.js` steht hinter `axo-zyklen.js`, aus dem
+ *  es seine Raumableitung bezieht. Wer hier eines vergisst, merkt es NICHT im
+ *  Planer (dort laedt `import` nach), sondern erst in der Bank-Datei — und
+ *  dort als tote Bedienung ohne Fehlermeldung. Genau darum steht diese Liste
+ *  an einer Stelle und wird von den Gates `pruefe-axo-bearbeiten.mjs` und
+ *  `pruefe-kennzahlen.mjs` gegen `src/axo/` gehalten. */
 export const AXO_MODULE = [
   'axo-kontrakt.js',
   'axo-zyklen.js',
+  'axo-kennzahlen.js',
   'axo-treffer.js',
   'axo-szene.js',
   'axo-zeichnen.js'
