@@ -650,7 +650,7 @@ const html = `<!DOCTYPE html>
     <!-- Die Arten der Öffnung. Sie sind NUR mit ihrem Werkzeug BEDIENBAR, ihr
          Platz bleibt aber DAUERHAFT reserviert (V7).
 
-         Bis W9 stand hier \`hidden\`, und die Zeile wurde beim Werkzeugwechsel
+         Bis W10 stand hier \`hidden\`, und die Zeile wurde beim Werkzeugwechsel
          eingeschoben. Gemessen: dabei bewegten sich 13 von 24 Knöpfen, bis zu
          520 px — der alte Platz von „Laden" lag danach unter „Zurücksetzen",
          dem gefährlichsten Knopf der Datei. Eine Leiste, die unter der Hand
@@ -785,7 +785,7 @@ const html = `<!DOCTYPE html>
 </div>
 
 
-<!-- Hier stand bis W9 \`#standFrage\` — „dieser Stand passt nicht zum eingebauten
+<!-- Hier stand bis W10 \`#standFrage\` — „dieser Stand passt nicht zum eingebauten
      Plan, laden oder verwerfen?". Sie ist ersatzlos weg, weil sie nicht
      auslösen KONNTE: der Speicherschlüssel trägt den Plan-Abdruck, also hat
      alles, was unter ihm liegt, denselben. Ihre eigentliche Aufgabe — einen
@@ -852,7 +852,7 @@ function kurzHash(text){
 const ORT_KLARTEXT = decodeURIComponent(location.pathname);
 const ORT_ABDRUCK = kurzHash(ORT_KLARTEXT.toLowerCase());
 /* Der gemeinsame Anfang ALLER Stand-Schluessel dieser Datei — ohne Plan-Abdruck
-   und ohne Ablageort. Er ist seit W9 die Suchbasis beim Start (s.
+   und ohne Ablageort. Er ist seit W10 die Suchbasis beim Start (s.
    \`alleStaende\`) und darum eine eigene Angabe: er stand vorher zweimal
    ausgeschrieben da, einmal mit Abdruck (Suche) und einmal ohne (Aufraeumen) —
    und genau diese eine Stelle zu viel war die Ursache dafuer, dass ein Stand
@@ -958,7 +958,7 @@ let sicherUhr = null;
 
 /* Liegt ein eigener Stand? Er muss zum eingebauten Plan passen — sonst wird
    NICHT still geladen, sondern beim Start ruhig ANGEBOTEN (s. \`alleStaende\`).
-   Bis W9 stand hier eine eigene Rueckfrage (\`standFragt\`) fuer genau diesen
+   Bis W10 stand hier eine eigene Rueckfrage (\`standFragt\`) fuer genau diesen
    Fall. Sie ist ersatzlos weg, und zwar nicht aus Sparsamkeit: sie konnte
    nicht ausloesen. Der Schluessel traegt den Plan-Abdruck — was unter ihm
    liegt, hat also immer denselben. Sie bewachte einen Fall, den es unter
@@ -1554,9 +1554,9 @@ function sichereJetzt(){
       fassung: 1,
       planAbdruck: PLAN_ABDRUCK,
       bauStempel: BAU_STEMPEL,
-      /* WO dieser Stand entstanden ist — im Klartext, nicht als Hash (W9).
+      /* WO dieser Stand entstanden ist — im Klartext, nicht als Hash (W10).
          Der Schluessel traegt nur \`ORT_ABDRUCK\`, und aus einem Hash laesst
-         sich kein Satz bauen: das Angebot beim Start konnte darum bis W9 nur
+         sich kein Satz bauen: das Angebot beim Start konnte darum bis W10 nur
          „an einem anderen Ablageort" sagen. Wer zwischen drei Kopien
          entscheiden soll, braucht aber den Ordner, nicht die Auskunft, dass es
          irgendeinen gibt. Ein Dateipfad auf dem eigenen Rechner, abgelegt im
@@ -1714,7 +1714,7 @@ function ladeGrundriss(fp, neueLabels, alsEigenerStand){
 }
 
 /* ── Was „Zurücksetzen" WEGNIMMT, in Zahlen (C3) ────────────────────
-   Die Rueckfrage sagte bis W9 nur „alle eigenen Änderungen verwerfen". Das ist
+   Die Rueckfrage sagte bis W10 nur „alle eigenen Änderungen verwerfen". Das ist
    wahr und nutzlos: wer nicht weiss, WIE VIEL er verliert, kann die Frage
    nicht beantworten. Danach ist ausserdem das Rueckgaengig abgeschaltet (der
    Kern raeumt die Historie beim Laden ab) — es ist die einzige Handlung dieser
@@ -1793,6 +1793,16 @@ function sicherungZurueckholen(){
     meldung('Die Sicherung ließ sich nicht öffnen (' + ((e && e.message) ? e.message : String(e)) + ').', true);
     return false;
   }
+  /* Verbraucht: der Inhalt IST jetzt der Arbeitsstand und liegt unter dem
+     normalen Schluessel. Ihn liegen zu lassen waere ein Speicherplatz, den
+     niemand mehr erreichen kann — bei rund 4,8 MB fuer ALLE file://-Seiten
+     zusammen ist das nicht nichts. BEKANNTE GRENZE: wer nach dem
+     Zuruecksetzen neu laedt, ohne den Knopf gedrueckt zu haben, verliert das
+     Angebot; die Sicherung bleibt dann liegen, bis das naechste
+     Zuruecksetzen sie ueberschreibt. Ein Angebot, das den Neustart
+     ueberdauert, waere ein zweites Startangebot neben dem aus C1 — zwei
+     Zeilen, die dasselbe zu sein scheinen und es nicht sind. */
+  try { speicher.removeItem(SCHLUESSEL_SICHERUNG); } catch (e) { /* egal */ }
   meldung('Der Stand von vor dem Zurücksetzen ist wieder da: ' +
     grundriss.getCorners().length + ' Ecken, ' + grundriss.getWalls().length + ' Wände, ' +
     grundriss.zaehleGesetzte() + ' gesetzte Stücke.', false);
@@ -2541,13 +2551,13 @@ gesetztZeigen();
    zeigen sähe aus, als wäre die Arbeit verloren. */
 if (standFehler) meldung(standFehler, true);
 
-/* ── Wo liegt sonst noch Arbeit? (M8, in W9 repariert) ──────────────
+/* ── Wo liegt sonst noch Arbeit? (M8, in W10 repariert) ──────────────
    Der Speicherschluessel traegt den Ablageort — noetig, weil \`file://\` EIN
    Ursprung fuer die ganze Festplatte ist und zwei Kopien sich sonst ins Gehege
    kaemen. Der Preis: wer die Datei in einen anderen Ordner schiebt, oeffnet ein
    leeres Blatt. Gemessen: 289 Stück waren weg, ohne einen einzigen Hinweis.
 
-   WARUM DIE RETTUNG BIS W9 IM WICHTIGSTEN FALL NICHT AUSLOESTE — die Ursache,
+   WARUM DIE RETTUNG BIS W10 IM WICHTIGSTEN FALL NICHT AUSLOESTE — die Ursache,
    nicht das Symptom: der Abdruck des eingebauten Plans stand im SUCH-Praefix.
    Gesucht wurde also nur unter Staenden DERSELBEN Bau-Fassung. Genau die eine
    Groesse, die sich bei einem neuen Bau aendert (der Plan wird neu exportiert,
@@ -2574,7 +2584,7 @@ function alleStaende(){
       /* Der EIGENE Schluessel wird uebergangen — aber nur, wenn sein Inhalt
          auch wirklich angenommen wurde. Liegt dort etwas, das nicht zum
          eingebauten Plan passt (von Hand veraendert, halb geschrieben), wird
-         es hier ANGEBOTEN statt verschwiegen. Das ist die Aufgabe, die bis W9
+         es hier ANGEBOTEN statt verschwiegen. Das ist die Aufgabe, die bis W10
          \`standFragt\` haben sollte und die es nie erfuellen konnte. */
       if (k === SCHLUESSEL && start) continue;
       /* Die SICHERUNG vor einem „Zuruecksetzen" ist kein Stand von anderswo
@@ -2605,7 +2615,7 @@ function alleStaende(){
 /* „C:/Users/…/Desktop/Halle400-Modell.html" -> „Desktop". Der ganze Pfad waere
    in einer Zeile nicht zu lesen und in einer Kopfleiste erst recht nicht; der
    ORDNER ist das, was die Kopien unterscheidet. Fehlt die Angabe (ein Stand
-   aus einer Fassung vor W9), wird das gesagt statt geraten. */
+   aus einer Fassung vor W10), wird das gesagt statt geraten. */
 function ordnerName(pfad){
   if (!pfad) return '';
   const teile = pfad.split('/').filter(Boolean);

@@ -818,9 +818,32 @@ log('\n── M7: zurueck auf Anfang ──')
     direkt.bearbeitet === false && direkt.ansicht === 'axo' && direkt.werkzeuge === false && direkt.scharf === false,
     `M7: sofort danach steht das ruhige Blatt da (${JSON.stringify(direkt).slice(0, 90)})`
   )
+  /* W10 — EINE Ausnahme, und nur eine: die SICHERUNG.
+     Bis W10 mussten hier alle Schluessel weg sein. Seit C3 legt
+     „Zuruecksetzen" den bisherigen Stand vorher unter
+     `halle400-planer-datei:sicherung:<ort>` ab und BIETET ihn in der
+     Meldungszeile an — die Handlung war sonst die einzige der ganzen Datei,
+     die sich mit ihren eigenen Mitteln nicht zuruecknehmen liess (danach ist
+     Rueckgaengig abgeschaltet).
+
+     Der Auslieferungszustand bleibt davon unberuehrt, und das wird hier
+     gemessen statt behauptet: die drei ZUSTANDS-Schluessel (Plan, Bearbeiten,
+     Ansicht) sind weg, die Sicherung liegt daneben und wird beim Start weder
+     geladen noch angeboten (sie traegt einen anderen Praefix als die
+     Stand-Suche `plan:`). Der Neustart weiter unten beweist genau das. */
+  const uebrig = direkt.schluessel.filter((k) => k.indexOf('halle400-planer-datei') === 0)
+  const zustand = uebrig.filter((k) => k.indexOf('halle400-planer-datei:sicherung:') !== 0)
   pruefe(
-    direkt.schluessel.filter((k) => k.indexOf('halle400-planer-datei') === 0).length === 0,
-    `M7: ALLE Schluessel sind weg (Plan, Bearbeiten, Ansicht), nicht nur der Plan-Schluessel (${JSON.stringify(direkt.schluessel)})`
+    zustand.length === 0,
+    `M7: ALLE Zustands-Schluessel sind weg (Plan, Bearbeiten, Ansicht) (${JSON.stringify(zustand)})`
+  )
+  pruefe(
+    uebrig.length === 1 && uebrig[0].indexOf('halle400-planer-datei:sicherung:') === 0,
+    `M7: uebrig bleibt GENAU die Sicherung des alten Standes (C3) — ${JSON.stringify(uebrig)}`
+  )
+  pruefe(
+    /zurückholen/i.test(String(await page.evaluate(() => window.__planerDatei.meldungText()))),
+    'M7: und die Meldungszeile bietet sie an, statt sie stumm liegen zu lassen'
   )
 
   await page.reload({ waitUntil: 'domcontentloaded' })

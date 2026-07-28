@@ -37,9 +37,17 @@ const log = (s) => {
 }
 
 // Beschriftungen der Oberflaeche (Deutsch ist seit T6 die Standardsprache).
+//
+// W10 — `bewegen` heisst jetzt „Wände verschieben" und ist ein EIGENES Werkzeug.
+// Bis dahin bewegte „Wände bewegen" Waende UND Moebel; seit dem Bedien-Audit
+// sind das zwei Werkzeuge, weil derselbe Zug sonst mal einen Stuhl und mal die
+// Aussenwand traf (gemessen: 2,24 m Wandversatz ohne Rueckfrage). Dieses Gate
+// zieht an einer WAND — es braucht also das Wand-Werkzeug. Mit der alten
+// Beschriftung fand `querySelector` gar nichts, der Klick verpuffte still und
+// SCHRITT 10 meldete „Ziehen veraendert das Bild: nein".
 const L = {
   loeschen: 'Wände löschen',
-  bewegen: 'Wände bewegen',
+  bewegen: 'Wände verschieben',
   undo: 'Rückgängig',
   redo: 'Wiederholen'
 }
@@ -138,34 +146,51 @@ const A = await mass()
 log(`SCHRITT 3: Ausgangsbild A = ${zeig(A)}`)
 await page.screenshot({ path: `${DIR}/A_start.png` })
 
-// --- eine Wand finden: Hover hebt sie hervor, die Tinte aendert sich ---
-const treffer = await page.evaluate((g) => {
-  const ruhe = window.__mass().n
-  const funde = []
-  for (let y = 40; y < g.h - 40 && funde.length < 6; y += 12) {
-    for (let x = 40; x < g.w - 40 && funde.length < 6; x += 12) {
-      window.__maus('mousemove', x, y)
-      if (Math.abs(window.__mass().n - ruhe) > 60) funde.push({ x, y })
-    }
-  }
-  window.__mausWeg()
-  return funde
-}, geo)
-log('SCHRITT 4: Wand-Kandidaten (Hover-Highlight) = ' + JSON.stringify(treffer))
-
-if (treffer.length === 0) {
-  log('ABBRUCH: keine Wand per Hover gefunden')
-  await browser.close()
-  process.exit(1)
-}
-const ziel = treffer[0]
-
 const klick = (label) =>
   page.evaluate(
     (l) =>
       document.querySelector(`[aria-label="${l}"]`)?.dispatchEvent(new MouseEvent('click', { bubbles: true })),
     label
   )
+
+/** Etwas Greifbares finden: der Zeiger faehrt das Bild ab, und wo die Tinte
+ *  sich aendert, liegt eine Hervorhebung — also etwas, das DIESES Werkzeug
+ *  greifen kann.
+ *
+ *  W10 — WELCHES WERKZEUG AKTIV IST, ENTSCHEIDET JETZT MIT. Bis dahin hob
+ *  „Wände bewegen" Waende UND Moebel hervor, ein Fund taugte also fuer beides.
+ *  Seit dem Bedien-Audit greift das Verschieben-Werkzeug nur noch Moebel und
+ *  das Wand-Werkzeug nur noch Bausubstanz. Ein im Verschieben gefundener Punkt
+ *  liegt darum auf einem MOEBEL — ein Zug darauf im Wand-Werkzeug bewegt
+ *  nichts, und genau so meldete dieses Gate „Ziehen veraendert das Bild: nein"
+ *  fuer einen Umbau, der in Ordnung war. */
+const suchePunkte = (anzahl) =>
+  page.evaluate(
+    (a) => {
+      const ruhe = window.__mass().n
+      const funde = []
+      for (let y = 40; y < a.g.h - 40 && funde.length < a.n; y += 12) {
+        for (let x = 40; x < a.g.w - 40 && funde.length < a.n; x += 12) {
+          window.__maus('mousemove', x, y)
+          if (Math.abs(window.__mass().n - ruhe) > 60) funde.push({ x, y })
+        }
+      }
+      window.__mausWeg()
+      return funde
+    },
+    { g: geo, n: anzahl }
+  )
+
+// --- etwas zum Loeschen finden (Moebel oder Wand — beides ist loeschbar) ---
+const treffer = await suchePunkte(6)
+log('SCHRITT 4: Loesch-Kandidaten (Hover-Highlight im Verschieben) = ' + JSON.stringify(treffer))
+
+if (treffer.length === 0) {
+  log('ABBRUCH: nichts per Hover gefunden')
+  await browser.close()
+  process.exit(1)
+}
+const ziel = treffer[0]
 
 // --- Loeschen ---
 await klick(L.loeschen)
@@ -224,14 +249,27 @@ const E = await mass()
 log(`SCHRITT 9: nach STRG+Z (Tastatur) -> E = ${zeig(E)}  (Abweichung zu A: ${unterschied(E, A).toFixed(0)})`)
 
 // --- Ziehen: viele Bewegungen muessen EIN Undo-Schritt sein ---
+//
+// Gezogen wird eine WAND, und die Stelle wird IM WAND-WERKZEUG gesucht (W10):
+// nur dort hebt der Zeiger Bausubstanz hervor, ein Fund ist also sicher eine.
+// Der Loesch-Fund von SCHRITT 4 stammt aus dem Verschieben-Werkzeug und liegt
+// darum auf einem Moebel — ein Zug daran waere hier eine stille Nullaktion.
 await klick(L.bewegen)
 await page.waitForTimeout(300)
+const wandPunkte = await suchePunkte(3)
+log('SCHRITT 9b: Wand-Kandidaten (Hover-Highlight im Wand-Werkzeug) = ' + JSON.stringify(wandPunkte))
+if (wandPunkte.length === 0) {
+  log('ABBRUCH: keine Wand per Hover gefunden — das Wand-Werkzeug greift nichts')
+  await browser.close()
+  process.exit(1)
+}
+const wandZiel = wandPunkte[0]
 await page.evaluate((z) => {
   window.__maus('mousemove', z.x, z.y)
   window.__maus('mousedown', z.x, z.y)
   for (let i = 1; i <= 25; i++) window.__maus('mousemove', z.x + i * 2, z.y + i * 2)
   window.__maus('mouseup', z.x + 50, z.y + 50)
-}, ziel)
+}, wandZiel)
 await page.waitForTimeout(500)
 const F = await mass()
 log(`SCHRITT 10: nach ZIEHEN (25 Bewegungsschritte) -> F = ${zeig(F)}  (Unterschied zu A: ${unterschied(F, A).toFixed(0)})`)

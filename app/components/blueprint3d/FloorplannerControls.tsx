@@ -199,7 +199,7 @@ export function FloorplannerControls({
             <Move className={cn(isMobile ? 'h-5 w-5' : 'h-4 w-4')} />
             {!isMobile && t('moveFurniture')}
           </Button>
-          {/* Wände verschieben (W9). Ein EIGENES Werkzeug neben dem
+          {/* Wände verschieben (W10). Ein EIGENES Werkzeug neben dem
               Verschieben: gemessen wurde, dass derselbe Zug, mit dem man einen
               Stuhl umstellt, ohne Rückfrage die Aussenwand um 2,24 m schob und
               damit das Aufmaß aufgab. Wer Mauerwerk bewegen will, soll es

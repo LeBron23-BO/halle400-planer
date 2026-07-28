@@ -902,7 +902,7 @@ export class Floorplanner {
     // zuerst Ecke und Wand — die Wand bleibt also unverändert gut greifbar,
     // solange kein Möbel im Weg steht.
     //
-    // Seit W9 hat diese Kette nur noch im LÖSCHEN-Werkzeug beide Seiten (dort
+    // Seit W10 hat diese Kette nur noch im LÖSCHEN-Werkzeug beide Seiten (dort
     // sind Möbel UND Bausubstanz greifbar) — im Verschieben gibt es keine
     // Bausubstanz mehr zu verlieren, im Wand-Werkzeug keine Möbel. Sie bleibt
     // trotzdem hier und wird dort gemessen: das Löschen ist der Fall, in dem
@@ -933,7 +933,7 @@ export class Floorplanner {
       : null
 
     // --- BAUSUBSTANZ ist nur da greifbar, wo ein Griff auch gemeint sein kann
-    // (W9). Im VERSCHIEBEN-Werkzeug ist sie es seit W9 NICHT mehr: dort werden
+    // (W10). Im VERSCHIEBEN-Werkzeug ist sie es seit W10 NICHT mehr: dort werden
     // Möbel gezogen, und derselbe Zug auf eine Ecke verschob gemessen die
     // Aussenwand um 2,24 m. Wer eine Wand bewegen will, greift das
     // Wand-Werkzeug — dieselbe Trennung, die der Finger seit W8 hat.
@@ -1085,7 +1085,7 @@ export class Floorplanner {
 
     // dragging — MÖBEL im Verschieben-Werkzeug
     //
-    // Die Kette „Möbel, sonst Ecke, sonst Wand" ist mit W9 in zwei Werkzeuge
+    // Die Kette „Möbel, sonst Ecke, sonst Wand" ist mit W10 in zwei Werkzeuge
     // zerlegt. Sie stand hier, weil beides dasselbe Werkzeug war; getrennt
     // braucht keiner der beiden Zweige mehr ein `else`, und ein Zug kann schon
     // von der Bauart her nicht mehr das Falsche treffen.
@@ -1099,7 +1099,7 @@ export class Floorplanner {
       }
     }
 
-    // dragging — BAUSUBSTANZ im Wand-Werkzeug (W9)
+    // dragging — BAUSUBSTANZ im Wand-Werkzeug (W10)
     if (this.mode == floorplannerModes.WAND && this.mouseDown) {
       // Erst hier sichern, nicht schon bei mousedown: ein Druck auf eine Wand
       // ohne Bewegung (oder ein Schwenk der Ansicht) aendert nichts und soll
@@ -1877,7 +1877,7 @@ export class Floorplanner {
         stil = 'grab'
       }
     } else if (this.mode == floorplannerModes.WAND) {
-      // W9 — dieselbe Sprache für die Bausubstanz. Sie fehlte ihr bisher als
+      // W10 — dieselbe Sprache für die Bausubstanz. Sie fehlte ihr bisher als
       // Einziges: über einem Möbel sagte der Zeiger `grab`, über einer Ecke,
       // über einer Wand und über dem Leerraum sagte er dasselbe (nämlich
       // nichts) — gemessen. Wer nicht sieht, dass er gleich Mauerwerk in der
@@ -2178,7 +2178,7 @@ export class Floorplanner {
       // Finger sieht nichts und trifft mit einer breiten Kuppe. Am Handy waere
       // das ein stiller Griff ins Aufmass.
       //
-      // W9 hat diese Trennung fuer die MAUS nachgezogen (`floorplannerModes.
+      // W10 hat diese Trennung fuer die MAUS nachgezogen (`floorplannerModes.
       // WAND`) — der Finger bleibt damit unveraendert und ist nicht mehr der
       // Sonderfall, sondern die Regel. Im Wand-Werkzeug schiebt er weiterhin
       // nur die Ansicht: `bearbeitetMitEinemFinger` nennt allein Zeichnen und
@@ -2427,7 +2427,7 @@ export class Floorplanner {
     // Wechsel etwas anbieten, das der Nutzer gar nicht mehr im Sinn hat.
     this.loeschungAbbrechen()
     this.activeAusstattung = null
-    // Ecke und Wand MÜSSEN seit W9 hier mit weg. Vorher waren sie in jedem
+    // Ecke und Wand MÜSSEN seit W10 hier mit weg. Vorher waren sie in jedem
     // Werkzeug, in dem sie überhaupt gesetzt wurden, auch greifbar — jetzt
     // nicht mehr: wer aus dem Wand-Werkzeug ins Verschieben wechselt, während
     // der Zeiger auf einer Wand steht, nähme die Merkung mit hinüber. Dort

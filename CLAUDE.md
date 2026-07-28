@@ -76,6 +76,16 @@ node tools/pruefe-axo-bearbeiten.mjs # W7: BEARBEITEN IM BLATT — 58 Pruefungen
                                    #        Blicke, Selbsttreffer aller 289 Stuecke. C-G an der
                                    #        Doppelklick-Datei mit ECHTEN Zeiger-Ereignissen.
                                    #        --nur rechnung | --nur datei grenzt ein.
+node tools/pruefe-schutz.mjs       # W10: DIE DREI SCHWEREN PUNKTE des Bedien-Audits —
+                                   #        55 Pruefungen, jede mit Gegenprobe:
+                                   #        A ein Zug auf eine Wand-Ecke im Verschieben-Werkzeug
+                                   #          bewegt NICHTS (Gegenprobe: im Wand-Werkzeug schon)
+                                   #        B kleinster Treffer gewinnt, der Zeiger sagt es
+                                   #        C eine Kopie in einem anderen Ordner UND aus einer
+                                   #          anderen Bau-Fassung FINDET den Stand und bietet ihn an
+                                   #        D „Zuruecksetzen" nennt den Umfang, der Stand ist rueckholbar
+                                   #        E die Werkzeugleiste springt nicht (1600 px UND 390 px)
+                                   #        --nur greifen | stand | zuruecksetzen | leiste
 
 # Die Doppelklick-Datei fuer die Bank — eine Datei, kein Netz, kein Server
 node tools/baue-planer-datei.mjs   # -> Halle400-Modell.html (~670 KB): BEARBEITBAR (W1)
@@ -259,6 +269,67 @@ die tragen jede Fingerkuppe mit, sobald `touch-action:none` gesetzt ist (das
 war es schon). Zu bauen war deshalb nicht das Ziehen, sondern die
 RÜCKMELDUNG: am Rechner sagt der Zeiger `grabbing`, am Telefon sagt es nichts.
 
+## Der SCHUTZ (W10, 2026-07-28) — die drei schweren Punkte des Bedien-Audits
+
+Ein Prüfer hat die fertige Datei in 30 Durchläufen **bedient** und gemessen
+(`docs/bedien-audit-2026-07-27.md`). Verdikt: BLOCKED, drei schwere Punkte.
+Diese Welle schliesst sie. Gate: `tools/pruefe-schutz.mjs` (55 Prüfungen, jede
+mit Gegenprobe). Fünf Festlegungen:
+
+1. **Das Verschieben-Werkzeug greift nur noch MÖBEL, das neue Wand-Werkzeug nur
+   noch BAUSUBSTANZ** (`floorplannerModes.WAND`). Gemessen war: derselbe Zug,
+   mit dem man einen Stuhl umstellt, verschob ohne Rückfrage die Aussenwand um
+   2,24 m — danach stand auf dem Blatt „kein Aufmaß". Die Greifzone ist im
+   Startzoom 41 cm breit, ein Stuhl misst 45 cm: **die Fehlertoleranz war so
+   gross wie der Gegenstand.** Es ist DIESELBE Trennung, die der Finger seit W8
+   hat (W8 Punkt 3), nur für die Maus nachgezogen.
+2. **Es ist NICHT das Zeichnen-Werkzeug geworden.** Dort ist der Ecken-Fang (E2)
+   die tragende Bedienung: wer eine Trennwand an die Aussenwand anschliessen
+   will, DRÜCKT auf deren Ecke. Würde ein Druck dort die Ecke verschieben, wäre
+   der wichtigste Fall des Zeichnens nicht mehr zu bedienen.
+3. **Die Sperre sitzt in `trefferBestimmen`, nicht im Zug.** `activeCorner`/
+   `activeWall` tragen ausser dem Ziehen drei weitere Bedeutungen — die
+   Hervorhebung im Bild, den Löschvorschlag und die Schwenk-Sperre in
+   `mousemove`. Nur den Zug abzuklemmen liesse die Wand im Verschieben
+   weiterleuchten und machte den Plan über ihr unschwenkbar. Aus demselben Grund
+   räumt `setMode` jetzt auch Ecke und Wand ab.
+4. **Warum die Stand-Erkennung nie auslöste — die Ursache:** der Abdruck des
+   eingebauten Plans stand im **Such-Präfix**. Gesucht wurde also nur unter
+   Ständen DERSELBEN Bau-Fassung — genau die eine Grösse, die ein neuer Bau
+   ändert. Dreimal gemessen: ein Stand mit vier gesetzten Stücken lag unberührt
+   im Speicher, die Datei fand 0 und startete wortlos bei null. Die zweite
+   Hälfte desselben Fehlers: `standFragt` („dieser Stand passt nicht zum
+   eingebauten Plan") **konnte gar nicht auslösen** — was unter DIESEM Schlüssel
+   liegt, hat zwangsläufig DIESEN Abdruck. Ein Wächter für einen Fall, den es
+   unter seinem Schlüssel nicht geben kann. Gesucht wird jetzt über
+   `STAND_PRAEFIX` (alle Abdrücke, alle Ablageorte), der Stand trägt seinen
+   `ort` im Klartext, und `standFragt` ist ersatzlos weg.
+5. **„Zurücksetzen" nennt seinen Umfang und ist rückholbar.** Die Rückfrage
+   zählt an denselben Quellen wie der Blattkopf („Verloren gehen: 4 gesetzte
+   Stücke, 3 verschobene Wände"), und der bisherige Stand wird vorher unter
+   `…:sicherung:<ort>` abgelegt und in der Meldungszeile angeboten. Es war die
+   einzige Handlung der Datei, die sich mit ihren eigenen Mitteln nicht
+   zurücknehmen liess: danach ist Rückgängig abgeschaltet. **M7 gilt weiter** —
+   die drei Zustands-Schlüssel sind weg, die Sicherung liegt daneben und wird
+   beim Start weder geladen noch angeboten (anderes Präfix als die Stand-Suche).
+   Nach dem Zurückholen wird sie gelöscht; **bekannte Grenze:** wer vorher neu
+   lädt, verliert das Angebot, und die Sicherung bleibt liegen, bis das nächste
+   Zurücksetzen sie überschreibt.
+
+Dazu **V7: die Werkzeugleiste springt nicht mehr.** Die Zeile der Öffnungsarten
+ist dauerhaft reserviert (`.grp.platzhalter` → `visibility:hidden` statt
+`hidden`); gemessen bewegten sich beim Werkzeugwechsel vorher 13 Knöpfe um bis
+zu 1162 px, jetzt keiner — die Gegenprobe im Gate baut den Platzhalter wieder
+aus und MUSS die Bewegung finden.
+
+**Am Handy greift der Finger weiterhin nur Ausstattung**, auch im Wand-Werkzeug
+(`bearbeitetMitEinemFinger` nennt allein Zeichnen und Löschen): eine Wand mit
+der Kuppe zu verschieben bliebe auch mit Werkzeugwahl ein blinder Griff.
+
+**Nicht in dieser Welle** (bewusst, es ist reine Bequemlichkeit): Entf-Taste,
+Mehrfachauswahl, Alt-Ziehen kopiert, Knöpfe ausdünnen — V1, V2, V6 und der
+Abschnitt „Was weg kann" des Audits.
+
 ## Bearbeiten MIT DEM FINGER (W8, 2026-07-27)
 
 Der Nutzer arbeitet oft vom Handy, und dort ging bis hierher **nichts zu
@@ -338,7 +409,9 @@ danach 0,25 cm von der Wandflanke. Den Wandwinkel selbst belegt
 
 Im Werkzeug **Verschieben** wird ein Moebel unter dem Zeiger gegriffen, folgt der
 Bewegung und wird beim Loslassen abgelegt — im Planer wie in der Doppelklick-Datei,
-beide aus derselben Quelle (`src/floorplanner/floorplanner.ts`). Fuenf Festlegungen:
+beide aus derselben Quelle (`src/floorplanner/floorplanner.ts`). **Seit W10 greift
+dieses Werkzeug NUR noch Moebel**: Ecken und Waende gehoeren ins eigene
+Wand-Werkzeug (s. „Der SCHUTZ"). Fuenf Festlegungen:
 
 1. **Alles laeuft ueber die KENNUNG, nie ueber eine Objektreferenz.** Ein
    Rueckgaengig laedt den Grundriss komplett neu; eine gemerkte Referenz waere

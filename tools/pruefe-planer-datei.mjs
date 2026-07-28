@@ -322,6 +322,20 @@ if (!wahl) {
 }
 log(`     gegriffen wird Ecke ${wahl.id.slice(0, 8)} bei Bild(${wahl.bx.toFixed(0)}, ${wahl.by.toFixed(0)}) = Welt(${wahl.x}, ${wahl.y})`)
 
+/* W10 — DAS WAND-WERKZEUG GREIFEN. Bis hierher lief dieser Zug im
+   Verschieben-Werkzeug, weil dort BEIDES ging: Moebel und Bausubstanz. Genau
+   das war der schwerste Befund des Bedien-Audits (C2): derselbe Zug, der einen
+   Stuhl umstellt, verschob ohne Rueckfrage die Aussenwand um 2,24 m. Seit W10
+   sind es zwei Werkzeuge — dieses Gate misst das WAND-Ziehen und sagt das
+   jetzt auch. Die Trennung selbst prueft `pruefe-schutz.mjs` A, mit
+   Gegenprobe in beide Richtungen. */
+await klick(page, 'wzWand')
+await page.waitForTimeout(200)
+pruefe(
+  (await page.evaluate(() => window.__planerDatei.werkzeug())) === 4,
+  'G4: das Wand-Werkzeug ist gegriffen (seit W10 zieht nur es Bausubstanz)'
+)
+
 const ZIEH_X = 60
 const ZIEH_Y = 130
 
@@ -607,9 +621,12 @@ const seiteA = beobachte(await ctx.newPage())
 await seiteA.goto(pathToFileURL(path.join(ordnerA, 'Halle400-Modell.html')).href, { waitUntil: 'domcontentloaded' })
 await warteBereit(seiteA)
 // Werkzeuge EIN und in den Grundriss — seit W7 zwei getrennte Griffe (G2).
+// Und seit W10 ein dritter: nur das WAND-Werkzeug zieht Bausubstanz (C2).
 await klick(seiteA, 'btnBearbeiten')
 await klick(seiteA, 'btnAnsichtPlan')
 await seiteA.waitForTimeout(500)
+await klick(seiteA, 'wzWand')
+await seiteA.waitForTimeout(200)
 await seiteA.evaluate((p) => {
   const m = window.__planerDatei.maus
   m('mousemove', p.bx, p.by)

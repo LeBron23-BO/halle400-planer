@@ -10,7 +10,7 @@ import type { Floorplanner } from './floorplanner'
 /** */
 export const floorplannerModes = {
   /**
-   * Möbel verschieben. Seit W9 NUR noch Möbel — Wand-Ecken und Wände sind hier
+   * Möbel verschieben. Seit W10 NUR noch Möbel — Wand-Ecken und Wände sind hier
    * nicht mehr greifbar (s. `WAND`).
    */
   MOVE: 0,
@@ -24,7 +24,7 @@ export const floorplannerModes = {
    */
   OEFFNUNG: 3,
   /**
-   * WÄNDE VERSCHIEBEN (W9) — Ecken und Wände ziehen, sonst nichts.
+   * WÄNDE VERSCHIEBEN (W10) — Ecken und Wände ziehen, sonst nichts.
    *
    * WARUM EIN EIGENES WERKZEUG UND KEIN ZUSATZ ZUM VERSCHIEBEN: gemessen wurde,
    * dass ein Zug auf eine Wand-Ecke im Verschieben-Werkzeug — dieselbe Geste
