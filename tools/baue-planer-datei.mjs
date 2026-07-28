@@ -76,6 +76,13 @@ const BAU_STEMPEL = new Date().toISOString().slice(0, 16).replace('T', ' ')
    Leser, auf ein Zeichen zu vertrauen, das mal da ist und mal nicht. */
 const NUR_ANSICHT = process.argv.includes('--nur-ansicht')
 const OHNE_SIEGEL = process.argv.includes('--ohne-siegel')
+if (NUR_ANSICHT && !process.argv.includes('--ziel')) {
+  console.error('Abbruch: --nur-ansicht ohne --ziel wuerde die Werkstatt-Datei ueberschreiben.')
+  console.error('  Gemessen (Gegner-Fund M1): der Speicherschluessel haengt am Pfad — ein liegen')
+  console.error('  gebliebenes `bearbeiten:1` derselben Stelle macht die Ansicht wieder scharf.')
+  console.error('  node tools/baue-planer-datei.mjs --nur-ansicht --ziel "<pfad>/Halle400-fuer-die-Bank.html"')
+  process.exit(1)
+}
 const siegel = siegelLesen(PLAN_NAME)
 const siegelSchluessel = oeffentlichLesen()
 
@@ -1733,7 +1740,13 @@ async function schlossOeffnen(wort){
   try {
     const basis = await crypto.subtle.importKey('raw', new TextEncoder().encode(wort), 'PBKDF2', false, ['deriveKey']);
     const k = await crypto.subtle.deriveKey(
-      { name: 'PBKDF2', salt: ausB64(SCHLOSS.salz), iterations: SCHLOSS.runden, hash: SCHLOSS_HASH },
+      /* Gegner-Fund L2: die Rundenzahl kommt aus der Datei. Ein manipuliertes
+         1e9 waere kein Bypass (falsches Passwort scheitert weiter), aber es
+         liesse den Tab beim ersten Aufsperrversuch minutenlang stehen — ein
+         Aussperren durch Rechenzeit. Geklemmt auf einen Bereich, in dem beide
+         Enden noch vernuenftig sind. */
+      { name: 'PBKDF2', salt: ausB64(SCHLOSS.salz),
+        iterations: Math.min(Math.max(SCHLOSS.runden | 0, 100000), 2000000), hash: SCHLOSS_HASH },
       basis, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
     await crypto.subtle.decrypt({ name: 'AES-GCM', iv: ausB64(SCHLOSS.iv) }, k, ausB64(SCHLOSS.inhalt));
     return { offen: true };
@@ -2913,6 +2926,13 @@ function siegelZeigen(art, zeichen, wort, satz){
   siegelStand.echt = (art === 'echt');
   siegelStand.art = art; siegelStand.zeichen = zeichen; siegelStand.wort = wort; siegelStand.satz = satz;
   siegelMarkePflegen();
+  /* Gegner-Fund M3: die Druckzeile wurde EINMAL beim Start gesetzt — da war die
+     Pruefung noch nicht durch — und danach nur noch von `beforeprint`. Es gibt
+     aber Druckwege ohne dieses Ereignis (gemessen: Playwright `page.pdf()`).
+     Auf denen trug jedes Blatt dauerhaft „das Siegel war beim Drucken noch
+     nicht geprueft" — eine Warnung, die im Normalfall erscheint, gewoehnt man
+     sich ab, und dann schuetzt sie nichts mehr. */
+  if (typeof druckZeileSetzen === 'function') druckZeileSetzen();
 }
 
 function siegelMarkePflegen(){
@@ -2928,6 +2948,25 @@ function siegelMarkePflegen(){
     ? siegelStand.satz + ' — ANGEZEIGT wird aber ein eigener Arbeitsstand mit Änderungen. Das Siegel gilt dem eingebauten Plan, nicht diesem Bild.'
     : siegelStand.satz);
   marke.dataset.art = verstellt ? 'echt-geaendert' : siegelStand.art;
+}
+
+/* Der FINGERABDRUCK des Schluessels, mit dem geprueft wurde (Gegner-Fund F1).
+
+   Er wird HIER gerechnet, aus dem eingebauten Schluessel — nicht zur Bauzeit
+   hineingeschrieben. Das ist der ganze Punkt: wer den Plan aendert und mit
+   einem eigenen Paar neu unterschreibt, taeuscht die Pruefung, aber nicht den
+   Abdruck. Dort steht dann SEIN Wert, und der passt nicht zu dem, den der
+   Empfaenger auf einem anderen Weg bekommen hat.
+
+   Aus einer Datei allein ist Herkunft nicht zu beweisen. Mit einem Anker
+   ausserhalb schon — und diese Zeile ist das Ende des Ankers, das in der
+   Datei liegt. */
+let siegelAbdruck = null;
+async function schluesselAbdruckRechnen(jwk){
+  const fest = JSON.stringify({ crv: jwk.crv, kty: jwk.kty, x: jwk.x, y: jwk.y });
+  const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(fest));
+  const hex = Array.from(new Uint8Array(h)).map(function(b){ return b.toString(16).padStart(2, '0'); }).join('');
+  return hex.slice(0, 16).replace(/(.{4})(?=.)/g, '$1\\u00b7');
 }
 
 async function siegelPruefen(){
@@ -2951,10 +2990,17 @@ async function siegelPruefen(){
     const echt = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' },
       schluessel, sig, new TextEncoder().encode(PLAN_TEXT));
     const wann = new Date(SIEGEL.signiertAm).toLocaleDateString('de-DE');
+    siegelAbdruck = await schluesselAbdruckRechnen(SIEGEL_SCHLUESSEL);
     if (echt) {
-      siegelZeigen('echt', '&#10003;', 'gesiegelt',
-        'Original. Der Grundriss in dieser Datei ist Zeichen für Zeichen der, den ' +
-        SIEGEL.inhaber + ' am ' + wann + ' unterschrieben hat.');
+      /* Der Satz sagt AUSDRUECKLICH, was er nicht weiss. „Original von Dania"
+         waere zu viel behauptet: geprueft ist nur, dass der Plan seit der
+         Unterschrift mit DIESEM Schluessel unveraendert ist. Ob es Danias
+         Schluessel ist, entscheidet allein der Abdruck-Vergleich — und den kann
+         eine Datei nicht fuer sich selbst fuehren. */
+      siegelZeigen('echt', '&#10003;', 'gesiegelt ' + siegelAbdruck,
+        'Unverändert seit der Unterschrift vom ' + wann + ' mit dem Schlüssel ' + siegelAbdruck +
+        ' (angeblich: ' + SIEGEL.inhaber + '). Ob das wirklich dieser Schlüssel ist, sagt dir nur der ' +
+        'Vergleich mit dem Fingerabdruck, den du auf einem ANDEREN Weg bekommen hast — nicht diese Datei.');
     } else {
       siegelZeigen('gebrochen', '&#9888;', 'VERÄNDERT',
         'Der Grundriss in dieser Datei passt NICHT zur Unterschrift vom ' + wann +
@@ -2990,8 +3036,8 @@ function druckZeileSetzen(){
   const dz = el('siegelDruck');
   if (dz) {
     if (siegelStand.echt === true) {
-      const kopf = 'Unterschrieben von ' + SIEGEL.inhaber + ' am ' +
-        new Date(SIEGEL.signiertAm).toLocaleDateString('de-DE');
+      const kopf = 'Unterschrieben am ' + new Date(SIEGEL.signiertAm).toLocaleDateString('de-DE') +
+        ' mit dem Schlüssel ' + (siegelAbdruck || '?') + ' (angeblich ' + SIEGEL.inhaber + ')';
       if (eigeneAenderungen()) {
         // Das Siegel gilt dem eingebauten Plan. Dieses Blatt zeigt einen
         // Arbeitsstand darueber. Beides zu sagen ist die einzige ehrliche
@@ -3000,7 +3046,7 @@ function druckZeileSetzen(){
         dz.textContent = kopf + ' — ABER dieses Blatt zeigt einen bearbeiteten Stand, nicht den unterschriebenen Plan.';
         dz.classList.add('warnt');
       } else {
-        dz.textContent = kopf + ' · beim Öffnen geprüft, unverändert';
+        dz.textContent = kopf + ' · beim Öffnen geprüft, unverändert — den Fingerabdruck bitte mit dem vergleichen, der getrennt mitgeteilt wurde';
         dz.classList.remove('warnt');
       }
     } else {
@@ -3876,5 +3922,6 @@ console.log(`  Axonometrie:  ${teilKb(axo)} KB (${AXO_MODULE.join(', ')})`)
 console.log(`  Plan:         ${(Buffer.byteLength(planRoh, 'utf8') / 1024).toFixed(0)} KB — ${Object.keys(plan.floorplan.corners).length} Ecken, ${plan.floorplan.walls.length} Waende, ${(plan.floorplan.ausstattung || []).length} Ausstattung, ${(plan.labels || []).length} Namen`)
 console.log(`  Hoehen aus:   src/three/ausstattung.ts (${Object.keys(HOEHEN.oberkante).length} Typen, gelesen statt abgeschrieben)`)
 console.log(`  Namen:        ${namen.size} Bezeichner geprueft, keine Kollision`)
+if (NUR_ANSICHT) console.log(`  Schnitt:      ${ANSICHT_BERICHT.bloecke} Werkstatt-Bloecke entfernt, ${ANSICHT_BERICHT.kennungen} Kennungen verschwunden (reine ANSICHT)`)
 console.log(`  Plan-Abdruck: ${PLAN_ABDRUCK} (Speicher-Schluessel je Plan UND Ablageort)`)
 console.log(`  Bau-Stempel:  ${BAU_STEMPEL}`)

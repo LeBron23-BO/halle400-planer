@@ -240,6 +240,30 @@ export async function pruefeUnterschrift(text, signaturB64, oeffJwk) {
   return subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, k, vonB64(signaturB64), new TextEncoder().encode(text))
 }
 
+/* ── DER SCHLUESSEL-FINGERABDRUCK (Gegner-Fund F1) ────────────────────
+   Bis zum Gegner-Review prueften Datei und Werkzeug die Unterschrift gegen
+   einen Schluessel, der IN DERSELBEN DATEI liegt. Das ist ein Zirkel: wer den
+   Plan aendert und mit einem EIGENEN Schluesselpaar neu unterschreibt, bekommt
+   ueberall einen gruenen Haken. GEMESSEN: eine um 3 m verschobene Aussenwand,
+   neu unterschrieben — die Datei meldete „Original", das Werkzeug „ECHT".
+
+   Aus einer Datei allein ist Herkunft grundsaetzlich nicht zu beweisen. Was
+   geht, ist ein ANKER AUSSERHALB: die Datei zeigt den Fingerabdruck des
+   Schluessels, mit dem sie geprueft hat, und der Empfaenger vergleicht ihn mit
+   dem, den er auf einem anderen Weg bekommen hat (Deckblatt, Mail, mündlich).
+   Stimmen sie ueberein, ist die Aussage vollstaendig; stimmen sie nicht,
+   faellt genau die Faelschung auf, die vorher unsichtbar war.
+
+   Kurz und in Gruppen, weil er ABGELESEN und VERGLICHEN wird: 16 Hex-Zeichen
+   sind 64 Bit — genug, dass niemand einen zweiten Schluessel mit demselben
+   Anfang erzeugt, und kurz genug, dass man ihn am Telefon durchgibt. */
+export async function schluesselAbdruck(jwk) {
+  const fest = JSON.stringify({ crv: jwk.crv, kty: jwk.kty, x: jwk.x, y: jwk.y })
+  const h = await subtle.digest('SHA-256', new TextEncoder().encode(fest))
+  const hex = [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, '0')).join('')
+  return hex.slice(0, 16).replace(/(.{4})(?=.)/g, '$1·')
+}
+
 export function siegelPfad(planName) { return path.join(SIEGEL_ORDNER, `siegel-${planName}.json`) }
 
 export function siegelLesen(planName) {
@@ -357,11 +381,16 @@ async function befehlPruefe() {
   console.log(`Datei:     ${datei}`)
   console.log(`Inhaber:   ${siegel.inhaber}`)
   console.log(`Signiert:  ${siegel.signiertAm}`)
-  console.log(`Schluessel: ${vonMir ? 'DEINER — derselbe wie in data/siegel-oeffentlich.json' : 'FREMD — nicht dein Schluessel!'}`)
+  console.log(`Schluessel: ${await schluesselAbdruck(oeffJwk)}  ${vonMir ? '— DEINER (identisch mit data/siegel-oeffentlich.json)' : '— FREMD, NICHT deiner!'}`)
   console.log(`Plan:      ${Buffer.byteLength(planText, 'utf8')} Bytes`)
   console.log('')
   if (echt && vonMir) { console.log('ECHT — der Plan in dieser Datei ist unveraendert und von dir unterschrieben.'); process.exit(0) }
-  if (echt && !vonMir) { console.log('GUELTIG, ABER FREMD — jemand anders hat diese Datei unterschrieben.'); process.exit(3) }
+  if (echt && !vonMir) {
+    console.log('GUELTIG, ABER FREMD — die Unterschrift haelt, stammt aber NICHT von deinem Schluessel.')
+    console.log('Genau so sieht eine Faelschung aus: jemand hat den Plan geaendert und mit einem')
+    console.log('eigenen Schluessel neu unterschrieben. Die Datei allein kann das nicht merken.')
+    process.exit(3)
+  }
   console.log('VERAENDERT — der Plan passt nicht zur Unterschrift. Diese Datei ist nicht das Original.')
   process.exit(1)
 }
@@ -418,8 +447,16 @@ async function befehlPasswortAendern() {
 }
 
 /* ── zeige ────────────────────────────────────────────────────────────── */
-function befehlZeige() {
+async function befehlZeige() {
   const oeff = oeffentlichLesen()
+  if (oeff) {
+    console.log('')
+    console.log('  DEIN SCHLUESSEL-FINGERABDRUCK:  ' + await schluesselAbdruck(oeff.jwk))
+    console.log('  Diesen Wert gibst du dem Empfaenger auf einem ANDEREN Weg als die Datei')
+    console.log('  (Deckblatt, Mail, muendlich). Er steht auch oben rechts in der Datei und')
+    console.log('  auf jedem Ausdruck. Stimmen beide ueberein, ist der Plan von dir.')
+    console.log('')
+  }
   const privatPfad = path.join(GEHEIM_ORDNER_STANDARD, PRIVAT_NAME)
   console.log('Oeffentlicher Schluessel: ' + (oeff ? `${OEFFENTLICH_PFAD}\n  Inhaber: ${oeff.inhaber}\n  Angelegt: ${oeff.erzeugtAm}` : 'FEHLT'))
   console.log('Privater Schluessel:      ' + (fs.existsSync(privatPfad) ? privatPfad + ' (verschlossen)' : 'FEHLT'))
@@ -441,7 +478,7 @@ else if (befehl === 'signiere') await befehlSigniere()
 else if (befehl === 'pruefe') await befehlPruefe()
 else if (befehl === 'schloss') await befehlSchloss()
 else if (befehl === 'passwort-aendern') await befehlPasswortAendern()
-else if (befehl === 'zeige') befehlZeige()
+else if (befehl === 'zeige') await befehlZeige()
 else if (befehl) { console.error(`Unbekannt: ${befehl}`); process.exit(1) }
 else {
   console.log('node tools/siegel.mjs erzeuge [--nach <ordner>] [--inhaber "..."]')
