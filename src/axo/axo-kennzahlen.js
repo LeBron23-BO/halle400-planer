@@ -55,11 +55,23 @@ const QM_JE_CM2 = 1 / 10000
 
 /**
  * Wanddicke in cm — GESETZTE Annahme, kein Messwert (Projekt-DNA Punkt 4: ein
- * Grundriss enthaelt keine Dicke). Derselbe Wert, mit dem `baueSzene` die
- * Waende auszieht und mit dem `tools/baue-bank-ansicht.mjs` baut; er entscheidet
- * hier allein darueber, was „steht in einer Wand" heisst.
+ * Grundriss enthaelt keine Dicke). Sie entscheidet hier allein darueber, was
+ * „steht in einer Wand" heisst.
+ *
+ * BEWUSST KEINE EXPORTIERTE KONSTANTE, sondern ein Vorgabewert von `opt`.
+ * Zwei Gruende, der zweite ist der harte:
+ *   1. `axo-szene.js` macht es genauso (`opt.wandDicke ?? 12.5`) — dieselbe
+ *      Angabe an zwei Stellen als `const` waere die zweite Wahrheit, die dieses
+ *      Projekt ueberall sonst vermeidet.
+ *   2. `tools/baue-planer-datei.mjs` schreibt in die Doppelklick-Datei die Zeile
+ *      `const WAND_DICKE_CM = 12.5;` — in DENSELBEN Gueltigkeitsbereich, in dem
+ *      auch dieses Modul landet. Zwei gleichnamige `const` dort sind ein harter
+ *      Syntaxfehler, und zwar erst im Browser der Bank. `pruefeNamen` in
+ *      `buendel-kern.mjs` faengt ihn NICHT: es vergleicht die Module nur
+ *      untereinander, nicht gegen die Huelle. Gemessen und behoben in W9;
+ *      `tools/pruefe-kennzahlen.mjs` (Vorpruefung) bewacht es seither.
  */
-export const WAND_DICKE_CM = 12.5
+const WAND_DICKE_STANDARD_CM = 12.5
 
 /**
  * Ab welcher lichten Weite ein Durchgang nicht mehr angemerkt wird (cm).
@@ -230,7 +242,7 @@ export function baueRaumbuch(plan, opt = {}) {
   const fp = plan.floorplan || plan
   const labels = plan.labels || []
   const namen = opt.namen || {}
-  const wandDicke = opt.wandDicke ?? WAND_DICKE_CM
+  const wandDicke = opt.wandDicke ?? WAND_DICKE_STANDARD_CM
   const nameVon = (typ) => namen[typ] || typ
 
   /* ── Die Flaechen ───────────────────────────────────────────────── */
@@ -501,7 +513,7 @@ export function pruefeHinweise(plan, raumbuch) {
     const b = fp.corners[w.corner2]
     if (a && b) strecken.push([a, b])
   }
-  const halbeDicke = (raumbuch.wandDicke ?? WAND_DICKE_CM) / 2
+  const halbeDicke = (raumbuch.wandDicke ?? WAND_DICKE_STANDARD_CM) / 2
   const imWandband = (pt) => strecken.some(([a, b]) => abstandZuStrecke(pt, a, b) <= halbeDicke)
 
   const gesetzteStuecke = (fp.ausstattung || []).filter(istGesetztesStueck)

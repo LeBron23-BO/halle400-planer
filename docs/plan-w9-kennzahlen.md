@@ -26,8 +26,12 @@ pruefeHinweise(plan, raumbuch)            // -> [{ art, text, betroffen[] }]
 ```
 
 Dazu als Konstanten, damit die Anzeige keine zweite Fassung erfindet:
-`LEGENDE_STUHLFLAECHE` · `FUSSZEILE` · `WAND_DICKE_CM` · `TUER_MINDESTBREITE_CM`
+`LEGENDE_STUHLFLAECHE` · `FUSSZEILE` · `TUER_MINDESTBREITE_CM`
 und die Schreibweisen `zahlText(wert, stellen)` · `meterText(cm)` · `flaecheText(qm)`.
+
+Die **Wanddicke ist bewusst KEINE exportierte Konstante**, sondern
+`opt.wandDicke ?? 12.5` — genau wie in `axo-szene.js`. Der Grund steht unten in
+Befund 4 und ist kein Geschmack, sondern ein gemessener harter Syntaxfehler.
 
 **Die Schreibweisen sind Teil des Vertrags.** Dieselbe Zahl darf im Raumbuch
 nicht anders dastehen als im Hinweis darunter; wer in der Anzeige `toFixed(2)`
@@ -156,7 +160,7 @@ zurückparsen.
 
 ---
 
-### Drei Befunde, die erst beim Bauen sichtbar wurden
+### Vier Befunde, die erst beim Bauen sichtbar wurden
 
 1. **Die halbe Halle hat keinen Namen.** 12 der 24 geschlossenen Räume tragen
    überhaupt keinen Textanker — die PDF beschriftet nur die andere Hälfte. Ein
@@ -179,6 +183,33 @@ zurückparsen.
    Namen trotzdem zeigen (`raum.namensAnker[]`), sonst verschwinden die offenen
    Arbeitsbereiche vollständig aus dem Raumbuch — sie sind kein Fehler der
    Ableitung, sondern die Wahrheit dieses Grundrisses.
+4. **`pruefeNamen` bewacht die Hülle NICHT — und das hätte die ganze
+   Doppelklick-Datei getötet.** Das Modul hiess seine Wanddicke zuerst
+   `WAND_DICKE_CM`. `tools/baue-planer-datei.mjs:828` schreibt aber die Zeile
+   `const WAND_DICKE_CM = 12.5;` in **denselben** Gültigkeitsbereich der
+   gebauten Datei. `buendel-kern.mjs → pruefeNamen` vergleicht die Module nur
+   UNTEREINANDER, nie gegen die Hülle — der Bau meldete darum brav
+   *„144 Bezeichner geprueft, keine Kollision"* und schrieb eine Datei, die im
+   Browser mit `Identifier 'WAND_DICKE_CM' has already been declared` stirbt.
+   **Nicht nur das neue Modul: die ganze Datei.**
+
+   Gemessen, nicht vermutet — Handprobe, jederzeit wiederholbar:
+
+   ```bash
+   node tools/baue-planer-datei.mjs --ziel /pfad/probe.html
+   node -e "const fs=require('fs');const h=fs.readFileSync('/pfad/probe.html','utf8');
+     const b=[...h.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)].map(m=>m[1]);
+     b.forEach((x,i)=>{try{new Function(x)}catch(e){console.log('SYNTAXFEHLER',i,e.message)}});"
+   ```
+
+   Ergebnis: mit `WAND_DICKE_STANDARD_CM` übersetzt der 936 417 Zeichen lange
+   Skript-Block **fehlerfrei** und enthält `baueRaumbuch` wie `pruefeHinweise`;
+   dieselbe Datei mit dem alten Namen zurückgedreht → **`SyntaxError`**.
+   Die Lehre ist allgemein und gilt für jedes weitere Modul in `src/axo/`:
+   **ein neuer Name auf oberster Ebene muss gegen die HÜLLE geprüft werden,
+   nicht nur gegen die Nachbarmodule.** `pruefe-kennzahlen.mjs` tut das seit
+   W9 in der Vorprüfung (16 eigene Namen gegen 150 aus beiden Hüllen), mit
+   der Gegenprobe, dass es genau diesen Fall findet.
 
 ---
 
@@ -282,7 +313,7 @@ node tools/pruefe-kennzahlen.mjs      # ohne Browser, ~15 s (tsc), Exit 0/1
 
 | Block | Prüfung | Gegenprobe |
 |---|---|---|
-| Vor | `AXO_MODULE` vollständig + Reihenfolge, Bündel übersteht `entkleide` | Doppelklick-Datei nur prüfen, wenn sie NEUER ist als das Modul |
+| Vor | `AXO_MODULE` vollständig + Reihenfolge, Bündel übersteht `entkleide`, **keine Namenskollision mit den Hüllen** | die Kollisions-Prüfung findet `WAND_DICKE_CM` in der Hülle wieder — sie kann also rot werden. Die Doppelklick-Datei wird nur geprüft, wenn sie NEUER ist als das Modul |
 | A | Gauss-Formel == Bounding-Box bei allen 24 achsparallelen Vierecken (grösste Abweichung 7,1e-15 m²) | Plan um 10 % gestaucht → **beide** Schätzer fallen um exakt 19,00 %; bliebe einer stehen, wäre er eine Konstante |
 | B | 224 + 65 + 0 === 289; Histogramme summieren sich; 12 von 18 Ankern | ein Stück +200 m → „ausserhalb" wird 1, die Stückliste verliert es NICHT |
 | C | `erschliessungIndex` === `baueSzene.flurIndex`, gleiche Fläche | ein einzelnes 400×300-Viereck hat KEINE Erschliessungszone (Index −1) und 12,0 m² |

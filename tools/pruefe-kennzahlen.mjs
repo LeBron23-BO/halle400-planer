@@ -49,8 +49,14 @@ const pruefe = (bedingung, text) => {
   if (!bedingung) fehler.push(text)
 }
 const kopie = (o) => JSON.parse(JSON.stringify(o))
+/** Wanddicke in cm — dieselbe gesetzte Annahme wie in `baue-planer-datei.mjs`
+ *  und `baue-bank-ansicht.mjs`. Sie steht hier als Zahl und nicht als Import:
+ *  `axo-kennzahlen.js` exportiert sie ABSICHTLICH nicht (Namenskollision mit der
+ *  Huelle, s. Vorpruefung), und ein Gate, das seinen Messwert vom Prueflings-
+ *  Modul bezoege, koennte den Fehler nicht mehr sehen, den es sucht. */
+const WAND_DICKE_ANNAHME_CM = 12.5
 
-const { baueRaumbuch, pruefeHinweise, wandKantenVon, WAND_DICKE_CM, LEGENDE_STUHLFLAECHE, FUSSZEILE } =
+const { baueRaumbuch, pruefeHinweise, wandKantenVon, LEGENDE_STUHLFLAECHE, FUSSZEILE } =
   await import(pathToFileURL(MODUL).href)
 const { baueSzene } = await import(pathToFileURL(path.join(WURZEL, 'src/axo/axo-szene.js')).href)
 const { leiteRaeumeAb } = await import(pathToFileURL(path.join(WURZEL, 'src/axo/axo-zyklen.js')).href)
@@ -106,6 +112,37 @@ function liesAusstattungNamen() {
       gebuendelt.includes('function wandKantenVon'),
     `die drei Ausgaenge ueberstehen das Buendeln (Import-Huelle ab, kein Namenskonflikt)`
   )
+  /* ── NAMENSKOLLISION MIT DER HUELLE ────────────────────────────────────
+     `pruefeNamen` in `buendel-kern.mjs` vergleicht die Module nur UNTEREINANDER.
+     Die Huellen schreiben aber ebenfalls Deklarationen in denselben
+     Gueltigkeitsbereich der fertigen Datei — gemessen in W9:
+     `tools/baue-planer-datei.mjs:828` schreibt `const WAND_DICKE_CM = 12.5;`,
+     und `axo-kennzahlen.js` trug denselben Namen. Zwei gleichnamige `const` im
+     selben Bereich sind ein HARTER Syntaxfehler, und zwar erst im Browser der
+     Bank: die ganze Datei ist dann tot, nicht nur das neue Modul.
+
+     Geprueft wird gegen alle Deklarationen in SPALTE 0 der Huellen — das ist
+     genau die Ebene, auf der die Vorlagen ihren Skript-Text ausschreiben
+     (verschachtelte stehen eingerueckt und liegen in einem eigenen Bereich). */
+  const spalteNull = (text) =>
+    new Set([...text.matchAll(/^(?:const|let|var|function|class)\s+([A-Za-z_$][\w$]*)/gm)].map((m) => m[1]))
+  const huellenNamen = new Set()
+  for (const h of ['tools/baue-planer-datei.mjs', 'tools/baue-bank-ansicht.mjs']) {
+    for (const n of spalteNull(fs.readFileSync(path.join(WURZEL, h), 'utf8'))) huellenNamen.add(n)
+  }
+  const meineNamen = spalteNull(fs.readFileSync(MODUL, 'utf8').replace(/^export\s+/gm, ''))
+  const kollision = [...meineNamen].filter((n) => huellenNamen.has(n))
+  pruefe(
+    kollision.length === 0,
+    `keine Namenskollision mit den Huellen (${meineNamen.size} eigene Namen gegen ` +
+      `${huellenNamen.size})${kollision.length ? ' — KOLLISION: ' + kollision.join(', ') : ''}`
+  )
+  pruefe(
+    huellenNamen.has('WAND_DICKE_CM'),
+    `GEGENPROBE: dieselbe Pruefung findet den Fall, an dem sie entstanden ist ` +
+      `(WAND_DICKE_CM steht in der Huelle) — sie kann also rot werden`
+  )
+
   // Die Doppelklick-Datei nur pruefen, wenn sie AKTUELLER ist als das Modul —
   // sonst meldete dieses Gate den Bauzustand eines fremden Werkzeugs als
   // eigenen Fehler.
@@ -343,7 +380,7 @@ pruefe(
    wird sie hier gemessen: laufen die beiden auseinander, zeigt das Blatt einen
    anderen Flur als das Raumbuch, und niemand merkte es. */
 log('\n═══ C · Erschliessungszone == baueSzene ═══')
-const SZENE = baueSzene(PLAN, { wandDicke: WAND_DICKE_CM, hoehen: liesHoehen() })
+const SZENE = baueSzene(PLAN, { wandDicke: WAND_DICKE_ANNAHME_CM, hoehen: liesHoehen() })
 pruefe(
   SZENE.flurIndex === RB.erschliessungIndex && RB.erschliessungIndex >= 0,
   `C1 flurIndex ${SZENE.flurIndex} === erschliessungIndex ${RB.erschliessungIndex}`
@@ -481,7 +518,7 @@ function imWandbandZaehlen(plan, nurGesetzte) {
   return (fp.ausstattung || []).filter(
     (el) =>
       (!nurGesetzte || el.quelle === 'gesetzt') &&
-      strecken.some(([a, b]) => abstand({ x: el.x, y: el.y }, a, b) <= WAND_DICKE_CM / 2)
+      strecken.some(([a, b]) => abstand({ x: el.x, y: el.y }, a, b) <= WAND_DICKE_ANNAHME_CM / 2)
   )
 }
 const GEMESSEN_IN_WAND = imWandbandZaehlen(PLAN, false)
