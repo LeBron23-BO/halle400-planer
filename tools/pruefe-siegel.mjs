@@ -89,11 +89,12 @@ if (laeuft('rechnung')) {
   console.log('\n── A: Unterschrift und Schloss als reine Rechnung ──')
   pruefe(fs.existsSync(path.join(DATEN, 'siegel-oeffentlich.json')), 'A: der oeffentliche Schluessel entsteht')
   pruefe(fs.existsSync(path.join(GEHEIM, 'Halle400-SIEGEL-PRIVAT.json')), 'A: der private liegt AUSSERHALB des Repos', GEHEIM)
-  pruefe(fs.existsSync(path.join(DATEN, 'schloss.json')), 'A: und das Schloss')
+  pruefe(fs.existsSync(path.join(GEHEIM, 'Halle400-SCHLOSS.json')),
+    'A: und das Schloss — ebenfalls AUSSERHALB des Repos (Gegner-Fund L1: es ist eine Vorlage zum Durchprobieren)')
   const privatAkte = fs.readFileSync(path.join(GEHEIM, 'Halle400-SIEGEL-PRIVAT.json'), 'utf8')
   pruefe(!privatAkte.includes(PASSWORT), 'A: das Passwort steht NICHT in der privaten Akte')
   pruefe(!privatAkte.includes('"d"'), 'A: und der geheime Teil des Schluessels liegt dort verschlossen, nicht offen')
-  const schlossAkte = fs.readFileSync(path.join(DATEN, 'schloss.json'), 'utf8')
+  const schlossAkte = fs.readFileSync(path.join(GEHEIM, 'Halle400-SCHLOSS.json'), 'utf8')
   pruefe(!schlossAkte.includes(PASSWORT), 'A: auch im Schloss steht kein Passwort')
 
   werkzeug(['signiere', '--passwort', PASSWORT])
@@ -476,10 +477,14 @@ if (laeuft('angriffe')) {
     await seite.waitForTimeout(300)
     /* Eine Wand verschieben — das geht durch `bemerkeAenderung` und loest das
        entprellte Sichern aus. `ladeDatei` taete es NICHT: es laedt
-       ausdruecklich NICHT als eigenen Stand (dritter Parameter `false`). */
+       ausdruecklich NICHT als eigenen Stand (dritter Parameter false). Und ein
+       blosses VERSCHIEBEN taete es auch nicht: `fireOnUpdatedRooms` sieht es
+       nicht (Projekt-DNA, W1 Punkt 3) — in der Datei haengt das Sichern am
+       Zeiger-Ende, und das gibt es hier nicht. Eine ENTFERNTE Wand ist eine
+       Struktur-Aenderung und geht durch `update()`. */
     await seite.evaluate(() => {
       const w = window.__planerDatei.waendeRoh()[0]
-      window.__planerDatei.wandVerschieben(w.id, 40, 0)
+      window.__planerDatei.wandLoeschen(w.id)
     })
     await seite.waitForTimeout(1400)              // das Sichern ist auf 600 ms entprellt
     const standDa = await seite.evaluate(() => (window.__planerDatei.speicherStand() || '').length > 0)
