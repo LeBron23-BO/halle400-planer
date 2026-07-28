@@ -834,7 +834,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "c8051b95fb22";
-const BAU_STEMPEL = "2026-07-28 08:05";
+const BAU_STEMPEL = "2026-07-28 08:07";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -10137,7 +10137,13 @@ async function schlossOeffnen(wort){
   try {
     const basis = await crypto.subtle.importKey('raw', new TextEncoder().encode(wort), 'PBKDF2', false, ['deriveKey']);
     const k = await crypto.subtle.deriveKey(
-      { name: 'PBKDF2', salt: ausB64(SCHLOSS.salz), iterations: SCHLOSS.runden, hash: SCHLOSS_HASH },
+      /* Gegner-Fund L2: die Rundenzahl kommt aus der Datei. Ein manipuliertes
+         1e9 waere kein Bypass (falsches Passwort scheitert weiter), aber es
+         liesse den Tab beim ersten Aufsperrversuch minutenlang stehen — ein
+         Aussperren durch Rechenzeit. Geklemmt auf einen Bereich, in dem beide
+         Enden noch vernuenftig sind. */
+      { name: 'PBKDF2', salt: ausB64(SCHLOSS.salz),
+        iterations: Math.min(Math.max(SCHLOSS.runden | 0, 100000), 2000000), hash: SCHLOSS_HASH },
       basis, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
     await crypto.subtle.decrypt({ name: 'AES-GCM', iv: ausB64(SCHLOSS.iv) }, k, ausB64(SCHLOSS.inhalt));
     return { offen: true };
@@ -11317,6 +11323,13 @@ function siegelZeigen(art, zeichen, wort, satz){
   siegelStand.echt = (art === 'echt');
   siegelStand.art = art; siegelStand.zeichen = zeichen; siegelStand.wort = wort; siegelStand.satz = satz;
   siegelMarkePflegen();
+  /* Gegner-Fund M3: die Druckzeile wurde EINMAL beim Start gesetzt — da war die
+     Pruefung noch nicht durch — und danach nur noch von beforeprint. Es gibt
+     aber Druckwege ohne dieses Ereignis (gemessen: Playwright page.pdf()).
+     Auf denen trug jedes Blatt dauerhaft „das Siegel war beim Drucken noch
+     nicht geprueft" — eine Warnung, die im Normalfall erscheint, gewoehnt man
+     sich ab, und dann schuetzt sie nichts mehr. */
+  if (typeof druckZeileSetzen === 'function') druckZeileSetzen();
 }
 
 function siegelMarkePflegen(){

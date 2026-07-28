@@ -322,6 +322,222 @@ if (laeuft('ansicht')) {
   })
 }
 
+/* ══ E · DIE ANGRIFFE, DIE DER GEGNER GEFAHREN HAT ══
+   Jeder dieser fuenf Faelle war einmal GRUEN und hat gehalten, was er nicht
+   halten durfte. Sie stehen hier, weil ein Fix ohne Gate ein Fix ist, der beim
+   naechsten Umbau still verschwindet — und weil man an ihnen sieht, wogegen
+   dieser Schutz eigentlich gebaut ist. */
+if (laeuft('angriffe')) {
+  console.log('\n── E: die Angriffe, die einmal durchkamen (F1-F4, M1) ──')
+
+  /* F1 — DIE FREMDE UNTERSCHRIFT. Der Angreifer aendert den Plan und
+     unterschreibt mit einem EIGENEN Schluesselpaar. Die Signaturpruefung
+     haelt — sie kann gar nicht anders, der Schluessel liegt ja daneben.
+     Was ihn verraet, ist der FINGERABDRUCK: er ist ein anderer. */
+  const fremdDaten = path.join(TMP, 'fremd'); fs.mkdirSync(fremdDaten, { recursive: true })
+  const fremdGeheim = path.join(TMP, 'fremdgeheim'); fs.mkdirSync(fremdGeheim, { recursive: true })
+  const fremdUmg = { ...process.env, HALLE400_DATEN: fremdDaten, HALLE400_GEHEIM: fremdGeheim }
+  const fremdWerkzeug = (args) => execFileSync(process.execPath, [path.join(HIER, 'siegel.mjs'), ...args],
+    { cwd: WURZEL, env: fremdUmg, encoding: 'utf8', stdio: 'pipe' })
+  fremdWerkzeug(['erzeuge', '--inhaber', 'Dania — Halle 400, Businessplan', '--passwort', PASSWORT])
+  const meinAbdruck = /FINGERABDRUCK:\s+(\S+)/.exec(werkzeug(['zeige']))
+  const fremdAbdruck = /FINGERABDRUCK:\s+(\S+)/.exec(fremdWerkzeug(['zeige']))
+  pruefe(meinAbdruck && fremdAbdruck && meinAbdruck[1] !== fremdAbdruck[1],
+    'E-F1: zwei Schluessel haben zwei verschiedene Fingerabdruecke',
+    (meinAbdruck ? meinAbdruck[1] : '?') + ' vs. ' + (fremdAbdruck ? fremdAbdruck[1] : '?'))
+
+  const gefaelscht = path.join(TMP, 'gefaelscht.html')
+  {
+    // Plan verbiegen, mit dem FREMDEN Schluessel neu unterschreiben, neu bauen.
+    const planPfad = path.join(WURZEL, 'app/public/plaene/halle400.json')
+    const echterPlan = fs.readFileSync(planPfad, 'utf8')
+    const verbogen = echterPlan.replace(/"x":\s*0\b/, '"x": 300')
+    pruefe(verbogen !== echterPlan, 'E-F1: der Plan liess sich fuer die Probe verbiegen')
+    const probePlan = path.join(WURZEL, 'app/public/plaene/__probe-gegner.json')
+    fs.writeFileSync(probePlan, verbogen, 'utf8')
+    try {
+      fremdWerkzeug(['signiere', '--plan', '__probe-gegner', '--passwort', PASSWORT])
+      execFileSync(process.execPath, [path.join(HIER, 'baue-planer-datei.mjs'),
+        '--plan', '__probe-gegner', '--ziel', gefaelscht], { cwd: WURZEL, env: fremdUmg, stdio: 'pipe' })
+    } finally { fs.rmSync(probePlan, { force: true }) }
+  }
+  await mitSeite(gefaelscht, async (seite) => {
+    const m = await seite.evaluate(() => ({
+      art: document.querySelector('#siegelMarke').dataset.art,
+      wort: document.querySelector('#siegelWort').textContent,
+      titel: document.querySelector('#siegelMarke').getAttribute('title'),
+    }))
+    // Die Signatur HAELT — das ist keine Panne, das ist die Grenze des Verfahrens.
+    pruefe(m.art === 'echt', 'E-F1: die Faelschung besteht die Signaturpruefung (so ist Kryptografie)', m.art)
+    pruefe(m.wort.includes(fremdAbdruck[1]),
+      'E-F1: ABER sie zeigt den FREMDEN Fingerabdruck — daran ist sie zu erkennen', m.wort)
+    pruefe(!m.wort.includes(meinAbdruck[1]), 'E-F1: und NICHT deinen')
+    pruefe(/ANDEREN Weg bekommen hast/.test(m.titel),
+      'E-F1: und der Satz sagt ausdruecklich, was er NICHT weiss')
+  })
+
+  /* F2 — DER KOEDER. Ein HTML-Kommentar mit den Original-Zeilen VOR dem
+     Skript. Der Browser fuehrt die spaeteren aus, ein Werkzeug, das den
+     ersten Treffer im Dateitext nimmt, liest die frueheren. */
+  const koeder = path.join(TMP, 'koeder.html')
+  {
+    const echt = fs.readFileSync(path.join(WURZEL, 'Halle400-Modell.html'), 'utf8')
+    const zeile = (name) => (new RegExp('const ' + name + ' = .*?;\\n').exec(echt) || [''])[0]
+    const falsch = fs.readFileSync(gefaelscht, 'utf8')
+    fs.writeFileSync(koeder, falsch.replace('<title>',
+      '<!--\n' + zeile('PLAN_TEXT') + zeile('SIEGEL') + zeile('SIEGEL_SCHLUESSEL') + '-->\n<title>'), 'utf8')
+  }
+  let koederCode = 0
+  try { execFileSync(process.execPath, [path.join(HIER, 'siegel.mjs'), 'pruefe', koeder], { cwd: WURZEL, stdio: 'pipe' }) }
+  catch (e) { koederCode = e.status }
+  /* Der Koeder liegt AUSSERHALB des <script>-Rumpfes — genau dorthin sieht das
+     Werkzeug seit dem Fix nicht mehr. Es liest die echten, spaeteren Zeilen und
+     erkennt korrekt den fremden Schluessel (Ausgang 3). Vor dem Fix nahm es den
+     ersten Treffer im Dateitext und meldete „ECHT" (Ausgang 0) — DAS ist der
+     Unterschied, den diese Zeile misst. */
+  pruefe(koederCode === 3, 'E-F2: der Koeder vor dem Skript wird ignoriert — es urteilt ueber den echten Rumpf', 'exit ' + koederCode)
+
+  // Und der Koeder IM Rumpf: dort ist Mehrdeutigkeit selbst der Befund.
+  const koeder2 = path.join(TMP, 'koeder-im-rumpf.html')
+  {
+    const falsch = fs.readFileSync(gefaelscht, 'utf8')
+    const echt = fs.readFileSync(path.join(WURZEL, 'Halle400-Modell.html'), 'utf8')
+    const zeile = (name) => (new RegExp('const ' + name + ' = .*?;\\n').exec(echt) || [''])[0]
+    const anker = '<script>\n"use strict";'
+    fs.writeFileSync(koeder2, falsch.replace(anker,
+      anker + '\n' + zeile('PLAN_TEXT') + zeile('SIEGEL') + zeile('SIEGEL_SCHLUESSEL')), 'utf8')
+  }
+  let koeder2Code = 0
+  try { execFileSync(process.execPath, [path.join(HIER, 'siegel.mjs'), 'pruefe', koeder2], { cwd: WURZEL, stdio: 'pipe' }) }
+  catch (e) { koeder2Code = e.status }
+  pruefe(koeder2Code === 4, 'E-F2: zwei Fassungen IM Rumpf werden als MEHRDEUTIG abgelehnt, nicht bewertet', 'exit ' + koeder2Code)
+
+  /* F3 — DER UNTERGESCHOBENE PLAN. Erfundene Waende OHNE `quelle`-Feld sind
+     fuer die drei Zaehler im Blattkopf unsichtbar (Standard beim Laden ist
+     „gemessen"). Die Marke muss trotzdem „geaendert" sagen. */
+  {
+    // Der untergeschobene Plan wird aus dem ECHTEN gebaut: drei erfundene
+    // Waende, ein umbenannter Raum, KEIN `quelle`-Feld irgendwo.
+    const echterPlan = JSON.parse(fs.readFileSync(path.join(WURZEL, 'app/public/plaene/halle400.json'), 'utf8'))
+    const fp = echterPlan.floorplan
+    const ids = Object.keys(fp.corners)
+    const neu = {}
+    for (let i = 0; i < 4; i++) neu['erfunden-' + i] = { x: 100 + i * 400, y: -900 }
+    Object.assign(fp.corners, neu)
+    const nk = Object.keys(neu)
+    for (let i = 0; i < 3; i++) fp.walls.push({ corner1: nk[i], corner2: nk[i + 1] })
+    if (echterPlan.labels && echterPlan.labels.length) echterPlan.labels[0].text = 'Wellness-Suite'
+
+    await mitSeite(path.join(WURZEL, 'Halle400-Modell.html'), async (seite) => {
+      const vorher = await seite.evaluate(() => document.querySelector('#siegelWort').textContent)
+      pruefe(!/geändert/.test(vorher), 'E-F3: der Auslieferungszustand meldet KEINE Aenderung', vorher)
+
+      // `ladeDatei` nimmt den ROH-TEXT, nicht das Objekt — genau wie der Nutzer eine Datei uebergibt.
+      const geladen = await seite.evaluate((p) => window.__planerDatei.ladeDatei(p), JSON.stringify(echterPlan))
+      await seite.waitForTimeout(600)
+      const n = await seite.evaluate(() => ({
+        wort: document.querySelector('#siegelWort').textContent,
+        art: document.querySelector('#siegelMarke').dataset.art,
+        zaehlerLeer: ['gesetztZaehler', 'grundrissZaehler', 'oeffnungZaehler']
+          .every((id) => document.getElementById(id).hidden),
+        waende: window.__planerDatei.zahlen().waende,
+        druck: (function(){ dispatchEvent(new Event('beforeprint')); return document.querySelector('#siegelDruck').textContent })(),
+      }))
+      pruefe(!geladen.fehler && n.waende > 100,
+        'E-F3: der untergeschobene Plan ist wirklich drin', n.waende + ' Waende')
+      pruefe(n.zaehlerLeer,
+        'E-F3: und die drei Zaehler im Blattkopf sehen ihn NICHT (der alte blinde Fleck)')
+      pruefe(/geändert/.test(n.wort),
+        'E-F3: die Marke sagt trotzdem „geändert" — sie vergleicht jetzt den ganzen Plan', n.wort)
+      pruefe(/ABER dieses Blatt zeigt einen bearbeiteten Stand/.test(n.druck),
+        'E-F3: und das PAPIER sagt es auch', n.druck.slice(-70))
+    })
+  }
+
+  /* F4 — DER KNOPF, DER OHNE PASSWORT AUFSPERRTE. „Auf den gemessenen Plan
+     zuruecksetzen" rief `setzeBearbeiten(true)` direkt. Vorbedingung: ein
+     Stand im Speicher, sonst ist der Knopf unsichtbar. */
+  {
+    const browser = await chromium.launch()
+    const kontext = await browser.newContext()
+    const seite = await kontext.newPage()
+    await seite.route('**/*', (r) => (r.request().url().startsWith('file://') ? r.continue() : r.abort()))
+    await seite.goto(alsUrl(PROBE_VOLL))
+    await seite.waitForFunction(() => window.__bereit === true, { timeout: 20000 }).catch(() => {})
+    /* ERST EINE BUEHNE BAUEN. `btnStandZurueck` ist nur sichtbar, wenn ein
+       eigener Stand im Speicher liegt — ohne ihn prueft dieser Abschnitt gar
+       nichts und meldete trotzdem gruen. Genau die Sorte uebersprungene
+       Pruefung, an der dieses Projekt schon einmal 256 ungefahrene Pruefungen
+       hatte. Der Stand entsteht auf dem echten Weg: aufschliessen, einen
+       veraenderten Plan laden, das entprellte Sichern abwarten. */
+    await seite.evaluate((w) => window.__planerDatei.aufschliessen(w), PASSWORT)
+    await seite.click('#btnAnsichtPlan')
+    await seite.click('#btnBearbeiten')
+    await seite.waitForTimeout(300)
+    /* Eine Wand verschieben — das geht durch `bemerkeAenderung` und loest das
+       entprellte Sichern aus. `ladeDatei` taete es NICHT: es laedt
+       ausdruecklich NICHT als eigenen Stand (dritter Parameter `false`). */
+    await seite.evaluate(() => {
+      const w = window.__planerDatei.waendeRoh()[0]
+      window.__planerDatei.wandVerschieben(w.id, 40, 0)
+    })
+    await seite.waitForTimeout(1400)              // das Sichern ist auf 600 ms entprellt
+    const standDa = await seite.evaluate(() => (window.__planerDatei.speicherStand() || '').length > 0)
+    pruefe(standDa, 'E-F4: ein eigener Stand liegt im Speicher — der Knopf hat eine Buehne')
+
+    // Reload: das Schloss faellt zu.
+    await seite.reload()
+    await seite.waitForFunction(() => window.__bereit === true, { timeout: 20000 }).catch(() => {})
+    const knopfDa = await seite.evaluate(() => {
+      const e = document.getElementById('btnStandZurueck')
+      return !!e && e.checkVisibility({ contentVisibilityAuto: true, opacityProperty: true, visibilityProperty: true })
+    })
+    if (!knopfDa) {
+      pruefe(false, 'E-F4: der Knopf ist nach dem Neuladen sichtbar (ohne ihn misst der Angriff nichts)')
+    } else {
+      await seite.click('#btnStandZurueck')
+      await seite.waitForTimeout(400)
+      const n = await seite.evaluate(() => ({
+        bearbeitet: window.__planerDatei.bearbeitet(),
+        offen: window.__planerDatei.aufgeschlossen(),
+        scharf: getComputedStyle(document.querySelector('#plan canvas')).pointerEvents,
+        frage: document.querySelector('#schlossFrage').checkVisibility({ visibilityProperty: true, opacityProperty: true }),
+      }))
+      pruefe(!n.bearbeitet && n.scharf === 'none',
+        'E-F4: „Zuruecksetzen" sperrt NICHT mehr ohne Passwort auf', JSON.stringify(n))
+      pruefe(n.frage, 'E-F4: stattdessen fragt es nach dem Passwort')
+    }
+    await browser.close()
+  }
+
+  /* M1 — DIE ANSICHT MIT ALTEM FLAG. Ein liegengebliebenes `bearbeiten:1` im
+     Speicher machte die Bank-Fassung beim naechsten Oeffnen scharf. */
+  {
+    const ansicht = path.join(TMP, 'bank.html')
+    if (!fs.existsSync(ansicht)) bauen(ansicht, ['--nur-ansicht'])
+    const browser = await chromium.launch()
+    const kontext = await browser.newContext()
+    const seite = await kontext.newPage()
+    await seite.route('**/*', (r) => (r.request().url().startsWith('file://') ? r.continue() : r.abort()))
+    await seite.goto(alsUrl(ansicht))
+    await seite.waitForFunction(() => window.__bereit === true, { timeout: 20000 }).catch(() => {})
+    await seite.evaluate(() => {
+      const ort = decodeURIComponent(location.pathname).toLowerCase()
+      let h = 5381; for (let i = 0; i < ort.length; i++) h = ((h * 33) ^ ort.charCodeAt(i)) >>> 0
+      localStorage.setItem('halle400-planer-datei:bearbeiten:' + h.toString(36), '1')
+    })
+    await seite.reload()
+    await seite.waitForFunction(() => window.__bereit === true, { timeout: 20000 }).catch(() => {})
+    const z = await seite.evaluate(() => ({
+      bearbeitet: window.__planerDatei.bearbeitet(),
+      scharf: getComputedStyle(document.querySelector('#plan canvas')).pointerEvents,
+    }))
+    pruefe(!z.bearbeitet && z.scharf === 'none',
+      'E-M1: ein altes Speicher-Flag macht die Bank-Fassung NICHT mehr scharf', JSON.stringify(z))
+    await browser.close()
+  }
+}
+
 fs.rmSync(TMP, { recursive: true, force: true })
 console.log('')
 if (fehlgeschlagen.length) {

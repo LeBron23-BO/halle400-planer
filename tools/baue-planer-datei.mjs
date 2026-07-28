@@ -2927,8 +2927,8 @@ function siegelZeigen(art, zeichen, wort, satz){
   siegelStand.art = art; siegelStand.zeichen = zeichen; siegelStand.wort = wort; siegelStand.satz = satz;
   siegelMarkePflegen();
   /* Gegner-Fund M3: die Druckzeile wurde EINMAL beim Start gesetzt — da war die
-     Pruefung noch nicht durch — und danach nur noch von `beforeprint`. Es gibt
-     aber Druckwege ohne dieses Ereignis (gemessen: Playwright `page.pdf()`).
+     Pruefung noch nicht durch — und danach nur noch von beforeprint. Es gibt
+     aber Druckwege ohne dieses Ereignis (gemessen: Playwright page.pdf()).
      Auf denen trug jedes Blatt dauerhaft „das Siegel war beim Drucken noch
      nicht geprueft" — eine Warnung, die im Normalfall erscheint, gewoehnt man
      sich ab, und dann schuetzt sie nichts mehr. */
