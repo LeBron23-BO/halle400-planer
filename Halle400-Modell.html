@@ -4337,7 +4337,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "c8051b95fb22";
-const BAU_STEMPEL = "2026-07-28 00:34";
+const BAU_STEMPEL = "2026-07-28 06:00";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -13867,6 +13867,16 @@ function sicherungZurueckholen(){
     meldung('Die Sicherung ließ sich nicht öffnen (' + ((e && e.message) ? e.message : String(e)) + ').', true);
     return false;
   }
+  /* Verbraucht: der Inhalt IST jetzt der Arbeitsstand und liegt unter dem
+     normalen Schluessel. Ihn liegen zu lassen waere ein Speicherplatz, den
+     niemand mehr erreichen kann — bei rund 4,8 MB fuer ALLE file://-Seiten
+     zusammen ist das nicht nichts. BEKANNTE GRENZE: wer nach dem
+     Zuruecksetzen neu laedt, ohne den Knopf gedrueckt zu haben, verliert das
+     Angebot; die Sicherung bleibt dann liegen, bis das naechste
+     Zuruecksetzen sie ueberschreibt. Ein Angebot, das den Neustart
+     ueberdauert, waere ein zweites Startangebot neben dem aus C1 — zwei
+     Zeilen, die dasselbe zu sein scheinen und es nicht sind. */
+  try { speicher.removeItem(SCHLUESSEL_SICHERUNG); } catch (e) { /* egal */ }
   meldung('Der Stand von vor dem Zurücksetzen ist wieder da: ' +
     grundriss.getCorners().length + ' Ecken, ' + grundriss.getWalls().length + ' Wände, ' +
     grundriss.zaehleGesetzte() + ' gesetzte Stücke.', false);
