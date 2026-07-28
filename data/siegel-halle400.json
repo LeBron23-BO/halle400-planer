@@ -1,0 +1,10 @@
+{
+  "zweck": "Unterschrift unter den gemessenen Plan. Sie gilt fuer den ROH-TEXT der Plan-Datei, Zeichen fuer Zeichen.",
+  "plan": "halle400",
+  "verfahren": "ECDSA P-256 / SHA-256",
+  "inhaber": "Dania — Halle 400, Businessplan",
+  "signiertAm": "2026-07-28T06:12:24.695Z",
+  "planAbdruck": "ce6034509ecd0de408754f976411e626147419926be5af74e834f2417ab98ca2",
+  "planBytes": 78451,
+  "signatur": "GubWXplkwwFdfFzg2e55Zk69ZbbfONkOB/o/2NZfgjCFpxX5lRGnDhn9Q0jU0MCvzuCgur0beZPGVrk5PQJpzg=="
+}

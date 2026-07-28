@@ -44,6 +44,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { werkstattAufschliessen } from './werkstatt-auf.mjs'
 
 const PW_STANDARD = 'file:///C:/Users/dania/.gemini/node_modules/playwright/index.js'
 const { chromium } = (await import(process.env.PLAYWRIGHT_PFAD || PW_STANDARD)).default
@@ -252,6 +253,10 @@ pruefe(vorBearbeiten === false, `A) im Auslieferungszustand ist die Palette WEG 
    (ausdruecklicher Nutzerwunsch), und die Palette liegt IM Grundriss — in der
    Axonometrie waere sie nutzlos, dort trifft ein Klick keinen Punkt, sondern
    einen Sehstrahl. Erst beides zusammen ergibt "Palette da". */
+/* W11: seit dem Schloss ist ein Druck auf „Bearbeiten" eine FRAGE, keine Tat.
+   `werkstattAufschliessen` umgeht sie nicht — es beantwortet sie mit dem echten
+   Passwort (Umgebung oder Geheim-Ordner, nie aus dem Repo). */
+await werkstattAufschliessen(page)
 await page.evaluate(() => {
   document.getElementById('btnBearbeiten').dispatchEvent(new MouseEvent('click', { bubbles: true }))
 })
@@ -680,7 +685,13 @@ if (exportPfad && fs.existsSync(exportPfad)) {
      Blatt, keine Werkzeuge — und die Zeichenflaeche nimmt dann keine
      Zeiger-Ereignisse mehr an (K3). Wer danach weiterarbeiten will, greift den
      Schalter noch einmal UND geht in den Grundriss zurueck (seit W7 zwei
-     getrennte Griffe). Genau das tut hier auch der Nutzer. */
+     getrennte Griffe). Genau das tut hier auch der Nutzer.
+     W11: „Zuruecksetzen" ruft selbst `setzeBearbeiten(false, false)` — und
+     WEIL das Schloss existiert, faellt es dabei automatisch wieder ZU
+     (dieselbe Zeile, die auch ein Neuladen zulaesst: ein Schloss, das ein
+     Zuruecksetzen ueberdauern wuerde, waere keines). Der folgende Klick auf
+     „Bearbeiten" braucht darum wieder das Passwort. */
+  await werkstattAufschliessen(page)
   await page.evaluate(() => {
     if (!window.__planerDatei.bearbeitet()) {
       document.getElementById('btnBearbeiten').dispatchEvent(new MouseEvent('click', { bubbles: true }))

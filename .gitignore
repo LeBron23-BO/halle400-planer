@@ -156,3 +156,11 @@ data/kacheln*/
 
 # Vergleichsbild ist ein Pruef-Artefakt, reproduzierbar via tools/compare_plan.py
 data/vergleich.png
+
+# Der private Siegel-Schluessel gehoert NIE ins Repo — dieses Projekt hat eine
+# GitHub-Gegenstelle, und ein einmal gepushter Schluessel ist fuer immer verbrannt.
+# Er liegt regulaer ausserhalb (Desktop-Ordner); diese Zeilen fangen den Unfall,
+# dass jemand ihn zum Bequemlichkeit halber hierher kopiert.
+*SIEGEL-PRIVAT*
+*siegel-privat*
+PASSWOERTER*.txt

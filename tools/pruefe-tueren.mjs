@@ -55,6 +55,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { werkstattAufschliessen } from './werkstatt-auf.mjs'
 
 const PW_STANDARD = 'file:///C:/Users/dania/.gemini/node_modules/playwright/index.js'
 const { chromium } = (await import(process.env.PLAYWRIGHT_PFAD || PW_STANDARD)).default
@@ -1141,7 +1142,11 @@ if (NUR !== 'planer') {
     await page.waitForFunction(() => window.__bereit === true, { timeout: 25000 })
     /* Werkzeuge EIN und in den Grundriss — seit W7 zwei getrennte Griffe: der
        Bearbeiten-Schalter laesst die Ansicht stehen (ausdruecklicher
-       Nutzerwunsch), und Oeffnungen werden im Grundriss gesetzt. */
+       Nutzerwunsch), und Oeffnungen werden im Grundriss gesetzt.
+       W11: seit dem Schloss ist ein Druck auf „Bearbeiten" eine FRAGE, keine
+       Tat. `werkstattAufschliessen` umgeht sie nicht — es beantwortet sie mit
+       dem echten Passwort (Umgebung oder Geheim-Ordner, nie aus dem Repo). */
+    await werkstattAufschliessen(page)
     await page.evaluate(() => {
       document.getElementById('btnBearbeiten').dispatchEvent(new MouseEvent('click', { bubbles: true }))
       document.getElementById('btnAnsichtPlan').dispatchEvent(new MouseEvent('click', { bubbles: true }))

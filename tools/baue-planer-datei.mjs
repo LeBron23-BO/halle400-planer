@@ -39,6 +39,7 @@ import crypto from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { liesHoehen } from './lies-hoehen.mjs'
 import { WURZEL, uebersetzeKern, buendleKern, buendleAxo, buendleThree, AXO_MODULE } from './buendel-kern.mjs'
+import { siegelLesen, oeffentlichLesen, pruefeUnterschrift, PBKDF2_RUNDEN, PBKDF2_HASH, verschliesse } from './siegel.mjs'
 
 const arg = (name, standard) => {
   const i = process.argv.indexOf(name)
@@ -62,6 +63,53 @@ const HOEHEN = liesHoehen()
 // wegwerfen.
 const PLAN_ABDRUCK = crypto.createHash('sha1').update(planRoh).digest('hex').slice(0, 12)
 const BAU_STEMPEL = new Date().toISOString().slice(0, 16).replace('T', ' ')
+
+/* ── DAS SIEGEL ───────────────────────────────────────────────────────
+   Die Unterschrift unter den gemessenen Plan (tools/siegel.mjs). Sie ist der
+   einzige Schutz, der wirklich gegen BOESWILLIGKEIT hilft: wer die Datei
+   besitzt, hat einen Texteditor — verhindern kann man nichts, beweisen alles.
+   Der oeffentliche Schluessel wandert mit in die Datei; aus ihm laesst sich
+   keine gueltige Unterschrift herstellen.
+
+   FEHLT das Siegel, wird NICHT still weitergebaut: eine Datei, die aussieht wie
+   die gesiegelte und keine ist, waere schlimmer als gar keine — sie lehrt den
+   Leser, auf ein Zeichen zu vertrauen, das mal da ist und mal nicht. */
+const NUR_ANSICHT = process.argv.includes('--nur-ansicht')
+const OHNE_SIEGEL = process.argv.includes('--ohne-siegel')
+const siegel = siegelLesen(PLAN_NAME)
+const siegelSchluessel = oeffentlichLesen()
+
+/* Das Schloss vor der Werkstatt. Es entsteht EINMAL beim Anlegen des Siegels
+   und wird hier nur eingebaut — der Bau selbst braucht darum kein Passwort und
+   kann in jedem Skript laufen, ohne dass ein Geheimnis auf der Befehlszeile
+   steht. In die reine Ansichts-Fassung kommt es nicht: dort gibt es nichts
+   aufzuschliessen. */
+const schlossPfad = path.join(process.env.HALLE400_DATEN || path.join(WURZEL, 'data'), 'schloss.json')
+const schloss = fs.existsSync(schlossPfad) ? JSON.parse(fs.readFileSync(schlossPfad, 'utf8')) : null
+if (!NUR_ANSICHT && !OHNE_SIEGEL && !schloss) {
+  console.error('Abbruch: kein Schloss (data/schloss.json).')
+  console.error('  node tools/siegel.mjs schloss --passwort "<dein-passwort>"')
+  process.exit(1)
+}
+if (!OHNE_SIEGEL) {
+  if (!siegel || !siegelSchluessel) {
+    console.error('Abbruch: der Plan ist nicht unterschrieben.')
+    console.error(`  node tools/siegel.mjs signiere --plan ${PLAN_NAME} --passwort "<dein-passwort>"`)
+    console.error('  (Ein Bau ohne Siegel geht ausdruecklich mit --ohne-siegel.)')
+    process.exit(1)
+  }
+  // Der Bauer prueft, was er einbaut. Eine Unterschrift, die zu einem AELTEREN
+  // Plan gehoert, ist genau der Fall, der spaeter beim Kunden als „VERAENDERT"
+  // aufschlaegt — und dann steht die Aussage im Raum, ohne dass jemand etwas
+  // veraendert haette.
+  const haelt = await pruefeUnterschrift(planRoh, siegel.signatur, siegelSchluessel.jwk)
+  if (!haelt) {
+    console.error('Abbruch: die vorhandene Unterschrift passt NICHT zum jetzigen Plan.')
+    console.error(`  Der Plan wurde nach dem Unterschreiben geaendert (${siegel.signiertAm}).`)
+    console.error(`  Neu unterschreiben: node tools/siegel.mjs signiere --plan ${PLAN_NAME} --passwort "..."`)
+    process.exit(1)
+  }
+}
 
 // Wandhoehe und -dicke wie im Planer gesetzt (Blueprint3DAppBase.tsx:127-134).
 // BEIDES sind gesetzte Nutzer-Angaben, KEINE Messwerte aus der PDF — ein
@@ -95,7 +143,7 @@ try {
    Planblatt und nicht wie ein Werkzeugkasten. Neu sind: der Umschalter zwischen
    Blatt und Grundriss, der Bearbeiten-Schalter und die Werkzeugleiste, die
    erst durch ihn erscheint. */
-const html = `<!DOCTYPE html>
+let html = `<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -217,8 +265,37 @@ const html = `<!DOCTYPE html>
        border:1px solid var(--panel-line);backdrop-filter:blur(9px);
        -webkit-backdrop-filter:blur(9px);z-index:20}
   .kopfleiste button{padding:7px 12px;min-height:38px}
-  #btnBearbeiten{font-size:9.5px;color:var(--ink-mute)}
+  /* Der Bearbeiten-Schalter war mit 9,5 px und Kontrast 4,1:1 das blasseste
+     Element der ganzen Seite — unter WCAG AA (4,5:1) und gemessen das am
+     schwersten zu findende. Solange er nur Werkzeuge einblendete, war das
+     eine Geschmacksfrage. Seit er ein SCHLOSS traegt, ist es keine mehr: ein
+     Schutz, den sein Besitzer nicht findet, ist ein Schutz, den er umgeht.
+     \`--ink-dim\` gegen \`--paper\` misst 7,4:1. */
+  #btnBearbeiten{font-size:10.5px;color:var(--ink-dim)}
   #btnBearbeiten[aria-pressed="true"]{color:var(--paper)}
+  #btnBearbeiten .schloss{opacity:.85;margin-right:3px}
+
+  /* ── Die Siegel-Marke ────────────────────────────────────────────────
+     Sie gehoert weder ins Blatt noch in den Grundriss, sondern zu BEIDEN —
+     also in die Kopfleiste, die schon beiden gehoert. (Dieselbe Ueberlegung
+     wie bei der Loesch-Rueckfrage seit W7: eine Aussage ueber die ganze
+     Datei gehoert in keine ihrer Ansichten.)
+     Der gute Fall ist RUHIG: kein Signalgruen, kein Kasten, nur ein Haken in
+     der Tinte des Blattes. Ein Siegel, das im Normalfall schreit, wird
+     ueberlesen, wenn es einmal wirklich schreit. Der schlechte Fall ist es
+     nicht: Rot, fett, mit Rahmen. */
+  .siegel{display:flex;align-items:center;gap:5px;padding:0 9px 0 10px;
+       font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;
+       color:var(--ink-dim);border-left:1px solid var(--panel-line);
+       white-space:nowrap;cursor:help}
+  .siegel .zeichen{font-size:12px;line-height:1}
+  .siegel.gebrochen{color:var(--rot);font-weight:700;cursor:pointer;
+       border-left-color:var(--rot)}
+  .siegel.pruefend{opacity:.55}
+  /* Am Handy ist in der Kopfleiste kein Platz fuer den Satz — das ZEICHEN
+     bleibt, das Wort geht. Gemessen bei 390 px: mit Wort bricht die Leiste um
+     und schiebt den Umschalter aus dem Bild. */
+  @media (max-width:560px){ .siegel .wort{display:none} .siegel{padding:0 6px} }
 
   .standleiste{position:fixed;top:60px;left:50%;transform:translateX(-50%);
        display:flex;align-items:center;gap:8px;padding:5px 6px 5px 12px;
@@ -284,6 +361,24 @@ const html = `<!DOCTYPE html>
   .frage button.ernst:hover{background:#8d2f21;color:#fff}
   .frage .fuss{flex-basis:100%;text-align:center;font-family:var(--mono);
        font-size:9.5px;letter-spacing:.08em;color:var(--ink-mute)}
+
+  /* ── Das Schloss ─────────────────────────────────────────────────────
+     Dieselbe Bauform wie die Rueckfragen, aber im Farbklima des Blattes statt
+     in der Warnfarbe — genauso wie beim Stand-Angebot (C1). Rot heisst in
+     dieser Oberflaeche „hier verschwindet gleich etwas"; beim Aufschliessen
+     ist das Gegenteil der Fall. */
+  .schloss-frage{border-color:var(--panel-line)}
+  .schloss-frage .txt b{color:var(--ink)}
+  .schloss-frage button.ernst{background:var(--sage-deep);border-color:var(--sage-deep)}
+  .schloss-frage button.ernst:hover{background:#33564a}
+  /* 16 px ist kein Geschmack, sondern die Schwelle, unter der iOS beim
+     Hineintippen in ein Feld die ganze Seite heranzoomt — und danach steht der
+     Plan schief im Bild, ohne dass jemand ihn angefasst haette. */
+  #schlossWort{font-family:var(--mono);font-size:16px;padding:9px 11px;min-height:44px;
+       border:1px solid var(--panel-line);background:#fff;color:var(--ink);min-width:min(300px,52vw)}
+  #schlossWort:focus{outline:2px solid var(--sage-deep);outline-offset:1px}
+  .schloss-frage.falsch #schlossWort{border-color:var(--rot)}
+  .schloss-frage.falsch .fuss{color:var(--rot)}
 
   /* ── Ein ANGEBOT ist keine Rueckfrage (C1) ────────────────────────────
      Dieselbe Bauform, aber im Farbklima des Blattes statt in der Warnfarbe.
@@ -482,6 +577,7 @@ const html = `<!DOCTYPE html>
      QUER, weil der Riegel 78 m lang und 15 m tief ist: hochkant blieben zwei
      Drittel des Blattes leer. */
   .nurDruck{display:none}
+  .siegelDruck.warnt{color:var(--rot);font-weight:700}
   @media print{
     @page{size:A4 landscape;margin:10mm}
     /* Der warme Papierton bleibt — er ist die Bildidee, nicht Zierat. Wer ihn
@@ -536,6 +632,10 @@ const html = `<!DOCTYPE html>
          Auf einem Ausdruck ohne Datum weiss in drei Wochen niemand mehr, ob
          er den aktuellen Stand in der Hand hält. -->
     <div class="sub nurDruck" id="druckZeile"></div>
+    <!-- Das Siegel auf dem PAPIER. Es steht bewusst als Satz da und nicht als
+         Haken: einen Haken kann jeder hinmalen, einen Namen mit Datum prüft
+         man nach. -->
+    <div class="sub nurDruck siegelDruck" id="siegelDruck"></div>
     <div class="gesetzt" id="gesetztZaehler" hidden></div>
     <!-- M2: was der Nutzer an den WÄNDEN verändert hat. Bis hierher sagte das
          Blatt „Der Grundriss ist gemessen", auch nachdem eine gemessene Wand
@@ -704,6 +804,32 @@ const html = `<!DOCTYPE html>
   </div>
 </div>
 
+<!-- DAS SCHLOSS vor der Werkstatt.
+
+     Sie liegt AUSSERHALB beider Ansichten — dieselbe Überlegung wie bei der
+     Lösch-Rückfrage seit W7: was zu beiden gehört, gehört in keine von beiden.
+     Der Bearbeiten-Schalter steht in der Kopfleiste und ist in Blatt wie
+     Grundriss erreichbar; läge die Frage im Grundriss-Umschlag, fragte im
+     Blatt etwas Unsichtbares.
+
+     \`role="dialog"\`, NICHT \`alertdialog\`: die einzigen \`alertdialog\` dieser
+     Datei sind Rückfragen vor zerstörenden Handlungen (W13). Aufschließen
+     zerstört nichts. Wer eine Passwort-Frage ins selbe Gewand steckt, lehrt
+     den Nutzer, genau die Kästen wegzuklicken, die später eine Wand retten. -->
+<div class="frage schloss-frage" id="schlossFrage" role="dialog" aria-modal="true" aria-labelledby="schlossTitel" hidden>
+  <span class="txt"><b id="schlossTitel">Bearbeiten ist verschlossen.</b> Das Passwort schaltet die Werkzeuge frei — ohne es bleibt diese Datei eine Ansicht.</span>
+  <!-- \`type="password"\`, \`autocomplete\` und \`inputmode\` sind kein Beiwerk: ohne
+       sie bietet das Telefon keine gespeicherten Passwörter an und schaltet auf
+       die Buchstaben-Tastatur mit Autokorrektur — die aus jedem Wort ein
+       anderes macht. \`autocapitalize=off\` aus demselben Grund. -->
+  <input type="password" id="schlossWort" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Passwort" aria-labelledby="schlossTitel">
+  <span class="knoepfe">
+    <button type="button" id="btnSchlossNein">Abbrechen</button>
+    <button type="button" id="btnSchlossJa" class="ernst">Aufschließen</button>
+  </span>
+  <span class="fuss" id="schlossFuss">Beim Schließen der Datei fällt das Schloss wieder zu.</span>
+</div>
+
 <!-- Lösch-Rückfrage (E1): Abbrechen zuerst, die gefährliche Wahl darf nicht die
      bequemste sein.
 
@@ -732,8 +858,18 @@ const html = `<!DOCTYPE html>
     <button type="button" id="btnAnsichtPlan" aria-pressed="false">Grundriss</button>
     <button type="button" id="btnAnsichtAxo" aria-pressed="true">Axonometrie</button>
   </div>
-  <div class="grp">
-    <button type="button" id="btnBearbeiten" aria-pressed="false" title="Werkzeuge zum Bearbeiten einblenden">Bearbeiten</button>
+  <!-- Eigene Kennung, damit die reine Ansicht die ganze Gruppe schneiden kann
+       und nicht einen leeren Rahmen stehen laesst. -->
+  <div class="grp" id="grpBearbeiten">
+    <button type="button" id="btnBearbeiten" aria-pressed="false" title="Werkzeuge zum Bearbeiten einblenden — verlangt das Passwort"><span class="schloss" aria-hidden="true">&#128274;</span>Bearbeiten</button>
+  </div>
+  <!-- Das Siegel. Es steht hier und nicht im Blattkopf, weil es eine Aussage
+       ueber die GANZE Datei ist und nicht ueber eine ihrer beiden Ansichten.
+       \`aria-live="polite"\`: die Pruefung braucht einen Augenblick, und wenn sie
+       fertig ist, soll ein Screenreader es beilaeufig sagen — nicht den Nutzer
+       aus dem unterbrechen, was er gerade liest. -->
+  <div class="siegel pruefend" id="siegelMarke" role="status" aria-live="polite" title="Wird geprüft…">
+    <span class="zeichen" id="siegelZeichen" aria-hidden="true">&hellip;</span><span class="wort" id="siegelWort">wird geprüft</span>
   </div>
 </div>
 
@@ -805,7 +941,30 @@ const html = `<!DOCTYPE html>
    Er bleibt in dieser Datei IMMER unveraendert: er ist die Grundwahrheit aus
    der PDF. Was der Nutzer aendert, liegt daneben.
    ══════════════════════════════════════════════════════════════════ */
-const PLAN = ${planRoh};
+/* Der Plan steht als TEXT da und wird daraus gelesen — nicht als Objektliteral.
+   Der Grund ist das Siegel: unterschrieben ist der Roh-Text der Plan-Datei,
+   Zeichen fuer Zeichen. Stuende hier ein Objekt, muesste die Pruefung es vor
+   dem Vergleich in eine kanonische Form zurueckbringen, und jede Abweichung
+   zwischen den beiden Kanonisierungen waere ein stiller Fehlalarm. So gibt es
+   nichts zu kanonisieren: geprueft wird genau das, was dasteht. Und wer den
+   Plan aendern will, muss DIESE Zeile anfassen — womit die Unterschrift bricht. */
+const PLAN_TEXT = ${JSON.stringify(planRoh)};
+const PLAN = JSON.parse(PLAN_TEXT);
+
+/* Die Unterschrift und der oeffentliche Schluessel, mit dem man sie nachprueft.
+   Aus einem oeffentlichen Schluessel laesst sich keine gueltige Unterschrift
+   herstellen — er darf darum offen in der Datei stehen. */
+const SIEGEL = ${JSON.stringify(siegel ? { inhaber: siegel.inhaber, signiertAm: siegel.signiertAm, verfahren: siegel.verfahren, signatur: siegel.signatur } : null)};
+const SIEGEL_SCHLUESSEL = ${JSON.stringify(siegelSchluessel ? siegelSchluessel.jwk : null)};
+
+/* Das Schloss vor der Werkstatt: ein Paket, dessen Klartext bekannt ist und das
+   sich nur mit dem richtigen Passwort oeffnen laesst. Hier steht KEIN Passwort
+   und auch kein Abdruck davon — AES-GCM ist beglaubigend, ein falsches
+   Passwort scheitert beim Entschluesseln selbst. Es gibt darum keinen
+   Vergleich, den man ueberspringen koennte. In der reinen Ansichts-Fassung ist
+   das Feld \`null\`, weil es dort nichts aufzuschliessen gibt. */
+const SCHLOSS = ${JSON.stringify(NUR_ANSICHT ? null : (schloss ? { salz: schloss.salz, iv: schloss.iv, inhalt: schloss.inhalt, runden: schloss.runden || 600000 } : null))};
+const SCHLOSS_HASH = ${JSON.stringify(PBKDF2_HASH)};
 
 /* Hoehen aus src/three/ausstattung.ts, zur Bauzeit GELESEN statt abgeschrieben. */
 const HOEHEN = ${JSON.stringify(HOEHEN)};
@@ -896,7 +1055,41 @@ function abschrift(o){ return JSON.parse(JSON.stringify(o)); }
    \`fireOnUpdatedRooms\`, und dieser Rueckruf liest den Ansichts-Zustand. Waeren
    die Angaben erst darunter erklaert, braeche die Datei beim OEffnen mit
    "Cannot access before initialization" ab. */
-const el = function(id){ return document.getElementById(id); };
+/* ── el() und die reine Ansicht ─────────────────────────────────────
+   In der VOLLEN Fassung ist \`ENTFERNT\` leer und \`el\` genau das, was dasteht.
+
+   In der reinen Ansicht (Bank) sind die Bedienelemente der Werkstatt aus dem
+   Dokument GESCHNITTEN — kein \`hidden\`, kein \`display:none\`, sondern nicht
+   vorhanden. Das Skript, das sie verdrahten wuerde, laeuft trotzdem: es an 91
+   Stellen zu verzweigen hiesse, 91 neue Fehlerquellen einzubauen, und zwar in
+   genau dem Code, den 688 gruene Pruefungen heute abdecken.
+
+   Statt dessen bekommt es fuer JEDE dieser Kennungen — und nur fuer sie — ein
+   loses Ersatz-Element: es nimmt Zuhoerer an, es nimmt Werte an, und es haengt
+   in keinem Dokument. Nichts davon ist zu sehen, zu klicken oder zu finden.
+
+   FAIL-CLOSED bleibt es trotzdem: eine Kennung, die NICHT auf der Schnittliste
+   steht und fehlt, ist ein echter Fehler und bricht laut — sonst waere aus
+   dieser Bequemlichkeit die stille Fehlertoleranz geworden, die dieses Projekt
+   an anderer Stelle teuer bezahlt hat. Die Liste entsteht zur Bauzeit aus dem
+   Vergleich der Kennungen vor und nach dem Schnitt, nicht von Hand: was neu in
+   die Werkstatt kommt, steht automatisch darauf. */
+const ENTFERNT = /*ENTFERNT-LISTE*/[];
+const ersatzTeile = new Map();
+const el = function(id){
+  const e = document.getElementById(id);
+  if (e) return e;
+  if (ENTFERNT.indexOf(id) < 0) throw new Error('Element fehlt: ' + id);
+  if (!ersatzTeile.has(id)) {
+    // Ein \`input\` und kein \`div\`: unter den geschnittenen Kennungen ist ein
+    // Eingabefeld, und der Code daran ruft \`.select()\` und liest \`.value\`.
+    // Ein div haette bei beidem gebrochen — und zwar erst zur Laufzeit.
+    const p = document.createElement('input');
+    p.type = 'hidden'; p.id = id; p.hidden = true;
+    ersatzTeile.set(id, p);
+  }
+  return ersatzTeile.get(id);
+};
 const blattEl = el('blatt');
 const planEl = el('plan');
 const werkzeuge = el('werkzeuge');
@@ -1102,6 +1295,10 @@ function gesetztZeigen(){
     : (grundrissSatz || 'Der Grundriss ist gemessen') + '; ' + n +
       ' Stück der Ausstattung sind frei gesetzt (im Grundriss gestrichelt).';
   oeffnungenZeigen();
+  /* Erst NACH oeffnungenZeigen(): die Marke liest die drei Zaehler ab, und der
+     dritte wird genau dort gesetzt. Davor gestellt saehe sie den vorletzten
+     Stand und haenkte dem Blatt um einen Zug hinterher. */
+  siegelMarkePflegen();
 }
 
 /* ── Die Öffnungs-Legende (W4) ──────────────────────────────────────
@@ -1466,8 +1663,109 @@ function zeigeAnsicht(name, merken){
    ist, aendert nichts — die ruhende Ansicht ist \`visibility:hidden\` und nimmt
    ohnehin keinen Zeiger an; beim Wechsel in den Grundriss ist dafuer sofort
    alles bereit. */
+/* ══════════════════════════════════════════════════════════════════
+   DAS SCHLOSS VOR DER WERKSTATT
+
+   WOGEGEN ES HILFT — und das ist genau abgesteckt, damit niemand mehr
+   hineinliest, als da ist:
+
+   1. Gegen das VERSEHEN. Wer die Datei ansieht, kann nicht aus Unachtsamkeit
+      eine Wand verschieben; die Werkzeuge erscheinen gar nicht erst.
+   2. Gegen den wahrscheinlichsten Unfall dieses Vorhabens: die FALSCHE DATEI
+      verschickt. Ohne Passwort ist auch die volle Fassung nur eine Ansicht.
+
+   WOGEGEN ES NICHT HILFT: gegen jemanden, der die Entwicklerwerkzeuge des
+   Browsers bedient. Das ist hinnehmbar, und zwar nicht aus Bequemlichkeit,
+   sondern weil eine Bearbeitung die DATEI ohnehin nicht veraendern kann — der
+   eingebaute Plan bleibt unangetastet, der Arbeitsstand liegt daneben im
+   Browser-Speicher und reist mit keiner Kopie mit. Wer den Plan wirklich
+   veraendern will, braucht einen Texteditor, und dann bricht das Siegel.
+
+   ECHTE VERSCHLUESSELUNG, KEIN ABGLEICH. Es gibt in dieser Datei kein
+   Passwort und keinen Abdruck eines Passworts. Es gibt ein Paket, das sich mit
+   dem richtigen Passwort entschluesseln laesst und sonst nicht: AES-GCM ist
+   beglaubigend und scheitert bei falschem Schluessel mit einem Fehler statt
+   mit Unsinn. Ein \`if (wort === ...)\`, das man ueberspringen koennte, existiert
+   folglich nicht. */
+function ausB64(s){
+  const roh = atob(s);
+  const b = new Uint8Array(roh.length);
+  for (let i = 0; i < roh.length; i++) b[i] = roh.charCodeAt(i);
+  return b;
+}
+
+// Ohne Schloss (reine Ansicht, oder ein Bau mit --ohne-siegel) gibt es nichts
+// aufzuschliessen. Dann steht die Werkstatt offen, wenn es sie ueberhaupt gibt.
+let werkstattOffen = !SCHLOSS;
+
+async function schlossOeffnen(wort){
+  if (!(window.crypto && window.crypto.subtle)) {
+    return { offen: false, grund: 'Dieser Browser kann das Schloss nicht öffnen.' };
+  }
+  try {
+    const basis = await crypto.subtle.importKey('raw', new TextEncoder().encode(wort), 'PBKDF2', false, ['deriveKey']);
+    const k = await crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt: ausB64(SCHLOSS.salz), iterations: SCHLOSS.runden, hash: SCHLOSS_HASH },
+      basis, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    await crypto.subtle.decrypt({ name: 'AES-GCM', iv: ausB64(SCHLOSS.iv) }, k, ausB64(SCHLOSS.inhalt));
+    return { offen: true };
+  } catch (e) {
+    return { offen: false, grund: 'Das Passwort passt nicht.' };
+  }
+}
+
+/* Der Weg, den der Knopf geht. ABSCHLIESSEN fragt nie — eine Sperre, die sich
+   nur mit dem Passwort wieder schliessen liesse, wuerde offen gelassen. */
+function bearbeitenGewuenscht(){
+  if (bearbeiten) { setzeBearbeiten(false, true); return; }
+  if (werkstattOffen) { setzeBearbeiten(true, true); return; }
+  const f = el('schlossFrage');
+  f.classList.remove('falsch');
+  el('schlossFuss').textContent = 'Beim Schließen der Datei fällt das Schloss wieder zu.';
+  el('schlossWort').value = '';
+  frageZeigen(f);
+  el('schlossWort').focus();
+}
+
+async function schlossVersuchen(){
+  const wort = el('schlossWort').value;
+  const f = el('schlossFrage');
+  const knopf = el('btnSchlossJa');
+  if (!wort) { el('schlossWort').focus(); return; }
+  /* Das Nachrechnen dauert auf einem Telefon spuerbar (gemessen: 318 ms fuer
+     310 000 Runden in WebKit, hier sind es 600 000). Ohne diese drei Zeilen
+     sieht ein Druck folgenlos aus, und der Nutzer drueckt noch einmal — was
+     eine zweite Rechnung anwuerfe und den Eindruck bestaetigte. */
+  knopf.disabled = true;
+  const vorher = knopf.textContent;
+  knopf.textContent = 'Prüfe…';
+  const e = await schlossOeffnen(wort);
+  knopf.disabled = false;
+  knopf.textContent = vorher;
+  if (!e.offen) {
+    f.classList.add('falsch');
+    el('schlossFuss').textContent = e.grund;
+    el('schlossWort').select();
+    return;
+  }
+  werkstattOffen = true;
+  f.hidden = true;
+  el('schlossWort').value = '';   // nicht im Feld stehen lassen
+  setzeBearbeiten(true, true);
+  meldung('Aufgeschlossen — die Werkzeuge sind da. Der eingebaute Plan bleibt unangetastet; was du änderst, liegt daneben.', false);
+}
+
 function setzeBearbeiten(an, merken){
   bearbeiten = an;
+  /* Abschliessen heisst abschliessen: der naechste Griff zum Schalter fragt
+     wieder. Ohne diese Zeile waere das Schloss nach dem ersten Aufsperren fuer
+     den Rest der Sitzung offen — und ein Schloss, dessen Zustand man nicht
+     mehr kennt, ist keines. */
+  if (!an && SCHLOSS) werkstattOffen = false;
+  // Der Zustand muss man SEHEN: offenes Schloss oder geschlossenes. Ein Schutz,
+  // dessen Stand unsichtbar ist, wird beim naechsten Oeffnen erraten.
+  const sym = el('btnBearbeiten').querySelector('.schloss');
+  if (sym) sym.innerHTML = an ? '&#128275;' : '&#128274;';
   /* DIE tragende Zeile aus K3: an ihr haengt \`pointer-events\` der
      Zeichenflaeche. Sie steht ganz vorn, damit kein frueher Rueckweg (etwa
      \`paletteZugAbbrechen\`) sie ueberspringen kann — eine scharfe Flaeche in
@@ -2483,11 +2781,130 @@ el('btnTafel').addEventListener('click', function(){
 /* ── Bedienung: Umschalter + Bearbeiten ────────────────────────────── */
 el('btnAnsichtAxo').addEventListener('click', function(){ zeigeAnsicht('axo', true); });
 el('btnAnsichtPlan').addEventListener('click', function(){ zeigeAnsicht('plan', true); });
-el('btnBearbeiten').addEventListener('click', function(){ setzeBearbeiten(!bearbeiten, true); });
+el('btnBearbeiten').addEventListener('click', bearbeitenGewuenscht);
+el('btnSchlossJa').addEventListener('click', schlossVersuchen);
+el('btnSchlossNein').addEventListener('click', function(){
+  el('schlossFrage').hidden = true;
+  el('schlossWort').value = '';
+});
+/* Die Eingabetaste im Feld. Ohne sie tippt man das Passwort und drueckt Enter
+   ins Leere — die vertrauteste Bewegung ueberhaupt bei einem Passwortfeld.
+   \`Escape\` schliesst, wie bei jeder anderen Rueckfrage dieser Datei auch. */
+el('schlossWort').addEventListener('keydown', function(ev){
+  if (ev.key === 'Enter') { ev.preventDefault(); schlossVersuchen(); }
+  else if (ev.key === 'Escape') { ev.preventDefault(); el('schlossFrage').hidden = true; el('schlossWort').value = ''; }
+});
 
 /* ── Zwei Fenster: die Wahl (K4) ────────────────────────────────────── */
 el('btnFremdLaden').addEventListener('click', function(){ location.reload(); });
 el('btnFremdUebergehen').addEventListener('click', fremdUebergehen);
+
+/* ══════════════════════════════════════════════════════════════════
+   DAS SIEGEL — ist der Plan in dieser Datei noch der unterschriebene?
+
+   WAS ES LEISTET UND WAS NICHT. Wer diese Datei besitzt, hat einen
+   Texteditor; verhindern laesst sich nichts. Beweisen laesst sich alles:
+   unterschrieben ist \`PLAN_TEXT\`, Zeichen fuer Zeichen, mit einem privaten
+   Schluessel, der nirgends in dieser Datei steht. Hier liegt nur der
+   OEFFENTLICHE Teil — mit ihm kann man pruefen und nichts herstellen. Wer ein
+   Mass aendert, kann nicht neu unterschreiben. Wer stattdessen diese Pruefung
+   herausschneidet, haelt eine Datei ohne Siegel in der Hand, und die ist
+   erkennbar nicht das Original.
+
+   FAIL-CLOSED. Jeder Weg, der nicht in einer bestandenen Pruefung endet —
+   fehlendes Siegel, fehlendes \`crypto.subtle\`, ein Fehler unterwegs — sagt
+   ausdruecklich, dass er NICHTS bestaetigt. Ein Siegel, das im Zweifel
+   „in Ordnung" anzeigt, waere schaedlicher als keines.
+   ══════════════════════════════════════════════════════════════════ */
+const siegelStand = { fertig: false, echt: null, satz: 'Das Siegel wurde noch nicht geprüft.',
+                      art: 'pruefend', zeichen: '&hellip;', wort: 'wird geprüft' };
+
+/* Ist an dem, was hier ZU SEHEN ist, etwas verstellt?
+
+   DAS IST DIE FALLE, DIE DIESE ZEILE SCHLIESST. Das Siegel bestaetigt den
+   EINGEBAUTEN Plan — und der bleibt immer unangetastet, das ist die Doktrin
+   dieser Datei. Angezeigt wird aber der Arbeitsstand aus dem Browser-Speicher,
+   und der kann ein ganz anderer sein. Ohne diesen Zusatz stuende auf einem
+   Ausdruck mit vier verschobenen Waenden „unterschrieben und geprueft" — ein
+   wahrer Satz an der falschen Stelle, und das ist schlimmer als eine Luege,
+   weil er sich nicht widerlegen laesst.
+
+   ABGELESEN statt nachgerechnet: die drei Zaehler im Blattkopf sind bereits die
+   eine Quelle dafuer, was verstellt ist. Eine zweite Rechnung koennte
+   auseinanderlaufen — und dann widerspraeche das Siegel dem Kopf zwei Zeilen
+   ueber sich. */
+function eigeneAenderungen(){
+  const ids = ['gesetztZaehler', 'grundrissZaehler', 'oeffnungZaehler'];
+  for (const id of ids) { const e = el(id); if (e && !e.hidden) return true; }
+  return false;
+}
+
+function siegelZeigen(art, zeichen, wort, satz){
+  siegelStand.fertig = true;
+  siegelStand.echt = (art === 'echt');
+  siegelStand.art = art; siegelStand.zeichen = zeichen; siegelStand.wort = wort; siegelStand.satz = satz;
+  siegelMarkePflegen();
+}
+
+function siegelMarkePflegen(){
+  const marke = el('siegelMarke');
+  if (!marke) return;
+  const verstellt = siegelStand.echt === true && eigeneAenderungen();
+  marke.classList.remove('pruefend', 'gebrochen');
+  if (siegelStand.art === 'pruefend') marke.classList.add('pruefend');
+  else if (siegelStand.art !== 'echt') marke.classList.add('gebrochen');
+  el('siegelZeichen').innerHTML = siegelStand.zeichen;
+  el('siegelWort').textContent = verstellt ? 'gesiegelt · geändert' : siegelStand.wort;
+  marke.setAttribute('title', verstellt
+    ? siegelStand.satz + ' — ANGEZEIGT wird aber ein eigener Arbeitsstand mit Änderungen. Das Siegel gilt dem eingebauten Plan, nicht diesem Bild.'
+    : siegelStand.satz);
+  marke.dataset.art = verstellt ? 'echt-geaendert' : siegelStand.art;
+}
+
+async function siegelPruefen(){
+  if (!SIEGEL || !SIEGEL_SCHLUESSEL) {
+    siegelZeigen('fehlt', '&#9888;', 'ohne Siegel',
+      'Diese Datei trägt keine Unterschrift. Das Original von Halle 400 trägt eine — diese Datei ist also nicht das Original.');
+    return;
+  }
+  if (!(window.crypto && window.crypto.subtle)) {
+    siegelZeigen('unpruefbar', '?', 'nicht prüfbar',
+      'Dieser Browser kann die Unterschrift nicht nachrechnen. Das heißt NICHT, dass sie in Ordnung ist — es heißt, dass hier niemand es weiß.');
+    return;
+  }
+  try {
+    const schluessel = await crypto.subtle.importKey('jwk',
+      Object.assign({}, SIEGEL_SCHLUESSEL, { ext: true, key_ops: ['verify'] }),
+      { name: 'ECDSA', namedCurve: 'P-256' }, true, ['verify']);
+    const roh = atob(SIEGEL.signatur);
+    const sig = new Uint8Array(roh.length);
+    for (let i = 0; i < roh.length; i++) sig[i] = roh.charCodeAt(i);
+    const echt = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' },
+      schluessel, sig, new TextEncoder().encode(PLAN_TEXT));
+    const wann = new Date(SIEGEL.signiertAm).toLocaleDateString('de-DE');
+    if (echt) {
+      siegelZeigen('echt', '&#10003;', 'gesiegelt',
+        'Original. Der Grundriss in dieser Datei ist Zeichen für Zeichen der, den ' +
+        SIEGEL.inhaber + ' am ' + wann + ' unterschrieben hat.');
+    } else {
+      siegelZeigen('gebrochen', '&#9888;', 'VERÄNDERT',
+        'Der Grundriss in dieser Datei passt NICHT zur Unterschrift vom ' + wann +
+        '. Er wurde nachträglich verändert — diese Datei ist keine verlässliche Grundlage.');
+      meldung('Achtung: Der eingebaute Grundriss passt nicht mehr zu seiner Unterschrift. ' +
+        'Diese Datei ist nicht das Original von ' + SIEGEL.inhaber + '.', true);
+    }
+  } catch (e) {
+    siegelZeigen('unpruefbar', '?', 'nicht prüfbar',
+      'Die Unterschrift ließ sich nicht nachrechnen (' + ((e && e.name) ? e.name : String(e)) +
+      '). Das ist KEINE Bestätigung — es ist eine offene Frage.');
+  }
+}
+siegelPruefen();
+// Der Satz gehoert auch aufs Papier: ein Ausdruck ohne ihn ist ein Blatt, dem
+// man nichts ansieht — und genau in Papierform wandert dieser Plan zur Bank.
+if (el('siegelMarke')) el('siegelMarke').addEventListener('click', function(){
+  meldung(siegelStand.satz, siegelStand.echt === false);
+});
 
 /* ── Das Papier beschriften (M5) ────────────────────────────────────
    Datum und Massstabs-Aussage entstehen erst beim Drucken. Auf dem Bildschirm
@@ -2498,6 +2915,32 @@ function druckZeileSetzen(){
   const heute = new Date();
   el('druckZeile').textContent = 'Gedruckt am ' + heute.toLocaleDateString('de-DE') +
     ' · Axonometrie, nicht maßstäblich — die Maße oben sind gemessen · Plan vom ' + BAU_STEMPEL;
+  // Das Siegel aufs Blatt. Nicht als Haken — auf Papier sagt ein Haken nichts,
+  // weil man ihn hinmalen kann. Als SATZ mit Namen und Datum, und im schlechten
+  // Fall als Warnung, die man nicht ueberliest.
+  const dz = el('siegelDruck');
+  if (dz) {
+    if (siegelStand.echt === true) {
+      const kopf = 'Unterschrieben von ' + SIEGEL.inhaber + ' am ' +
+        new Date(SIEGEL.signiertAm).toLocaleDateString('de-DE');
+      if (eigeneAenderungen()) {
+        // Das Siegel gilt dem eingebauten Plan. Dieses Blatt zeigt einen
+        // Arbeitsstand darueber. Beides zu sagen ist die einzige ehrliche
+        // Fassung — nur den Kopf zu drucken hiesse, mit einer wahren Zeile
+        // eine falsche Aussage zu machen.
+        dz.textContent = kopf + ' — ABER dieses Blatt zeigt einen bearbeiteten Stand, nicht den unterschriebenen Plan.';
+        dz.classList.add('warnt');
+      } else {
+        dz.textContent = kopf + ' · beim Öffnen geprüft, unverändert';
+        dz.classList.remove('warnt');
+      }
+    } else {
+      dz.textContent = siegelStand.fertig
+        ? 'OHNE GÜLTIGES SIEGEL — ' + siegelStand.satz
+        : 'Das Siegel war beim Drucken noch nicht geprüft.';
+      dz.classList.add('warnt');
+    }
+  }
 }
 addEventListener('beforeprint', druckZeileSetzen);
 // Ohne diese Zeile bliebe die Zeile leer, wenn der Druck aus einem Werkzeug
@@ -2700,7 +3143,18 @@ sichernGesperrt = false;
    Schreiben beim Start ueberschriebe im Fehlerfall genau das, was es
    herstellen soll. */
 if (speicher) {
-  try { if (speicher.getItem(SCHLUESSEL_BEARBEITEN) === '1') setzeBearbeiten(true, false); } catch (e) { /* egal */ }
+  /* SEIT DEM SCHLOSS: der gemerkte Zustand darf die Werkstatt nicht mehr von
+     selbst aufsperren. Er wird gelesen und ABGERAEUMT — beim Oeffnen ist immer
+     zu, und wer bearbeiten will, sagt es einmal. Das ist die einzige Fassung,
+     bei der man dem Schloss-Symbol im Knopf glauben kann, ohne nachzudenken.
+     (Ohne Schloss — reine Ansicht oder --ohne-siegel — bleibt es beim alten
+     Verhalten; dort gibt es nichts zu sperren.) */
+  try {
+    if (speicher.getItem(SCHLUESSEL_BEARBEITEN) === '1') {
+      if (SCHLOSS) speicher.removeItem(SCHLUESSEL_BEARBEITEN);
+      else setzeBearbeiten(true, false);
+    }
+  } catch (e) { /* egal */ }
   try {
     const zuletzt = speicher.getItem(SCHLUESSEL_ANSICHT);
     // Nur die zwei Namen, die es gibt: ein zugemuellter Speicher darf die
@@ -2810,6 +3264,21 @@ window.__planerDatei = {
   speicherTraegt: !!speicher,
   ansicht: function(){ return ansicht; },
   bearbeitet: function(){ return bearbeiten; },
+  /* Der Weg der Pruefwerkzeuge in die Werkstatt. Er UMGEHT das Schloss NICHT —
+     er geht denselben Weg wie der Knopf und braucht dasselbe Passwort. Eine
+     Hintertuer waere hier besonders schaedlich: sie stuende in derselben Datei,
+     die den Schutz behauptet.
+     Ohne Schloss (reine Ansicht) gibt es nichts aufzuschliessen; dann meldet er
+     das ehrlich statt still 'true'. */
+  hatSchloss: function(){ return !!SCHLOSS; },
+  aufgeschlossen: function(){ return werkstattOffen; },
+  aufschliessen: function(wort){
+    if (!SCHLOSS) return Promise.resolve({ offen: false, grund: 'Diese Fassung hat keine Werkstatt.' });
+    return schlossOeffnen(wort).then(function(e){
+      if (e.offen) { werkstattOffen = true; el('schlossFrage').hidden = true; }
+      return e;
+    });
+  },
   werkzeugeSichtbar: function(){ return sichtbar(werkzeuge); },
   /* W7 — die ruhige Zeile in der Axonometrie. GEMESSEN wie alles Sichtbare
      ueber \`checkVisibility\`: \`hidden\` allein saehe nicht, dass sie im ruhenden
@@ -3210,6 +3679,93 @@ window.__bereit = true;
 </body>
 </html>
 `
+
+/* ══════════════════════════════════════════════════════════════════════
+   DIE REINE ANSICHT (--nur-ansicht) — die Fassung fuer die Bank
+
+   Nicht ausblenden, sondern ENTFERNEN. Der Unterschied ist der ganze Punkt:
+   ausgeblendet ist ein Knopf, den die Entwicklerwerkzeuge in zwei Griffen
+   zurueckholen; entfernt ist einer, den es nicht gibt. Die Bankberaterin kann
+   an dieser Datei nichts verstellen — nicht, weil sie es nicht darf, sondern
+   weil kein Werkzeug darin liegt.
+
+   WAS BLEIBT: beide Ansichten, Blickwechsel, Zoom, Verschieben, Legende,
+   Raumnamen, Drucken — und das Siegel.
+   WAS GEHT: Werkzeugleiste, Palette, Bearbeiten-Schalter, Sichern/Laden,
+   Zuruecksetzen und alle Rueckfragen, die zu ihnen gehoeren.
+
+   Der Schnitt ist MECHANISCH und wird nachgeprueft (unten: keine der
+   entfernten Kennungen darf im Ergebnis noch vorkommen). Ein Schnitt, dem man
+   glaubt statt ihn zu messen, laesst genau den einen Knopf stehen, den niemand
+   auf der Liste hatte. */
+function schneideBlock(text, id) {
+  const anfang = text.indexOf(`id="${id}"`)
+  if (anfang < 0) return { text, gefunden: false }
+  // Zurueck bis zum oeffnenden Tag, dessen Attribut das ist.
+  const tagStart = text.lastIndexOf('<', anfang)
+  const tagName = text.slice(tagStart + 1).match(/^[a-zA-Z][a-zA-Z0-9]*/)[0]
+  const tagEnde = text.indexOf('>', anfang)
+  // Selbstschliessend (input) oder leeres Element: nur das Tag selbst weg.
+  if (text[tagEnde - 1] === '/' || tagName === 'input' || tagName === 'br') {
+    return { text: text.slice(0, tagStart) + text.slice(tagEnde + 1), gefunden: true }
+  }
+  // Sonst gleichnamige Tags zaehlen, bis die Bilanz aufgeht.
+  const auf = new RegExp(`<${tagName}[\\s>]`, 'g')
+  const zu = new RegExp(`</${tagName}>`, 'g')
+  let tiefe = 1, i = tagEnde + 1
+  while (tiefe > 0 && i < text.length) {
+    auf.lastIndex = i; zu.lastIndex = i
+    const a = auf.exec(text), z = zu.exec(text)
+    if (!z) return { text, gefunden: false }          // unbalanciert — lieber nichts tun
+    if (a && a.index < z.index) { tiefe++; i = a.index + 1 }
+    else { tiefe--; i = z.index + z[0].length }
+  }
+  return { text: text.slice(0, tagStart) + text.slice(i), gefunden: true }
+}
+
+const WERKSTATT_BLOECKE = [
+  'palette', 'werkzeuge', 'zurueckFrage', 'schlossFrage', 'rueckfrage',
+  'grpBearbeiten', 'standleiste', 'ortFrage', 'ladeFrage', 'dateiWahl',
+]
+const kennungenVon = (t) => new Set([...t.matchAll(/id="([^"]+)"/g)].map((m) => m[1]))
+const ANSICHT_BERICHT = { bloecke: 0, kennungen: 0 }
+if (NUR_ANSICHT) {
+  const vorher = kennungenVon(html)
+  const fehlend = []
+  for (const id of WERKSTATT_BLOECKE) {
+    const r = schneideBlock(html, id)
+    if (!r.gefunden) fehlend.push(id)
+    html = r.text
+  }
+  if (fehlend.length) {
+    console.error(`Abbruch: diese Werkstatt-Bloecke waren nicht zu schneiden: ${fehlend.join(', ')}`)
+    console.error('  Wurde eine Kennung umbenannt? Ein halber Schnitt liefert eine Datei, die')
+    console.error('  aussieht wie eine Ansicht und eine Werkstatt ist.')
+    process.exit(1)
+  }
+  // Die Gegenprobe zum Schnitt: keine der Kennungen darf noch DA sein — auch
+  // nicht als Zugriff im Skript, denn der liefe ins Leere.
+  const uebrig = WERKSTATT_BLOECKE.filter((id) => html.includes(`id="${id}"`))
+  if (uebrig.length) {
+    console.error(`Abbruch: nach dem Schnitt stehen noch da: ${uebrig.join(', ')}`)
+    process.exit(1)
+  }
+  /* Die Schnittliste entsteht aus dem VERGLEICH, nicht von Hand. Wer morgen
+     einen Knopf in die Werkzeugleiste haengt, muss nichts nachtragen — er
+     verschwindet mit seinem Block und steht damit automatisch auf der Liste.
+     Eine handgepflegte Liste waere genau die Sorte Doppelbuchhaltung, die
+     irgendwann auseinanderlaeuft und dann still den falschen Zweig nimmt. */
+  const nachher = kennungenVon(html)
+  const geschnitten = [...vorher].filter((id) => !nachher.has(id)).sort()
+  const marke = '/*ENTFERNT-LISTE*/[]'
+  if (!html.includes(marke)) {
+    console.error('Abbruch: die Stelle fuer die Schnittliste ist weg — die Ansicht bekaeme sie nie zu sehen.')
+    process.exit(1)
+  }
+  html = html.replace(marke, JSON.stringify(geschnitten))
+  ANSICHT_BERICHT.bloecke = WERKSTATT_BLOECKE.length
+  ANSICHT_BERICHT.kennungen = geschnitten.length
+}
 
 /* ── Letzte Pruefung vor dem Schreiben ────────────────────────────────
    Die Namens-Karte oben prueft die BUENDEL gegeneinander — sie kennt aber die

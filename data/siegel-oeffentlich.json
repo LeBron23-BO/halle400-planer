@@ -1,0 +1,12 @@
+{
+  "zweck": "Oeffentlicher Siegel-Schluessel. Er PRUEFT Unterschriften und kann keine leisten. Darf veroeffentlicht werden.",
+  "verfahren": "ECDSA P-256 / SHA-256",
+  "inhaber": "Dania — Halle 400, Businessplan",
+  "erzeugtAm": "2026-07-28T06:12:02.581Z",
+  "jwk": {
+    "kty": "EC",
+    "crv": "P-256",
+    "x": "I8mYg4UB5k2NfcuQySim0Qr2EbrUF_41TnKxMjdVMok",
+    "y": "5OSQph8nmstr_xPnZF1nX7gqf5RY4Di6-Oz0ubtwTPo"
+  }
+}

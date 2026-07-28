@@ -27,6 +27,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { werkstattAufschliessen } from './werkstatt-auf.mjs'
 
 const PW_STANDARD = 'file:///C:/Users/dania/.gemini/node_modules/playwright/index.js'
 const { chromium } = (await import(process.env.PLAYWRIGHT_PFAD || PW_STANDARD)).default
@@ -188,6 +189,7 @@ pruefe(
 
 // --- aus der AXONOMETRIE heraus einschalten (hier steht die Datei gerade).
 const vorSchalter = await page.evaluate(() => window.__planerDatei.ansicht())
+await werkstattAufschliessen(page)
 await klick(page, 'btnBearbeiten')
 await page.waitForTimeout(400)
 const inAxo = await page.evaluate(() => ({
@@ -228,6 +230,7 @@ pruefe(
 pruefe(imPlan.hinweis === false, 'G2: und die ruhige Zeile ist dort weg — sie gehoert dem Blatt')
 
 // --- GEGENPROBE 1: aus dem GRUNDRISS heraus ausschalten laesst ihn ebenso stehen.
+await werkstattAufschliessen(page)
 await klick(page, 'btnBearbeiten')
 await page.waitForTimeout(400)
 const ausImPlan = await page.evaluate(() => ({
@@ -274,6 +277,7 @@ if (vorZug) {
 }
 
 // --- wieder scharf stellen: alles Weitere prueft das Bearbeiten.
+await werkstattAufschliessen(page)
 await klick(page, 'btnBearbeiten')
 await page.waitForTimeout(400)
 // Die Lese-Navigation hat die Ansicht verschoben; die ganze Halle wieder ins
@@ -472,7 +476,8 @@ if (exportPfad && fs.existsSync(exportPfad)) {
      greift beides neu; genau das tut hier der Nutzer. Ohne diese zwei Zeilen
      maesse G6 gleich den Neustart eines zurueckgesetzten Blattes und nicht
      den einer laufenden Arbeit. */
-  await klick(page, 'btnBearbeiten')
+  await werkstattAufschliessen(page)
+await klick(page, 'btnBearbeiten')
   await klick(page, 'btnAnsichtPlan')
   await page.waitForTimeout(400)
   const nachImport = await page.evaluate((id) => ({
@@ -547,19 +552,52 @@ pruefe(
 )
 pruefe(nachNeuladen.stand === true, `G6: der Hinweis auf den eigenen Stand ist sichtbar ("${nachNeuladen.text}")`)
 
-/* W7 — DIE BEIDEN GEMERKTEN ANGABEN PASSEN ZUSAMMEN. Vor dem Neuladen stand
-   der bearbeitbare Grundriss da; genau der muss wiederkommen. Sie liegen seit
-   W7 in ZWEI Schluesseln (der Schalter zieht die Ansicht nicht mehr mit) —
-   gerade deshalb wird hier gemessen, dass sie nicht auseinanderlaufen. */
+/* W7/W11 — WAS DER NEUSTART ZURUECKBRINGT, UND WAS AUSDRUECKLICH NICHT.
+
+   Bis W11 stand hier: „der Neustart bringt Bearbeiten-Zustand UND Ansicht
+   zurueck". Die eine Haelfte gilt weiter, die andere ist mit dem Schloss
+   bewusst gefallen — und das ist keine Regression, sondern der Zweck:
+
+   Ein Schloss, das ein Neuladen ueberdauert, ist keines. Wer seine Datei
+   morgen frueh oeffnet, muesste sonst raten, ob sie offen ist; und die eine
+   Panne, gegen die das Schloss vor allem steht — die falsche Datei
+   verschickt — waere genau dann nicht gedeckt, wenn sie zuletzt offen war.
+
+   Die ANSICHT dagegen ist keine Befugnis, sondern eine Bequemlichkeit. Sie
+   wird weiterhin gemerkt. Genau diese Trennung wird hier gemessen. */
 const gemerkt = await page.evaluate(() => ({
   bearbeitet: window.__planerDatei.bearbeitet(),
   ansicht: window.__planerDatei.ansicht(),
-  werkzeuge: window.__planerDatei.werkzeugeSichtbar()
+  werkzeuge: window.__planerDatei.werkzeugeSichtbar(),
+  hatSchloss: window.__planerDatei.hatSchloss ? window.__planerDatei.hatSchloss() : false
 }))
 pruefe(
-  gemerkt.bearbeitet === true && gemerkt.ansicht === 'plan' && gemerkt.werkzeuge === true,
-  `G6: der Neustart bringt Bearbeiten-Zustand UND zuletzt angesehene Ansicht zurueck (${JSON.stringify(gemerkt)})`
+  gemerkt.ansicht === 'plan',
+  `G6: der Neustart bringt die zuletzt angesehene Ansicht zurueck (${gemerkt.ansicht})`
 )
+pruefe(
+  gemerkt.hatSchloss ? (gemerkt.bearbeitet === false && gemerkt.werkzeuge === false)
+                     : (gemerkt.bearbeitet === true && gemerkt.werkzeuge === true),
+  gemerkt.hatSchloss
+    ? `G6: den Bearbeiten-Zustand aber NICHT — das Schloss ueberdauert das Neuladen (${JSON.stringify(gemerkt)})`
+    : `G6: und den Bearbeiten-Zustand (Fassung ohne Schloss) (${JSON.stringify(gemerkt)})`
+)
+/* Und danach ist er mit dem Passwort wieder da. Ohne diese Zeile hiesse die
+   Pruefung oben nur „es geht nichts mehr" — was auch ein kaputtes Schloss
+   erfuellte. */
+if (gemerkt.hatSchloss) {
+  await werkstattAufschliessen(page)
+  await klick(page, 'btnBearbeiten')
+  await page.waitForTimeout(400)
+  const wiederAuf = await page.evaluate(() => ({
+    bearbeitet: window.__planerDatei.bearbeitet(),
+    werkzeuge: window.__planerDatei.werkzeugeSichtbar()
+  }))
+  pruefe(
+    wiederAuf.bearbeitet === true && wiederAuf.werkzeuge === true,
+    `G6: GEGENPROBE — mit dem Passwort ist die Werkstatt sofort wieder da (${JSON.stringify(wiederAuf)})`
+  )
+}
 
 /* Und der obere Rand traegt beides nebeneinander: der Arbeitshinweis steht in
    der Axonometrie ueber der Standleiste, die hier gerade den eigenen Stand

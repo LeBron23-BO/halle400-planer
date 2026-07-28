@@ -1,0 +1,8 @@
+{
+  "zweck": "Das Schloss vor dem Bearbeiten. Enthaelt KEIN Passwort und keinen Abdruck davon.",
+  "verfahren": "PBKDF2-SHA256/AES-GCM",
+  "runden": 600000,
+  "salz": "/6vmHapXMQrhTldMp9h7bw==",
+  "iv": "Nid0h8djujB55A6v",
+  "inhalt": "Rx41V0VSRryg8PHCo7KJg7D45uL2yVtJ3sD0DzOKIWzv/bbsG8NkFvmmCorJSnAD4Le0YRgLQcwKVd3ZMK/xQVEiXCTJxvSHsjCRomSbPqMTeY9MUfYspfn60V+ztXDAn43WzMBpe0ET4W14Y3E+EfUD71yG+SmwkhuAL9aN5xDdXDrFqHAvas/gSamtlnsVofZntABn"
+}

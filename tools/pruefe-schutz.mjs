@@ -45,6 +45,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { werkstattAufschliessen } from './werkstatt-auf.mjs'
 
 const PW_STANDARD = 'file:///C:/Users/dania/.gemini/node_modules/playwright/index.js'
 const { chromium } = (await import(process.env.PLAYWRIGHT_PFAD || PW_STANDARD)).default
@@ -132,8 +133,13 @@ async function oeffne(ctx, url, sammler) {
   return seite
 }
 
-/** Bearbeiten an UND in den Grundriss — zwei Griffe, seit W7 unvermeidlich. */
+/** Bearbeiten an UND in den Grundriss — zwei Griffe, seit W7 unvermeidlich.
+ *  W11: seit dem Schloss ist der erste Griff eine FRAGE, keine Tat.
+ *  `werkstattAufschliessen` umgeht sie nicht — es beantwortet sie mit dem
+ *  echten Passwort (Umgebung oder Geheim-Ordner, nie aus dem Repo). Diese EINE
+ *  Stelle bedient alle fuenf Aufrufer dieser Funktion. */
 const bearbeitenAn = async (seite) => {
+  await werkstattAufschliessen(seite)
   await seite.evaluate(() => {
     if (!window.__planerDatei.bearbeitet()) {
       document.getElementById('btnBearbeiten').dispatchEvent(new MouseEvent('click', { bubbles: true }))
