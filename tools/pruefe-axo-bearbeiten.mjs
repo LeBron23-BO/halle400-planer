@@ -39,6 +39,7 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { uebersetzeKern, buendleKern, buendleThree, AXO_MODULE, WURZEL } from './buendel-kern.mjs'
 import { liesHoehen } from './lies-hoehen.mjs'
+import { werkstattAufschliessen } from './werkstatt-auf.mjs'
 
 const HIER = path.dirname(fileURLToPath(import.meta.url))
 const PW_STANDARD = 'file:///C:/Users/dania/.gemini/node_modules/playwright/index.js'
@@ -356,8 +357,11 @@ async function fenster() {
 }
 
 /** Bearbeiten an — und im Blatt BLEIBEN. Seit W7 wechselt der Schalter die
- *  Ansicht nicht mehr; wer hier ziehen will, braucht genau diesen einen Griff. */
+ *  Ansicht nicht mehr; wer hier ziehen will, braucht genau diesen einen Griff.
+ *  W11: seit dem Schloss ist der Klick eine FRAGE, keine Tat mehr — ohne das
+ *  Aufschliessen liefe er nur gegen `#schlossFrage`. */
 async function bearbeitenAn(page) {
+  await werkstattAufschliessen(page)
   await page.getByRole('button', { name: 'Bearbeiten' }).click()
   await page.waitForTimeout(300)
 }

@@ -41,6 +41,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { werkstattAufschliessen } from './werkstatt-auf.mjs'
 
 const HIER = path.dirname(fileURLToPath(import.meta.url))
 const WURZEL = path.resolve(HIER, '..')
@@ -151,8 +152,11 @@ function hand(cdp, page) {
   }
 }
 
-/** Bearbeiten an UND in den Grundriss — seit W7 zwei getrennte Griffe. */
+/** Bearbeiten an UND in den Grundriss — seit W7 zwei getrennte Griffe.
+ *  W11: seit dem Schloss ist der erste Klick eine FRAGE, keine Tat mehr — ohne
+ *  das Aufschliessen liefe er nur gegen `#schlossFrage`. */
 async function bearbeitenAn(page, ansicht) {
+  await werkstattAufschliessen(page)
   await page.getByRole('button', { name: 'Bearbeiten' }).click()
   await page.getByRole('button', { name: ansicht === 'axo' ? 'Axonometrie' : 'Grundriss' }).click()
   await page.waitForTimeout(500)

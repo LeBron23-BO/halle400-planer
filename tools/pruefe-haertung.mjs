@@ -42,6 +42,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { werkstattAufschliessen } from './werkstatt-auf.mjs'
 
 const PW_STANDARD = 'file:///C:/Users/dania/.gemini/node_modules/playwright/index.js'
 const { chromium } = (await import(process.env.PLAYWRIGHT_PFAD || PW_STANDARD)).default
@@ -121,6 +122,9 @@ async function fenster(url, opt = {}) {
  *  jede der folgenden Pruefungen will "bearbeitbarer Grundriss", keine will
  *  "Schalter gedrueckt". */
 const bearbeitenAn = async (page) => {
+  // W11: „Bearbeiten" ist seit dem Schloss eine FRAGE, keine Tat mehr — ohne
+  // dieses Aufschliessen liefe der Klick unten nur gegen `#schlossFrage`.
+  await werkstattAufschliessen(page)
   await page.evaluate(() => {
     if (!window.__planerDatei.bearbeitet()) {
       document.getElementById('btnBearbeiten').dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -672,7 +676,10 @@ log('\n── M5: das Papier ──')
      dieselbe Regel. Er kann nur hier auffallen: er steht ausschliesslich in
      der Axonometrie, und seit W7 bleibt die Axonometrie beim Einschalten
      stehen — genau der Fall, in dem jemand druckt. Der Druck-Modus laeuft
-     noch, die Messung oben ist genommen; dieser Klick stoert sie nicht. */
+     noch, die Messung oben ist genommen; dieser Klick stoert sie nicht.
+     W11: dieses Fenster ist frisch (`fenster()` oeffnet neu) und darum noch
+     verschlossen — auch dieser Klick braucht das Passwort zuerst. */
+  await werkstattAufschliessen(page)
   await page.evaluate(() => document.getElementById('btnBearbeiten').dispatchEvent(new MouseEvent('click', { bubbles: true })))
   await page.waitForTimeout(400)
   const beimDrucken = await page.evaluate(() => ({
@@ -784,23 +791,41 @@ log('\n── M7: zurueck auf Anfang ──')
   await ziehe(page, ziel.bx, ziel.by, ziel.bx + 60, ziel.by + 40)
   await page.waitForTimeout(1100)
 
-  /* GEGENPROBE ZUERST: OHNE Zuruecksetzen bringt ein Neustart die Werkzeuge
-     wieder — genau das war der Fund („ein Neugier-Klick macht den
-     Werkzeugkasten dauerhaft zur Begruessung").
+  /* GEGENPROBE ZUERST: OHNE Zuruecksetzen bleibt die ARBEIT stehen — nur das
+     SCHLOSS faellt trotzdem wieder zu.
+
+     W11: seit dem Passwort ist das NICHT mehr dasselbe wie vor W11 — damals
+     kam auch der Bearbeiten-Zustand nach einem blossen Neuladen zurueck. Das
+     ist jetzt bewusst anders: ein Schloss, das ein Neuladen ueberdauert, waere
+     keines. Der Unterschied zwischen „nur neu geladen" und „Zuruecksetzen"
+     zeigt sich darum nicht mehr am Bearbeiten-Zustand (der ist nach beidem
+     `false`), sondern an der ARBEIT selbst — der frei gesetzte Zug bleibt nach
+     einem blossen Neuladen stehen und ist erst nach „Zuruecksetzen" weg.
 
      Seit W7 misst diese Zeile ZWEI getrennte Angaben: der Bearbeiten-Zustand
-     liegt im einen Schluessel, die zuletzt angesehene Ansicht im anderen. Sie
-     muessen beim OEffnen zusammen ergeben, was der Nutzer zuletzt vor sich
-     hatte — hier: Werkzeuge an, Grundriss vorn. */
+     liegt im einen Schluessel, die zuletzt angesehene Ansicht im anderen — die
+     Ansicht ist vom Schloss unberuehrt und kommt weiterhin wieder. */
   await page.reload({ waitUntil: 'domcontentloaded' })
   await page.waitForFunction(() => window.__bereit === true, { timeout: 30000 })
   const ohneReset = await page.evaluate(() => ({
     bearbeitet: window.__planerDatei.bearbeitet(),
-    ansicht: window.__planerDatei.ansicht()
+    ansicht: window.__planerDatei.ansicht(),
+    gesetzte: window.__planerDatei.gesetzte()
   }))
   pruefe(
-    ohneReset.bearbeitet === true && ohneReset.ansicht === 'plan',
-    `M7: GEGENPROBE — ohne Zuruecksetzen kommen Bearbeiten-Zustand UND zuletzt angesehene Ansicht wieder (${JSON.stringify(ohneReset)})`
+    ohneReset.bearbeitet === false && ohneReset.ansicht === 'plan' && ohneReset.gesetzte === 1,
+    `M7: GEGENPROBE — ohne Zuruecksetzen faellt nur das SCHLOSS wieder zu; Ansicht und Arbeit bleiben (${JSON.stringify(ohneReset)})`
+  )
+
+  // Und mit dem Passwort geht es wieder auf — die Arbeit war nur verschlossen, nicht verloren.
+  await bearbeitenAn(page)
+  const wiederAuf = await page.evaluate(() => ({
+    bearbeitet: window.__planerDatei.bearbeitet(),
+    gesetzte: window.__planerDatei.gesetzte()
+  }))
+  pruefe(
+    wiederAuf.bearbeitet === true && wiederAuf.gesetzte === 1,
+    `M7: mit dem Passwort ist wieder auf, unversehrt (${JSON.stringify(wiederAuf)})`
   )
 
   await page.evaluate(() => document.getElementById('btnZurueck').dispatchEvent(new MouseEvent('click', { bubbles: true })))
