@@ -63,6 +63,12 @@ const SIEGEL_ORDNER = DATEN_ORDNER
 // gepusht wurde, ist fuer immer verbrannt.
 const GEHEIM_ORDNER_STANDARD = process.env.HALLE400_GEHEIM || 'C:/Users/dania/Desktop/hotel400 3d bild'
 const PRIVAT_NAME = 'Halle400-SIEGEL-PRIVAT.json'
+/* Das Schloss zog bis zum Gegner-Review nach `data/` — und dieses Repo ist
+   OEFFENTLICH. Das Paket verraet kein Passwort, aber es ist eine Vorlage zum
+   Durchprobieren, und zwar fuer dasselbe Passwort, das den privaten Schluessel
+   oeffnet. Ein Angreifer soll dafuer wenigstens auf den Rechner muessen. */
+export const SCHLOSS_NAME = 'Halle400-SCHLOSS.json'
+export function schlossOrt(){ return path.join(GEHEIM_ORDNER_STANDARD, SCHLOSS_NAME) }
 
 const arg = (name, standard) => {
   const i = process.argv.indexOf(name)
@@ -177,7 +183,8 @@ async function befehlErzeuge() {
   const schloss = await verschliesse(JSON.stringify({
     zweck: 'Halle 400 — Werkstatt aufschliessen', inhaber, erzeugtAm,
   }), passwort)
-  fs.writeFileSync(path.join(SIEGEL_ORDNER, 'schloss.json'), JSON.stringify({
+  fs.mkdirSync(path.dirname(schlossOrt()), { recursive: true })
+  fs.writeFileSync(schlossOrt(), JSON.stringify({
     zweck: 'Das Schloss vor dem Bearbeiten. Enthaelt KEIN Passwort und keinen Abdruck davon — nur einen bekannten Satz, den man ohne das Passwort nicht lesen kann.',
     ...schloss,
   }, null, 2) + '\n', 'utf8')
@@ -194,7 +201,7 @@ async function befehlErzeuge() {
   console.log('Siegel angelegt.')
   console.log('')
   console.log('  Oeffentlich (darf ins Repo):  ' + OEFFENTLICH_PFAD)
-  console.log('  Schloss (darf ins Repo):      ' + path.join(SIEGEL_ORDNER, 'schloss.json'))
+  console.log('  Schloss (bleibt bei dir):     ' + schlossOrt())
   console.log('  PRIVAT (bleibt bei dir):      ' + privatPfad)
   console.log('  Inhaber:                      ' + inhaber)
   console.log('')
@@ -304,16 +311,39 @@ async function befehlPruefe() {
   }
   const inhalt = fs.readFileSync(datei, 'utf8')
 
-  // Aus der Datei herausholen, was sie ueber sich selbst behauptet.
+  /* Aus der Datei herausholen, was sie ueber sich selbst behauptet — und zwar
+     aus dem AUSGEFUEHRTEN Skript, nicht aus dem Dateitext.
+
+     W11-NACHTRAG (Gegner-Fund F2): hier stand ein `inhalt.match(...)` ueber die
+     ganze Datei, das den ERSTEN Treffer nahm. Ein HTML-Kommentar vor dem
+     <title> mit den drei Original-Zeilen genuegte: das Werkzeug las die
+     Koeder-Zeilen und meldete „ECHT", waehrend der Browser die echten,
+     spaeteren las und einen gefaelschten Plan zeichnete. Beide gruen, beide
+     ueber verschiedene Wahrheiten. Zwei Riegel dagegen:
+       1. gesucht wird NUR im <script>-Rumpf,
+       2. mehr als EIN Treffer je Name ist selbst schon der Befund. Eine Datei,
+          die zwei Fassungen ihres eigenen Plans traegt, ist keine, ueber die
+          man ein Urteil faellt — sie ist eine, vor der man warnt. */
+  const rumpfTreffer = inhalt.match(/<script>([\s\S]*?)<\/script>/)
+  const rumpf = rumpfTreffer ? rumpfTreffer[1] : ''
+  let mehrdeutig = null
   const holen = (name) => {
-    const m = inhalt.match(new RegExp('const ' + name + ' = (.*?);\\n'))
-    if (!m) return null
-    try { return JSON.parse(m[1]) } catch (e) { return null }
+    const alle = [...rumpf.matchAll(new RegExp('const ' + name + ' = (.*?);\\n', 'g'))]
+    if (alle.length === 0) return null
+    if (alle.length > 1) { mehrdeutig = `${name} steht ${alle.length}× im Skript`; return null }
+    try { return JSON.parse(alle[0][1]) } catch (e) { return null }
   }
   const planText = holen('PLAN_TEXT')
   const siegel = holen('SIEGEL')
   const oeffJwk = holen('SIEGEL_SCHLUESSEL')
 
+  if (mehrdeutig) {
+    console.log('MEHRDEUTIG — diese Datei traegt mehr als eine Fassung ihrer eigenen Angaben.')
+    console.log(`  ${mehrdeutig}`)
+    console.log('  Ueber so eine Datei laesst sich kein Urteil faellen: welche Fassung der Browser')
+    console.log('  ausfuehrt, entscheidet die Reihenfolge — und die kann jemand gesetzt haben.')
+    process.exit(4)
+  }
   if (!planText || !siegel || !oeffJwk) {
     console.log('KEIN SIEGEL — diese Datei traegt keine Unterschrift.')
     console.log(`  PLAN_TEXT: ${planText ? 'da' : 'fehlt'} · SIEGEL: ${siegel ? 'da' : 'fehlt'} · SCHLUESSEL: ${oeffJwk ? 'da' : 'fehlt'}`)
@@ -352,11 +382,12 @@ async function befehlSchloss() {
     inhaber: oeff ? oeff.inhaber : 'unbekannt',
     erzeugtAm: new Date().toISOString(),
   }), passwort)
-  fs.writeFileSync(path.join(SIEGEL_ORDNER, 'schloss.json'), JSON.stringify({
+  fs.mkdirSync(path.dirname(schlossOrt()), { recursive: true })
+  fs.writeFileSync(schlossOrt(), JSON.stringify({
     zweck: 'Das Schloss vor dem Bearbeiten. Enthaelt KEIN Passwort und keinen Abdruck davon.',
     ...schloss,
   }, null, 2) + '\n', 'utf8')
-  console.log('Schloss neu gesetzt: ' + path.join(SIEGEL_ORDNER, 'schloss.json'))
+  console.log('Schloss neu gesetzt: ' + schlossOrt())
   console.log('Die Datei muss neu gebaut werden, damit es ankommt: node tools/baue-planer-datei.mjs')
 }
 

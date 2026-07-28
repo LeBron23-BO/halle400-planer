@@ -39,7 +39,7 @@ import crypto from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { liesHoehen } from './lies-hoehen.mjs'
 import { WURZEL, uebersetzeKern, buendleKern, buendleAxo, buendleThree, AXO_MODULE } from './buendel-kern.mjs'
-import { siegelLesen, oeffentlichLesen, pruefeUnterschrift, PBKDF2_RUNDEN, PBKDF2_HASH, verschliesse } from './siegel.mjs'
+import { siegelLesen, oeffentlichLesen, pruefeUnterschrift, PBKDF2_RUNDEN, PBKDF2_HASH, verschliesse, schlossOrt } from './siegel.mjs'
 
 const arg = (name, standard) => {
   const i = process.argv.indexOf(name)
@@ -84,7 +84,7 @@ const siegelSchluessel = oeffentlichLesen()
    kann in jedem Skript laufen, ohne dass ein Geheimnis auf der Befehlszeile
    steht. In die reine Ansichts-Fassung kommt es nicht: dort gibt es nichts
    aufzuschliessen. */
-const schlossPfad = path.join(process.env.HALLE400_DATEN || path.join(WURZEL, 'data'), 'schloss.json')
+const schlossPfad = schlossOrt()
 const schloss = fs.existsSync(schlossPfad) ? JSON.parse(fs.readFileSync(schlossPfad, 'utf8')) : null
 if (!NUR_ANSICHT && !OHNE_SIEGEL && !schloss) {
   console.error('Abbruch: kein Schloss (data/schloss.json).')
@@ -966,6 +966,14 @@ const SIEGEL_SCHLUESSEL = ${JSON.stringify(siegelSchluessel ? siegelSchluessel.j
 const SCHLOSS = ${JSON.stringify(NUR_ANSICHT ? null : (schloss ? { salz: schloss.salz, iv: schloss.iv, inhalt: schloss.inhalt, runden: schloss.runden || 600000 } : null))};
 const SCHLOSS_HASH = ${JSON.stringify(PBKDF2_HASH)};
 
+/* W11-NACHTRAG (Gegner-Fund M1): Die reine Ansicht muss WISSEN, dass sie eine
+   ist. Vorher war sie nur daran zu erkennen, dass \`SCHLOSS\` fehlt — und aus
+   „kein Schloss" folgte „nichts aufzuschliessen", also \`werkstattOffen = true\`.
+   Gemessen: ein liegengebliebenes \`bearbeiten:1\` im Speicher machte daraus beim
+   naechsten Oeffnen eine scharfe Zeichenflaeche. Die Ansicht hat keine
+   Werkstatt — sie darf keine bekommen, auch nicht durch einen alten Wert. */
+const NUR_ANSICHT = ${JSON.stringify(NUR_ANSICHT)};
+
 /* Hoehen aus src/three/ausstattung.ts, zur Bauzeit GELESEN statt abgeschrieben. */
 const HOEHEN = ${JSON.stringify(HOEHEN)};
 
@@ -1334,6 +1342,25 @@ grundriss.fireOnUpdatedRooms(bemerkeAenderung);
    aeltere Kopie dieser Datei geoeffnet). Der Kern lehnt ihn dann ab — was hier
    keine weisse Seite ergeben darf: lieber der gemessene Plan und eine ehrliche
    Meldung. Der Stand bleibt liegen, damit die neuere Kopie ihn wiederfindet. */
+/* W11-NACHTRAG (Gegner-Fund F3): DER AUSLIEFERUNGSABDRUCK.
+
+   Die Siegel-Marke muss fragen koennen „ist das hier noch der unterschriebene
+   Plan?" — und dafuer braucht sie den unterschriebenen Plan in genau der Form,
+   in der der Kern ihn wieder ausschreibt. \`PLAN.floorplan\` direkt zu
+   vergleichen ginge schief: der Kern ergaenzt beim Laden Felder und schreibt
+   Schluessel in seiner eigenen Reihenfolge — der Auslieferungszustand saehe
+   dann „veraendert" aus, und eine Warnung, die im Normalfall erscheint, ist
+   keine mehr.
+
+   Darum wird der eingebaute Plan EINMAL geladen und ausgeschrieben, bevor ein
+   Arbeitsstand darauf kommt. Das kostet einen zusaetzlichen Ladevorgang beim
+   Start (76 Ecken, 100 Waende — Millisekunden) und ist der einzige Weg, der
+   ohne ein zweites Modell und ohne eine zweite Serialisierungsvorschrift
+   auskommt. */
+grundriss.loadFloorplan(abschrift(PLAN.floorplan));
+const AUSLIEFERUNG_ABDRUCK = JSON.stringify(grundriss.saveFloorplan());
+const AUSLIEFERUNG_LABELS = JSON.stringify(PLAN.labels || []);
+
 let standFehler = null;
 try {
   grundriss.loadFloorplan(abschrift(start ? start.floorplan : PLAN.floorplan));
@@ -1694,9 +1721,10 @@ function ausB64(s){
   return b;
 }
 
-// Ohne Schloss (reine Ansicht, oder ein Bau mit --ohne-siegel) gibt es nichts
-// aufzuschliessen. Dann steht die Werkstatt offen, wenn es sie ueberhaupt gibt.
-let werkstattOffen = !SCHLOSS;
+/* In der reinen ANSICHT gibt es keine Werkstatt — dort ist sie ZU und bleibt es
+   (Gegner-Fund M1). Ohne Schloss in der vollen Fassung (--ohne-siegel, ein
+   ausdruecklicher Bau) steht sie offen; dort gibt es nichts aufzuschliessen. */
+let werkstattOffen = NUR_ANSICHT ? false : !SCHLOSS;
 
 async function schlossOeffnen(wort){
   if (!(window.crypto && window.crypto.subtle)) {
@@ -1756,6 +1784,12 @@ async function schlossVersuchen(){
 }
 
 function setzeBearbeiten(an, merken){
+  /* DER RIEGEL der reinen Ansicht. Er sitzt hier und nicht bei den Aufrufern,
+     weil es der EINE Zustand ist, um den es geht: was auch immer ihn setzen
+     will — ein alter Speicherwert, ein Knopf, die Entwicklerwerkzeuge — hier
+     kommt es vorbei. Ein Riegel an drei Aufrufstellen ist ein Riegel, den der
+     vierte umgeht. */
+  if (NUR_ANSICHT && an) return;
   bearbeiten = an;
   /* Abschliessen heisst abschliessen: der naechste Griff zum Schalter fragt
      wieder. Ohne diese Zeile waere das Schloss nach dem ersten Aufsperren fuer
@@ -2681,9 +2715,22 @@ el('btnStandZurueck').addEventListener('click', function(){
      Knopf sitzt in der Standleiste und ist auch in der Axonometrie zu
      erreichen, der Fall ist also echt und nicht theoretisch. */
   zeigeAnsicht('plan', true);
-  // Der Hinweis liegt oben, die Rueckfrage unten: dazwischen muss die
-  // Werkzeugleiste sichtbar sein, sonst fragt etwas Unsichtbares.
-  if (!bearbeiten) setzeBearbeiten(true, true);
+  /* W11-NACHTRAG (Gegner-Fund F4): Hier stand \`if (!bearbeiten)
+     setzeBearbeiten(true, true)\` — OHNE Blick auf das Schloss. Gemessen: nach
+     einem Neuladen mit zugefallenem Schloss genuegte ein Klick auf diesen
+     Knopf, und danach liess sich ein Moebel um 7,7 m ziehen, ohne dass je ein
+     Passwort gefallen waere. Die Datei behauptete an anderer Stelle „ohne
+     Passwort ist auch die volle Fassung nur eine Ansicht"; das galt nicht.
+
+     Die Lehre ist allgemeiner als der eine Knopf: ein Schloss darf nicht an
+     EINER Stelle geprueft werden, sondern muss an jedem Weg zum
+     Bearbeiten-Zustand liegen. \`setzeBearbeiten(true)\` ist dieser Zustand —
+     jeder Aufruf mit \`true\` gehoert deshalb durch \`bearbeitenGewuenscht()\`
+     oder nach einem \`werkstattOffen\`-Test. */
+  if (!bearbeiten) {
+    if (!werkstattOffen) { bearbeitenGewuenscht(); return; }
+    setzeBearbeiten(true, true);
+  }
   zurueckFrageZeigen();
 });
 
@@ -2834,9 +2881,31 @@ const siegelStand = { fertig: false, echt: null, satz: 'Das Siegel wurde noch ni
    auseinanderlaufen — und dann widerspraeche das Siegel dem Kopf zwei Zeilen
    ueber sich. */
 function eigeneAenderungen(){
-  const ids = ['gesetztZaehler', 'grundrissZaehler', 'oeffnungZaehler'];
-  for (const id of ids) { const e = el(id); if (e && !e.hidden) return true; }
-  return false;
+  /* W11-NACHTRAG (Gegner-Fund F3). Hier wurden bis zum Gegner-Review die DREI
+     ZAEHLER im Blattkopf abgelesen. Die Begruendung war gut — eine zweite
+     Rechnung koennte auseinanderlaufen — und die Folgerung trotzdem falsch:
+     die Zaehler zaehlen \`quelle === 'gesetzt'\`, und sie zaehlen nur, was am
+     eingebauten Plan FEHLT. Ein geladener Stand, dessen erfundene Waende das
+     Feld schlicht weglassen, ist fuer sie unsichtbar (der Standard beim Laden
+     ist 'gemessen'). GEMESSEN: 103 statt 100 Waende, 297 statt 289 Stuecke,
+     ein umbenannter Raum — alle drei Zaehler blieben leer, und auf dem
+     Ausdruck stand „beim Oeffnen geprueft, unveraendert".
+
+     Ein Voll-Vergleich ist hier NICHT die zweite Rechnung, vor der die alte
+     Begruendung warnte. Er ist die einzige, die zur Aussage passt: die Marke
+     behauptet „das hier IST der unterschriebene Plan" — also muss sie genau
+     das fragen und nicht „hat der Nutzer mit der Hand etwas getan".
+     Die drei Zaehler bleiben, wofuer sie gebaut sind: die Bedienauskunft. */
+  try {
+    if (JSON.stringify(grundriss.saveFloorplan()) !== AUSLIEFERUNG_ABDRUCK) return true;
+    if (JSON.stringify(labels || []) !== AUSLIEFERUNG_LABELS) return true;
+    return false;
+  } catch (e) {
+    /* Fail-closed: laesst sich der Vergleich nicht fuehren, ist die ehrliche
+       Antwort „ich weiss es nicht" — und die muss wie „geaendert" aussehen,
+       nicht wie „unveraendert". */
+    return true;
+  }
 }
 
 function siegelZeigen(art, zeichen, wort, satz){
