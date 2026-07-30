@@ -13,6 +13,12 @@ cd "$(dirname "$0")/.." || exit 1
 # pruefe-schutz (W10) misst die drei schweren Punkte des Bedien-Audits: dass ein
 # Zug im Verschieben-Werkzeug keine Wand mehr trifft, dass kein Stand mehr still
 # verschwindet und dass „Zuruecksetzen" seinen Umfang nennt und rueckholbar ist.
+# pruefe-zusammenlegen (W12) misst die RECHNUNG hinter „zwei Raeume zusammenlegen"
+# (src/raum/raum-zusammenlegen.js) — ohne Browser, weil die ganze Entscheidung
+# reine Geometrie ist. Dadurch lassen sich die Grenzfaelle DURCHFAHREN statt in
+# einer Bedienung zu erahnen: L-Form, schiefer Raum, Grenze in drei Stuecken,
+# Raeume die sich nur in einer Ecke beruehren. Es laedt AUSSTATTUNG_VORLAGEN aus
+# dem uebersetzten Kern (tsc-Lauf, ~20 s) statt Moebelmasse abzuschreiben.
 # pruefe-serve-datei (W10) misst den HANDY-WEG: die Datei laeuft am iPhone nicht
 # per Doppelklick (Safari zeigt eine lokale .html seit iOS 18.5 als Text), also
 # haengt der ganze Telefon-Zugang an tools/serve-datei.mjs. Gemessen wird beides:
@@ -26,7 +32,7 @@ cd "$(dirname "$0")/.." || exit 1
 # bricht, dass die Werkstatt ohne Passwort zu bleibt — und dass die Fassung fuer
 # die Bank kein einziges Bedienelement enthaelt. Es legt sich dafuer ein eigenes
 # Wegwerf-Siegel an und fasst das scharfe nicht an.
-GATES="pruefe-kennungen pruefe-ziehen pruefe-palette pruefe-undo pruefe-ansicht pruefe-ausstattung pruefe-loeschen pruefe-zeichnen pruefe-axonometrie pruefe-touch pruefe-ausstattung-3d pruefe-tueren pruefe-planer-datei pruefe-haertung pruefe-uebernahme pruefe-axo-bearbeiten pruefe-finger pruefe-kennzahlen pruefe-schutz pruefe-siegel pruefe-serve-datei"
+GATES="pruefe-kennungen pruefe-ziehen pruefe-palette pruefe-undo pruefe-ansicht pruefe-ausstattung pruefe-loeschen pruefe-zeichnen pruefe-axonometrie pruefe-touch pruefe-ausstattung-3d pruefe-tueren pruefe-planer-datei pruefe-haertung pruefe-uebernahme pruefe-axo-bearbeiten pruefe-finger pruefe-kennzahlen pruefe-schutz pruefe-siegel pruefe-serve-datei pruefe-zusammenlegen"
 if [ -n "$1" ]; then GATES="$*"; fi
 gesamt=0
 for g in $GATES; do

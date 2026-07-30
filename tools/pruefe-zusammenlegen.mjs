@@ -388,14 +388,19 @@ pruefe(
 log('')
 log('E) DER VORSCHLAG ALS GANZES')
 
+// Auch hier dedupliziert, und die gemeinsame Kante bekommt die sprechende
+// Kennung „trenn". Der naive Aufbau (beide Ringe getrennt) erzeugte DREI
+// Wand-Objekte auf x = 400 — und das Gate meldete dann drei entfernte Waende
+// und zwei entfallende Tueren, beides erfunden vom Gate selbst.
+const alleWaende = waendeVonRaeumen([A.ring, B.ring]).map((w, i) =>
+  G.kantenSchluessel(w.a, w.b) === G.kantenSchluessel(GRENZE.a, GRENZE.b)
+    ? { ...w, id: 'trenn' }
+    : { ...w, id: `aussen-${i}` }
+)
+const aussenwandId = alleWaende.find((w) => w.id !== 'trenn').id
 const oeffnungen = [
   { id: 'tuer-in-trennwand', typ: 'tuer', breite: 87.5, wandId: 'trenn' },
-  { id: 'tuer-aussen', typ: 'tuer', breite: 87.5, wandId: 'aussen-1' }
-]
-const alleWaende = [
-  trennwand,
-  ...waendeVon(A.ring).map((w, i) => ({ ...w, id: `aussen-${i}` })),
-  ...waendeVon(B.ring).map((w, i) => ({ ...w, id: `aussenb-${i}` }))
+  { id: 'tuer-aussen', typ: 'tuer', breite: 87.5, wandId: aussenwandId }
 ]
 const daten = {
   waende: alleWaende,
