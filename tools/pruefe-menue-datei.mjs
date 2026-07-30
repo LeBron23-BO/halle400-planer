@@ -58,8 +58,16 @@ async function tippen(page, bildX, bildY) {
   await page.waitForTimeout(220)
 }
 
-/** Eine echte BERUEHRUNG (Handy-Weg) — CDP, nicht `dispatchEvent` (W8). */
-async function fingerTippen(page, cdp, bildX, bildY) {
+/**
+ * Ein echter LANGDRUCK (Handy-Weg) — CDP, nicht `dispatchEvent` (W8).
+ *
+ * Am Telefon oeffnet ein kurzer Tipp KEIN Menue, und das ist gemessen begruendet
+ * (W13, `pruefe-finger.mjs` D1): unter jedem Punkt liegt mindestens ein Raum,
+ * das Menue erschiene also bei jeder Beruehrung und laege danach unter dem
+ * Daumen — die naechste Zwei-Finger-Geste waere verloren, weil das besitzende
+ * Element beim Aufsetzen feststeht. Der Langdruck ist die absichtliche Geste.
+ */
+async function fingerLangdruck(page, cdp, bildX, bildY) {
   const kasten = await page.evaluate(() => {
     const r = document.getElementById('grundriss-canvas').getBoundingClientRect()
     return { left: r.left, top: r.top }
@@ -70,7 +78,8 @@ async function fingerTippen(page, cdp, bildX, bildY) {
     type: 'touchStart',
     touchPoints: [{ x, y, radiusX: 12, radiusY: 12, force: 1 }]
   })
-  await page.waitForTimeout(60)
+  // LANGDRUCK_MS ist 500 — mit Puffer warten, ohne den Finger zu bewegen.
+  await page.waitForTimeout(750)
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
   await page.waitForTimeout(260)
 }
@@ -240,11 +249,11 @@ export async function fahre({ log, pruefe }) {
 
     let getroffen = null
     for (const p of sichtbar.slice(0, 12)) {
-      await fingerTippen(page, cdp, p.bildX, p.bildY)
+      await fingerLangdruck(page, cdp, p.bildX, p.bildY)
       const offen = await page.evaluate(() => window.__planerDatei.menueOffen())
       if (offen) { getroffen = p; break }
     }
-    pruefe(getroffen !== null, 'H2 eine Fingerkuppe öffnet das Menü')
+    pruefe(getroffen !== null, 'H2 ein Langdruck öffnet das Menü')
 
     if (getroffen) {
       // H3 Das Menü passt ins Handy-Bild. Das ist die Prüfung, an der W8 zwei

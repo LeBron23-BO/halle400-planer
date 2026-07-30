@@ -404,6 +404,30 @@ let html = `<!DOCTYPE html>
        color:var(--ink-dim);line-height:1.4}
   .objektmenue .eintrag.ernst:hover .zusatz{color:rgba(255,255,255,.85)}
 
+  /* ── AM SCHMALEN BILDSCHIRM STEHT ES UNTEN, NICHT AM OBJEKT ────────────
+     GEMESSEN und nicht vermutet: bei 390 px Breite ist das Menue 340 px
+     breit und rund 200 hoch — es verdeckt damit einen guten Teil des Plans
+     UND faengt die naechste Beruehrung ab. Ein Zwei-Finger-Zoom, bei dem
+     eine Kuppe darauf landet, ist danach verloren: welches Element eine
+     Beruehrungs-Geste besitzt, steht beim Aufsetzen fest und laesst sich
+     nachtraeglich nicht mehr umlenken (\`pruefe-finger.mjs\` D1 hat genau das
+     gefunden — der Zoom blieb bei 0,591 px/cm stehen).
+
+     Die Begruendung fuer „am Objekt" faellt am Telefon ohnehin weg: dort
+     verdeckt die Fingerkuppe das Ding bereits, die raeumliche Verbindung
+     entsteht also gar nicht erst. Der Titel des Menues traegt sie
+     stattdessen — er nennt Raum und Flaeche.
+
+     Es sitzt UEBER der Werkzeugleiste (bottom = deren Hoehe), damit beide
+     erreichbar bleiben. Die Hoehe ist gedeckelt und die Liste scrollt: ein
+     Menue, das ueber den oberen Rand hinauswaechst, waere unbedienbar. */
+  @media (max-width: 640px){
+    .objektmenue{left:0 !important;right:0;max-width:100%;min-width:0;
+         top:auto !important;border-left:0;border-right:0;
+         box-shadow:0 -6px 22px rgba(31,35,33,.17)}
+    .objektmenue #objektMenueListe{max-height:46vh;overflow-y:auto}
+  }
+
   /* Rueckfragen liegen unten mittig und NICHT am Zeiger: am Zeiger verdeckten
      sie genau das Objekt, ueber das sie eine Auskunft verlangen (E1). */
   .frage{position:fixed;left:50%;bottom:76px;transform:translateX(-50%);
@@ -1907,6 +1931,29 @@ function setzeBearbeiten(an, merken){
   if (!an) zeichner.zugBeenden();
   // Ein ruhendes Loeschen-Werkzeug waere eine Falle beim naechsten OEffnen.
   if (!an) zeichner.setMode(floorplannerModes.MOVE);
+  // W13 schliesst ein offenes Menue mit: es gehoert zu den Werkzeugen, und ein
+  // Fenster, das die reine Ansicht ueberlebt, boete dort Handlungen an.
+  if (!an) zeichner.menueSchliessen();
+  /* DIE BEDIENUNG MUSS SICH SELBST NENNEN (W13).
+
+     Das ist keine Nettigkeit, sondern die Lehre aus genau dieser Welle: das
+     Wand-Werkzeug war zwei Wellen lang da und wurde nicht gefunden, weil
+     niemand es ansagte. Ein Menue, das man nur durch Ausprobieren entdeckt,
+     haette denselben Fehler eine Ebene hoeher wiederholt — und wer nicht
+     weiss, dass man tippen kann, tippt nicht.
+
+     Beim EINSCHALTEN und nur dann: waehrend der Arbeit waere derselbe Satz
+     alle paar Minuten eine Belaestigung. Die Meldung verschwindet nach neun
+     Sekunden von selbst (\`meldung\`). */
+  if (an) {
+    /* ZWEI Fassungen, weil es zwei Gesten sind (W13): am Rechner ein Klick, am
+       Telefon ein Langdruck. Ein Hinweis, der eine Geste verspricht, die es auf
+       diesem Geraet nicht gibt, ist schlimmer als keiner — der Nutzer sucht den
+       Fehler dann bei sich (dieselbe Lehre wie bei den Q/E-Versprechen, W8). */
+    meldung(window.matchMedia('(pointer: coarse)').matches
+      ? 'Halten Sie etwas im Plan gedrückt — eine Wand, einen Raum, ein Möbel: der Plan sagt dann, was damit geht.'
+      : 'Tippen Sie etwas im Plan an — eine Wand, einen Raum, ein Möbel: der Plan sagt dann, was damit geht.');
+  }
   if (merken && speicher) {
     try { speicher.setItem(SCHLUESSEL_BEARBEITEN, an ? '1' : '0'); } catch (e) { /* Platz ist knapp; der Schalter ist es nicht wert */ }
   }
@@ -2516,7 +2563,18 @@ function menueSetzen(screenX, screenY){
   const rand = 10;
   objektMenue.style.left = '0px';
   objektMenue.style.top = '0px';
+  objektMenue.style.bottom = '';
   objektMenue.hidden = false;
+
+  /* Am schmalen Bildschirm liegt es unten und folgt dem Griffpunkt NICHT
+     (Begruendung im Stilblock). Die Hoehe der Werkzeugleiste wird GEMESSEN
+     und nicht geschaetzt — sie bricht je nach Breite unterschiedlich oft um,
+     dieselbe Rechnung wie in \`frageZeigen\`. */
+  if (window.matchMedia('(max-width: 640px)').matches){
+    objektMenue.style.bottom = (werkzeuge.hidden ? 12 : werkzeuge.offsetHeight + 14) + 'px';
+    return;
+  }
+
   const kasten = objektMenue.getBoundingClientRect();
   const plan = el('grundriss-canvas').getBoundingClientRect();
   /* Der Griffpunkt kommt in Canvas-Koordinaten (\`convertX/convertY\`), das
@@ -2587,6 +2645,23 @@ zeichner.addMenueAnfrageCallback(function(anfrage){
 });
 
 el('objektMenueZu').addEventListener('click', function(){ zeichner.menueSchliessen(); });
+
+/* EIN OFFENES MENUE DARF DEN PLAN NICHT VERSPERREN.
+
+   Es liegt \`fixed\` ueber der Zeichenflaeche und faengt dort zwangslaeufig
+   Beruehrungen ab. Der Kern schliesst es bei jedem Griff AUF DEN CANVAS
+   (\`mousedown\`/\`fingerStart\`) — aber ein Griff, der auf dem Menue selbst
+   landet, erreicht den Kern gar nicht. Ohne diese Zeile bliebe es genau dann
+   stehen, wenn der Nutzer daneben greift, und der naechste Zoom-Versuch liefe
+   ins Leere.
+
+   In der ERFASSUNGS-Phase und ohne \`preventDefault\`: das Menue geht zu UND die
+   Beruehrung wirkt trotzdem. Wer daneben greift, hat den Plan gemeint. */
+document.addEventListener('pointerdown', function(e){
+  if (objektMenue.hidden) return;
+  if (objektMenue.contains(e.target)) return;
+  zeichner.menueSchliessen();
+}, true);
 
 /* Eine weitere Stufe IM Menue statt eines neuen Fensters.
 

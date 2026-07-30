@@ -2585,6 +2585,11 @@ export class Floorplanner {
       this.fingerStartX = this.fingerX
       this.fingerStartY = this.fingerY
       this.fingerHatGeschoben = false
+      // W13: ein neuer Griff nimmt ein offenes Menü zurück — dieselbe Zeile
+      // wie in `mousedown`, und sie fehlte hier. Ohne sie bliebe das Menü über
+      // dem Plan stehen und FINGE die nächsten Berührungen ab: der Nutzer
+      // könnte danach nicht mehr zoomen, ohne es erst zu schliessen.
+      this.menueSchliessen()
 
       // --- MOEBEL MIT DEM FINGER ZIEHEN (Handy-Welle)
       //
@@ -2631,6 +2636,39 @@ export class Floorplanner {
               this.zugBeginnen(this.activeWall.id, this.mouseX, this.mouseY)
             : this.activeAusstattung !== null &&
               this.zugBeginnen(this.activeAusstattung, this.mouseX, this.mouseY)
+        // --- W13 AM HANDY: LANGDRUCK, NICHT TIPPEN
+        //
+        // Am Rechner öffnet ein Klick das Menü (`mouseup`). Am Telefon wäre
+        // dasselbe falsch, und das ist GEMESSEN und nicht befürchtet: ein
+        // kurzer Tipp trifft dort fast immer etwas (unter jedem Punkt liegt
+        // mindestens ein Raum), das Menü erschiene also bei jeder Berührung —
+        // und es läge danach unter dem Daumen. `pruefe-finger.mjs` D1 hat
+        // genau das gefunden: nach einem Tipp stand das Menü über der Stelle,
+        // an der als Nächstes zwei Finger aufsetzten, und der Zoom blieb bei
+        // 0,591 px/cm stehen. WELCHES Element eine Berührungs-Geste besitzt,
+        // steht beim Aufsetzen fest und lässt sich nachträglich nicht umlenken
+        // — ein „schliesst sich beim nächsten Griff" kommt also zu spät.
+        //
+        // Der LANGDRUCK löst beides: er ist eine absichtliche Geste (kein
+        // Versehen beim Zielen), er ist am Telefon die gewohnte Art, ein
+        // Kontextmenü zu rufen, und er lässt Tippen, Ziehen und Zoomen
+        // unangetastet. Die Infrastruktur steht seit E3 — dort ruft derselbe
+        // Griff im Löschen-Werkzeug die Rückfrage. Hier ist es dieselbe Geste
+        // in den beiden Werkzeugen, in denen sie noch frei war.
+        this.langdruckAbbrechen()
+        this.langdruckTimer = setTimeout(() => {
+          this.langdruckTimer = null
+          // Nur wenn der Finger wirklich LIEGEN GEBLIEBEN ist. Wer inzwischen
+          // schiebt oder zieht, meint keine Auskunft.
+          if (this.fingerHatGeschoben) return
+          const anfrage = this.objektUnter(this.mouseX, this.mouseY)
+          if (!anfrage) return
+          // Ein begonnener Zug wird zurückgenommen: es hat sich nichts bewegt,
+          // und ein offener Griff hinter einem Menü zöge beim Loslassen weiter.
+          this.fingerZugBeenden()
+          this.menueMelden(anfrage)
+        }, LANGDRUCK_MS)
+
         if (!this.fingerGreift) {
           // Nichts in der Hand: die Marken MUESSEN weg. Am Handy raeumt kein
           // Wegfahren sie ab — ein liegen gebliebener Rahmen behauptete einen
@@ -2785,24 +2823,6 @@ export class Floorplanner {
         this.lastNode = corner
       }
       this.view.draw()
-    }
-
-    // --- ANTIPPEN öffnet das Menü, auch am Handy (W13)
-    //
-    // Das Gegenstück zum Klick-Zweig in `mouseup`, und es MUSS hier stehen:
-    // `mouseup` kommt am Telefon nicht zuverlässig, und der ganze Zweck von W13
-    // — eine Bedienung ohne Werkzeugkunde — trägt vor allem dort, wo es keine
-    // Werkzeugleiste in Griffweite gibt. Gemessen wird über
-    // `fingerHatGeschoben` (die vorhandene Wahrheit über „Tippen oder
-    // Schieben", Schwelle `FINGER_WACKEL_PX`) und nicht über `warAntippen`:
-    // dessen Weg-Rechnung sitzt an den MAUS-Feldern, die der Finger nicht füllt.
-    if (
-      (this.mode == floorplannerModes.MOVE || this.mode == floorplannerModes.WAND) &&
-      !this.fingerHatGeschoben &&
-      !this.zugGesichert
-    ) {
-      const anfrage = this.objektUnter(this.mouseX, this.mouseY)
-      this.menueMelden(anfrage)
     }
 
     this.fingerHatGeschoben = false
