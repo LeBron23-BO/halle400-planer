@@ -19,11 +19,26 @@
 //   F) DAS BUENDEL — die Rechnung ist in der ausgelieferten Datei WIRKLICH da
 //      und aufloesbar. Ohne diesen Abschnitt waere ein `import ... as X` still
 //      kaputt: im Planer laedt `import` nach, in der Doppelklick-Datei nicht.
+//   G) DIE ECHTE DATEI, am Rechner — ein Griff auf einen Raum oeffnet das Menue
+//      OHNE Werkzeugwahl, und der Weg fuehrt bis zum verbundenen Raum. Gemessen
+//      wird die RAUMZAHL vor und nach dem Weg, nicht eine Meldung.
+//   H) DIE ECHTE DATEI, am Handy (390 x 800) mit ECHTEN Beruehrungen.
+//   I) KEINE REGRESSION — Werkzeugleiste bedienbar, Escape schliesst, ein Zug
+//      oeffnet KEIN Menue.
+//
+// --nur rechnung | datei grenzt ein (A-F ohne Browser, G-I mit).
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { WURZEL, buendleRaum, RAUM_MODULE } from './buendel-kern.mjs'
+
+const argWert = (name, standard) => {
+  const i = process.argv.indexOf(name)
+  return i !== -1 && process.argv[i + 1] ? process.argv[i + 1] : standard
+}
+const NUR = argWert('--nur', null)
+const laeuft = (name) => !NUR || NUR === name
 
 const DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'h400-menue-'))
 const fehler = []
@@ -462,6 +477,12 @@ log('\n── F) Das Buendel — vorhanden ist nicht aktiviert ─────�
       'F6 im Buendel fuehrt auch der Raum zum Verbinden'
     )
   }
+}
+
+/* ══════════════════════ G-I) DIE ECHTE DOPPELKLICK-DATEI ═════════════════ */
+
+if (laeuft('datei')) {
+  await import('./pruefe-menue-datei.mjs').then((m) => m.fahre({ log, pruefe }))
 }
 
 /* ------------------------------------------------------------------- Ende */
