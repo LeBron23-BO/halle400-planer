@@ -7,6 +7,11 @@
 | Entwickeln (Live-Reload) | `cd app && node node_modules/.bin/next dev -p 3300` | PC `http://localhost:3300/` · Handy `https://zen.taild936f8.ts.net:8457/` |
 | Bauen (statischer Export) | `cd app && node node_modules/.bin/next build` | Ergebnis in `app/out/` |
 | Ausliefern / benutzen | Doppelklick auf **`Halle400-Planer starten.bat`** | PC `http://localhost:3301/` · Handy `https://zen.taild936f8.ts.net:8458/` |
+| Die EINE Datei am Handy zeigen | Doppelklick auf **`Halle400 am Handy oeffnen.bat`** | PC `http://localhost:3301/` · Handy `https://zen.taild936f8.ts.net:8458/` |
+
+Die letzten beiden Zeilen belegen denselben Port und laufen deshalb **nicht
+gleichzeitig** — der eine liefert den Planer aus `app/out`, der andere die fertige
+Doppelklick-Datei. Warum es den zweiten überhaupt braucht, steht unter „Handy".
 
 Paketmanager ist **pnpm** (`pnpm-lock.yaml` ist die Wahrheit). Falls `pnpm` nicht im
 Pfad ist: `npm install -g pnpm`, dann liegt es in `%APPDATA%\npm`.
@@ -50,6 +55,51 @@ nach dem Neuladen sofort sichtbar.
 `tailscale serve` bildet die Ports ab: **8457 → 3300** (Entwicklung), **8458 → 3301**
 (Auslieferung). Am Handy immer den Namen `zen.taild936f8.ts.net` verwenden, nie die
 IP — `tailscale serve` unterscheidet nach Host-Header, eine IP-Anfrage endet in 404.
+Das Mapping wird nicht abgeschrieben, sondern gemessen: `tailscale serve status`.
+
+### Die Doppelklick-Datei am Handy (W10, 2026-07-30)
+
+Die eine Datei läuft am iPhone und iPad **nicht** per Doppelklick: Safari führt seit
+iOS 18.5 kein JavaScript aus lokalen Dateien mehr aus, und die Dateien-App zeigt eine
+`.html` seither als TEXT. Das 390-px-Layout ist gebaut und geprüft (W8) — und ohne
+Auslieferung über HTTP praktisch unerreichbar, genau für den Nutzer, der oft vom
+Handy arbeitet. Über HTTP entfällt das Problem: die Kopfzeile `Content-Type:
+text/html` macht aus der Datei wieder eine Seite.
+
+```
+node tools/serve-datei.mjs              # oder Doppelklick auf "Halle400 am Handy oeffnen.bat"
+node tools/serve-datei.mjs --datei "C:\...\Halle400-fuer-die-Bank.html"
+node tools/pruefe-serve-datei.mjs       # 29 Prüfungen
+```
+
+Vier Festlegungen:
+
+1. **Kein Weg von der URL zum Dateisystem.** Der Pfad der ausgelieferten Datei steht
+   beim Start fest; es gibt kein `join(wurzel, req.url)`, keinen Verzeichnis-Index
+   und damit strukturell keinen Pfad-Ausbruch. Das Repo ist **öffentlich** — ein
+   Server, der versehentlich das halbe Projekt freigibt, wäre hier ein Leck und kein
+   Schönheitsfehler. Alles ausser `/` ergibt 404 (`/favicon.ico` ergibt 204, damit
+   ein Gate „keine Konsolenfehler" nicht an etwas scheitert, das kein Fehler ist).
+2. **Die Anfragezeile wird selbst zerlegt, nicht über `new URL`.** Die URL-Klasse
+   RECHNET `..` weg und machte aus `/../CLAUDE.md` klaglos `/CLAUDE.md`. Beurteilt
+   wird die Anfrage so, wie sie ankam. Das Gate sendet dafür über einen rohen Socket
+   — ein HTTP-Client hätte den Pfad unterwegs bereinigt und dann sich selbst geprüft.
+3. **Der Standard-Port ist DERSELBE wie beim Planer-Server (3301)** — nicht aus
+   Bequemlichkeit, sondern weil `tailscale serve` genau diesen Port abbildet. Ein
+   frisch erfundener Port hätte keine Freigabe und damit keine Handy-Adresse, und die
+   ist der ganze Zweck. Beide Server gleichzeitig braucht niemand: der eine liefert
+   den Planer, der andere die fertige Datei. Ist der Port belegt, sagt es der Server
+   im Klartext.
+4. **Es wird keine Adresse geraten.** Welche Tailscale-Adresse auf diesen Port zeigt,
+   sagt `tailscale serve status --json`; gibt es keine Freigabe, steht dort der
+   Anlege-Befehl statt einer Adresse. Eine gedruckte, aber tote Adresse ist schlimmer
+   als gar keine — der Nutzer tippt sie am Handy ab und sucht den Fehler bei sich.
+   Alle vier Zustände (gemappt · ohne Freigabe · Tailscale stumm · Tailscale fehlt)
+   führt das Gate echt herbei, über den Umlenkhaken `H400_TAILSCALE`.
+
+Gebunden wird nur auf `127.0.0.1`; Tailscale reicht die Anfragen des Handys genau
+dorthin weiter. Die Seite steht also **nicht** dem ganzen WLAN offen — und für die
+Bank ist dieser Weg nicht gedacht (von außerhalb des Tailnets nicht erreichbar).
 
 ## Ansicht: die ganze Halle sehen (T7)
 

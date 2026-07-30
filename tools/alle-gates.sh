@@ -13,12 +13,20 @@ cd "$(dirname "$0")/.." || exit 1
 # pruefe-schutz (W10) misst die drei schweren Punkte des Bedien-Audits: dass ein
 # Zug im Verschieben-Werkzeug keine Wand mehr trifft, dass kein Stand mehr still
 # verschwindet und dass „Zuruecksetzen" seinen Umfang nennt und rueckholbar ist.
+# pruefe-serve-datei (W10) misst den HANDY-WEG: die Datei laeuft am iPhone nicht
+# per Doppelklick (Safari zeigt eine lokale .html seit iOS 18.5 als Text), also
+# haengt der ganze Telefon-Zugang an tools/serve-datei.mjs. Gemessen wird beides:
+# dass die eine Datei mit text/html herauskommt UND dass sonst NICHTS herauskommt
+# — das Repo ist oeffentlich, ein Server mit Pfad-Abbildung waere ein Leck. Es
+# braucht keinen Chromium und startet nur eigene Server auf freien Ports; nur
+# fuer die Handy-Adresse braucht es EINE echte Tailscale-Freigabe auf einem
+# freien Port (laeuft dort schon etwas, sagt es das statt es zu ueberspringen).
 # pruefe-siegel (W11) misst das Einzige, was gegen BOESWILLIGKEIT hilft: dass
 # der Plan eine Unterschrift traegt, dass ein einziges veraendertes Zeichen sie
 # bricht, dass die Werkstatt ohne Passwort zu bleibt — und dass die Fassung fuer
 # die Bank kein einziges Bedienelement enthaelt. Es legt sich dafuer ein eigenes
 # Wegwerf-Siegel an und fasst das scharfe nicht an.
-GATES="pruefe-kennungen pruefe-ziehen pruefe-palette pruefe-undo pruefe-ansicht pruefe-ausstattung pruefe-loeschen pruefe-zeichnen pruefe-axonometrie pruefe-touch pruefe-ausstattung-3d pruefe-tueren pruefe-planer-datei pruefe-haertung pruefe-uebernahme pruefe-axo-bearbeiten pruefe-finger pruefe-kennzahlen pruefe-schutz pruefe-siegel"
+GATES="pruefe-kennungen pruefe-ziehen pruefe-palette pruefe-undo pruefe-ansicht pruefe-ausstattung pruefe-loeschen pruefe-zeichnen pruefe-axonometrie pruefe-touch pruefe-ausstattung-3d pruefe-tueren pruefe-planer-datei pruefe-haertung pruefe-uebernahme pruefe-axo-bearbeiten pruefe-finger pruefe-kennzahlen pruefe-schutz pruefe-siegel pruefe-serve-datei"
 if [ -n "$1" ]; then GATES="$*"; fi
 gesamt=0
 for g in $GATES; do
