@@ -4,6 +4,8 @@ import { Wall } from '../model/wall'
 import { Corner } from '../model/corner'
 import { FloorplannerView, floorplannerModes, AUSSTATTUNG_UMRISS_AB } from './floorplanner_view'
 import type { UndoManager } from '../core/undo'
+// @ts-ignore — reine Rechnung in Javascript, wie src/axo/*.js (in node prüfbar)
+import { verschiebeWandParallel } from '../raum/wand-bewegen.js'
 
 type FloorplannerMode = (typeof floorplannerModes)[keyof typeof floorplannerModes]
 
@@ -1285,7 +1287,20 @@ export class Floorplanner {
   public zugBeginnen(id: string, weltX: number, weltY: number): boolean {
     const el = this.floorplan.findeAusstattung(id)
     if (!el) {
-      return false
+      // KEIN Möbel? Dann vielleicht eine WAND (W12b).
+      //
+      // Nutzerwunsch, wörtlich: *„ich kann die wände immer noch nicht bewegen,
+      // was die hauptsache meines anliegens war. dies muss genau so entfernt und
+      // bewegt werden können wie man es mit den möbeln machen kann."*
+      //
+      // Diese eine Stelle ist der ganze Hebel: Maus (Grundriss), Blatt
+      // (Axonometrie) und Finger (Handy) rufen ALLE `zugBeginnen`/`zugSchritt`/
+      // `zugBeenden` — das ist die Festlegung aus W7 Punkt 4 und W8 Punkt 2.
+      // Wände hier aufzunehmen heisst deshalb, sie in allen drei Bedienwegen
+      // gleichzeitig greifbar zu machen, mit EINER Rechnung. Ein eigener
+      // Wand-Zieh-Weg je Bedienung wären drei Fassungen, die beim ersten
+      // Nachbessern auseinanderlaufen.
+      return this.wandZugBeginnen(id, weltX, weltY)
     }
     this.zugKennung = el.id
     // Ohne den Versatz spränge das Stück mit seiner Mitte unter den Zeiger —
@@ -1303,6 +1318,9 @@ export class Floorplanner {
    * Bewegung soll die Historie nicht mit Leerschritten füllen (W2 Punkt 3).
    */
   public zugSchritt(weltX: number, weltY: number): boolean {
+    if (this.zugWandId) {
+      return this.wandZugSchritt(weltX, weltY)
+    }
     if (!this.zugKennung) {
       return false
     }
@@ -1311,9 +1329,116 @@ export class Floorplanner {
 
   /** Der Zug ist zu Ende — losgelassen, abgebrochen oder das Fenster verlassen. */
   public zugBeenden(): void {
+    if (this.zugWandId) {
+      // Der volle Neubau gehört ans ENDE des Zugs, nicht in jede Bewegung: im
+      // Zug wandern nur die zwei Ecken, `update()` bildet danach die Räume neu
+      // (dieselbe Festlegung wie W7 Punkt 5 für Möbel, dort gemessen 19 ms mit
+      // gegen 4 ms ohne). Bei einer Wand ist es zwingender als bei einem Möbel:
+      // `update()` leitet die RÄUME ab, und die ändern sich hier wirklich.
+      this.floorplan.update()
+      this.zugWandId = null
+      this.zugWandStart = null
+      this.zugWandHinweis = null
+    }
     this.zugKennung = null
     this.zugGesichert = false
     this.zeigerStilSetzen()
+  }
+
+  /* ────────────── Der WAND-Zug (W12b) ──────────────────────────────────
+     Eine Wand ist kein Möbel, und der Unterschied ist keine Förmlichkeit: ein
+     Möbel steht IM Raum, eine Wand IST der Raum. Naiv um 40 cm verschoben,
+     reisst der Grundriss an ihren Endecken auf — die Nachbarwände bleiben ja
+     stehen. Aus einem Grundriss mit Lücken bildet `findRooms` KEINE Räume mehr:
+     Raumnamen fallen weg, die Flächen im Businessplan werden null, und all das
+     ohne eine einzige Fehlermeldung.
+
+     Gerechnet wird deshalb in `src/raum/wand-bewegen.js` — parallel verschieben
+     mit GLEITENDEN Endpunkten, die auf den Achsen der Nachbarwände entlang
+     rutschen. Der Grundriss bleibt geschlossen, ein Raum wird grösser, der
+     andere kleiner. Das ist, was „Raum vergrössern" bedeutet. */
+
+  private zugWandId: string | null = null
+  private zugWandStart: { x: number; y: number } | null = null
+  /** Der letzte Grund, warum eine Bewegung begrenzt wurde — die Oberfläche liest ihn. */
+  private zugWandHinweis: string | null = null
+
+  private wandZugBeginnen(id: string, weltX: number, weltY: number): boolean {
+    const wand = this.floorplan.getWalls().find((w) => w.id === id)
+    if (!wand) {
+      return false
+    }
+    this.zugWandId = id
+    // Der ANFASSPUNKT, nicht die Wandmitte: gezogen wird relativ dazu, damit die
+    // Wand nicht unter dem Zeiger wegspringt (dieselbe Begründung wie der
+    // Griff-Versatz bei Möbeln, W2 Punkt 2).
+    this.zugWandStart = { x: weltX, y: weltY }
+    this.zugGesichert = false
+    this.zeigerStilSetzen()
+    return true
+  }
+
+  /** Die Wände in der Form, die die Rechnung liest — jede genau EINMAL. */
+  private wandDatenFuerZug() {
+    return this.floorplan.getWalls().map((w) => ({
+      id: w.id,
+      aId: w.getStart().id,
+      bId: w.getEnd().id,
+      a: { x: w.getStartX(), y: w.getStartY() },
+      b: { x: w.getEndX(), y: w.getEndY() },
+      quelle: w.quelle,
+      dicke: w.thickness
+    }))
+  }
+
+  private wandZugSchritt(weltX: number, weltY: number): boolean {
+    if (!this.zugWandId || !this.zugWandStart) {
+      return false
+    }
+    const waende = this.wandDatenFuerZug()
+    const wand = waende.find((w) => w.id === this.zugWandId)
+    if (!wand) {
+      return false
+    }
+    const dx = weltX - this.zugWandStart.x
+    const dy = weltY - this.zugWandStart.y
+    const ergebnis = verschiebeWandParallel(wand, waende, dx, dy)
+    if (ergebnis.ecken.length === 0 || ergebnis.strecke === 0) {
+      // Keine Bewegung quer zur Wand: nichts tun und KEINEN Schnappschuss ziehen
+      // — ein Druck ohne Wirkung soll die Historie nicht mit Leerschritten
+      // füllen (W2 Punkt 3).
+      this.zugWandHinweis = ergebnis.grund ?? null
+      return false
+    }
+    if (!this.zugGesichert) {
+      this.undoManager?.snapshot()
+      this.zugGesichert = true
+    }
+    const ecken = this.floorplan.getCorners()
+    for (const neu of ergebnis.ecken) {
+      const ecke = ecken.find((c) => c.id === neu.id)
+      // `Corner.move` benachrichtigt seine Wände; die Räume kommen erst beim
+      // `update()` in `zugBeenden` (s. dort).
+      if (ecke) ecke.move(neu.x, neu.y)
+    }
+    // Eine verschobene GEMESSENE Wand ist ein UMBAU und keine Messung mehr. Ohne
+    // diese Zeile behauptete der Plan weiter, die Wand sei aufgemessen — und das
+    // Blatt sagte „kein Aufmass" für die Möbel, aber nichts über die Wand.
+    const echteWand = this.floorplan.getWalls().find((w) => w.id === this.zugWandId)
+    if (echteWand) echteWand.quelle = 'gesetzt'
+    this.zugWandStart = { x: weltX, y: weltY }
+    this.zugWandHinweis = ergebnis.begrenzt ? ergebnis.grund ?? null : null
+    return true
+  }
+
+  /** Läuft gerade ein WAND-Zug? Die Oberfläche fragt das für ihre Hinweiszeile. */
+  public wandZugLaeuft(): string | null {
+    return this.zugWandId
+  }
+
+  /** Der letzte Grund einer begrenzten Wand-Bewegung — oder null. */
+  public wandZugHinweis(): string | null {
+    return this.zugWandHinweis
   }
 
   /** Läuft gerade ein Möbelzug? Die Oberfläche fragt das, um Drehen und
@@ -2184,12 +2309,29 @@ export class Floorplanner {
       // nur die Ansicht: `bearbeitetMitEinemFinger` nennt allein Zeichnen und
       // Loeschen. Das ist die bewusst konservative Seite — eine Wand mit der
       // Kuppe zu verschieben bliebe auch mit Werkzeugwahl ein blinder Griff.
-      if (this.mode == floorplannerModes.MOVE) {
+      if (this.mode == floorplannerModes.MOVE || this.mode == floorplannerModes.WAND) {
         this.zeigerSetzen(this.fingerX, this.fingerY)
         this.trefferBestimmen()
+        // Im Verschieben-Werkzeug greift der Finger MÖBEL, im Wand-Werkzeug
+        // WÄNDE — dieselbe Trennung, die die Maus seit W10 hat, jetzt auch für
+        // die Kuppe.
+        //
+        // W8 Punkt 3 hatte Wände für den Finger ausdrücklich ausgeschlossen
+        // („ein blinder Griff"), und das Argument war nicht falsch: die Kuppe
+        // verdeckt, was sie anfasst. Es trug aber nur, solange eine verschobene
+        // Wand den Weg zurück ins Projekt hart abbrechen liess — dann war der
+        // blinde Griff nicht nur unscharf, sondern führte in einen abgelehnten
+        // Zustand. Seit es die Kategorie UMBAU gibt (W12b), ist er eine
+        // Bedienung wie jede andere, und der Nutzer hat sie ausdrücklich
+        // verlangt. Die Unschärfe bleibt echt und wird anders beantwortet: das
+        // Wand-Werkzeug muss AUSDRÜCKLICH gewählt werden, ein Zug quer zur Wand
+        // ist die einzige Wirkung, und beim Loslassen steht die Strecke da.
         this.fingerGreift =
-          this.activeAusstattung !== null &&
-          this.zugBeginnen(this.activeAusstattung, this.mouseX, this.mouseY)
+          this.mode == floorplannerModes.WAND
+            ? this.activeWall !== null &&
+              this.zugBeginnen(this.activeWall.id, this.mouseX, this.mouseY)
+            : this.activeAusstattung !== null &&
+              this.zugBeginnen(this.activeAusstattung, this.mouseX, this.mouseY)
         if (!this.fingerGreift) {
           // Nichts in der Hand: die Marken MUESSEN weg. Am Handy raeumt kein
           // Wegfahren sie ab — ein liegen gebliebener Rahmen behauptete einen
@@ -2365,6 +2507,11 @@ export class Floorplanner {
     this.fingerGreift = false
     this.zugBeenden()
     this.activeAusstattung = null
+    // Die Wand-Merkung fällt mit derselben Begründung: `activeWall` treibt die
+    // Hervorhebung im Bild, den Löschvorschlag UND die Schwenk-Sperre (W10
+    // Punkt 3). Blieb sie nach dem Loslassen stehen, leuchtete die Wand weiter
+    // und der Plan über ihr wäre unschwenkbar — am Handy fällt beides sofort auf.
+    this.activeWall = null
     this.view.draw()
   }
 
@@ -2372,11 +2519,12 @@ export class Floorplanner {
    * Arbeitet der EINE Finger gerade, statt die Ansicht zu schieben? In Zeichnen
    * und Loeschen immer.
    *
-   * Das Verschieben-Werkzeug steht bewusst NICHT hier: dort haengt die Antwort
-   * nicht am Werkzeug, sondern am TREFFER — Finger auf einem Moebel zieht,
-   * Finger auf leerer Flaeche schiebt die Ansicht. Diese Unterscheidung
-   * entscheidet `fingerStart` und merkt sie sich in `fingerGreift`; sie hier
-   * mit zu beantworten hiesse, den Treffer ein zweites Mal zu bestimmen.
+   * Das Verschieben- und das Wand-Werkzeug stehen bewusst NICHT hier: dort
+   * haengt die Antwort nicht am Werkzeug, sondern am TREFFER — Finger auf einem
+   * Moebel (bzw. seit W12b auf einer Wand) zieht, Finger auf leerer Flaeche
+   * schiebt die Ansicht. Diese Unterscheidung entscheidet `fingerStart` und
+   * merkt sie sich in `fingerGreift`; sie hier mit zu beantworten hiesse, den
+   * Treffer ein zweites Mal zu bestimmen.
    */
   private bearbeitetMitEinemFinger(): boolean {
     return this.mode == floorplannerModes.DRAW || this.mode == floorplannerModes.DELETE

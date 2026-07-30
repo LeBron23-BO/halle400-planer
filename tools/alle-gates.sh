@@ -19,6 +19,13 @@ cd "$(dirname "$0")/.." || exit 1
 # einer Bedienung zu erahnen: L-Form, schiefer Raum, Grenze in drei Stuecken,
 # Raeume die sich nur in einer Ecke beruehren. Es laedt AUSSTATTUNG_VORLAGEN aus
 # dem uebersetzten Kern (tsc-Lauf, ~20 s) statt Moebelmasse abzuschreiben.
+# pruefe-wand-bewegen (W12b) misst das, was der Nutzer als Hauptsache genannt
+# hat: dass eine WAND sich ziehen laesst wie ein Moebel. Der harte Teil ist nicht
+# das Ziehen, sondern dass die Endecken auf den Nachbarwaenden GLEITEN — naiv
+# verschoben reisst der Grundriss auf, und aus einem Grundriss mit Luecken bildet
+# findRooms KEINE Raeume mehr (Raumnamen weg, Flaechen null, ohne Fehlermeldung).
+# Abschnitt F zieht die Wand am ECHTEN Floorplanner ueber zugBeginnen/zugSchritt —
+# dieselben drei Methoden, die Maus, Blatt und Finger alle benutzen.
 # pruefe-serve-datei (W10) misst den HANDY-WEG: die Datei laeuft am iPhone nicht
 # per Doppelklick (Safari zeigt eine lokale .html seit iOS 18.5 als Text), also
 # haengt der ganze Telefon-Zugang an tools/serve-datei.mjs. Gemessen wird beides:
@@ -32,7 +39,7 @@ cd "$(dirname "$0")/.." || exit 1
 # bricht, dass die Werkstatt ohne Passwort zu bleibt — und dass die Fassung fuer
 # die Bank kein einziges Bedienelement enthaelt. Es legt sich dafuer ein eigenes
 # Wegwerf-Siegel an und fasst das scharfe nicht an.
-GATES="pruefe-kennungen pruefe-ziehen pruefe-palette pruefe-undo pruefe-ansicht pruefe-ausstattung pruefe-loeschen pruefe-zeichnen pruefe-axonometrie pruefe-touch pruefe-ausstattung-3d pruefe-tueren pruefe-planer-datei pruefe-haertung pruefe-uebernahme pruefe-axo-bearbeiten pruefe-finger pruefe-kennzahlen pruefe-schutz pruefe-siegel pruefe-serve-datei pruefe-zusammenlegen"
+GATES="pruefe-kennungen pruefe-ziehen pruefe-palette pruefe-undo pruefe-ansicht pruefe-ausstattung pruefe-loeschen pruefe-zeichnen pruefe-axonometrie pruefe-touch pruefe-ausstattung-3d pruefe-tueren pruefe-planer-datei pruefe-haertung pruefe-uebernahme pruefe-axo-bearbeiten pruefe-finger pruefe-kennzahlen pruefe-schutz pruefe-siegel pruefe-serve-datei pruefe-zusammenlegen pruefe-wand-bewegen"
 if [ -n "$1" ]; then GATES="$*"; fi
 gesamt=0
 for g in $GATES; do

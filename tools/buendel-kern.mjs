@@ -204,7 +204,7 @@ export const AXO_MODULE = [
  *  Modulen — wer sie vergisst, merkt es NICHT im Planer (dort lädt `import`
  *  nach), sondern erst in der Doppelklick-Datei, und dort als tote Bedienung
  *  ohne Fehlermeldung. */
-export const RAUM_MODULE = ['raum-zusammenlegen.js']
+export const RAUM_MODULE = ['raum-zusammenlegen.js', 'wand-bewegen.js']
 
 export function buendleRaum(namen = new Map()) {
   const teile = []

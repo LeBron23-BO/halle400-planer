@@ -834,7 +834,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "c8051b95fb22";
-const BAU_STEMPEL = "2026-07-30 12:28";
+const BAU_STEMPEL = "2026-07-30 13:31";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -1628,6 +1628,276 @@ const _pruefzugang = {
   rechteckImRing: rzRechteckImRing,
   hauptWinkel: rzHauptWinkel,
   vorschlagName: rzVorschlagName
+}
+
+/* ══════ wand-bewegen.js ══════ */
+// WÄNDE BEWEGEN (W12b) — die reine Rechnung.
+//
+// Nutzerwunsch, wörtlich: *„ich kann die wände immer noch nicht bewegen, was die
+// hauptsache meines anliegens war. dies muss genau so entfernt und bewegt werden
+// können wie man es mit den möbeln machen kann."*
+//
+// WARUM ES DAS BIS HIERHER NICHT GAB — und warum der Grund nicht mehr trägt
+// W7 Punkt 7 hat das Wand-Ziehen im Blatt ausdrücklich abgelehnt: *„eine
+// verschobene gemessene Ecke bricht den Rückweg (W5) hart ab — eine Bedienung,
+// die in einen abgelehnten Zustand führt, ist keine."* Das Argument war richtig,
+// solange es nur ZWEI Kategorien gab: Aufmass (heilig) und Setzung (erlaubt).
+// Eine verschobene Wand passte in keine und wurde deshalb verboten.
+//
+// Es gibt jetzt eine dritte: **UMBAU**. Die PDF bleibt die Grundwahrheit über
+// das, was GEMESSEN ist; ein Umbau ist eine Aussage über das, was WERDEN soll.
+// Beides muss getrennt geführt werden — und dann darf beides existieren. Der
+// Grundriss verliert dadurch nichts: der gemessene Zustand jeder bewegten Wand
+// wird mitgeschrieben (`vorher`), damit er jederzeit zurückgeholt werden kann.
+//
+// EINE WAND IST NICHT EIN MÖBEL — und der Unterschied ist keine Förmlichkeit
+// Ein Möbel steht IM Raum, eine Wand IST der Raum. Verschiebt man ein Möbel um
+// 40 cm, bleibt alles andere, wie es war. Verschiebt man eine Wand naiv um 40 cm,
+// reisst der Grundriss auf: ihre Endecken hängen an den Nachbarwänden, und die
+// bleiben stehen. Es entstehen zwei Lücken, aus denen der Kern keine Räume mehr
+// bilden kann (`findRooms` sucht geschlossene Ringe) — die Raumnamen fallen weg,
+// die Flächen im Businessplan werden zu null, und all das ohne Fehlermeldung.
+//
+// Die richtige Operation ist deshalb **parallel verschieben mit GLEITENDEN
+// Endpunkten**: die Wandachse wandert, ihre Endecken rutschen dabei auf den
+// Achsen der Nachbarwände entlang. Der Grundriss bleibt geschlossen, ein Raum
+// wird grösser, der andere kleiner — genau das, was „Raum vergrössern" bedeutet.
+// Gerechnet wird der Schnittpunkt zweier Geraden, nicht geraten.
+//
+// FÜNF FESTLEGUNGEN
+//
+// 1. **Verschoben wird nur QUER zur Wand.** Der Anteil der Bewegung entlang der
+//    eigenen Achse wird verworfen: eine Wand, die man in ihrer Längsrichtung
+//    schiebt, sieht danach genau gleich aus, aber alle Öffnungen darin sind
+//    verrutscht (`lage` ist ein absolutes Mass von der Start-Ecke, W4 Punkt 2).
+//    Eine Bedienung, die unsichtbar etwas anderes tut als sie zeigt, ist eine
+//    Falle.
+// 2. **Eine Endecke ohne Nachbarwand wird einfach mitgenommen.** Ein freies
+//    Wandende gleitet auf nichts; dort ist die Parallelverschiebung die ganze
+//    Wahrheit.
+// 3. **Bei mehreren Nachbarwänden gewinnt die, die am wenigsten parallel liegt.**
+//    An einem Kreuzungspunkt gibt es mehrere Kandidaten. Die fast parallele
+//    ergäbe einen Schnittpunkt weit draussen (ein winziger Winkel wirkt wie ein
+//    Hebel) — die möglichst senkrechte ist die stabile Wahl.
+// 4. **Es gibt eine Untergrenze.** Läuft eine Endecke über den Anfang der
+//    Nachbarwand hinaus, schrumpfte ein Raum auf null oder klappte um. Dann wird
+//    die Bewegung BEGRENZT und das GESAGT — nicht stumm verweigert und nicht
+//    stumm ausgeführt.
+// 5. **Diese Datei verändert nichts.** Sie liefert die neuen Eckpunkte; setzen
+//    tut sie die Brücke, und der Kern bildet daraus seine Räume neu. Dieselbe
+//    Trennung wie beim Zusammenlegen: erst rechnen, dann zeigen, dann anwenden.
+
+/** Ganze Zentimeter — Projekt-DNA Punkt 3. */
+const wbCm = (n) => Math.round(n)
+
+const wbLaenge = (a, b) => Math.hypot(b.x - a.x, b.y - a.y)
+
+/** Die Einheits-Normale einer Wand (quer zu ihr). */
+function wbNormale(wand) {
+  const dx = wand.b.x - wand.a.x
+  const dy = wand.b.y - wand.a.y
+  const l = Math.hypot(dx, dy)
+  if (l === 0) return null
+  return { x: -dy / l, y: dx / l }
+}
+
+/**
+ * Schnittpunkt zweier Geraden, jede durch Punkt + Richtung.
+ *
+ * Gibt `null` bei (fast) parallelen Geraden zurück. Die Schwelle ist bewusst
+ * grob: bei einem Winkel unter etwa einem Grad liegt der Schnittpunkt so weit
+ * draussen, dass er keine brauchbare Ecke mehr ist — ein rechnerisch gültiges
+ * Ergebnis kann trotzdem unbrauchbar sein.
+ */
+function wbSchnitt(p1, r1, p2, r2) {
+  const kreuz = r1.x * r2.y - r1.y * r2.x
+  if (Math.abs(kreuz) < 0.017) return null
+  const t = ((p2.x - p1.x) * r2.y - (p2.y - p1.y) * r2.x) / kreuz
+  return { x: p1.x + r1.x * t, y: p1.y + r1.y * t }
+}
+
+/** Welche anderen Wände hängen an dieser Ecke? */
+function wbNachbarn(eckeId, wandId, waende) {
+  return waende.filter(
+    (w) => w.id !== wandId && (w.aId === eckeId || w.bId === eckeId)
+  )
+}
+
+/**
+ * Die Nachbarwand, auf der die Ecke gleiten soll.
+ *
+ * Festlegung 3: möglichst senkrecht zur bewegten Wand. Gemessen über den
+ * Betrag des Kreuzprodukts der Richtungen — der ist bei 90 Grad maximal.
+ */
+function wbGleitWand(nachbarn, richtung) {
+  let beste = null
+  for (const w of nachbarn) {
+    const l = wbLaenge(w.a, w.b)
+    if (l === 0) continue
+    const r = { x: (w.b.x - w.a.x) / l, y: (w.b.y - w.a.y) / l }
+    const senkrecht = Math.abs(richtung.x * r.y - richtung.y * r.x)
+    if (!beste || senkrecht > beste.senkrecht) beste = { wand: w, r, senkrecht }
+  }
+  // Fast parallel: kein brauchbarer Schnittpunkt (Festlegung 3, Begründung dort).
+  if (beste && beste.senkrecht < 0.017) return null
+  return beste
+}
+
+/**
+ * Eine Wand parallel verschieben — mit gleitenden Endpunkten.
+ *
+ * @param wand    {id, aId, bId, a:{x,y}, b:{x,y}, quelle?}
+ * @param waende  alle Wände, jede EINMAL, mit aId/bId
+ * @param dx, dy  gewünschte Verschiebung in cm (der Längsanteil wird verworfen)
+ * @param opts.mindestAbstand  wie nah eine Endecke dem Ende ihrer Gleitwand
+ *                             kommen darf (Standard 30 cm — schmaler als eine
+ *                             Türöffnung ist kein Raum mehr)
+ * @returns {ecken, quer, begrenzt, grund}
+ */
+function verschiebeWandParallel(wand, waende, dx, dy, opts = {}) {
+  const mindest = opts.mindestAbstand ?? 30
+  const n = wbNormale(wand)
+  if (!n) {
+    return { ecken: [], quer: 0, begrenzt: false, grund: 'Diese Wand hat keine Länge.' }
+  }
+  const laenge = wbLaenge(wand.a, wand.b)
+  const richtung = { x: (wand.b.x - wand.a.x) / laenge, y: (wand.b.y - wand.a.y) / laenge }
+
+  // Festlegung 1: nur der Anteil QUER zur Wand.
+  let quer = dx * n.x + dy * n.y
+
+  // Die Gleitwände beider Enden bestimmen, BEVOR gerechnet wird — nur so lässt
+  // sich die Bewegung vorher begrenzen (Festlegung 4).
+  const enden = [
+    { eckeId: wand.aId, punkt: wand.a, anderer: wand.b },
+    { eckeId: wand.bId, punkt: wand.b, anderer: wand.a }
+  ].map((ende) => ({
+    ...ende,
+    gleit: wbGleitWand(wbNachbarn(ende.eckeId, wand.id, waende), richtung)
+  }))
+
+  let begrenzt = false
+  let grund = null
+
+  // Wie weit DARF es? Für jedes Ende mit Gleitwand: die Ecke muss auf der
+  // Gleitwand bleiben und mindestens `mindest` von deren fernem Ende weg.
+  for (const ende of enden) {
+    if (!ende.gleit) continue
+    const g = ende.gleit.wand
+    // Das feste Ende der Gleitwand ist das, das NICHT unsere Ecke ist.
+    const fest = g.aId === ende.eckeId ? g.b : g.a
+    // Wie weit reicht die Gleitwand quer zu unserer Wand, von unserer Ecke aus?
+    const spielraum = (fest.x - ende.punkt.x) * n.x + (fest.y - ende.punkt.y) * n.y
+    if (Math.abs(spielraum) < 0.5) continue
+    const grenze = spielraum > 0 ? spielraum - mindest : spielraum + mindest
+    if (spielraum > 0 && quer > grenze) {
+      quer = Math.max(0, grenze)
+      begrenzt = true
+    } else if (spielraum < 0 && quer < grenze) {
+      quer = Math.min(0, grenze)
+      begrenzt = true
+    }
+  }
+  if (begrenzt) {
+    grund =
+      `Weiter geht es nicht: dahinter bliebe weniger als ${mindest} cm ` +
+      `bis zur nächsten Wand — das wäre kein Raum mehr, sondern ein Spalt.`
+  }
+
+  const versatz = { x: n.x * quer, y: n.y * quer }
+  const neueAchse = {
+    p: { x: wand.a.x + versatz.x, y: wand.a.y + versatz.y },
+    r: richtung
+  }
+
+  const ecken = []
+  for (const ende of enden) {
+    if (!ende.gleit) {
+      // Festlegung 2: freies Ende wird mitgenommen.
+      ecken.push({
+        id: ende.eckeId,
+        x: wbCm(ende.punkt.x + versatz.x),
+        y: wbCm(ende.punkt.y + versatz.y),
+        gleitet: false
+      })
+      continue
+    }
+    const g = ende.gleit
+    const schnitt = wbSchnitt(neueAchse.p, neueAchse.r, g.wand.a, g.r)
+    if (!schnitt) {
+      ecken.push({
+        id: ende.eckeId,
+        x: wbCm(ende.punkt.x + versatz.x),
+        y: wbCm(ende.punkt.y + versatz.y),
+        gleitet: false
+      })
+      continue
+    }
+    ecken.push({
+      id: ende.eckeId,
+      x: wbCm(schnitt.x),
+      y: wbCm(schnitt.y),
+      gleitet: true,
+      aufWand: g.wand.id
+    })
+  }
+
+  return {
+    ecken,
+    // `quer` ist der Wert ENTLANG DER NORMALEN und trägt deshalb ein Vorzeichen,
+    // das von der Umlaufrichtung der Wand abhängt (eine Wand von oben nach unten
+    // hat die Gegen-Normale einer von unten nach oben). Für die Rechnung ist das
+    // richtig, für eine Anzeige unbrauchbar: „um −100 cm verschoben" ist keine
+    // Auskunft, sondern ein Rätsel über die Reihenfolge der Ecken.
+    quer: wbCm(quer),
+    /** Was der Mensch liest: wie weit sich die Wand bewegt hat, in cm. */
+    strecke: Math.abs(wbCm(quer)),
+    begrenzt,
+    grund
+  }
+}
+
+/**
+ * Der Vorschlag zum Verschieben — mit allem, was der Nutzer vorher wissen muss.
+ *
+ * Wie beim Zusammenlegen: PLANEN und ANWENDEN sind getrennt, und dieselbe
+ * Beschreibung speist Vorschau, Rückfrage und Ausführung.
+ */
+function wandVerschiebenPlanen(wand, waende, dx, dy, opts = {}) {
+  const bewegung = verschiebeWandParallel(wand, waende, dx, dy, opts)
+  if (bewegung.ecken.length === 0) {
+    return { moeglich: false, grund: bewegung.grund }
+  }
+  const istUmbau = (wand.quelle ?? 'gemessen') === 'gemessen'
+  return {
+    moeglich: true,
+    wandId: wand.id,
+    ecken: bewegung.ecken,
+    quer: bewegung.quer,
+    begrenzt: bewegung.begrenzt,
+    hinweis: bewegung.grund,
+    istUmbau,
+    // Der gemessene Zustand wird MITGESCHRIEBEN. Ohne ihn wäre der Umbau eine
+    // Einbahnstrasse: die Ecken-Kennung ist der Hash ihrer Koordinate
+    // (`export_blueprint.ecken_id`), nach dem Verschieben ist die alte Lage aus
+    // den Daten allein nicht mehr zu rekonstruieren.
+    vorher: istUmbau
+      ? { a: { ...wand.a }, b: { ...wand.b }, aId: wand.aId, bId: wand.bId }
+      : null,
+    umbauSatz: istUmbau
+      ? 'Das ist ein UMBAU: diese Wand ist im Aufmass gemessen. Der Plan sagt es ' +
+        'im Blattkopf und auf dem Ausdruck, und der gemessene Stand bleibt ' +
+        'hinterlegt — zurückholen geht jederzeit.'
+      : null
+  }
+}
+
+const _wbPruefzugang = {
+  wbNormale,
+  wbSchnitt,
+  wbNachbarn,
+  wbGleitWand,
+  wbLaenge
 }
 
 /* ══════ core/utils.js ══════ */
@@ -5617,6 +5887,8 @@ class FloorplannerView {
 }
 
 /* ══════ floorplanner/floorplanner.js ══════ */
+// @ts-ignore — reine Rechnung in Javascript, wie src/axo/*.js (in node prüfbar)
+
 /**
  * Wie lange der Zeiger ruhen muss, bis das Objekt darunter zum Löschen
  * vorgeschlagen wird (E1). 700 ms ist die Mitte zwischen zwei Fehlern: zu kurz
@@ -6095,6 +6367,22 @@ class Floorplanner {
         this.verweilY = 0;
         /** Meldet der Oberfläche, dass eine Rückfrage zu zeigen (oder zu schliessen) ist. */
         this.loeschAnfrageCallbacks = [];
+        /* ────────────── Der WAND-Zug (W12b) ──────────────────────────────────
+           Eine Wand ist kein Möbel, und der Unterschied ist keine Förmlichkeit: ein
+           Möbel steht IM Raum, eine Wand IST der Raum. Naiv um 40 cm verschoben,
+           reisst der Grundriss an ihren Endecken auf — die Nachbarwände bleiben ja
+           stehen. Aus einem Grundriss mit Lücken bildet `findRooms` KEINE Räume mehr:
+           Raumnamen fallen weg, die Flächen im Businessplan werden null, und all das
+           ohne eine einzige Fehlermeldung.
+      
+           Gerechnet wird deshalb in `src/raum/wand-bewegen.js` — parallel verschieben
+           mit GLEITENDEN Endpunkten, die auf den Achsen der Nachbarwände entlang
+           rutschen. Der Grundriss bleibt geschlossen, ein Raum wird grösser, der
+           andere kleiner. Das ist, was „Raum vergrössern" bedeutet. */
+        this.zugWandId = null;
+        this.zugWandStart = null;
+        /** Der letzte Grund, warum eine Bewegung begrenzt wurde — die Oberfläche liest ihn. */
+        this.zugWandHinweis = null;
         // ------------------------------------------ Türen, Fenster, Durchgänge (W4)
         /**
          * Welche Art das Werkzeug gerade setzt. Öffentlich lesbar, aber nur über
@@ -6809,7 +7097,20 @@ class Floorplanner {
     zugBeginnen(id, weltX, weltY) {
         const el = this.floorplan.findeAusstattung(id);
         if (!el) {
-            return false;
+            // KEIN Möbel? Dann vielleicht eine WAND (W12b).
+            //
+            // Nutzerwunsch, wörtlich: *„ich kann die wände immer noch nicht bewegen,
+            // was die hauptsache meines anliegens war. dies muss genau so entfernt und
+            // bewegt werden können wie man es mit den möbeln machen kann."*
+            //
+            // Diese eine Stelle ist der ganze Hebel: Maus (Grundriss), Blatt
+            // (Axonometrie) und Finger (Handy) rufen ALLE `zugBeginnen`/`zugSchritt`/
+            // `zugBeenden` — das ist die Festlegung aus W7 Punkt 4 und W8 Punkt 2.
+            // Wände hier aufzunehmen heisst deshalb, sie in allen drei Bedienwegen
+            // gleichzeitig greifbar zu machen, mit EINER Rechnung. Ein eigener
+            // Wand-Zieh-Weg je Bedienung wären drei Fassungen, die beim ersten
+            // Nachbessern auseinanderlaufen.
+            return this.wandZugBeginnen(id, weltX, weltY);
         }
         this.zugKennung = el.id;
         // Ohne den Versatz spränge das Stück mit seiner Mitte unter den Zeiger —
@@ -6826,6 +7127,9 @@ class Floorplanner {
      * Bewegung soll die Historie nicht mit Leerschritten füllen (W2 Punkt 3).
      */
     zugSchritt(weltX, weltY) {
+        if (this.zugWandId) {
+            return this.wandZugSchritt(weltX, weltY);
+        }
         if (!this.zugKennung) {
             return false;
         }
@@ -6833,9 +7137,95 @@ class Floorplanner {
     }
     /** Der Zug ist zu Ende — losgelassen, abgebrochen oder das Fenster verlassen. */
     zugBeenden() {
+        if (this.zugWandId) {
+            // Der volle Neubau gehört ans ENDE des Zugs, nicht in jede Bewegung: im
+            // Zug wandern nur die zwei Ecken, `update()` bildet danach die Räume neu
+            // (dieselbe Festlegung wie W7 Punkt 5 für Möbel, dort gemessen 19 ms mit
+            // gegen 4 ms ohne). Bei einer Wand ist es zwingender als bei einem Möbel:
+            // `update()` leitet die RÄUME ab, und die ändern sich hier wirklich.
+            this.floorplan.update();
+            this.zugWandId = null;
+            this.zugWandStart = null;
+            this.zugWandHinweis = null;
+        }
         this.zugKennung = null;
         this.zugGesichert = false;
         this.zeigerStilSetzen();
+    }
+    wandZugBeginnen(id, weltX, weltY) {
+        const wand = this.floorplan.getWalls().find((w) => w.id === id);
+        if (!wand) {
+            return false;
+        }
+        this.zugWandId = id;
+        // Der ANFASSPUNKT, nicht die Wandmitte: gezogen wird relativ dazu, damit die
+        // Wand nicht unter dem Zeiger wegspringt (dieselbe Begründung wie der
+        // Griff-Versatz bei Möbeln, W2 Punkt 2).
+        this.zugWandStart = { x: weltX, y: weltY };
+        this.zugGesichert = false;
+        this.zeigerStilSetzen();
+        return true;
+    }
+    /** Die Wände in der Form, die die Rechnung liest — jede genau EINMAL. */
+    wandDatenFuerZug() {
+        return this.floorplan.getWalls().map((w) => ({
+            id: w.id,
+            aId: w.getStart().id,
+            bId: w.getEnd().id,
+            a: { x: w.getStartX(), y: w.getStartY() },
+            b: { x: w.getEndX(), y: w.getEndY() },
+            quelle: w.quelle,
+            dicke: w.thickness
+        }));
+    }
+    wandZugSchritt(weltX, weltY) {
+        if (!this.zugWandId || !this.zugWandStart) {
+            return false;
+        }
+        const waende = this.wandDatenFuerZug();
+        const wand = waende.find((w) => w.id === this.zugWandId);
+        if (!wand) {
+            return false;
+        }
+        const dx = weltX - this.zugWandStart.x;
+        const dy = weltY - this.zugWandStart.y;
+        const ergebnis = verschiebeWandParallel(wand, waende, dx, dy);
+        if (ergebnis.ecken.length === 0 || ergebnis.strecke === 0) {
+            // Keine Bewegung quer zur Wand: nichts tun und KEINEN Schnappschuss ziehen
+            // — ein Druck ohne Wirkung soll die Historie nicht mit Leerschritten
+            // füllen (W2 Punkt 3).
+            this.zugWandHinweis = ergebnis.grund ?? null;
+            return false;
+        }
+        if (!this.zugGesichert) {
+            this.undoManager?.snapshot();
+            this.zugGesichert = true;
+        }
+        const ecken = this.floorplan.getCorners();
+        for (const neu of ergebnis.ecken) {
+            const ecke = ecken.find((c) => c.id === neu.id);
+            // `Corner.move` benachrichtigt seine Wände; die Räume kommen erst beim
+            // `update()` in `zugBeenden` (s. dort).
+            if (ecke)
+                ecke.move(neu.x, neu.y);
+        }
+        // Eine verschobene GEMESSENE Wand ist ein UMBAU und keine Messung mehr. Ohne
+        // diese Zeile behauptete der Plan weiter, die Wand sei aufgemessen — und das
+        // Blatt sagte „kein Aufmass" für die Möbel, aber nichts über die Wand.
+        const echteWand = this.floorplan.getWalls().find((w) => w.id === this.zugWandId);
+        if (echteWand)
+            echteWand.quelle = 'gesetzt';
+        this.zugWandStart = { x: weltX, y: weltY };
+        this.zugWandHinweis = ergebnis.begrenzt ? ergebnis.grund ?? null : null;
+        return true;
+    }
+    /** Läuft gerade ein WAND-Zug? Die Oberfläche fragt das für ihre Hinweiszeile. */
+    wandZugLaeuft() {
+        return this.zugWandId;
+    }
+    /** Der letzte Grund einer begrenzten Wand-Bewegung — oder null. */
+    wandZugHinweis() {
+        return this.zugWandHinweis;
     }
     /** Läuft gerade ein Möbelzug? Die Oberfläche fragt das, um Drehen und
      *  Schwenken auszusetzen, solange etwas in der Hand ist. */
@@ -7526,12 +7916,29 @@ class Floorplanner {
             // nur die Ansicht: `bearbeitetMitEinemFinger` nennt allein Zeichnen und
             // Loeschen. Das ist die bewusst konservative Seite — eine Wand mit der
             // Kuppe zu verschieben bliebe auch mit Werkzeugwahl ein blinder Griff.
-            if (this.mode == floorplannerModes.MOVE) {
+            if (this.mode == floorplannerModes.MOVE || this.mode == floorplannerModes.WAND) {
                 this.zeigerSetzen(this.fingerX, this.fingerY);
                 this.trefferBestimmen();
+                // Im Verschieben-Werkzeug greift der Finger MÖBEL, im Wand-Werkzeug
+                // WÄNDE — dieselbe Trennung, die die Maus seit W10 hat, jetzt auch für
+                // die Kuppe.
+                //
+                // W8 Punkt 3 hatte Wände für den Finger ausdrücklich ausgeschlossen
+                // („ein blinder Griff"), und das Argument war nicht falsch: die Kuppe
+                // verdeckt, was sie anfasst. Es trug aber nur, solange eine verschobene
+                // Wand den Weg zurück ins Projekt hart abbrechen liess — dann war der
+                // blinde Griff nicht nur unscharf, sondern führte in einen abgelehnten
+                // Zustand. Seit es die Kategorie UMBAU gibt (W12b), ist er eine
+                // Bedienung wie jede andere, und der Nutzer hat sie ausdrücklich
+                // verlangt. Die Unschärfe bleibt echt und wird anders beantwortet: das
+                // Wand-Werkzeug muss AUSDRÜCKLICH gewählt werden, ein Zug quer zur Wand
+                // ist die einzige Wirkung, und beim Loslassen steht die Strecke da.
                 this.fingerGreift =
-                    this.activeAusstattung !== null &&
-                        this.zugBeginnen(this.activeAusstattung, this.mouseX, this.mouseY);
+                    this.mode == floorplannerModes.WAND
+                        ? this.activeWall !== null &&
+                            this.zugBeginnen(this.activeWall.id, this.mouseX, this.mouseY)
+                        : this.activeAusstattung !== null &&
+                            this.zugBeginnen(this.activeAusstattung, this.mouseX, this.mouseY);
                 if (!this.fingerGreift) {
                     // Nichts in der Hand: die Marken MUESSEN weg. Am Handy raeumt kein
                     // Wegfahren sie ab — ein liegen gebliebener Rahmen behauptete einen
@@ -7695,17 +8102,23 @@ class Floorplanner {
         this.fingerGreift = false;
         this.zugBeenden();
         this.activeAusstattung = null;
+        // Die Wand-Merkung fällt mit derselben Begründung: `activeWall` treibt die
+        // Hervorhebung im Bild, den Löschvorschlag UND die Schwenk-Sperre (W10
+        // Punkt 3). Blieb sie nach dem Loslassen stehen, leuchtete die Wand weiter
+        // und der Plan über ihr wäre unschwenkbar — am Handy fällt beides sofort auf.
+        this.activeWall = null;
         this.view.draw();
     }
     /**
      * Arbeitet der EINE Finger gerade, statt die Ansicht zu schieben? In Zeichnen
      * und Loeschen immer.
      *
-     * Das Verschieben-Werkzeug steht bewusst NICHT hier: dort haengt die Antwort
-     * nicht am Werkzeug, sondern am TREFFER — Finger auf einem Moebel zieht,
-     * Finger auf leerer Flaeche schiebt die Ansicht. Diese Unterscheidung
-     * entscheidet `fingerStart` und merkt sie sich in `fingerGreift`; sie hier
-     * mit zu beantworten hiesse, den Treffer ein zweites Mal zu bestimmen.
+     * Das Verschieben- und das Wand-Werkzeug stehen bewusst NICHT hier: dort
+     * haengt die Antwort nicht am Werkzeug, sondern am TREFFER — Finger auf einem
+     * Moebel (bzw. seit W12b auf einer Wand) zieht, Finger auf leerer Flaeche
+     * schiebt die Ansicht. Diese Unterscheidung entscheidet `fingerStart` und
+     * merkt sie sich in `fingerGreift`; sie hier mit zu beantworten hiesse, den
+     * Treffer ein zweites Mal zu bestimmen.
      */
     bearbeitetMitEinemFinger() {
         return this.mode == floorplannerModes.DRAW || this.mode == floorplannerModes.DELETE;
