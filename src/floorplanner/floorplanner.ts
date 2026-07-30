@@ -477,8 +477,22 @@ export class Floorplanner {
    */
   private menueOffen = false
 
-  /** Der EINE Weg, ein Menü zu melden oder zurückzunehmen. */
+  /**
+   * Der EINE Weg, ein Menü zu melden oder zurückzunehmen.
+   *
+   * OHNE ZUHÖRER GIBT ES KEIN MENÜ — und deshalb auch keinen Zustand. Das ist
+   * kein Feinschliff, sondern ein gemessener Fehler: der React-Planer bindet
+   * `addMenueAnfrageCallback` (noch) nicht an, der Kern führte dort aber
+   * trotzdem `menueOffen` mit. Escape nimmt seit W13 zuerst das Menü zurück —
+   * also verschluckte ein UNSICHTBARES Menü dort den Tastendruck, und das
+   * zweite Escape legte das Zeichnen-Werkzeug nicht mehr zurück
+   * (`pruefe-zeichnen.mjs` SCHRITT 7, Knopffarbe blieb aktiv).
+   *
+   * Die Lehre ist allgemeiner als der Fall: ein Zustand, den niemand anzeigt,
+   * ist kein Zustand — er ist eine Falle für jede Tastenkette, die ihn abfragt.
+   */
   private menueMelden(anfrage: MenueAnfrage | null): void {
+    if (this.menueAnfrageCallbacks.length === 0) return
     this.menueOffen = anfrage !== null
     this.menueAnfrageCallbacks.forEach((cb) => cb(anfrage))
   }
