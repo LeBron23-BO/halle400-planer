@@ -204,7 +204,11 @@ export const AXO_MODULE = [
  *  Modulen — wer sie vergisst, merkt es NICHT im Planer (dort lädt `import`
  *  nach), sondern erst in der Doppelklick-Datei, und dort als tote Bedienung
  *  ohne Fehlermeldung. */
-export const RAUM_MODULE = ['raum-zusammenlegen.js', 'wand-bewegen.js']
+// Die Reihenfolge ist NICHT beliebig: `objekt-menue.js` (W13) liest
+// `_pruefzugang` und `pruefeZusammenlegen` aus `raum-zusammenlegen.js` schon in
+// seinen obersten `const`-Zeilen. Stünde es davor, wäre der Wert dort noch
+// `undefined` — und zwar still.
+export const RAUM_MODULE = ['raum-zusammenlegen.js', 'wand-bewegen.js', 'objekt-menue.js']
 
 export function buendleRaum(namen = new Map()) {
   const teile = []
