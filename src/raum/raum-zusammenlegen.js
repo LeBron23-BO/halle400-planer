@@ -769,6 +769,7 @@ export const _pruefzugang = {
   // gab es dort schon, und der Kollisions-Pruefer hat es zu Recht abgelehnt.
   kantenSchluessel: rzKantenSchluessel,
   punktInRing: rzPunktInRing,
+  abstandPunktStrecke: rzAbstandPunktStrecke,
   moebelEcken: rzMoebelEcken,
   vieleckeUeberlappen: rzVieleckeUeberlappen,
   wandBand: rzWandBand,
