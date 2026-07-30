@@ -373,12 +373,34 @@ Sechs Festlegungen:
    dastehen muss. Wer nur „Wand gelöscht" sagt, verschweigt das Ergebnis. Beide
    Wege bleiben getrennt benennbar: „Nur die Wand entfernen (ohne Räume zu
    verbinden)".
-5. **Das Menü steht AM Objekt** — als Einziges. Kein Widerspruch zur Regel bei
-   den Rückfragen (die liegen unten mittig, weil sie das Objekt nicht verdecken
+5. **Am Rechner ein KLICK, am Handy ein LANGDRUCK** — und das ist gemessen, nicht
+   gewählt. Ein kurzer Tipp trifft am Telefon praktisch immer etwas (unter jedem
+   Punkt liegt mindestens ein Raum), das Menü erschiene also bei jeder Berührung
+   und läge danach unter dem Daumen. `pruefe-finger.mjs` D1 fand genau das: nach
+   einem Tipp stand es über der Stelle, an der als Nächstes zwei Finger
+   aufsetzten, und der Zoom blieb bei 0,591 px/cm stehen. **Welches Element eine
+   Berührungs-Geste besitzt, steht beim Aufsetzen fest und lässt sich
+   nachträglich nicht umlenken** — ein „schliesst sich beim nächsten Griff"
+   kommt immer zu spät. Der Langdruck (`LANGDRUCK_MS`, dieselbe Infrastruktur
+   wie seit E3 im Löschen-Werkzeug) ist eine absichtliche Geste und lässt
+   Tippen, Ziehen und Zoomen unangetastet.
+6. **Das Menü steht AM Objekt — am Rechner.** Kein Widerspruch zur Regel bei den
+   Rückfragen (die liegen unten mittig, weil sie das Objekt nicht verdecken
    dürfen, über das sie eine Auskunft verlangen), sondern deren andere Hälfte:
-   dieses Menü GEHÖRT zu dem Ding, das der Finger berührt hat. Bei drei Räumen
-   nebeneinander wüsste sonst niemand mehr, welchen er angefasst hat.
-6. **Zusammenlegen in drei Stufen IM Menü** (Nutzung → Zahlen → Bestätigen)
+   dieses Menü GEHÖRT zu dem Ding, das angefasst wurde. Bei drei Räumen
+   nebeneinander wüsste sonst niemand mehr, welchen er meinte. **Am schmalen
+   Bildschirm (≤ 640 px) steht es unten über der Werkzeugleiste**: dort trägt
+   die Begründung nicht, weil die Fingerkuppe das Ding ohnehin verdeckt — und
+   340 px Menü auf 390 px Bildbreite wären der halbe Plan. Den Bezug trägt dann
+   der Titel (Raum und Fläche).
+7. **Ohne Zuhörer gibt es kein Menü — und keinen Zustand.** Der React-Planer
+   bindet den Rückruf (noch) nicht an; der Kern führte `menueOffen` dort
+   trotzdem mit, und weil Escape seit W13 zuerst das Menü zurücknimmt,
+   verschluckte ein UNSICHTBARES Menü den Tastendruck (`pruefe-zeichnen.mjs`
+   SCHRITT 7: das zweite Escape legte das Werkzeug nicht mehr zurück). Die Lehre
+   ist allgemeiner als der Fall: **ein Zustand, den niemand anzeigt, ist kein
+   Zustand — er ist eine Falle für jede Tastenkette, die ihn abfragt.**
+8. **Zusammenlegen in drei Stufen IM Menü** (Nutzung → Zahlen → Bestätigen)
    statt in drei Fenstern. Die Zahlen kommen unverändert aus
    `planeZusammenlegen` und werden nicht nachgerechnet — dieselbe Beschreibung
    speist Vorschau, Rückfrage und Ausführung (W12). Abbrechen steht zuerst (E1).
