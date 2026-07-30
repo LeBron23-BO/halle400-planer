@@ -54,6 +54,11 @@ const KERN = [
   'model/half_edge.js',
   'model/room.js',
   'model/floorplan.js',
+  // W12 — die Brücke „Räume zusammenlegen". NACH floorplan (sie benutzt dessen
+  // öffentliche Schnittstelle), VOR den Floorplanner (der sie später aufruft).
+  // Ihre reine Rechnung wird über RAUM_MODULE dazugelegt, weil sie Javascript
+  // ist und deshalb nicht durch tsc läuft.
+  'raum/zusammenlegen-anbindung.js',
   'floorplanner/floorplanner_view.js',
   'floorplanner/floorplanner.js'
 ]
@@ -75,6 +80,11 @@ export function uebersetzeKern() {
     [
       tsc,
       path.join(WURZEL, 'src/floorplanner/floorplanner.ts'),
+      // ZWEITER Einstiegspunkt (W12): die Brücke „Räume zusammenlegen" wird vom
+      // Floorplanner noch nicht importiert, muss aber übersetzt werden — sonst
+      // fehlt sie im Bündel und damit in der Doppelklick-Datei. tsc folgt nur
+      // Importen; eine Datei, die niemand importiert, entsteht nicht von selbst.
+      path.join(WURZEL, 'src/raum/zusammenlegen-anbindung.ts'),
       '--target', 'es2020',
       '--module', 'es2020',
       '--moduleResolution', 'node',
@@ -143,9 +153,16 @@ export function buendleThree() {
   ].join('\n')
 }
 
-/** Der übersetzte 2D-Kern als ein Stück, mit Kollisions-Prüfung. */
+/** Der übersetzte 2D-Kern als ein Stück, mit Kollisions-Prüfung.
+ *
+ *  Die reine Raum-Rechnung (W12) kommt HIER mit und nicht auf Zuruf der
+ *  Aufrufer: `raum/zusammenlegen-anbindung.js` steht in KERN und ruft sie, also
+ *  gehört sie zum Kern und nicht zum Beiwerk. Müsste jeder Bauer sie einzeln
+ *  dazulegen, hätte einer sie irgendwann nicht — und das fiele nicht beim Bauen
+ *  auf, sondern in der ausgelieferten Datei, als Knopf ohne Wirkung. Dieselbe
+ *  Lehre steht über AXO_MODULE. */
 export function buendleKern(ausDir, namen = new Map()) {
-  const teile = []
+  const teile = [buendleRaum(namen)]
   for (const rel of KERN) {
     const pfad = path.join(ausDir, rel)
     if (!fs.existsSync(pfad)) throw new Error(`Übersetzter Baustein fehlt: ${rel}`)
@@ -179,6 +196,27 @@ export const AXO_MODULE = [
   'axo-szene.js',
   'axo-zeichnen.js'
 ]
+
+/** Die reine Raum-Rechnung (W12) — Javascript, läuft nicht durch tsc.
+ *
+ *  Muss VOR dem Kern gebündelt werden: `zusammenlegen-anbindung.js` steht dort
+ *  drin und ruft diese Funktionen. Dieselbe Falle wie bei den Axonometrie-
+ *  Modulen — wer sie vergisst, merkt es NICHT im Planer (dort lädt `import`
+ *  nach), sondern erst in der Doppelklick-Datei, und dort als tote Bedienung
+ *  ohne Fehlermeldung. */
+export const RAUM_MODULE = ['raum-zusammenlegen.js']
+
+export function buendleRaum(namen = new Map()) {
+  const teile = []
+  for (const datei of RAUM_MODULE) {
+    const pfad = path.join(WURZEL, 'src/raum', datei)
+    if (!fs.existsSync(pfad)) throw new Error(`Raum-Modul fehlt: ${pfad}`)
+    const ohne = entkleide(fs.readFileSync(pfad, 'utf8')).trim()
+    pruefeNamen(ohne, datei, namen)
+    teile.push(`/* ══════ ${datei} ══════ */\n${ohne}`)
+  }
+  return teile.join('\n\n')
+}
 
 export function buendleAxo(namen = new Map()) {
   const teile = []

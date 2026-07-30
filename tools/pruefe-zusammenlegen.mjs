@@ -468,6 +468,144 @@ pruefe(
   `e) die Nutzungsarten stehen an EINER Stelle (${namenNutzungen.join(', ')})`
 )
 
+/* ============================================ F) AM ECHTEN KERN (End-to-End) */
+
+// Bis hierher war alles reine Rechnung. Jetzt die Frage, die allein zählt:
+// SPRICHT sie mit dem Kern? Gemessen wird am echten `Floorplan` — geladen wie in
+// `pruefe-uebernahme.mjs` (three plus Kern als ein Stück in einen `new
+// Function`-Rahmen). Ein Vorschlag, der rechnerisch stimmt und am Modell nichts
+// tut, ist keine Funktion, sondern eine Behauptung.
+
+log('')
+log('F) AM ECHTEN KERN — spricht die Rechnung mit dem Modell?')
+
+const { buendleKern, buendleThree, buendleRaum } = await import('./buendel-kern.mjs')
+let KERN = null
+let ladeFehler = null
+try {
+  const namen = new Map()
+  // Die Rechnung VOR dem Kern: die Anbindung steht im Kern und ruft sie.
+  // `pruefeNamen` läuft über beide und findet Namens-Kollisionen — genau dafür
+  // wird dieselbe Map durchgereicht.
+  // buendleKern bringt die Raum-Rechnung selbst mit (sie gehört zum Kern) —
+  // dieses Gate legt sie deshalb NICHT zusätzlich dazu. Täte es das, meldete
+  // `pruefeNamen` zu Recht eine Kollision jedes Namens mit sich selbst.
+  const quelle = `${buendleThree()}\n${buendleKern(uebersetzeKern(), namen)}`
+  KERN = new Function(
+    `${quelle}\nreturn { Floorplan, planeZusammenlegen, wendeAn, nutzungsArten };`
+  )()
+} catch (e) {
+  ladeFehler = e.message.split('\n')[0]
+}
+pruefe(
+  KERN !== null,
+  `f) Rechnung, Brücke und Kern buendeln sich ohne Namens-Kollision${ladeFehler ? ` — ${ladeFehler}` : ''}`
+)
+
+if (KERN) {
+  pruefe(
+    typeof KERN.planeZusammenlegen === 'function' && typeof KERN.wendeAn === 'function',
+    'f) und die Brücke ist im Buendel WIRKLICH da (nicht nur in der Datei) — ' +
+      'das ist der Unterschied zwischen „vorhanden" und „aktiviert"'
+  )
+
+  // Zwei Räume bauen, wie der Nutzer sie hätte: ein Rechteck 8 × 3 m mit einer
+  // Trennwand in der Mitte. Gebaut über die öffentliche Schnittstelle, damit der
+  // Kern seine Räume selbst ableitet.
+  const fp = new KERN.Floorplan()
+  const e = {}
+  const setze = (name, x, y) => (e[name] = fp.newCorner(x, y))
+  setze('a', 0, 0)
+  setze('b', 400, 0)
+  setze('c', 800, 0)
+  setze('d', 800, 300)
+  setze('f', 400, 300)
+  setze('g', 0, 300)
+  fp.newWall(e.a, e.b)
+  fp.newWall(e.b, e.c)
+  fp.newWall(e.c, e.d)
+  fp.newWall(e.d, e.f)
+  fp.newWall(e.f, e.g)
+  fp.newWall(e.g, e.a)
+  const trennung = fp.newWall(e.b, e.f)
+  fp.update()
+
+  const raeume = fp.getRooms()
+  pruefe(raeume.length === 2, `f) der Kern bildet aus den Waenden ZWEI Raeume (${raeume.length})`)
+
+  if (raeume.length === 2) {
+    // Ein Schrank mittig in der Trennwand — genau der Fall, der nach dem
+    // Zusammenlegen frei im Raum stuende.
+    fp.fuegeAusstattungHinzu({ typ: 'schrank', x: 400, y: 150, breite: 100, tiefe: 40 })
+    const moebelVorher = fp.getAusstattung().length
+
+    const plan = KERN.planeZusammenlegen(fp, raeume[0], raeume[1], { nutzung: 'yoga' })
+    pruefe(plan.moeglich, `f) der Vorschlag entsteht am echten Modell${plan.grund ? ` — ${plan.grund}` : ''}`)
+    pruefe(
+      plan.moeglich && plan.waendeEntfernen.length === 1 && plan.waendeEntfernen[0] === trennung.id,
+      'f) und er nennt GENAU die Trennwand, die der Kern gebaut hat'
+    )
+
+    // Planen darf nichts verändern — sonst gäbe es keine Vorschau.
+    pruefe(
+      fp.getRooms().length === 2 && fp.getWalls().length === 7,
+      `f) das Planen hat NICHTS veraendert (${fp.getRooms().length} Raeume, ${fp.getWalls().length} Waende) — ` +
+        'die Vorschau kann also gefahrlos rechnen'
+    )
+
+    const ergebnis = KERN.wendeAn(fp, plan)
+    pruefe(
+      ergebnis.raeumeNachher === 1,
+      `f) NACH dem Anwenden zaehlt der KERN genau EINEN Raum (${ergebnis.raeumeNachher}) — ` +
+        'das ist der Beweis, dass die Raeume wirklich verschmolzen sind'
+    )
+    pruefe(
+      ergebnis.waendeEntfernt.length === 1 && fp.getWalls().length === 6,
+      `f) die Trennwand ist wirklich weg (${fp.getWalls().length} Waende statt 7)`
+    )
+    const neuerRaum = fp.getRooms()[0]
+    pruefe(
+      !!neuerRaum && Math.abs(G.ringFlaeche(neuerRaum.corners.map((c) => ({ x: c.x, y: c.y }))) - 240000) < 100,
+      'f) der neue Raum hat die Summe beider Flaechen (24 m²)'
+    )
+    pruefe(
+      ergebnis.moebelNeu.length > 0 && fp.getAusstattung().length === moebelVorher + ergebnis.moebelNeu.length,
+      `f) die Matten stehen im Modell (${ergebnis.moebelNeu.length} neu, ${fp.getAusstattung().length} gesamt)`
+    )
+    pruefe(
+      fp.getAusstattung().filter((m) => m.typ === 'matte').every((m) => m.quelle === 'gesetzt'),
+      'f) und alle sind als Annahme gekennzeichnet (gestrichelt), nicht als Aufmass'
+    )
+    const schrank = fp.getAusstattung().find((m) => m.typ === 'schrank')
+    pruefe(
+      !!schrank && schrank.x !== 400,
+      `f) der Schrank steht nicht mehr in der verschwundenen Wand (x ${schrank?.x} statt 400)`
+    )
+    pruefe(
+      ergebnis.eckenAufgeraeumt === 0 && fp.getCorners().length === 6,
+      `f) keine verwaisten Ecken bleiben liegen (${fp.getCorners().length} Ecken, ` +
+        `${ergebnis.eckenAufgeraeumt} aufgeraeumt)`
+    )
+    pruefe(
+      ergebnis.nameVorschlag === 'Yoga',
+      `f) der Namensvorschlag kommt durch ("${ergebnis.nameVorschlag}")`
+    )
+
+    let abgelehnt = false
+    try {
+      KERN.wendeAn(fp, { moeglich: false, grund: 'Test' })
+    } catch (err) {
+      abgelehnt = /nicht anwendbar/.test(err.message)
+    }
+    pruefe(abgelehnt, 'f-GEGENPROBE) ein unmoeglicher Vorschlag wird beim Anwenden ABGELEHNT')
+
+    pruefe(
+      KERN.nutzungsArten().some((n) => n.schluessel === 'yoga'),
+      'f) die Bedienung bekommt die Nutzungsarten aus derselben Quelle'
+    )
+  }
+}
+
 /* ==================================================================== Schluss */
 
 log('')
