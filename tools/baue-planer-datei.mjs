@@ -3773,6 +3773,62 @@ window.__planerDatei = {
     });
   },
   werkzeugeSichtbar: function(){ return sichtbar(werkzeuge); },
+  /* ── W13: das Menue zum angetippten Ding ──────────────────────────────
+     Der Messzugang gibt her, WO ein Gate hinfassen muss, statt es aus
+     Bildpunkten raten zu lassen. Ohne \`raumPunkte\`/\`wandPunkte\` muesste ein
+     Gate den Grundriss nachrechnen — eine zweite Wahrheit ueber die Geometrie,
+     und die erste, die driftet. */
+  menueOffen: function(){ return sichtbar(objektMenue); },
+  menueTitel: function(){ return sichtbar(objektMenue) ? el('objektMenueTitel').textContent : null; },
+  menueEintraege: function(){
+    if (!sichtbar(objektMenue)) return [];
+    return Array.prototype.map.call(objektMenueListe.children, function(k){
+      return {
+        handlung: k.dataset ? (k.dataset.handlung || null) : null,
+        text: (k.textContent || '').replace(/\s+/g, ' ').trim(),
+        auskunft: k.classList.contains('auskunft')
+      };
+    });
+  },
+  menueKasten: function(){
+    if (!sichtbar(objektMenue)) return null;
+    const r = objektMenue.getBoundingClientRect();
+    return { left: r.left, top: r.top, width: r.width, height: r.height };
+  },
+  /* Einen Menue-Eintrag ueber seine Handlung ausloesen — der Weg der Gates
+     durch mehrere Stufen. Es ist DERSELBE Klick, den eine Hand ausloest. */
+  menueWaehlen: function(handlung){
+    const treffer = Array.prototype.filter.call(objektMenueListe.children, function(k){
+      return k.dataset && k.dataset.handlung === handlung;
+    });
+    if (!treffer.length) return false;
+    treffer[0].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    return true;
+  },
+  /* Schwerpunkt jedes Raums in BILD-Koordinaten (Canvas-Pixel), samt Flaeche.
+     Gerechnet mit \`convertX/convertY\` des Zeichners — derselben Abbildung, die
+     auch zeichnet. */
+  raumPunkte: function(){
+    return grundriss.getRooms().map(function(r){
+      let sx = 0, sy = 0;
+      for (const c of r.corners){ sx += c.x; sy += c.y; }
+      const n = r.corners.length || 1;
+      const wx = sx / n, wy = sy / n;
+      return { key: r.getUuid(), weltX: wx, weltY: wy,
+               bildX: zeichner.convertX(wx), bildY: zeichner.convertY(wy) };
+    });
+  },
+  /* Die Mitte jeder Wand, ebenso — plus die Kennung, damit ein Gate gezielt
+     eine TRENNWAND ansteuern kann statt irgendeine. */
+  wandPunkte: function(){
+    return grundriss.getWalls().map(function(w){
+      const wx = (w.getStartX() + w.getEndX()) / 2;
+      const wy = (w.getStartY() + w.getEndY()) / 2;
+      return { id: w.id, quelle: w.quelle, weltX: wx, weltY: wy,
+               bildX: zeichner.convertX(wx), bildY: zeichner.convertY(wy) };
+    });
+  },
+  raeumeAnzahl: function(){ return grundriss.getRooms().length; },
   /* W7 — die ruhige Zeile in der Axonometrie. GEMESSEN wie alles Sichtbare
      ueber \`checkVisibility\`: \`hidden\` allein saehe nicht, dass sie im ruhenden
      Blatt liegt, und meldete sie im Grundriss faelschlich als sichtbar. */
