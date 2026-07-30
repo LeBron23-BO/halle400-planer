@@ -352,7 +352,7 @@ tools/pruefe-menue.mjs       A-F ohne Browser
 tools/pruefe-menue-datei.mjs G-I an der echten Datei (Maus + CDP-Berührungen)
 ```
 
-Sechs Festlegungen:
+Acht Festlegungen:
 
 1. **Der KLEINSTE Treffer gewinnt** — Möbel vor Öffnung vor Ecke vor Wand vor
    Raum. Keine neue Regel, sondern dieselbe, die `trefferBestimmen` seit W10
@@ -425,11 +425,17 @@ nicht auf (dort lädt `import` nach), in der Doppelklick-Datei wäre es eine tot
 Bedienung ohne Fehlermeldung. Abschnitt F des Gates führt das Bündel deshalb
 WIRKLICH aus; mit `as` gemessen meldet es `RZ is not defined`.
 
-**Was W13 noch nicht kann:** das Menü gibt es im GRUNDRISS, nicht im Blatt
-(Axonometrie). Dort wird seit W7 gezogen, gedreht und gelöscht, aber ein Griff
-trifft dort einen Sehstrahl und keinen Punkt — die Trefferrechnung dafür steht in
-`axo-treffer.js` und müsste an `objektAn` angeschlossen werden. Bis dahin gilt
-für die Axonometrie unverändert, was in „Bearbeiten im Blatt" steht.
+**Was W13 noch nicht kann — zwei benannte Lücken:**
+
+1. **Das Blatt (Axonometrie) hat kein Menü.** Dort wird seit W7 gezogen, gedreht
+   und gelöscht, aber ein Griff trifft dort einen Sehstrahl und keinen Punkt —
+   die Trefferrechnung dafür steht in `axo-treffer.js` und müsste an `objektAn`
+   angeschlossen werden. Bis dahin gilt für die Axonometrie unverändert, was in
+   „Bearbeiten im Blatt" steht.
+2. **Der React-Planer (localhost:3301) hat kein Menü.** Der Kern trägt es
+   vollständig (`objektUnter`, `addMenueAnfrageCallback`), nur die
+   `Blueprint3DAppBase`-Oberfläche hängt sich nicht ein. W13 liegt bisher allein
+   in der Doppelklick-Datei — dem Auslieferungsziel für die Bank.
 
 ## Bearbeiten MIT DEM FINGER (W8, 2026-07-27)
 
