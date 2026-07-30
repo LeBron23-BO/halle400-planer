@@ -354,6 +354,56 @@ let html = `<!DOCTYPE html>
        padding:6px 10px;background:var(--sage-deep);border-color:var(--sage-deep);color:var(--paper)}
   .meldung button:hover{background:var(--ink-dim);color:var(--paper)}
 
+  /* ── DAS MENUE ZUM ANGETIPPTEN DING (W13) ──────────────────────────────
+     Es steht als Einziges AM Objekt und nicht unten mittig — und das ist kein
+     Widerspruch zur Regel bei den Rueckfragen, sondern ihre andere Haelfte.
+     Eine Rueckfrage verlangt eine Auskunft UEBER ein Objekt, also darf sie es
+     nicht verdecken. Dieses Menue GEHOERT zu dem Ding, das der Finger gerade
+     beruehrt hat: stuende es unten am Rand, waere die Verbindung zwischen
+     Griff und Antwort weg, und bei zwei Raeumen nebeneinander wuesste niemand
+     mehr, welchen er angefasst hat. Es wird darum NEBEN den Griffpunkt gesetzt
+     (JS haelt es im Bild) und nie darauf.
+
+     z-index 45: ueber der Werkzeugleiste (20) und ueber der Meldung (30), aber
+     UNTER der Loesch-Rueckfrage (40 ... 50) — wenn beide dastehen, ist die
+     Rueckfrage die dringendere.
+
+     min-height 44px je Eintrag ist keine Zierde: es ist die Flaeche, die eine
+     Fingerkuppe zuverlaessig trifft. Bei 390 px Breite ist das der Unterschied
+     zwischen bedienbar und nicht bedienbar. */
+  .objektmenue{position:fixed;z-index:45;min-width:min(268px,calc(100vw - 20px));
+       max-width:min(340px,calc(100vw - 20px));background:rgba(255,255,255,.985);
+       border:1px solid var(--panel-line);box-shadow:0 6px 22px rgba(31,35,33,.17);
+       display:flex;flex-direction:column}
+  .objektmenue .kopf{display:flex;align-items:center;gap:8px;
+       padding:9px 8px 9px 12px;border-bottom:1px solid var(--panel-line);
+       background:var(--paper-deep)}
+  .objektmenue .kopf > span{font-family:var(--mono);font-size:10.5px;
+       letter-spacing:.07em;text-transform:uppercase;color:var(--ink);
+       flex:1;line-height:1.35}
+  .objektmenue .kopf button{min-height:32px;padding:4px 9px;border:1px solid transparent;
+       font-size:13px}
+  .menuehinweis{padding:8px 12px;font-size:11.5px;line-height:1.45;
+       color:var(--ink-dim);border-bottom:1px solid var(--panel-line)}
+  /* Die Eintraege sind volle Zeilen und keine Knopf-Reihe: eine Handlung je
+     Zeile liest sich in einem Zug, und am Handy ist eine ganze Zeile die
+     einzige Trefferflaeche, die man ohne Hinsehen findet. */
+  .objektmenue .eintrag{display:block;width:100%;text-align:left;min-height:44px;
+       padding:10px 12px;border:0;border-bottom:1px solid var(--panel-line);
+       background:transparent;font-family:var(--sans);font-size:13px;
+       letter-spacing:0;text-transform:none;color:var(--ink);line-height:1.4}
+  .objektmenue .eintrag:last-child{border-bottom:0}
+  .objektmenue .eintrag:hover:not(:disabled){background:var(--paper-deep);color:var(--ink)}
+  .objektmenue .eintrag.ernst{color:var(--rot)}
+  .objektmenue .eintrag.ernst:hover{background:var(--rot);color:#fff}
+  /* Ein Eintrag OHNE Handlung ist eine Auskunft, kein toter Knopf — er sieht
+     darum auch nicht wie einer aus (kein Zeigefinger, kein Hover). */
+  .objektmenue .auskunft{padding:10px 12px;font-size:12.5px;color:var(--ink-dim);
+       border-bottom:1px solid var(--panel-line);line-height:1.4}
+  .objektmenue .eintrag .zusatz{display:block;margin-top:3px;font-size:11px;
+       color:var(--ink-dim);line-height:1.4}
+  .objektmenue .eintrag.ernst:hover .zusatz{color:rgba(255,255,255,.85)}
+
   /* Rueckfragen liegen unten mittig und NICHT am Zeiger: am Zeiger verdeckten
      sie genau das Objekt, ueber das sie eine Auskunft verlangen (E1). */
   .frage{position:fixed;left:50%;bottom:76px;transform:translateX(-50%);
@@ -848,6 +898,25 @@ let html = `<!DOCTYPE html>
      niemand angeboten hat. Derselbe Fallstrick wie bei \`btnStandZurueck\`, nur
      umgekehrt gelöst: eine Frage, die zu BEIDEN Ansichten gehört, gehört in
      keine von beiden. -->
+<!-- ANFASSEN STATT WERKZEUGKUNDE (W13) — das Menü zum angetippten Ding.
+
+     Es liegt AUSSERHALB des Grundriss-Umschlags, aus demselben Grund wie die
+     Lösch-Rückfrage seit W7: es gehört zu einer Handlung, nicht zu einer
+     Ansicht. Und es steht ÜBER der Werkzeugleiste (z-index), weil es beim
+     Antippen unten am Rand sonst genau von ihr verdeckt würde — am Handy ist
+     das die halbe untere Bildhälfte.
+
+     \`role="menu"\` bewusst NICHT: das verlangt eine Pfeiltasten-Bedienung mit
+     Rollen-Kindern, und was hier steht, sind gewöhnliche Schaltflächen, die
+     Tab und Screenreader ohnehin richtig behandeln. Eine halb umgesetzte
+     Menü-Rolle ist schlechter als gar keine — sie verspricht eine Bedienung,
+     die es nicht gibt (dieselbe Lehre wie bei den Tasten-Hinweisen, W8). -->
+<div class="objektmenue" id="objektMenue" role="dialog" aria-label="Was möchten Sie hier tun?" hidden>
+  <div class="kopf"><span id="objektMenueTitel"></span><button type="button" id="objektMenueZu" aria-label="Menü schliessen">✕</button></div>
+  <div id="objektMenueHinweis" class="menuehinweis" hidden></div>
+  <div id="objektMenueListe"></div>
+</div>
+
 <div class="frage" id="rueckfrage" role="alertdialog" aria-live="assertive" aria-label="Löschen bestätigen" hidden>
   <span class="txt"><b>Entfernen:</b> <span id="rueckfrageZiel"></span>?</span>
   <span class="knoepfe">
@@ -2422,6 +2491,319 @@ zeichner.addLoeschAnfrageCallback(function(ziel){
 });
 el('btnAbbrechen').addEventListener('click', function(){ zeichner.loeschungAbbrechen(); });
 el('btnEntfernen').addEventListener('click', function(){ zeichner.loeschungBestaetigen(); });
+
+/* ══════════ ANFASSEN STATT WERKZEUGKUNDE (W13) ══════════════════════════
+
+   Der Nutzerbefund aus W12 war „ich kann die waende immer noch nicht bewegen",
+   obwohl das Wand-Werkzeug seit W10 da war und seit W12b zog. Gebaut war es,
+   GEFUNDEN wurde es nicht. Hier steht die andere Haelfte der Loesung: der Kern
+   sagt, WAS unter dem Finger liegt und was damit geht (\`objektUnter\`), diese
+   Datei zeigt es und fuehrt es aus.
+
+   Die Werkzeugleiste bleibt unangetastet. Sie ist nicht der Fehler — sie ist
+   schneller, wenn man dasselbe zehnmal tut. Der Fehler war, dass sie der
+   EINZIGE Weg war. */
+const objektMenue = el('objektMenue');
+const objektMenueListe = el('objektMenueListe');
+let menueStand = null;
+
+/* Wo das Menue stehen darf. Es folgt dem Griffpunkt, bleibt aber IM Bild:
+   ein Menue, dessen untere Haelfte unter dem Fensterrand liegt, ist am Handy
+   der Normalfall und nicht der Sonderfall (die Werkzeugleiste steht unten, und
+   dort tippt man). Gemessen wird nach dem Einblenden an der wirklichen Groesse
+   — geschaetzt traefe es nur bei einer festen Zahl von Eintraegen. */
+function menueSetzen(screenX, screenY){
+  const rand = 10;
+  objektMenue.style.left = '0px';
+  objektMenue.style.top = '0px';
+  objektMenue.hidden = false;
+  const kasten = objektMenue.getBoundingClientRect();
+  const plan = el('grundriss-canvas').getBoundingClientRect();
+  /* Der Griffpunkt kommt in Canvas-Koordinaten (\`convertX/convertY\`), das
+     Menue liegt \`fixed\` am Fenster — ohne den Versatz des Canvas saesse es um
+     die Kopfleiste daneben. */
+  let x = plan.left + screenX + 14;
+  let y = plan.top + screenY + 14;
+  if (x + kasten.width > window.innerWidth - rand) x = plan.left + screenX - kasten.width - 14;
+  if (x < rand) x = rand;
+  if (y + kasten.height > window.innerHeight - rand) y = window.innerHeight - kasten.height - rand;
+  if (y < rand) y = rand;
+  objektMenue.style.left = Math.round(x) + 'px';
+  objektMenue.style.top = Math.round(y) + 'px';
+}
+
+function menueZu(){
+  objektMenue.hidden = true;
+  objektMenueListe.textContent = '';
+  menueStand = null;
+}
+
+/* Ein Eintrag ist eine ganze Zeile: Text oben, Begruendung klein darunter.
+   Die Begruendung steht IM Eintrag und nicht in einem Titel-Attribut — am
+   Handy gibt es kein Schweben, und ein Hinweis, den man nur mit der Maus
+   sieht, ist am Telefon kein Hinweis (dieselbe Lehre wie bei den
+   Tasten-Versprechen, W8). */
+function menueEintragBauen(e, tun){
+  if (!e.handlung){
+    const zeile = document.createElement('div');
+    zeile.className = 'auskunft';
+    zeile.textContent = e.text + (e.hinweis ? ' — ' + e.hinweis : '');
+    return zeile;
+  }
+  const knopf = document.createElement('button');
+  knopf.type = 'button';
+  knopf.className = 'eintrag' + (e.ernst ? ' ernst' : '');
+  knopf.dataset.handlung = e.handlung;
+  knopf.appendChild(document.createTextNode(e.text));
+  if (e.hinweis){
+    const zusatz = document.createElement('span');
+    zusatz.className = 'zusatz';
+    zusatz.textContent = e.hinweis;
+    knopf.appendChild(zusatz);
+  }
+  knopf.addEventListener('click', function(){ tun(e); });
+  return knopf;
+}
+
+/* Der Kern meldet das Menue — und nimmt es mit \`null\` auch selbst zurueck.
+   Diese Datei entscheidet NIE selbst, wann es zugeht: Escape, ein neuer Griff
+   und der Werkzeugwechsel laufen alle durch den Kern, und zwei Stellen, die
+   unabhaengig ueber dasselbe Fenster bestimmen, liefen auseinander (dieselbe
+   Festlegung wie bei der Loesch-Rueckfrage, E1). */
+zeichner.addMenueAnfrageCallback(function(anfrage){
+  if (!anfrage) { menueZu(); return; }
+  menueStand = anfrage;
+  el('objektMenueTitel').textContent = anfrage.menue.titel;
+  const hinweisEl = el('objektMenueHinweis');
+  hinweisEl.textContent = anfrage.menue.hinweis || '';
+  hinweisEl.hidden = !anfrage.menue.hinweis;
+  objektMenueListe.textContent = '';
+  for (const e of anfrage.menue.eintraege){
+    objektMenueListe.appendChild(menueEintragBauen(e, function(gewaehlt){
+      menueHandlung(gewaehlt, anfrage);
+    }));
+  }
+  menueSetzen(anfrage.screenX, anfrage.screenY);
+});
+
+el('objektMenueZu').addEventListener('click', function(){ zeichner.menueSchliessen(); });
+
+/* Eine weitere Stufe IM Menue statt eines neuen Fensters.
+
+   Zusammenlegen braucht zwei Angaben mehr (Nutzung, dann Bestaetigung), und
+   jede haette ein eigenes Fenster bekommen koennen. Sie bleiben hier, weil das
+   Menue schon am richtigen Ort steht: es klebt an den beiden Raeumen, um die
+   es geht. Ein Fenster unten mittig verloere genau diese Verbindung — bei drei
+   Raeumen nebeneinander wuesste danach niemand mehr, welche zwei gemeint sind. */
+function menueStufe(titel, hinweis, eintraege){
+  el('objektMenueTitel').textContent = titel;
+  const hinweisEl = el('objektMenueHinweis');
+  hinweisEl.textContent = hinweis || '';
+  hinweisEl.hidden = !hinweis;
+  objektMenueListe.textContent = '';
+  for (const e of eintraege){
+    objektMenueListe.appendChild(menueEintragBauen(e, function(){ e.tun && e.tun(); }));
+  }
+  if (menueStand) menueSetzen(menueStand.screenX, menueStand.screenY);
+}
+
+function raumNach(key){
+  for (const r of grundriss.getRooms()) if (r.getUuid() === key) return r;
+  return null;
+}
+
+/* ── Zwei Raeume zusammenlegen, in drei Schritten ────────────────────────
+   1. Nutzung waehlen  2. die Zahlen ansehen  3. bestaetigen.
+
+   Der zweite Schritt ist der eigentliche: \`planeZusammenlegen\` VERAENDERT
+   NICHTS und beschreibt nur (W12). Genau diese Beschreibung steht dem Nutzer
+   vor Augen, bevor er zustimmt — und dieselbe wird danach angewendet. Zwei
+   getrennte Rechnungen liefen auseinander, und dann zeigte die Vorschau etwas
+   anderes, als hinterher dasteht. */
+function verbindenBeginnen(ziel){
+  const raumA = raumNach(ziel.raumA);
+  const raumB = raumNach(ziel.raumB);
+  if (!raumA || !raumB){
+    meldung('Diese beiden Räume gibt es nicht mehr — der Plan hat sich geändert.', true);
+    zeichner.menueSchliessen();
+    return;
+  }
+  const arten = nutzungsArten();
+  menueStufe(
+    'Wozu soll der neue Raum dienen?',
+    'Die Wahl räumt passend ein — Matten, Geräte oder Liegen. „Nur leer räumen" stellt nichts hin.',
+    arten.map(function(a){
+      return { handlung: 'nutzung', text: a.name, tun: function(){ verbindenZeigen(raumA, raumB, a.schluessel); } };
+    })
+  );
+}
+
+function verbindenZeigen(raumA, raumB, nutzung){
+  let vorschlag = null;
+  try {
+    vorschlag = planeZusammenlegen(grundriss, raumA, raumB, { nutzung: nutzung });
+  } catch (e) {
+    meldung('Das lässt sich nicht rechnen: ' + (e && e.message ? e.message : e), true);
+    zeichner.menueSchliessen();
+    return;
+  }
+  if (!vorschlag || !vorschlag.moeglich){
+    /* Der Grund kommt aus der Rechnung und steht in Alltagssprache da (W12) —
+       er wird hier NICHT umformuliert. */
+    menueStufe('Das geht hier nicht', vorschlag && vorschlag.grund ? vorschlag.grund : 'Kein Grund angegeben.',
+      [{ handlung: 'zu', text: 'Verstanden', tun: function(){ zeichner.menueSchliessen(); } }]);
+    return;
+  }
+
+  /* Was verloren geht, steht VOR der Zustimmung da und nicht danach. Die
+     Zahlen kommen alle aus dem Vorschlag — keine wird hier nachgerechnet. */
+  const teile = [];
+  teile.push('Neuer Raum: ' + vorschlag.flaecheM2.toFixed(1).replace('.', ',') + ' m²');
+  teile.push((vorschlag.waendeEntfernen.length === 1 ? '1 Wandstück fällt' : vorschlag.waendeEntfernen.length + ' Wandstücke fallen'));
+  if (vorschlag.gemessenEntfernt > 0){
+    teile.push('davon ' + vorschlag.gemessenEntfernt + ' GEMESSEN — Umbau, kein Aufmaß');
+  }
+  if (vorschlag.oeffnungenEntfallen && vorschlag.oeffnungenEntfallen.length > 0){
+    teile.push(vorschlag.oeffnungenEntfallen.length === 1
+      ? '1 Tür/Fenster entfällt'
+      : vorschlag.oeffnungenEntfallen.length + ' Türen/Fenster entfallen');
+  }
+  if (vorschlag.moebelVerschieben && vorschlag.moebelVerschieben.length > 0){
+    teile.push(vorschlag.moebelVerschieben.length + ' Möbel rücken zur Seite');
+  }
+  if (vorschlag.moebelNeu && vorschlag.moebelNeu.length > 0){
+    teile.push(vorschlag.moebelNeu.length + ' Stück werden hingestellt');
+  }
+  if (vorschlag.statikHinweis){
+    teile.push(vorschlag.statikHinweis);
+  }
+
+  /* Abbrechen ZUERST — die folgenreiche Wahl darf nicht die bequemste sein
+     (E1, und es ist dieselbe Reihenfolge wie in jeder Rueckfrage dieser Datei). */
+  menueStufe('Wirklich verbinden?', teile.join(' · '), [
+    { handlung: 'ab', text: 'Abbrechen', tun: function(){ zeichner.menueSchliessen(); } },
+    { handlung: 'los', text: 'Räume verbinden', ernst: true, tun: function(){ verbindenAusfuehren(vorschlag); } }
+  ]);
+}
+
+function verbindenAusfuehren(vorschlag){
+  /* EIN Rueckgaengig-Schritt fuer die ganze Handlung — der Schnappschuss wird
+     gezogen, BEVOR etwas geschieht, und danach nie wieder (dieselbe Regel wie
+     bei jedem Zug, W2 Festlegung 3). */
+  undo.snapshot();
+  let ergebnis = null;
+  try {
+    ergebnis = wendeAn(grundriss, vorschlag);
+  } catch (e) {
+    meldung('Das Verbinden ist fehlgeschlagen: ' + (e && e.message ? e.message : e), true);
+    zeichner.menueSchliessen();
+    return;
+  }
+  zeichner.menueSchliessen();
+  zeichner.view.draw();
+  /* GEMESSEN und nicht behauptet: \`raeumeNachher\` kommt vom Kern selbst
+     (\`floorplan.getRooms().length\` nach dem Anwenden). Ein „erledigt" ohne
+     diese Zahl waere die Behauptung des Werkzeugs ueber sich selbst. */
+  meldung(
+    'Verbunden — der Plan zählt jetzt ' + ergebnis.raeumeNachher + ' Räume. ' +
+    ergebnis.waendeEntfernt.length + ' Wandstück(e) entfernt' +
+    (ergebnis.moebelNeu.length ? ', ' + ergebnis.moebelNeu.length + ' Stück eingerichtet' : '') +
+    '. Rückgängig macht es zurück.'
+  );
+}
+
+/* Was ein Menue-Eintrag AUSLOEST.
+
+   Die Werkzeugwechsel hier sind kein Rueckfall in die Werkzeugkunde: der
+   Nutzer hat das Ding bereits angefasst und die Handlung benannt — dass der
+   Kern intern in einen Modus geht, ist eine Umsetzungsfrage. Was er dazu
+   SAGEN muss, sagt die Meldung: „ziehen Sie jetzt". Ohne diesen Satz stuende
+   der Nutzer vor einem Plan, in dem sich unsichtbar etwas geaendert hat. */
+function menueHandlung(eintrag, anfrage){
+  const art = anfrage.menue.art;
+  const id = anfrage.menue.id;
+  switch (eintrag.handlung){
+    case 'raeume-verbinden':
+      verbindenBeginnen(eintrag.ziel);
+      return;
+
+    case 'wand-ziehen':
+    case 'ecke-ziehen':
+      zeichner.setMode(floorplannerModes.WAND);
+      meldung('Wände verschieben ist an — ziehen Sie die Wand jetzt quer zu ihrer Richtung.');
+      return;
+
+    case 'wand-oeffnung':
+      zeichner.setMode(floorplannerModes.OEFFNUNG);
+      meldung('Türen & Fenster ist an — zeigen Sie auf die Wand, ein Klick setzt.');
+      return;
+
+    case 'wand-loeschen':
+      zeichner.menueSchliessen();
+      if (!zeichner.loeschVorschlagenFuer('wand', id)) meldung('Diese Wand gibt es nicht mehr.', true);
+      return;
+
+    case 'oeffnung-loeschen':
+      zeichner.menueSchliessen();
+      if (!zeichner.loeschVorschlagenFuer('oeffnung', id)) meldung('Diese Öffnung gibt es nicht mehr.', true);
+      return;
+
+    case 'oeffnung-ziehen':
+      zeichner.setMode(floorplannerModes.OEFFNUNG);
+      meldung('Türen & Fenster ist an — ziehen Sie die Öffnung an ihrer Wand entlang.');
+      return;
+
+    case 'oeffnung-anschlag':
+    case 'oeffnung-seite':
+      /* Q und E wenden die AKTIVE Oeffnung. Aus dem Menue heraus gibt es keine
+         aktive — der Zeiger hat sie auf dem Weg hierher verlassen. Also wird
+         sie ueber ihre Kennung wieder zur aktiven gemacht, und erst dann
+         gewendet: es bleibt EINE Wende-Rechnung (W4), nur ein anderer Weg
+         dorthin. */
+      zeichner.menueSchliessen();
+      if (!zeichner.wendeOeffnungNachKennung(id, eintrag.handlung === 'oeffnung-anschlag' ? 'anschlag' : 'seite')){
+        meldung('Diese Öffnung gibt es nicht mehr.', true);
+      } else {
+        zeichner.view.draw();
+      }
+      return;
+
+    case 'moebel-ziehen':
+      zeichner.setMode(floorplannerModes.MOVE);
+      meldung('Möbel verschieben ist an — ziehen Sie das Stück an seinen Platz.');
+      return;
+
+    case 'moebel-drehen-links':
+    case 'moebel-drehen-rechts':
+      /* Ueber \`dreheStueck(id, ...)\` und NICHT \`dreheAktives\`: das Stueck
+         unter dem Zeiger ist auf dem Weg zum Menue-Eintrag verlorengegangen.
+         Am Handy ist DAS hier der einzige Weg zu drehen — es gibt dort kein
+         Q und kein E (W8). */
+      if (!zeichner.dreheStueck(id, eintrag.handlung === 'moebel-drehen-links' ? -1 : 1)){
+        meldung('Dieses Stück gibt es nicht mehr.', true);
+        zeichner.menueSchliessen();
+      }
+      return;
+
+    case 'moebel-loeschen':
+      zeichner.menueSchliessen();
+      if (!zeichner.loeschStueckVorschlagen(id)) meldung('Dieses Stück gibt es nicht mehr.', true);
+      return;
+
+    case 'raum-umbenennen':
+      raumUmbenennen(id, anfrage.menue.titel);
+      return;
+
+    case 'raum-einrichten':
+      zeichner.menueSchliessen();
+      meldung('Ziehen Sie ein Stück aus der Palette links in den Raum — Matte, Gerät oder Liege.');
+      paletteHervorheben();
+      return;
+
+    default:
+      zeichner.menueSchliessen();
+  }
+}
 
 function historieZeigen(){
   btnUndo.disabled = !undo.canUndo();

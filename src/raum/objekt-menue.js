@@ -362,7 +362,18 @@ function omRaumMenue(treffer, welt, namen) {
   const r = treffer.objekt
   const flaeche = Math.abs(omRingFlaeche(r.ring)) / 10000 // cm² → m²
   const nachbarn = nachbarnVon(r, welt)
-  const eintraege = [{ handlung: 'raum-umbenennen', text: 'Umbenennen' }]
+
+  // UMBENENNEN steht hier bewusst NICHT (Festlegung 3: kein Eintrag ohne
+  // Wirkung). Es sähe nach einer Kleinigkeit aus und ist keine: `roomMeta`
+  // hängt an Schlüsseln aus den PDF-Textankern, nicht an `Room.getUuid()` —
+  // und diese UUID ist der Hash der Ecken, ändert sich also bei jeder
+  // Grundriss-Änderung. Ein Setter über sie legte einen Eintrag an, der beim
+  // nächsten `update()` verwaist: der Name wäre nach dem ersten Wandzug still
+  // weg. Welcher Anker in einem geänderten Raum gilt, ist Beschriftungs-Politik
+  // und keine Geometrie (dieselbe offene Grenze, die W12 Festlegung 2 der
+  // Brücke ausdrücklich stehen lässt). Ein Menüeintrag, der einen Namen
+  // annimmt und ihn dann verliert, wäre schlimmer als keiner.
+  const eintraege = []
 
   if (nachbarn.length > 0) {
     for (const n of nachbarn) {

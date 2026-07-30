@@ -2347,6 +2347,39 @@ export class Floorplanner {
     return true
   }
 
+  /**
+   * Schlägt eine WAND oder eine ÖFFNUNG nach ihrer Kennung zum Löschen vor
+   * (W13) — dieselbe Rückfrage wie überall sonst.
+   *
+   * Das Gegenstück zu `loeschStueckVorschlagen`, und es fehlte: `loeschVorschlagen`
+   * liest `activeWall`/`activeOeffnung`, also die MERKUNG DES ZEIGERS. Aus einem
+   * Menü heraus taugt die nicht — auf dem Weg zum Eintrag verlässt der Zeiger
+   * das Objekt, und danach zeigt die Merkung woanders hin oder nirgendwohin.
+   * Es ist derselbe Grund, aus dem das Drehen über Q/E läuft und nicht über
+   * einen Knopf in der Leiste (W2): in diesem Planer gibt es keine Auswahl, die
+   * einen Klick überdauert — also muss die KENNUNG mitgehen.
+   *
+   * Ecken sind bewusst NICHT dabei: „diese Ecke mit allen Wänden daran" ist die
+   * folgenreichste Löschung im Planer, und aus einem Menü heraus, das man mit
+   * dem Daumen bedient, wäre sie zu leicht ausgelöst. Wer sie will, nimmt das
+   * Löschen-Werkzeug — dort steht der Zeiger nachweislich auf der Ecke.
+   */
+  public loeschVorschlagenFuer(art: 'wand' | 'oeffnung', id: string): boolean {
+    let ziel: LoeschZiel | null = null
+    if (art === 'wand') {
+      const wand = this.floorplan.findeWand(id)
+      if (wand) ziel = { art: 'wand', wand, beschreibung: this.wandBeschreibung(wand) }
+    } else {
+      const o = this.floorplan.findeOeffnung(id)
+      if (o) ziel = { art: 'oeffnung', kennung: o.id, beschreibung: this.oeffnungsBeschreibung(o) }
+    }
+    if (!ziel) return false
+    this.loeschKandidat = ziel
+    this.view.draw()
+    this.loeschAnfrageCallbacks.forEach((cb) => cb(ziel))
+    return true
+  }
+
   /** Schaltet das Einrasten um und meldet es der Oberfläche (W2). */
   public setzeEinrasten(an: boolean): void {
     this.einrasten = an
