@@ -6,6 +6,9 @@ import { FloorplannerView, floorplannerModes, AUSSTATTUNG_UMRISS_AB } from './fl
 import type { UndoManager } from '../core/undo'
 // @ts-ignore — reine Rechnung in Javascript, wie src/axo/*.js (in node prüfbar)
 import { verschiebeWandParallel } from '../raum/wand-bewegen.js'
+// @ts-ignore — dito. NICHT umbenennen (`as`): `buendleKern` entfernt jede
+// Import-Zeile und legt alle Raum-Module in EIN Namensfeld.
+import { objektAn, menueFuer, OM_TOLERANZ } from '../raum/objekt-menue.js'
 
 type FloorplannerMode = (typeof floorplannerModes)[keyof typeof floorplannerModes]
 
