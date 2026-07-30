@@ -84,6 +84,36 @@ export type LoeschZiel =
   | { art: 'oeffnung'; kennung: string; beschreibung: string }
 
 /**
+ * Ein Menü zu einem angetippten Ding (W13) — samt der Stelle, an der es stehen
+ * soll.
+ *
+ * Die Bildschirm-Stelle wird HIER mitgegeben und nicht in der Oberfläche
+ * gerechnet: `convertX/convertY` sind die einzige Wahrheit über die Abbildung
+ * Welt → Bild, und eine zweite Fassung davon sässe nach dem ersten Zoomen
+ * daneben. `weltX/weltY` gehen mit, damit die Oberfläche das Menü beim
+ * Verschieben der Ansicht neu setzen kann, ohne den Treffer neu zu suchen.
+ */
+export type MenueAnfrage = {
+  menue: {
+    art: string
+    id: string
+    titel: string
+    hinweis: string | null
+    eintraege: {
+      handlung: string | null
+      text: string
+      ernst?: boolean
+      hinweis?: string | null
+      ziel?: any
+    }[]
+  }
+  weltX: number
+  weltY: number
+  screenX: number
+  screenY: number
+}
+
+/**
  * Deutsche Namen der Ausstattungs-Zeichen für die Rückfrage (E1) — und seit W3
  * auch für die Beschriftung der Palette.
  *
@@ -160,6 +190,22 @@ const snapTolerance = 25
  * richtig: bei Zoom 1 entspricht das rund 16 cm, also etwa dem alten Wert.
  */
 const GREIF_TOLERANZ_PX = 8
+
+/**
+ * Wie weit der Zeiger zwischen Drücken und Loslassen wandern darf, damit es noch
+ * ein ANTIPPEN ist und kein Zug (W13) — in BILDSCHIRM-Pixeln.
+ *
+ * Der Wert ist `FINGER_WACKEL_PX` und nicht `VERWEIL_WACKEL_PX`: die
+ * Unterscheidung muss am Handy tragen, und dort wandert eine Fingerkuppe beim
+ * blossen Tippen weiter als eine Maus. Zu klein gewählt öffnete das Menü am
+ * Telefon nie; zu gross gewählt öffnete es sich nach einem kurzen Zug, und der
+ * Nutzer bekäme ein Fenster für eine Handlung, die er gerade beendet hat.
+ *
+ * Die zweite Hälfte dieser Unterscheidung ist `zugGesichert`: wurde für den Zug
+ * ein Rückgängig-Schnappschuss gezogen, hat sich WIRKLICH etwas bewegt — dann
+ * ist es unabhängig vom Weg kein Antippen mehr.
+ */
+const KLICK_WACKEL_PX = FINGER_WACKEL_PX
 
 /**
  * Wie nah der RAND eines Möbels an eine Wand kommen muss, damit es sich bündig
@@ -401,6 +447,162 @@ export class Floorplanner {
    */
   public addLoeschAnfrageCallback(callback: (ziel: LoeschZiel | null) => void): void {
     this.loeschAnfrageCallbacks.push(callback)
+  }
+
+  /* ────────────────────────── ANFASSEN STATT WERKZEUGKUNDE (W13) ───────────
+   *
+   * Der Nutzerbefund aus W12 war „ich kann die Wände immer noch nicht bewegen"
+   * — obwohl das Wand-Werkzeug seit W10 existierte und seit W12b zog. Gebaut
+   * war es, gefunden wurde es nicht. Ein ANTIPPEN fragt deshalb den Plan, was
+   * mit DIESEM Ding geht, statt vom Nutzer zu verlangen, dass er es vorher
+   * weiss. Die Werkzeugleiste bleibt daneben stehen: sie ist schneller, wenn
+   * man dasselbe zehnmal tut.
+   */
+
+  /** Wo der Zeiger aufgesetzt hat (Bildschirm-Pixel) — für Antippen ≠ Zug. */
+  private druckX = 0
+  private druckY = 0
+
+  /** Meldet der Oberfläche das Menü zum angetippten Ding (`null` = schliessen). */
+  private menueAnfrageCallbacks: Array<(anfrage: MenueAnfrage | null) => void> = []
+
+  /**
+   * Steht gerade ein Menü offen?
+   *
+   * Der Kern führt das mit, statt die Oberfläche zu fragen: Escape, ein neuer
+   * Griff und der Werkzeugwechsel müssen es zurücknehmen können, und keiner von
+   * ihnen darf dafür wissen, wie die Oberfläche gebaut ist. Gesetzt wird es
+   * ausschliesslich in `menueMelden` — zwei Stellen, die unabhängig
+   * mitschreiben, liefen auseinander.
+   */
+  private menueOffen = false
+
+  /** Der EINE Weg, ein Menü zu melden oder zurückzunehmen. */
+  private menueMelden(anfrage: MenueAnfrage | null): void {
+    this.menueOffen = anfrage !== null
+    this.menueAnfrageCallbacks.forEach((cb) => cb(anfrage))
+  }
+
+  /**
+   * Die Oberfläche hängt sich hier ein, um das Menü AM Objekt zu zeigen.
+   *
+   * Gerufen wird mit `null`, sobald es hinfällig ist — die Oberfläche muss also
+   * nie selbst raten, wann es wieder verschwindet. Dasselbe Muster wie
+   * `addLoeschAnfrageCallback` (E1), und aus demselben Grund: zwei Stellen, die
+   * unabhängig voneinander entscheiden, wann ein Fenster zugeht, liefen
+   * auseinander.
+   */
+  public addMenueAnfrageCallback(callback: (anfrage: MenueAnfrage | null) => void): void {
+    this.menueAnfrageCallbacks.push(callback)
+  }
+
+  /** Das Menü zurücknehmen — von aussen (Escape, Werkzeugwechsel, Ausführung). */
+  public menueSchliessen(): void {
+    // Nur melden, wenn wirklich eines offen war: ein `null` bei jedem Griff
+    // ins Leere wäre ein Aufräumen für nichts, und die Oberfläche müsste
+    // unterscheiden, ob sie gerade etwas zumacht oder nur zusieht.
+    if (!this.menueOffen) return
+    this.menueMelden(null)
+  }
+
+  /**
+   * Was liegt an dieser Weltkoordinate, und was kann man damit tun?
+   *
+   * Die Toleranzen werden aus dem ZOOM gerechnet und nicht aus der Rechnung
+   * übernommen: 8 Bildschirm-Pixel sind in der Übersicht 45 cm und im Detail
+   * 2 cm. Dieselbe Begründung wie bei `GREIF_TOLERANZ_PX` — eine Bedienhilfe
+   * für den Zeiger muss auf dem BILDSCHIRM konstant bleiben.
+   *
+   * Die Ringe kommen aus `room.corners` (den Wandachsen), nicht aus
+   * `interiorCorners`: die Innenkontur ist um die halbe Wanddicke versetzt, und
+   * die Trennwand-Erkennung vergleicht Kanten mit Wandachsen (W12, Festlegung 1
+   * der Brücke). Mit der Innenkontur fände sie nie einen Nachbarn.
+   */
+  public objektUnter(weltX: number, weltY: number): MenueAnfrage | null {
+    const px = this.cmPerPixel
+    const treffer = objektAn(
+      { x: weltX, y: weltY },
+      this.menueWelt(),
+      {
+        ecke: FANG_ECKE_PX * px,
+        wand: GREIF_TOLERANZ_PX * px,
+        oeffnung: GREIF_TOLERANZ_PX * px
+      }
+    )
+    if (!treffer) return null
+    const menue = menueFuer(treffer, this.menueWelt(), {
+      moebelNamen: AUSSTATTUNG_NAME,
+      namen: this.raumNamen()
+    })
+    if (!menue) return null
+    return {
+      menue,
+      weltX,
+      weltY,
+      screenX: this.convertX(weltX),
+      screenY: this.convertY(weltY)
+    }
+  }
+
+  /**
+   * Der lebende Grundriss in der Form, die die Rechnung liest.
+   *
+   * Bewusst bei JEDER Frage neu gebaut und nicht zwischengespeichert: ein
+   * gemerkter Stand wäre nach dem ersten Rückgängig eine Leiche, und das Menü
+   * böte dann Handlungen an Dingen an, die es nicht mehr gibt. Es ist dieselbe
+   * Lehre wie „alles läuft über die KENNUNG, nie über eine Objektreferenz" (W2
+   * Festlegung 1), nur eine Ebene höher.
+   */
+  private menueWelt(): any {
+    return {
+      waende: this.floorplan.getWalls().map((w) => ({
+        id: w.id,
+        aId: w.getStart().id,
+        bId: w.getEnd().id,
+        a: { x: w.getStartX(), y: w.getStartY() },
+        b: { x: w.getEndX(), y: w.getEndY() },
+        quelle: w.quelle,
+        dicke: w.thickness
+      })),
+      ecken: this.floorplan.getCorners().map((c) => ({ id: c.id, x: c.x, y: c.y })),
+      raeume: this.floorplan.getRooms().map((r) => ({
+        key: r.getUuid(),
+        ring: r.corners.map((c) => ({ x: c.x, y: c.y }))
+      })),
+      moebel: this.floorplan.getAusstattung().map((m) => ({ ...m })),
+      oeffnungen: this.floorplan.getOeffnungen().map((o) => ({ ...o }))
+    }
+  }
+
+  /**
+   * Die heute angezeigten Raumnamen, nach Raum-Schlüssel.
+   *
+   * Erfunden wird KEINER: `roomMeta` hängt an Schlüsseln aus den PDF-Textankern
+   * und nicht an der Raum-UUID (W12, Festlegung 2 der Brücke). Findet sich
+   * keiner, bleibt der Raum ohne Namen — die Rechnung benennt ihn dann über
+   * seine gemessene Fläche, was ehrlicher ist als eine geratene Zuordnung.
+   */
+  private raumNamen(): Record<string, string> {
+    const meta = this.floorplan.getAllRoomMeta?.() ?? {}
+    const namen: Record<string, string> = {}
+    for (const raum of this.floorplan.getRooms()) {
+      const eintrag = (meta as any)[raum.getUuid()]
+      if (eintrag?.name) namen[raum.getUuid()] = eintrag.name
+    }
+    return namen
+  }
+
+  /**
+   * War das ein Antippen — oder das Ende eines Zugs?
+   *
+   * Zwei Bedingungen, weil eine allein in je einem Fall falsch liegt: der Weg
+   * allein hielte einen 3-px-Zug am Möbel für ein Antippen, `zugGesichert`
+   * allein hielte einen Zug ins Leere (bei dem sich nichts bewegte) für einen.
+   */
+  private warAntippen(): boolean {
+    if (this.zugGesichert) return false
+    const weg = Math.hypot(this.rawMouseX - this.druckX, this.rawMouseY - this.druckY)
+    return weg <= KLICK_WACKEL_PX
   }
 
   /** Startet das Verweilen neu — bei jeder Zeigerbewegung. */
@@ -698,6 +900,13 @@ export class Floorplanner {
     // Escape nimmt zuerst die Rückfrage zurück, nicht gleich das Werkzeug (E1).
     // Sonst hätte ein Abbrechen zwei Wirkungen auf einmal, und wer nur „doch
     // nicht löschen" meinte, müsste das Löschen-Werkzeug neu greifen.
+    // W13: das Menü liegt in derselben Reihenfolge davor — es ist das oberste
+    // Fenster, und wer Escape drückt, meint das oberste. Vor dem Lösch-Zweig,
+    // weil ein Menü über einem offenen Lösch-Vorschlag stehen kann.
+    if (this.menueOffen) {
+      this.menueSchliessen()
+      return
+    }
     if (this.loeschKandidat) {
       this.loeschungAbbrechen()
       return
@@ -801,6 +1010,15 @@ export class Floorplanner {
     this.zugGesichert = false
     this.lastX = this.rawMouseX
     this.lastY = this.rawMouseY
+    // W13: der Aufsetzpunkt in EIGENEN Feldern. `lastX/lastY` taugen dafür
+    // nicht — sie wandern beim Wand-Ziehen mit (`mousemove`), und der Weg
+    // gemessen daran wäre am Ende jedes Zugs null, also jeder Zug ein Antippen.
+    this.druckX = this.rawMouseX
+    this.druckY = this.rawMouseY
+    // Ein neuer Griff nimmt ein offenes Menü zurück, BEVOR er etwas tut: es
+    // gehört zu dem Ding, das eben angetippt war, und stünde sonst über einem
+    // anderen. Dieselbe Aufräum-Pflicht wie beim Lösch-Vorschlag (E1).
+    this.menueSchliessen()
 
     // --- Möbel greifen (W2)
     //
@@ -1161,6 +1379,26 @@ export class Floorplanner {
       }
     }
     this.zeigerStilSetzen()
+
+    // --- ANTIPPEN öffnet das Menü zum Ding darunter (W13)
+    //
+    // NUR im Verschieben- und im Wand-Werkzeug. In den drei anderen hat ein
+    // Klick bereits eine Bedeutung, die ihm niemand nehmen darf: Zeichnen setzt
+    // einen Punkt, Öffnung setzt eine Tür, Löschen schlägt vor. Ein Menü
+    // obendrauf machte aus einer eindeutigen Handlung eine Frage.
+    //
+    // Das Verschieben-Werkzeug ist der Standard — DORT muss es sitzen, sonst
+    // hätte W13 dieselbe Lücke geschlossen, die es schliessen will: eine
+    // Bedienung, die man erst über ein Werkzeug findet.
+    if (
+      (this.mode == floorplannerModes.MOVE || this.mode == floorplannerModes.WAND) &&
+      this.warAntippen()
+    ) {
+      const anfrage = this.objektUnter(this.mouseX, this.mouseY)
+      // Ein Antippen ins Leere schliesst nur — es ist die Geste, mit der man
+      // ein Menü wieder loswird, und sie darf keine Meldung erzeugen.
+      this.menueMelden(anfrage)
+    }
 
     // drawing
     if (this.mode == floorplannerModes.DRAW && !this.mouseMoved) {
@@ -2491,6 +2729,24 @@ export class Floorplanner {
       this.view.draw()
     }
 
+    // --- ANTIPPEN öffnet das Menü, auch am Handy (W13)
+    //
+    // Das Gegenstück zum Klick-Zweig in `mouseup`, und es MUSS hier stehen:
+    // `mouseup` kommt am Telefon nicht zuverlässig, und der ganze Zweck von W13
+    // — eine Bedienung ohne Werkzeugkunde — trägt vor allem dort, wo es keine
+    // Werkzeugleiste in Griffweite gibt. Gemessen wird über
+    // `fingerHatGeschoben` (die vorhandene Wahrheit über „Tippen oder
+    // Schieben", Schwelle `FINGER_WACKEL_PX`) und nicht über `warAntippen`:
+    // dessen Weg-Rechnung sitzt an den MAUS-Feldern, die der Finger nicht füllt.
+    if (
+      (this.mode == floorplannerModes.MOVE || this.mode == floorplannerModes.WAND) &&
+      !this.fingerHatGeschoben &&
+      !this.zugGesichert
+    ) {
+      const anfrage = this.objektUnter(this.mouseX, this.mouseY)
+      this.menueMelden(anfrage)
+    }
+
     this.fingerHatGeschoben = false
   }
 
@@ -2577,6 +2833,11 @@ export class Floorplanner {
     // eine Rückfrage, die das Löschen-Werkzeug überlebt, würde nach dem
     // Wechsel etwas anbieten, das der Nutzer gar nicht mehr im Sinn hat.
     this.loeschungAbbrechen()
+    // W13, dieselbe Begründung wie beim Lösch-Vorschlag: ein Menü, das den
+    // Werkzeugwechsel überlebt, böte Handlungen zu einem Ding an, mit dem der
+    // Nutzer gerade nicht mehr umgeht. `setMode` läuft auch nach jedem
+    // Rückgängig — danach sind die Kennungen darin ohnehin Leichen.
+    this.menueSchliessen()
     this.activeAusstattung = null
     // Ecke und Wand MÜSSEN seit W10 hier mit weg. Vorher waren sie in jedem
     // Werkzeug, in dem sie überhaupt gesetzt wurden, auch greifbar — jetzt
