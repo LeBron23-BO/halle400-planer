@@ -22,8 +22,15 @@
 
 import fs from 'node:fs'
 import path from 'node:path'
+// Der Ordner kommt aus `siegel.mjs` und wird hier NICHT zum zweiten Mal
+// festgelegt: bis zum 2026-07-30 stand der Pfad an beiden Stellen, und als der
+// Ordner beim Aufraeumen des Schreibtischs nach `Desktop/RightFit/` wanderte,
+// war der eine Pfad reparieret und der andere nicht. Ergebnis: sieben Gates
+// stuerzten mit „Passwort nicht auffindbar" ab, obwohl das Passwort vollstaendig
+// vorhanden war. Zwei Wahrheiten ueber denselben Ort sind eine zu viel.
+import { geheimOrdner } from './siegel.mjs'
 
-const GEHEIM = process.env.HALLE400_GEHEIM || 'C:/Users/dania/Desktop/hotel400 3d bild'
+const GEHEIM = geheimOrdner()
 const PASSWORT_DATEI = path.join(GEHEIM, 'Halle400-PASSWORT.txt')
 
 export function passwortHolen() {

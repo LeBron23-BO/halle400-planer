@@ -99,6 +99,15 @@ function geheimOrdnerFinden() {
 }
 
 const GEHEIM_ORDNER_STANDARD = geheimOrdnerFinden()
+
+/** Der gefundene Ablageort der Geheimnisse — für Werkzeuge, die ihn brauchen.
+ *
+ *  Ausdrücklich exportiert, damit `werkstatt-auf.mjs` ihn nicht ein zweites Mal
+ *  festlegt. Ein Ort, zwei Wahrheiten: das war genau der Fehler, der sieben
+ *  Gates mit „Passwort nicht auffindbar" abstürzen liess. */
+export function geheimOrdner() {
+  return GEHEIM_ORDNER_STANDARD
+}
 const PRIVAT_NAME = 'Halle400-SIEGEL-PRIVAT.json'
 /* Das Schloss zog bis zum Gegner-Review nach `data/` — und dieses Repo ist
    OEFFENTLICH. Das Paket verraet kein Passwort, aber es ist eine Vorlage zum
