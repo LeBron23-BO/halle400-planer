@@ -39,7 +39,15 @@ cd "$(dirname "$0")/.." || exit 1
 # bricht, dass die Werkstatt ohne Passwort zu bleibt — und dass die Fassung fuer
 # die Bank kein einziges Bedienelement enthaelt. Es legt sich dafuer ein eigenes
 # Wegwerf-Siegel an und fasst das scharfe nicht an.
-GATES="pruefe-kennungen pruefe-ziehen pruefe-palette pruefe-undo pruefe-ansicht pruefe-ausstattung pruefe-loeschen pruefe-zeichnen pruefe-axonometrie pruefe-touch pruefe-ausstattung-3d pruefe-tueren pruefe-planer-datei pruefe-haertung pruefe-uebernahme pruefe-axo-bearbeiten pruefe-finger pruefe-kennzahlen pruefe-schutz pruefe-siegel pruefe-serve-datei pruefe-zusammenlegen pruefe-wand-bewegen"
+# pruefe-menue (W13) misst den WEG zur Funktion, nicht ihr Vorhandensein. Der
+# Nutzerbefund aus W12 war „ich kann die Waende immer noch nicht bewegen",
+# obwohl das Werkzeug seit W10 da war und seit W12b zog: gebaut, aber nicht
+# gefunden. Gemessen wird deshalb, dass ein Griff auf ein Ding sagt, was mit
+# DIESEM Ding geht — und dass die Trennwand ihre zwei Raeume kennt (W13b:
+# Entfernen IST Verbinden). Abschnitt F fuehrt das BUENDEL wirklich aus: ein
+# umbenannter Import waere im Planer unsichtbar und in der Doppelklick-Datei
+# eine tote Bedienung ohne Fehlermeldung.
+GATES="pruefe-kennungen pruefe-ziehen pruefe-palette pruefe-undo pruefe-ansicht pruefe-ausstattung pruefe-loeschen pruefe-zeichnen pruefe-axonometrie pruefe-touch pruefe-ausstattung-3d pruefe-tueren pruefe-planer-datei pruefe-haertung pruefe-uebernahme pruefe-axo-bearbeiten pruefe-finger pruefe-kennzahlen pruefe-schutz pruefe-siegel pruefe-serve-datei pruefe-zusammenlegen pruefe-wand-bewegen pruefe-menue"
 if [ -n "$1" ]; then GATES="$*"; fi
 gesamt=0
 for g in $GATES; do
