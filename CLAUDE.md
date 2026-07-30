@@ -330,6 +330,85 @@ der Kuppe zu verschieben bliebe auch mit Werkzeugwahl ein blinder Griff.
 Mehrfachauswahl, Alt-Ziehen kopiert, Knöpfe ausdünnen — V1, V2, V6 und der
 Abschnitt „Was weg kann" des Audits.
 
+## Anfassen statt Werkzeugkunde (W13, 2026-07-30)
+
+Nutzerbefund aus W12, wörtlich: *„ich kann die wände immer noch nicht bewegen"* —
+obwohl das Wand-Werkzeug seit W10 existierte und seit W12b wirklich zog. **Gebaut
+war es, gefunden wurde es nicht.** Dasselbe galt fürs Zusammenlegen: die Rechnung
+stand seit W12 vollständig da und war über keinen einzigen Knopf erreichbar.
+
+Der Planer verlangte bis hierher, dass man erst ein Werkzeug wählt und dann ein
+Ding anfasst — die Reihenfolge einer Werkstatt, nicht die einer Hand. **Seit W13
+ist es umgekehrt: antippen, und der Plan sagt, was mit DIESEM Ding geht.** Die
+Werkzeugleiste bleibt daneben stehen; sie war nie der Fehler, sondern nur der
+einzige Weg.
+
+```
+src/raum/objekt-menue.js     objektAn() · menueFuer() · nachbarnVon() ·
+                             raeumeAnWand() — reine Rechnung, in node prüfbar
+floorplanner.ts              objektUnter() · addMenueAnfrageCallback() ·
+                             loeschVorschlagenFuer() · wendeOeffnungNachKennung()
+tools/pruefe-menue.mjs       A-F ohne Browser
+tools/pruefe-menue-datei.mjs G-I an der echten Datei (Maus + CDP-Berührungen)
+```
+
+Sechs Festlegungen:
+
+1. **Der KLEINSTE Treffer gewinnt** — Möbel vor Öffnung vor Ecke vor Wand vor
+   Raum. Keine neue Regel, sondern dieselbe, die `trefferBestimmen` seit W10
+   anwendet: das Kleinere ist das Absichtlichere. Ein Raum ist immer da, also
+   darf er nie etwas Genaueres verdecken.
+2. **Antippen ≠ Zug, gemessen über ZWEI Bedingungen.** Weg ≤ `FINGER_WACKEL_PX`
+   **und** kein `zugGesichert`. Jede allein liegt in einem Fall falsch: der Weg
+   allein hielte einen 3-px-Zug am Möbel für ein Antippen, `zugGesichert` allein
+   hielte einen Zug ins Leere für einen.
+3. **Nur im Verschieben- und im Wand-Werkzeug.** In Zeichnen, Öffnung und Löschen
+   hat ein Klick bereits eine eindeutige Bedeutung — ein Menü obendrauf machte
+   aus einer Handlung eine Frage. Das Verschieben ist der STANDARD, und dort muss
+   es sitzen: säße es hinter einer Werkzeugwahl, hätte W13 dieselbe Lücke
+   geschlossen, die es schliessen will.
+4. **Eine Trennwand weiss, welche zwei Räume sie trennt** (W13b). Ihr „Entfernen"
+   ist deshalb kein Löschen, sondern der Einstieg ins Zusammenlegen — entfernt
+   man sie, entsteht ein grosser Raum, und das ist die Wirkung, die vorher
+   dastehen muss. Wer nur „Wand gelöscht" sagt, verschweigt das Ergebnis. Beide
+   Wege bleiben getrennt benennbar: „Nur die Wand entfernen (ohne Räume zu
+   verbinden)".
+5. **Das Menü steht AM Objekt** — als Einziges. Kein Widerspruch zur Regel bei
+   den Rückfragen (die liegen unten mittig, weil sie das Objekt nicht verdecken
+   dürfen, über das sie eine Auskunft verlangen), sondern deren andere Hälfte:
+   dieses Menü GEHÖRT zu dem Ding, das der Finger berührt hat. Bei drei Räumen
+   nebeneinander wüsste sonst niemand mehr, welchen er angefasst hat.
+6. **Zusammenlegen in drei Stufen IM Menü** (Nutzung → Zahlen → Bestätigen)
+   statt in drei Fenstern. Die Zahlen kommen unverändert aus
+   `planeZusammenlegen` und werden nicht nachgerechnet — dieselbe Beschreibung
+   speist Vorschau, Rückfrage und Ausführung (W12). Abbrechen steht zuerst (E1).
+
+**Zwei Einträge stehen bewusst NICHT im Menü**, und beide Gründe sind
+Datenmodell und keine Bequemlichkeit:
+
+- **Raum umbenennen.** `roomMeta` hängt an Schlüsseln aus den PDF-Textankern,
+  nicht an `Room.getUuid()` — und die UUID ist der Hash der Ecken, ändert sich
+  also bei jeder Grundriss-Änderung. Ein Setter darüber legte einen Eintrag an,
+  der beim nächsten `update()` verwaist: der Name wäre nach dem ersten Wandzug
+  still weg. Welcher Anker in einem geänderten Raum gilt, ist Beschriftungs-
+  Politik und keine Geometrie (dieselbe offene Grenze wie in W12).
+- **Ecke löschen.** „Diese Ecke mit allen Wänden daran" ist die folgenreichste
+  Löschung des Planers und aus einem Daumen-Menü zu leicht ausgelöst. Wer sie
+  will, nimmt das Löschen-Werkzeug — dort steht der Zeiger nachweislich darauf.
+
+**Der Fund beim Bauen, der keine 700 Prüfungen gesehen hätten:** ein umbenannter
+Import (`import { x as y }`) überlebt `buendleKern` NICHT — es entfernt jede
+Import-Zeile und legt alle Raum-Module in EIN Namensfeld. Im Planer fällt das
+nicht auf (dort lädt `import` nach), in der Doppelklick-Datei wäre es eine tote
+Bedienung ohne Fehlermeldung. Abschnitt F des Gates führt das Bündel deshalb
+WIRKLICH aus; mit `as` gemessen meldet es `RZ is not defined`.
+
+**Was W13 noch nicht kann:** das Menü gibt es im GRUNDRISS, nicht im Blatt
+(Axonometrie). Dort wird seit W7 gezogen, gedreht und gelöscht, aber ein Griff
+trifft dort einen Sehstrahl und keinen Punkt — die Trefferrechnung dafür steht in
+`axo-treffer.js` und müsste an `objektAn` angeschlossen werden. Bis dahin gilt
+für die Axonometrie unverändert, was in „Bearbeiten im Blatt" steht.
+
 ## Bearbeiten MIT DEM FINGER (W8, 2026-07-27)
 
 Der Nutzer arbeitet oft vom Handy, und dort ging bis hierher **nichts zu
