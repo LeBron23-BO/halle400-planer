@@ -61,7 +61,44 @@ const SIEGEL_ORDNER = DATEN_ORDNER
 // Der Ablageort der Geheimnisse. Bewusst AUSSERHALB des Repos: dieses Projekt
 // hat eine GitHub-Gegenstelle, und ein privater Schluessel, der einmal
 // gepusht wurde, ist fuer immer verbrannt.
-const GEHEIM_ORDNER_STANDARD = process.env.HALLE400_GEHEIM || 'C:/Users/dania/Desktop/hotel400 3d bild'
+//
+// EIN EINZELNER FESTER PFAD WAR ZU WENIG (gemessen am 2026-07-30): der Ordner
+// wanderte beim Aufraeumen des Schreibtischs nach `Desktop/RightFit/`, und
+// danach brach JEDER Bau mit „kein Schloss" ab — an einer Datei, die vollstaendig
+// vorhanden war, nur 30 cm weiter links. Der Fehler sah aus wie ein verlorener
+// Schluessel, und das ist die teuerste Fehlmeldung, die dieses Projekt kennt.
+//
+// Gesucht wird deshalb an mehreren Orten, in fester Reihenfolge, und gefunden ist
+// der ERSTE, der den privaten Schluessel wirklich traegt. Alle Kandidaten liegen
+// im Benutzerprofil und AUSSERHALB des Repos — das Repo hat eine GitHub-
+// Gegenstelle, und ein privater Schluessel, der einmal gepusht wurde, ist fuer
+// immer verbrannt. Wer den Ordner woandershin legt, setzt HALLE400_GEHEIM.
+const GEHEIM_KANDIDATEN = [
+  'C:/Users/dania/Desktop/hotel400 3d bild',
+  'C:/Users/dania/Desktop/RightFit/hotel400 3d bild',
+  'C:/Users/dania/Desktop/Valeo/hotel400 3d bild',
+  'C:/Users/dania/Desktop/Desktop 2026/hotel400 3d bild',
+  'C:/Users/dania/Desktop/Desktop durcheinander/hotel400 3d bild',
+  'C:/Users/dania/Desktop/D Ordner/hotel400 3d bild'
+]
+
+function geheimOrdnerFinden() {
+  if (process.env.HALLE400_GEHEIM) return process.env.HALLE400_GEHEIM
+  // Gesucht wird nach dem privaten SCHLUESSEL und nicht nach dem Ordnernamen:
+  // ein leerer Ordner mit dem richtigen Namen waere die schlechtere Antwort als
+  // ein umbenannter mit dem Schluessel darin.
+  const mitSchluessel = GEHEIM_KANDIDATEN.find((ort) =>
+    fs.existsSync(path.join(ort, 'Halle400-SIEGEL-PRIVAT.json'))
+  )
+  if (mitSchluessel) return mitSchluessel
+  // Auch das Schloss allein rechtfertigt den Ort — der Bau braucht nur das.
+  const mitSchloss = GEHEIM_KANDIDATEN.find((ort) =>
+    fs.existsSync(path.join(ort, 'Halle400-SCHLOSS.json'))
+  )
+  return mitSchloss || GEHEIM_KANDIDATEN[0]
+}
+
+const GEHEIM_ORDNER_STANDARD = geheimOrdnerFinden()
 const PRIVAT_NAME = 'Halle400-SIEGEL-PRIVAT.json'
 /* Das Schloss zog bis zum Gegner-Review nach `data/` — und dieses Repo ist
    OEFFENTLICH. Das Paket verraet kein Passwort, aber es ist eine Vorlage zum

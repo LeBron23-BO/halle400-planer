@@ -65,22 +65,22 @@
 /* ============================================================ Geometrie-Grundlagen */
 
 /** Ganze Zentimeter. Projekt-DNA Punkt 3 — keine erfundene Nachkommastelle. */
-const cm = (n) => Math.round(n)
+const rzCm = (n) => Math.round(n)
 
 /** Ein Kanten-Schlüssel, richtungsunabhängig: „A→B" und „B→A" sind dieselbe Kante. */
-function kantenSchluessel(a, b) {
-  const p = `${cm(a.x)},${cm(a.y)}`
-  const q = `${cm(b.x)},${cm(b.y)}`
+function rzKantenSchluessel(a, b) {
+  const p = `${rzCm(a.x)},${rzCm(a.y)}`
+  const q = `${rzCm(b.x)},${rzCm(b.y)}`
   return p < q ? `${p}|${q}` : `${q}|${p}`
 }
 
 /** Die Kanten eines Rings als Schlüssel-Menge. Der Ring ist geschlossen gedacht. */
-function ringKanten(ring) {
+function rzRingKanten(ring) {
   const menge = new Map()
   for (let i = 0; i < ring.length; i++) {
     const a = ring[i]
     const b = ring[(i + 1) % ring.length]
-    menge.set(kantenSchluessel(a, b), { a, b })
+    menge.set(rzKantenSchluessel(a, b), { a, b })
   }
   return menge
 }
@@ -91,12 +91,12 @@ function ringKanten(ring) {
  * Punkte auf dem Rand gelten als DRIN — sonst fiele ein Möbel, dessen Ecke genau
  * auf der Wandachse sitzt, aus dem Raum heraus, in dem es unbestreitbar steht.
  */
-function punktInRing(p, ring) {
+function rzPunktInRing(p, ring) {
   let drin = false
   for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
     const a = ring[i]
     const b = ring[j]
-    if (abstandPunktStrecke(p, a, b) < 0.5) return true
+    if (rzAbstandPunktStrecke(p, a, b) < 0.5) return true
     const schneidet = a.y > p.y !== b.y > p.y
     if (schneidet && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x) {
       drin = !drin
@@ -105,7 +105,7 @@ function punktInRing(p, ring) {
   return drin
 }
 
-function abstandPunktStrecke(p, a, b) {
+function rzAbstandPunktStrecke(p, a, b) {
   const dx = b.x - a.x
   const dy = b.y - a.y
   const laenge2 = dx * dx + dy * dy
@@ -116,7 +116,7 @@ function abstandPunktStrecke(p, a, b) {
 }
 
 /** Die vier Ecken eines Möbels — nach seiner Drehung. */
-function moebelEcken(m) {
+function rzMoebelEcken(m) {
   const w = (m.breite ?? 0) / 2
   const t = (m.tiefe ?? 0) / 2
   const d = m.drehung ?? 0
@@ -143,7 +143,7 @@ function moebelEcken(m) {
  * rasten in diesem Planer auf Wandwinkel ein (W2 Punkt 4) — schiefe Wände
  * erzeugen also schiefe Möbel, nicht als Ausnahme, sondern als Regel.
  */
-function vieleckeUeberlappen(p, q) {
+function rzVieleckeUeberlappen(p, q) {
   for (const form of [p, q]) {
     for (let i = 0; i < form.length; i++) {
       const a = form[i]
@@ -172,7 +172,7 @@ function vieleckeUeberlappen(p, q) {
 }
 
 /** Das Band, das eine Wand im Grundriss belegt: Achse plus halbe Dicke. */
-function wandBand(a, b, dicke) {
+function rzWandBand(a, b, dicke) {
   const dx = b.x - a.x
   const dy = b.y - a.y
   const laenge = Math.hypot(dx, dy)
@@ -188,7 +188,7 @@ function wandBand(a, b, dicke) {
 }
 
 /** Fläche eines Rings in cm² (Gauss). Vorzeichenfrei. */
-function ringFlaeche(ring) {
+function rzRingFlaeche(ring) {
   let summe = 0
   for (let i = 0; i < ring.length; i++) {
     const a = ring[i]
@@ -199,7 +199,7 @@ function ringFlaeche(ring) {
 }
 
 /** Schwerpunkt eines Rings — für die Zuordnung von Namen und für Beschriftungen. */
-function ringSchwerpunkt(ring) {
+function rzRingSchwerpunkt(ring) {
   let x = 0
   let y = 0
   let a2 = 0
@@ -215,11 +215,11 @@ function ringSchwerpunkt(ring) {
     // Entartet (alle Punkte auf einer Linie): das Mittel der Punkte ist die
     // ehrlichste Antwort, die es hier gibt.
     return {
-      x: cm(ring.reduce((s, p) => s + p.x, 0) / ring.length),
-      y: cm(ring.reduce((s, p) => s + p.y, 0) / ring.length)
+      x: rzCm(ring.reduce((s, p) => s + p.x, 0) / ring.length),
+      y: rzCm(ring.reduce((s, p) => s + p.y, 0) / ring.length)
     }
   }
-  return { x: cm(x / (3 * a2)), y: cm(y / (3 * a2)) }
+  return { x: rzCm(x / (3 * a2)), y: rzCm(y / (3 * a2)) }
 }
 
 /* ================================================== A) Nachbarschaft + Trennwände */
@@ -238,13 +238,13 @@ function ringSchwerpunkt(ring) {
  * @param {{id:string,a:{x:number,y:number},b:{x:number,y:number},quelle?:string,dicke?:number}[]} waende
  */
 export function trennwaendeFinden(ringA, ringB, waende) {
-  const kantenA = ringKanten(ringA)
-  const kantenB = ringKanten(ringB)
+  const kantenA = rzRingKanten(ringA)
+  const kantenB = rzRingKanten(ringB)
   const gemeinsam = new Set()
   for (const schluessel of kantenA.keys()) {
     if (kantenB.has(schluessel)) gemeinsam.add(schluessel)
   }
-  return waende.filter((w) => gemeinsam.has(kantenSchluessel(w.a, w.b)))
+  return waende.filter((w) => gemeinsam.has(rzKantenSchluessel(w.a, w.b)))
 }
 
 /**
@@ -270,7 +270,7 @@ export function pruefeZusammenlegen(raumA, raumB, waende) {
     // vor, ist es ein Datenfehler, und dann ist „die berühren sich nicht" eine
     // IRREFÜHRENDE Auskunft: der Nutzer sieht zwei Räume Wand an Wand und
     // bekommt gesagt, sie seien keine Nachbarn. Lieber der wahre Grund.
-    if (ringeBeruehrenSichOhneGemeinsameKante(raumA.ring, raumB.ring)) {
+    if (rzRingeBeruehrenSich(raumA.ring, raumB.ring)) {
       return {
         moeglich: false,
         grund:
@@ -299,7 +299,7 @@ export function pruefeZusammenlegen(raumA, raumB, waende) {
  * länger als eine Türbreite), dann liegen die Räume aneinander — die Kanten sind
  * nur unterschiedlich geteilt.
  */
-function ringeBeruehrenSichOhneGemeinsameKante(ringA, ringB) {
+function rzRingeBeruehrenSich(ringA, ringB) {
   const kanten = (ring) => {
     const liste = []
     for (let i = 0; i < ring.length; i++) {
@@ -310,10 +310,10 @@ function ringeBeruehrenSichOhneGemeinsameKante(ringA, ringB) {
   for (const ka of kanten(ringA)) {
     for (const kb of kanten(ringB)) {
       // Beide Endpunkte der einen Kante fast auf der Achse der anderen?
-      const d1 = abstandPunktStrecke(ka.a, kb.a, kb.b)
-      const d2 = abstandPunktStrecke(ka.b, kb.a, kb.b)
-      const e1 = abstandPunktStrecke(kb.a, ka.a, ka.b)
-      const e2 = abstandPunktStrecke(kb.b, ka.a, ka.b)
+      const d1 = rzAbstandPunktStrecke(ka.a, kb.a, kb.b)
+      const d2 = rzAbstandPunktStrecke(ka.b, kb.a, kb.b)
+      const e1 = rzAbstandPunktStrecke(kb.a, ka.a, ka.b)
+      const e2 = rzAbstandPunktStrecke(kb.b, ka.a, ka.b)
       const aufB = d1 < 1 && d2 < 1
       const aufA = e1 < 1 && e2 < 1
       if (!aufA && !aufB) continue
@@ -336,8 +336,8 @@ function ringeBeruehrenSichOhneGemeinsameKante(ringA, ringB) {
  * zurück, statt einen falschen Ring zu behaupten.
  */
 export function ringeVereinigen(ringA, ringB) {
-  const kantenA = ringKanten(ringA)
-  const kantenB = ringKanten(ringB)
+  const kantenA = rzRingKanten(ringA)
+  const kantenB = rzRingKanten(ringB)
   const offen = []
   for (const [schluessel, kante] of kantenA) {
     if (!kantenB.has(schluessel)) offen.push(kante)
@@ -347,7 +347,7 @@ export function ringeVereinigen(ringA, ringB) {
   }
   if (offen.length < 3) return null
 
-  const punktSchluessel = (p) => `${cm(p.x)},${cm(p.y)}`
+  const punktSchluessel = (p) => `${rzCm(p.x)},${rzCm(p.y)}`
   const nachbarn = new Map()
   for (const kante of offen) {
     for (const [von, nach] of [
@@ -402,11 +402,11 @@ export function ringeVereinigen(ringA, ringB) {
  */
 export function moebelInWaenden(moebel, trennwaende, dickeStandard = 10) {
   const baender = trennwaende
-    .map((w) => wandBand(w.a, w.b, w.dicke ?? dickeStandard))
+    .map((w) => rzWandBand(w.a, w.b, w.dicke ?? dickeStandard))
     .filter(Boolean)
   return moebel.filter((m) => {
-    const ecken = moebelEcken(m)
-    return baender.some((band) => vieleckeUeberlappen(ecken, band))
+    const ecken = rzMoebelEcken(m)
+    return baender.some((band) => rzVieleckeUeberlappen(ecken, band))
   })
 }
 
@@ -443,21 +443,21 @@ export function ausWandSchieben(m, wand, dicke, ring) {
   if (weg <= 0) return { ...m }
   const neu = {
     ...m,
-    x: cm(m.x + nx * richtung * weg),
-    y: cm(m.y + ny * richtung * weg),
+    x: rzCm(m.x + nx * richtung * weg),
+    y: rzCm(m.y + ny * richtung * weg),
     quelle: 'gesetzt'
   }
   // Landet es dabei aussserhalb des neuen Raums, ist die andere Seite besser —
   // ein Stück in die Wand zu schieben, um es aus einer Wand zu holen, wäre keine
   // Verbesserung.
-  if (ring && !punktInRing({ x: neu.x, y: neu.y }, ring)) {
+  if (ring && !rzPunktInRing({ x: neu.x, y: neu.y }, ring)) {
     const andere = {
       ...m,
-      x: cm(m.x - nx * richtung * (soll + Math.abs(seite))),
-      y: cm(m.y - ny * richtung * (soll + Math.abs(seite))),
+      x: rzCm(m.x - nx * richtung * (soll + Math.abs(seite))),
+      y: rzCm(m.y - ny * richtung * (soll + Math.abs(seite))),
       quelle: 'gesetzt'
     }
-    if (punktInRing({ x: andere.x, y: andere.y }, ring)) return andere
+    if (rzPunktInRing({ x: andere.x, y: andere.y }, ring)) return andere
   }
   return neu
 }
@@ -503,7 +503,7 @@ export const NUTZUNGEN = {
  * Wiederholbarkeit nicht — zwei Läufe müssen dieselbe Auslegung ergeben, sonst
  * ist keine Prüfung darauf zu bauen.
  */
-function hauptWinkel(ring) {
+function rzHauptWinkel(ring) {
   let beste = { laenge: -1, winkel: 0 }
   for (let i = 0; i < ring.length; i++) {
     const a = ring[i]
@@ -523,9 +523,9 @@ function hauptWinkel(ring) {
 }
 
 /** Liegt das Rechteck VOLLSTÄNDIG im Ring? */
-function rechteckImRing(ecken, ring) {
+function rzRechteckImRing(ecken, ring) {
   for (const p of ecken) {
-    if (!punktInRing(p, ring)) return false
+    if (!rzPunktInRing(p, ring)) return false
   }
   // Vier Ecken drin genügt bei konkaven Räumen NICHT: ein L-förmiger Raum kann
   // ein Rechteck über seine Innenecke spannen, dessen vier Ecken alle im Raum
@@ -533,7 +533,7 @@ function rechteckImRing(ecken, ring) {
   for (let i = 0; i < ring.length; i++) {
     const a = ring[i]
     const b = ring[(i + 1) % ring.length]
-    if (vieleckeUeberlappen(ecken, wandBand(a, b, 0.2) || [])) return false
+    if (rzVieleckeUeberlappen(ecken, rzWandBand(a, b, 0.2) || [])) return false
   }
   return true
 }
@@ -581,7 +581,7 @@ export function legeAus(ring, nutzung, vorlagen, opts = {}) {
   const hoechstens = opts.hoechstens ?? 200
   const kennung = opts.id ?? ((i) => `ausgelegt-${i}`)
 
-  const winkel = hauptWinkel(ring)
+  const winkel = rzHauptWinkel(ring)
   const cos = Math.cos(-winkel)
   const sin = Math.sin(-winkel)
   const hin = (p) => ({ x: p.x * cos - p.y * sin, y: p.x * sin + p.y * cos })
@@ -610,13 +610,13 @@ export function legeAus(ring, nutzung, vorlagen, opts = {}) {
         id: kennung(i++),
         typ: regel.typ,
         quelle: 'gesetzt',
-        x: cm(mitteWelt.x),
-        y: cm(mitteWelt.y),
+        x: rzCm(mitteWelt.x),
+        y: rzCm(mitteWelt.y),
         breite: b,
         tiefe: t,
         drehung: winkel
       }
-      if (rechteckImRing(moebelEcken(kandidat), ring)) stuecke.push(kandidat)
+      if (rzRechteckImRing(rzMoebelEcken(kandidat), ring)) stuecke.push(kandidat)
     }
   }
   return stuecke
@@ -663,7 +663,7 @@ export function zusammenlegenPlanen(raumA, raumB, daten, wahl = {}) {
   const verschoben = imWeg.map((m) => {
     const naechste =
       trennwaende
-        .map((w) => ({ w, d: abstandPunktStrecke({ x: m.x, y: m.y }, w.a, w.b) }))
+        .map((w) => ({ w, d: rzAbstandPunktStrecke({ x: m.x, y: m.y }, w.a, w.b) }))
         .sort((p, q) => p.d - q.d)[0]?.w ?? trennwaende[0]
     return { vorher: m, nachher: ausWandSchieben(m, naechste, naechste.dicke ?? dicke, ring) }
   })
@@ -683,28 +683,28 @@ export function zusammenlegenPlanen(raumA, raumB, daten, wahl = {}) {
       : (daten.moebel || [])
           .map((m) => verschoben.find((v) => v.vorher.id === m.id)?.nachher ?? m)
           .filter((m) => {
-            if (!punktInRing({ x: m.x, y: m.y }, ring)) return false
-            const ecken = moebelEcken(m)
-            return neue.some((n) => vieleckeUeberlappen(ecken, moebelEcken(n)))
+            if (!rzPunktInRing({ x: m.x, y: m.y }, ring)) return false
+            const ecken = rzMoebelEcken(m)
+            return neue.some((n) => rzVieleckeUeberlappen(ecken, rzMoebelEcken(n)))
           })
 
-  const flaeche = ringFlaeche(ring)
+  const flaeche = rzRingFlaeche(ring)
 
   return {
     moeglich: true,
     ring,
-    schwerpunkt: ringSchwerpunkt(ring),
+    schwerpunkt: rzRingSchwerpunkt(ring),
     flaecheM2: Math.round(flaeche / 100 / 100 * 10) / 10,
     waendeEntfernen: trennwaende.map((w) => w.id),
     gemessenEntfernt: gemessenFallen.length,
-    statikHinweis: statikHinweis(gemessenFallen, daten),
+    statikHinweis: rzStatikHinweis(gemessenFallen, daten),
     oeffnungenEntfallen: oeffnungenWeg.map((o) => ({ id: o.id, typ: o.typ, breite: o.breite })),
     moebelVerschieben: verschoben.filter(
       (v) => v.nachher.x !== v.vorher.x || v.nachher.y !== v.vorher.y
     ),
     moebelNeu: neue,
     moebelZumEntfernenVorgeschlagen: zumEntfernen.map((m) => m.id),
-    name: wahl.name || vorschlagName(raumA, raumB, nutzung),
+    name: wahl.name || rzVorschlagName(raumA, raumB, nutzung),
     nutzung
   }
 }
@@ -717,7 +717,7 @@ export function zusammenlegenPlanen(raumA, raumB, daten, wahl = {}) {
  * Das ist nicht zu vermeiden, wohl aber zu bemerken: gibt der Nutzer keinen
  * Namen, wird einer VORGESCHLAGEN, damit der Raum nicht namenlos im Blatt steht.
  */
-function vorschlagName(raumA, raumB, nutzung) {
+function rzVorschlagName(raumA, raumB, nutzung) {
   const regel = NUTZUNGEN[nutzung]
   if (regel && nutzung !== 'leer') return regel.name
   const namen = [raumA.name, raumB.name].filter((n) => n && n.trim() !== '')
@@ -738,7 +738,7 @@ function vorschlagName(raumA, raumB, nutzung) {
  * dicker ist als der Durchschnitt, oder die an beiden Enden an die Aussenkontur
  * anschliesst, ist ein Kandidat — mehr nicht.
  */
-function statikHinweis(gemesseneWaende, daten) {
+function rzStatikHinweis(gemesseneWaende, daten) {
   if (gemesseneWaende.length === 0) return null
   const alle = daten.waende || []
   const dicken = alle.map((w) => w.dicke ?? daten.wandDicke ?? 10)
@@ -763,14 +763,18 @@ function statikHinweis(gemesseneWaende, daten) {
 }
 
 export const _pruefzugang = {
-  kantenSchluessel,
-  punktInRing,
-  moebelEcken,
-  vieleckeUeberlappen,
-  wandBand,
-  ringFlaeche,
-  ringSchwerpunkt,
-  rechteckImRing,
-  hauptWinkel,
-  vorschlagName
+  // Kurze Schluessel nach aussen, eindeutige Namen nach innen: die Funktionen
+  // tragen ein `rz`-Vorsatz, weil diese Datei mit den Axonometrie-Modulen in EIN
+  // gemeinsames Namensfeld gebuendelt wird (`buendleKern`) — `kantenSchluessel`
+  // gab es dort schon, und der Kollisions-Pruefer hat es zu Recht abgelehnt.
+  kantenSchluessel: rzKantenSchluessel,
+  punktInRing: rzPunktInRing,
+  moebelEcken: rzMoebelEcken,
+  vieleckeUeberlappen: rzVieleckeUeberlappen,
+  wandBand: rzWandBand,
+  ringFlaeche: rzRingFlaeche,
+  ringSchwerpunkt: rzRingSchwerpunkt,
+  rechteckImRing: rzRechteckImRing,
+  hauptWinkel: rzHauptWinkel,
+  vorschlagName: rzVorschlagName
 }
