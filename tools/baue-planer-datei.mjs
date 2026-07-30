@@ -2700,7 +2700,6 @@ function verbindenAusfuehren(vorschlag){
     return;
   }
   zeichner.menueSchliessen();
-  zeichner.view.draw();
   /* GEMESSEN und nicht behauptet: \`raeumeNachher\` kommt vom Kern selbst
      (\`floorplan.getRooms().length\` nach dem Anwenden). Ein „erledigt" ohne
      diese Zahl waere die Behauptung des Werkzeugs ueber sich selbst. */
@@ -2763,8 +2762,6 @@ function menueHandlung(eintrag, anfrage){
       zeichner.menueSchliessen();
       if (!zeichner.wendeOeffnungNachKennung(id, eintrag.handlung === 'oeffnung-anschlag' ? 'anschlag' : 'seite')){
         meldung('Diese Öffnung gibt es nicht mehr.', true);
-      } else {
-        zeichner.view.draw();
       }
       return;
 
@@ -2790,14 +2787,13 @@ function menueHandlung(eintrag, anfrage){
       if (!zeichner.loeschStueckVorschlagen(id)) meldung('Dieses Stück gibt es nicht mehr.', true);
       return;
 
-    case 'raum-umbenennen':
-      raumUmbenennen(id, anfrage.menue.titel);
-      return;
-
     case 'raum-einrichten':
+      /* Es gibt hier bewusst KEINEN eigenen Einricht-Ablauf: die Palette links
+         tut das bereits, und ein zweiter Weg zum selben Ziel waere eine zweite
+         Bedienidee fuer dieselbe Sache. Der Eintrag sagt, WO es steht — das
+         war der ganze Befund von W13 (gebaut, aber nicht gefunden). */
       zeichner.menueSchliessen();
       meldung('Ziehen Sie ein Stück aus der Palette links in den Raum — Matte, Gerät oder Liege.');
-      paletteHervorheben();
       return;
 
     default:

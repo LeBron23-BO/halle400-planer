@@ -2097,6 +2097,31 @@ export class Floorplanner {
     return true
   }
 
+  /**
+   * Wendet eine BENANNTE Öffnung (W13) — der Weg aus dem Menü heraus.
+   *
+   * `wendeAktiveOeffnung` liest die Merkung des Zeigers und verlangt zusätzlich
+   * das Öffnungs-Werkzeug. Beides trifft aus einem Menü heraus nicht zu: der
+   * Zeiger hat die Tür auf dem Weg zum Eintrag verlassen, und der Nutzer hat
+   * gerade GESAGT, was er will — ein Werkzeug zu verlangen, das er dafür nicht
+   * gewählt hat, wäre genau die Werkzeugkunde, die W13 abschafft.
+   *
+   * Die WENDE-Rechnung selbst bleibt EINE (`floorplan.wendeAnschlag/wendeSeite`,
+   * W4) — hier ist nur ein zweiter Weg zu ihr, kein zweites Verfahren. Am Handy
+   * ist es überdies der einzige: Q und E gibt es dort nicht (W8).
+   */
+  public wendeOeffnungNachKennung(kennung: string, was: 'anschlag' | 'seite'): boolean {
+    const vorhanden = this.floorplan.findeOeffnung(kennung)
+    if (!vorhanden) return false
+    this.undoManager?.snapshot()
+    const ok =
+      was === 'anschlag'
+        ? this.floorplan.wendeAnschlag(kennung)
+        : this.floorplan.wendeSeite(kennung)
+    this.view.draw()
+    return ok
+  }
+
   /** „diese Tür (0,88 m breit)" — damit die Rückfrage benennt, was verschwindet. */
   private oeffnungsBeschreibung(o: Oeffnung): string {
     const weite = (o.breite / 100).toFixed(2).replace('.', ',')
