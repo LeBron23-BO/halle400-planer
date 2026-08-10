@@ -480,6 +480,14 @@ export function ausWandSchieben(m, wand, dicke, ring) {
  *   Durchgang) und 20 cm seitlich.
  * - `training`: Geräte brauchen Bedien- und Auslaufraum; 100 cm ringsum ist die
  *   verbreitete Empfehlung der Hersteller für freies Üben.
+ * - `behandlung` (W14): eine Liege misst 200 × 70 cm und wird von der Seite
+ *   bedient — anders als Matte, Stuhl und Gerät arbeitet hier jemand AM
+ *   liegenden Gast. 100 cm quer ist deshalb kein Höflichkeitsabstand, sondern
+ *   der geteilte Arbeitsgang zweier benachbarter Liegen (je rund 50 cm Stand-
+ *   fläche). 60 cm längs zwischen Kopf- und Fussende genügen zum Vorbeigehen,
+ *   weil dort niemand arbeitet. Diese Nutzung trägt drei Säulen — IHHT,
+ *   Massage und Akupunktur (`saeulen.js`); ihr Unterschied liegt im Gerät am
+ *   Platz, nicht im Platzbedarf, und ein Grundriss zeigt das Gerät nicht.
  *
  * Wer andere Zahlen für richtig hält, ändert sie HIER — dann ändern sich alle
  * Auslegungen mit, und keine zweite Liste läuft davon.
@@ -488,6 +496,7 @@ export const NUTZUNGEN = {
   yoga: { typ: 'matte', abstandQuer: 60, abstandLaengs: 80, name: 'Yoga' },
   kurs: { typ: 'stuhl', abstandQuer: 20, abstandLaengs: 90, name: 'Kursraum' },
   training: { typ: 'geraet', abstandQuer: 100, abstandLaengs: 100, name: 'Training' },
+  behandlung: { typ: 'liege', abstandQuer: 100, abstandLaengs: 60, name: 'Behandlung' },
   leer: { typ: null, abstandQuer: 0, abstandLaengs: 0, name: 'frei' }
 }
 

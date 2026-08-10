@@ -2703,20 +2703,41 @@ function verbindenBeginnen(ziel){
     zeichner.menueSchliessen();
     return;
   }
-  const arten = nutzungsArten();
+  /* W14: gefragt wird nach der SAEULE, nicht nach der Belegung. Der Betreiber
+     denkt in den neun Saeulen seines Hauses; „Matte oder Liege" ist die Folge
+     dieser Wahl und nicht die Wahl selbst. Die Uebersetzung steht an EINER
+     Stelle (\`saeulen.js\`, \`nutzungFuerSaeule\`) — hier wird sie nur benutzt.
+
+     Dass zwei Saeulen dieselbe Belegung haben (Massage und Akupunktur liegen
+     beide an der Liege), ist genau der Grund fuer die Trennung: als Belegungs-
+     Liste waeren sie ein Eintrag und nicht mehr auseinanderzuhalten. */
+  const saeulen = saeulenWahl();
   menueStufe(
-    'Wozu soll der neue Raum dienen?',
-    'Die Wahl räumt passend ein — Matten, Geräte oder Liegen. „Nur leer räumen" stellt nichts hin.',
-    arten.map(function(a){
-      return { handlung: 'nutzung', text: a.name, tun: function(){ verbindenZeigen(raumA, raumB, a.schluessel); } };
+    'Welche Säule trägt den neuen Raum?',
+    'Die Wahl räumt passend ein — Matten, Geräte, Stühle oder Liegen. „Noch offen" stellt nichts hin.',
+    saeulen.map(function(s){
+      return {
+        handlung: 'saeule',
+        text: saeulenText(s),
+        tun: function(){ verbindenZeigen(raumA, raumB, s); }
+      };
     })
   );
 }
 
-function verbindenZeigen(raumA, raumB, nutzung){
+function verbindenZeigen(raumA, raumB, saeule){
+  const nutzung = nutzungFuerSaeule(saeule);
   let vorschlag = null;
   try {
-    vorschlag = planeZusammenlegen(grundriss, raumA, raumB, { nutzung: nutzung });
+    /* Die Kennung der ausgelegten Stuecke traegt die Saeule mit. Das ist die
+       EINZIGE Spur, die einen Rueckgaengig-Schritt und ein \`update()\`
+       ueberlebt: die Raum-UUID ist der Hash seiner Ecken und aendert sich beim
+       Zusammenlegen zwangslaeufig (s. \`zusammenlegen-anbindung.ts\`
+       Festlegung 2), eine Moebel-Kennung dagegen wird einmal vergeben. */
+    vorschlag = planeZusammenlegen(grundriss, raumA, raumB, {
+      nutzung: nutzung,
+      id: function(i){ return 'saeule' + (saeule && saeule.n ? saeule.n : '00') + '-' + i; }
+    });
   } catch (e) {
     meldung('Das lässt sich nicht rechnen: ' + (e && e.message ? e.message : e), true);
     zeichner.menueSchliessen();
@@ -2733,6 +2754,10 @@ function verbindenZeigen(raumA, raumB, nutzung){
   /* Was verloren geht, steht VOR der Zustimmung da und nicht danach. Die
      Zahlen kommen alle aus dem Vorschlag — keine wird hier nachgerechnet. */
   const teile = [];
+  /* Die Saeule steht ZUERST — sie ist die Aussage, alles Folgende ist ihre
+     Wirkung. Wer nur Flaeche und Wandzahl liest, bestaetigt eine Geometrie;
+     wer die Saeule davor liest, bestaetigt eine Entscheidung ueber das Haus. */
+  teile.push('Säule: ' + saeulenText(saeule));
   teile.push('Neuer Raum: ' + vorschlag.flaecheM2.toFixed(1).replace('.', ',') + ' m²');
   teile.push((vorschlag.waendeEntfernen.length === 1 ? '1 Wandstück fällt' : vorschlag.waendeEntfernen.length + ' Wandstücke fallen'));
   if (vorschlag.gemessenEntfernt > 0){
@@ -2757,11 +2782,11 @@ function verbindenZeigen(raumA, raumB, nutzung){
      (E1, und es ist dieselbe Reihenfolge wie in jeder Rueckfrage dieser Datei). */
   menueStufe('Wirklich verbinden?', teile.join(' · '), [
     { handlung: 'ab', text: 'Abbrechen', tun: function(){ zeichner.menueSchliessen(); } },
-    { handlung: 'los', text: 'Räume verbinden', ernst: true, tun: function(){ verbindenAusfuehren(vorschlag); } }
+    { handlung: 'los', text: 'Räume verbinden', ernst: true, tun: function(){ verbindenAusfuehren(vorschlag, saeule); } }
   ]);
 }
 
-function verbindenAusfuehren(vorschlag){
+function verbindenAusfuehren(vorschlag, saeule){
   /* EIN Rueckgaengig-Schritt fuer die ganze Handlung — der Schnappschuss wird
      gezogen, BEVOR etwas geschieht, und danach nie wieder (dieselbe Regel wie
      bei jedem Zug, W2 Festlegung 3). */
@@ -2778,11 +2803,17 @@ function verbindenAusfuehren(vorschlag){
   /* GEMESSEN und nicht behauptet: \`raeumeNachher\` kommt vom Kern selbst
      (\`floorplan.getRooms().length\` nach dem Anwenden). Ein „erledigt" ohne
      diese Zahl waere die Behauptung des Werkzeugs ueber sich selbst. */
+  /* Die Saeule wird MITGENANNT, nicht nur angewendet: der Nutzer hat sie zwei
+     Stufen vorher gewaehlt, und eine Erfolgsmeldung ohne sie liesse offen, ob
+     die Wahl ueberhaupt angekommen ist. Bei „Noch offen" bleibt sie weg —
+     eine Saeule zu melden, die niemand gewaehlt hat, waere eine Behauptung. */
+  const saeulenTeil =
+    saeule && saeule.nutzung != null ? ' Säule: ' + saeule.n + ' · ' + saeule.name + '.' : '';
   meldung(
     'Verbunden — der Plan zählt jetzt ' + ergebnis.raeumeNachher + ' Räume. ' +
     ergebnis.waendeEntfernt.length + ' Wandstück(e) entfernt' +
     (ergebnis.moebelNeu.length ? ', ' + ergebnis.moebelNeu.length + ' Stück eingerichtet' : '') +
-    '. Rückgängig macht es zurück.'
+    '.' + saeulenTeil + ' Rückgängig macht es zurück.'
   );
 }
 

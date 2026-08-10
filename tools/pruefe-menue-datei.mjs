@@ -183,11 +183,28 @@ export async function fahre({ log, pruefe }) {
       await page.waitForTimeout(200)
       pruefe(s1, 'G6a Schritt 1: Verbinden gewählt')
 
-      const nutzungen = await page.evaluate(() => window.__planerDatei.menueEintraege())
-      pruefe(nutzungen.length > 0 && nutzungen.every((e) => e.handlung === 'nutzung'),
-        `G6b Schritt 2: die Nutzungswahl steht da (${nutzungen.length} Arten)`)
+      // W14: Schritt 2 fragt nach der SAEULE, nicht mehr nach der Belegung.
+      // Geprueft wird darum genauer als vorher, nicht lockerer: es muessen
+      // ZEHN Eintraege sein (die neun Saeulen des Hauses plus „Noch offen"),
+      // und der Ausgang muss ZULETZT stehen. Bliebe es bei „mehr als null",
+      // wuerde eine halb verdrahtete Liste — sagen wir drei Saeulen — hier
+      // gruen durchgehen.
+      const saeulen = await page.evaluate(() => window.__planerDatei.menueEintraege())
+      pruefe(
+        saeulen.length === 10 && saeulen.every((e) => e.handlung === 'saeule'),
+        `G6b Schritt 2: die Säulenwahl steht da (${saeulen.length} Einträge, erwartet 10)`
+      )
+      pruefe(
+        /Noch offen/.test(saeulen[saeulen.length - 1]?.text ?? ''),
+        `G6b2 „Noch offen" steht zuletzt — der Ausweg ist nicht der Vorschlag ` +
+          `("${saeulen[saeulen.length - 1]?.text ?? ''}")`
+      )
+      pruefe(
+        /Yoga/.test(saeulen[8]?.text ?? '') && /09/.test(saeulen[8]?.text ?? ''),
+        `G6b3 die Säulen stehen in der Reihenfolge des Hauses ("${saeulen[8]?.text ?? ''}")`
+      )
 
-      const s2 = await page.evaluate(() => window.__planerDatei.menueWaehlen('nutzung'))
+      const s2 = await page.evaluate(() => window.__planerDatei.menueWaehlen('saeule'))
       await page.waitForTimeout(300)
       pruefe(s2, 'G6c Schritt 2 gewählt')
 
@@ -200,6 +217,14 @@ export async function fahre({ log, pruefe }) {
       })
       pruefe(/Wirklich verbinden/.test(titel ?? ''), 'G7a Schritt 3: die Rückfrage steht da')
       pruefe(/m²/.test(hinweisText), `G7b sie nennt die Fläche vorher — "${hinweisText.slice(0, 80)}"`)
+      // W14: die Wahl aus Schritt 2 muss in Schritt 3 WIEDER AUFTAUCHEN. Ohne
+      // das bestätigt der Nutzer eine Geometrie und hofft, dass seine Säule
+      // irgendwo angekommen ist — und eine still verschluckte Wahl fiele erst
+      // auf, wenn der falsche Raum eingerichtet dasteht.
+      pruefe(
+        /Säule:/.test(hinweisText),
+        `G7b2 die gewählte Säule steht in der Rückfrage — "${hinweisText.slice(0, 60)}"`
+      )
       pruefe(
         bestaetigung.length === 2 && bestaetigung[0].handlung === 'ab',
         'G7c Abbrechen steht zuerst, die folgenreiche Wahl nicht zuerst'

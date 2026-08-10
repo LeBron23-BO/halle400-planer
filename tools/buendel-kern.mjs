@@ -208,7 +208,16 @@ export const AXO_MODULE = [
 // `_pruefzugang` und `pruefeZusammenlegen` aus `raum-zusammenlegen.js` schon in
 // seinen obersten `const`-Zeilen. Stünde es davor, wäre der Wert dort noch
 // `undefined` — und zwar still.
-export const RAUM_MODULE = ['raum-zusammenlegen.js', 'wand-bewegen.js', 'objekt-menue.js']
+//
+// `saeulen.js` (W14) steht ZUERST, weil es als einziges Raum-Modul von keinem
+// anderen abhängt: es führt nur die neun Säulen und ihre Belegungs-Zuordnung.
+// Es MUSS aber vor der Oberfläche stehen, die daraus das Menü baut.
+export const RAUM_MODULE = [
+  'saeulen.js',
+  'raum-zusammenlegen.js',
+  'wand-bewegen.js',
+  'objekt-menue.js'
+]
 
 export function buendleRaum(namen = new Map()) {
   const teile = []
