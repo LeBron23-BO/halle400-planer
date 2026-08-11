@@ -304,6 +304,36 @@ const eckenRot = python('tools/uebernimm-bearbeitung.py', '--nur-ecken', VERBOGE
 pruefe(eckenRot.code !== 0,
   `e-GEGENPROBE) eine um 3 cm verschobene Ecke wird ROT (Exit ${eckenRot.code})`)
 
+/* e2 (2026-08-11) — DER ECKEN-FANG-FALL, der bis hierher durchrutschte.
+   `combineWithCorner` (src/model/corner.ts:292-307) laeuft, sobald ein neuer
+   Punkt naeher als cornerTolerance = 20 cm an einer Ecke liegt: die NEUE
+   GUID-Ecke uebernimmt die Koordinate, absorbiert die Waende und LOESCHT die
+   gemessene Ecke. Die Koordinate bleibt also voellig unauffaellig — nur die
+   KENNUNG ist weg. Die Hash-Treue-Schleife lief ueber die ANWESENDEN Ecken
+   und konnte das nie sehen; die Waende wurden danach als "gezeichnet"
+   gezaehlt und stillschweigend nie zurueckgefuehrt.
+   Hier wird genau dieses Ergebnis nachgestellt — nicht ein erfundener
+   Sonderfall, sondern was der Planer bei jedem Anschluss an eine gemessene
+   Ecke tatsaechlich tut. */
+const ABSORBIERT = tmp('ecke-absorbiert.json')
+const kopie2 = jsonLesen(MIT)
+const opfer = Object.keys(kopie2.floorplan.corners)[0]
+const GUID = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+kopie2.floorplan.corners[GUID] = { ...kopie2.floorplan.corners[opfer] }
+delete kopie2.floorplan.corners[opfer]
+for (const w of kopie2.floorplan.walls || []) {
+  if (w.corner1 === opfer) w.corner1 = GUID
+  if (w.corner2 === opfer) w.corner2 = GUID
+}
+fs.writeFileSync(ABSORBIERT, JSON.stringify(kopie2, null, 1), 'utf8')
+const absorbiert = python('tools/uebernimm-bearbeitung.py', '--nur-ecken', ABSORBIERT)
+pruefe(absorbiert.code !== 0,
+  `e2) eine vom Ecken-Fang ABSORBIERTE gemessene Ecke wird ROT (Exit ${absorbiert.code})`)
+/* Und es muss DIESER Riegel gewesen sein, nicht irgendein anderer Abbruch —
+   sonst waere die Pruefung gruen, ohne den Fall zu treffen. */
+pruefe(/VERSCHWUNDEN/.test(absorbiert.aus),
+  `e2) … und zwar mit der richtigen Begruendung ("VERSCHWUNDEN" steht im Bericht)`)
+
 /* ══════════════════════════════════════════════════════════════════════════
    F · Der beleg ueberlebt, die Herkunft luegt nicht
    ══════════════════════════════════════════════════════════════════════════ */

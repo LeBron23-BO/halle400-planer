@@ -207,7 +207,33 @@ def pruefe_ecken(fp: dict, quell_ecken: set[str], befund: Befund) -> None:
     verschoben wurde, BEHAELT ihre alte Kennung; die steht in den Quellen, und
     ihre Koordinate passt nicht mehr dazu. Das ist eine Behauptung ueber das
     Aufmass.
+
+    DER DRITTE FALL, DER BIS 2026-08-11 DURCHRUTSCHTE
+    ------------------------------------------------
+    Diese Schleife laeuft ueber die ANWESENDEN Ecken. Eine gemessene Ecke, die
+    gar nicht mehr da ist, kann sie deshalb nicht finden — und genau das ist der
+    haeufigste Weg, ein Aufmass zu verlieren:
+
+    `Corner.combineWithCorner` (`src/model/corner.ts:292-307`) laeuft, sobald ein
+    neuer Punkt naeher als `cornerTolerance = 20` cm an einer bestehenden Ecke
+    liegt. Die NEUE (GUID-)Ecke uebernimmt die Koordinate, absorbiert alle
+    Waende der gemessenen Ecke und LOESCHT diese (`corner.removeAll()`). Danach
+    ist die gemessene Kennung spurlos weg, ihre Waende haengen an einer GUID —
+    und weil keine untreue Koordinate mehr existiert, meldete dieses Werkzeug
+    nichts. Die Waende wurden als `gezeichnete_waende` gezaehlt, also laut W5
+    "nur gezaehlt" und stillschweigend nie zurueckgefuehrt.
+
+    Das Verschwinden ist die SCHWERERE Aussage ueber das Aufmass, nicht die
+    leichtere: eine verschobene Ecke sieht man im Plan, eine geloeschte nicht.
+    Sie bekommt darum denselben harten Abbruch.
     """
+    vorhandene_ecken = set((fp.get("corners") or {}).keys())
+    for cid in sorted(quell_ecken - vorhandene_ecken):
+        befund.gewanderte_ecken.append(
+            f"{cid} ist VERSCHWUNDEN — vermutlich vom Ecken-Fang absorbiert "
+            f"(cornerTolerance 20 cm). Ueber das Aufmass entscheidet nur die PDF."
+        )
+
     for cid, c in (fp.get("corners") or {}).items():
         try:
             treu = cid == ex.ecken_id(float(c["x"]), float(c["y"]))
@@ -427,10 +453,21 @@ def schreibe_gesetzt(befund: Befund, ziel: Path, quelle: Path,
     print("Jetzt neu exportieren:  python tools/export_blueprint.py")
 
 
-def nur_ecken(pfad: Path) -> int:
-    """Nur die Hash-Treue der Ecken pruefen — fuer das Gate und fuer den
-    schnellen Blick auf eine fremde Datei. Exit 1, sobald eine Ecke aus dem
-    Hash faellt."""
+def nur_ecken(pfad: Path, walls: Path | None = None) -> int:
+    """Nur die Ecken pruefen — fuer das Gate und fuer den schnellen Blick auf
+    eine fremde Datei. Exit 1, sobald eine Ecke aus dem Hash faellt ODER eine
+    gemessene Ecke fehlt.
+
+    ZWEI PRUEFUNGEN, WEIL ES ZWEI ARTEN GIBT, EIN AUFMASS ZU VERLIEREN
+    ------------------------------------------------------------------
+    Bis 2026-08-11 stand hier nur die Hash-Treue der ANWESENDEN Ecken. Das ist
+    dieselbe halbe Sicht, die `pruefe_ecken` hatte: der Ecken-Fang loescht die
+    gemessene Ecke (`corner.ts:292-307`), und was weg ist, faellt aus keinem
+    Hash. Die zweite Pruefung braucht die Quell-Ecken; ohne `--walls` laeuft sie
+    gegen die Standard-Quelle, und ist die nicht lesbar, wird das GESAGT statt
+    still uebersprungen — eine ausgefallene Pruefung, die wie eine bestandene
+    aussieht, ist der schlimmere Fall.
+    """
     fp = lies_nutzerdatei(pfad)
     ecken = fp.get("corners") or {}
     untreu = [cid for cid, c in ecken.items()
@@ -439,7 +476,23 @@ def nur_ecken(pfad: Path) -> int:
     for cid in untreu[:5]:
         c = ecken[cid]
         print(f"  UNTREU {cid} bei {c['x']:.0f}/{c['y']:.0f} cm")
-    return 1 if untreu else 0
+
+    fehlend: list[str] = []
+    quelle = walls or STANDARD_WALLS
+    try:
+        quell = ecken_der_quelle(quelle)
+        fehlend = sorted(quell - set(ecken.keys()))
+        for cid in fehlend[:5]:
+            print(f"  VERSCHWUNDEN {cid} — gemessene Ecke fehlt ganz "
+                  f"(Ecken-Fang?). Ueber das Aufmass entscheidet nur die PDF.")
+        if not fehlend:
+            print(f"{len(quell)}/{len(quell)} gemessene Ecken noch vorhanden")
+    except (OSError, ValueError, KeyError) as e:
+        print(f"  WARNUNG: Quelle {quelle} nicht lesbar ({e}) — die Pruefung auf "
+              f"VERSCHWUNDENE Ecken ist AUSGEFALLEN, nicht bestanden.")
+        return 1
+
+    return 1 if (untreu or fehlend) else 0
 
 
 def main() -> int:
@@ -465,7 +518,7 @@ def main() -> int:
     args = p.parse_args()
 
     if args.nur_ecken:
-        return nur_ecken(args.nur_ecken)
+        return nur_ecken(args.nur_ecken, args.walls)
 
     quelle = args.datei or neueste_nutzerdatei(args.downloads)
     if quelle is None:
