@@ -1,0 +1,111 @@
+{
+  "einheit": "meter",
+  "stand": "kuratiert 2026-08-11 — Zuordnung, KEINE Geometrie",
+  "zweck": [
+    "Der Grundriss hat einen offenen Bereich von 405 m2 — ein Drittel der 1207 m2",
+    "des ganzen Riegels. Er traegt fuenf Beschriftungen, weil die PDF dort an drei",
+    "Stellen ausdruecklich KEINE Wand zeigt (gemessene Belegung 0,00 ueber 12 m im",
+    "Norden, ueber 3 m im Sueden). Eine Wand zu ergaenzen waere eine Erfindung —",
+    "verboten nach Projekt-DNA Punkt 1.",
+    "",
+    "Diese Datei ordnet stattdessen ZU, ohne zu bauen. Eine Zone ist kein Raum:",
+    "sie hat keine Waende, keine Flaeche im Raumbuch, sie fliesst NICHT in den",
+    "Export und aendert am Grundriss kein einziges Zeichen. Sie beantwortet allein",
+    "die Frage 'zu welcher Beschriftung gehoert dieses Moebelstueck'.",
+    "",
+    "HERKUNFT JEDER GRENZE steht bei der Zone. Fuenf der sechs Zonen werden",
+    "ausschliesslich von ECHTEN, bereits gemessenen Waenden und den beiden",
+    "gemessenen Flurachsen begrenzt. Genau EINE Grenze ist eine Moebelkante:",
+    "16,48 m zwischen Teamtable und Empfang. Sie ist ebenfalls gemessen — sie",
+    "steht als Kandidat nord-8 in data/walls.json und wurde dort ausdruecklich",
+    "als Wand ABGELEHNT. Als Wand ist sie falsch, als Zonengrenze ist sie das",
+    "Beste, was der Plan hergibt, und sie ist hier als solche gekennzeichnet."
+  ],
+  "flurachsen": {
+    "nord": 5.79,
+    "sued": 8.14,
+    "hinweis": "beide GEMESSEN (data/plan-geometry.json, Zeilenprojektion). Dass eine Achse an einer Stelle nicht GEZEICHNET ist, macht sie nicht ungueltig — sie ist die Grenze zwischen Nordzeile, Flur und Suedzeile im ganzen Riegel."
+  },
+  "zonen": [
+    {
+      "name": "Treppenhaus West",
+      "x": [0.0, 5.24],
+      "y": [0.0, 5.79],
+      "anker": null,
+      "gemessen_stuecke": 3,
+      "grenzen": {
+        "west": "Aussenkontur x = 0 (echte Wand)",
+        "ost": "Trennwand nord-2 bei 5,24 m (echte Wand)",
+        "nord": "Aussenkontur y = 0 (echte Wand)",
+        "sued": "Flurachse 5,79 m — gemessen, zwischen 2 und 5 m nicht gezeichnet"
+      },
+      "beleg_pdf": "PDF zeigt hier ein schraffiertes Treppenhaus ausserhalb der grauen Bueroflaeche. Ohne Beschriftung im Plan, deshalb traegt die Zone keinen Namens-Anker."
+    },
+    {
+      "name": "Kueche / Teamtable",
+      "x": [10.99, 16.48],
+      "y": [0.0, 5.79],
+      "anker": "Teamtable",
+      "gemessen_stuecke": 16,
+      "grenzen": {
+        "west": "Trennwand nord-5 bei 10,99 m (echte Wand) — NICHT nord-6 bei 12,70 m. Zuerst stand hier 12,70; die Zuordnung liess daraufhin eine Pflanze bei x = 12,60 m durchfallen. nord-6 ist zwar eine echte gemessene Wand, sie endet aber unten frei im offenen Bereich (die Flurachse ist dort nicht gezeichnet) und trennt deshalb nichts — der Raumumriss laeuft an ihr vorbei ueber die Nordkante. Die westliche Kante des offenen Bereichs ist nord-5.",
+        "ost": "MOEBELKANTE — rechte Kante des Teamtables, Kandidat nord-8 bei 16,48 m. In data/walls.json als Wand abgelehnt ('rechte Kante des Teamtables'). Die EINZIGE Grenze dieser Datei, die keine Wand ist.",
+        "nord": "Aussenkontur y = 0 (echte Wand)",
+        "sued": "Flurachse 5,79 m — gemessen, zwischen 11 und 23 m nicht gezeichnet (Belegung 0,00)"
+      },
+      "beleg_pdf": "PDF: Teamtable mit 1 Langtisch Laengsachse OST-WEST und 8 Hockern, westlich davon die Kuechenzeile. Der Kandidat nord-7 bei 14,34 m ist NICHT die Zonengrenze: seine Begruendung in walls.json sagt ausdruecklich, dass die Fuge durch den Teamtable weiterlaeuft — sie trennt also nichts."
+    },
+    {
+      "name": "Aufzug",
+      "x": [18.5, 22.25],
+      "y": [-3.52, 0.0],
+      "anker": "Aufzug",
+      "gemessen_stuecke": 0,
+      "grenzen": {
+        "alle": "der Vorbau der Aussenkontur — spaltenweise gemessen (T2d), springt 3,52 m nach Norden. Vollstaendig von echten Aussenwaenden umschlossen."
+      },
+      "beleg_pdf": "PDF: Quadrat mit Diagonalkreuz in einem vorspringenden Vorbau. Ein Aufzugsschacht traegt keine Moebel — 0 Stueck ist hier die richtige Zahl, nicht eine fehlende Messung."
+    },
+    {
+      "name": "Empfang",
+      "x": [16.48, 23.76],
+      "y": [0.0, 5.79],
+      "anker": "Empfang",
+      "gemessen_stuecke": 7,
+      "grenzen": {
+        "west": "dieselbe Moebelkante wie oben, Kandidat nord-8 bei 16,48 m",
+        "ost": "Trennwand nord-11 bei 23,76 m (echte Wand)",
+        "nord": "Aussenkontur y = 0 bzw. der Aufzug-Vorbau (echte Wand)",
+        "sued": "Flurachse 5,79 m — gemessen, hier nicht gezeichnet"
+      },
+      "beleg_pdf": "PDF: L-foermiger Tresen mit 7-8 Feldern, KEIN einziger Stuhl am Tresen; oestlich eine Sitznische mit Bank, Rundsessel und Hockern. Beide gemessenen Kandidaten in diesem Abschnitt gehoeren dazu: nord-9 bei 18,54 m ist die Sesselgruppe, nord-10 bei 21,82 m der freistehende Tresen."
+    },
+    {
+      "name": "Workspace Sued",
+      "x": [18.64, 31.92],
+      "y": [8.14, 15.31],
+      "anker": "Workspace",
+      "gemessen_stuecke": 19,
+      "grenzen": {
+        "west": "Trennwand sued-10 bei 18,64 m (echte Wand)",
+        "ost": "Trennwand sued-19 bei 31,92 m (echte Wand)",
+        "nord": "Flurachse 8,14 m — gemessen, zwischen 24 und 27 m nicht gezeichnet (Belegung 0,00)",
+        "sued": "Aussenkontur y = 15,31 (echte Wand)"
+      },
+      "beleg_pdf": "PDF: 2 Cluster a 2x2 = 4 Tische, je 2 Stuehle West und 2 Ost, Laengsachsen NORD-SUED. Die acht gemessenen Kandidaten sued-11 bis sued-18 sind allesamt Kanten und Mittelfugen dieser Moebelbloecke — keiner davon trennt, deshalb ist dies EINE Zone und nicht mehrere."
+    },
+    {
+      "name": "Erschliessung",
+      "x": [0.0, 78.0],
+      "y": [5.79, 8.14],
+      "anker": null,
+      "gemessen_stuecke": 11,
+      "grenzen": {
+        "nord": "Flurachse 5,79 m (gemessen)",
+        "sued": "Flurachse 8,14 m (gemessen)",
+        "west_ost": "Aussenkontur"
+      },
+      "beleg_pdf": "Der durchgehende Mittelflur. Die 11 Stuecke darin sind ueberwiegend Schraenke — die PDF nennt 'Regalriegel als Raumteiler mehrfach'; sie stehen IM Flur und gehoeren zu keinem Raum. Die Beschriftung 'Break out' faellt mit ihrem Textanker 11 cm noerdlich der Flurachse ebenfalls hierher. Das ist ein Beschriftungs-Befund, KEINE Aussage ueber die Wand: der zugehoerige geschlossene Raum liegt suedlich zwischen sued-40 und sued-41."
+    }
+  ]
+}

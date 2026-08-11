@@ -47,7 +47,13 @@ cd "$(dirname "$0")/.." || exit 1
 # Entfernen IST Verbinden). Abschnitt F fuehrt das BUENDEL wirklich aus: ein
 # umbenannter Import waere im Planer unsichtbar und in der Doppelklick-Datei
 # eine tote Bedienung ohne Fehlermeldung.
-GATES="pruefe-saeulen pruefe-stift pruefe-kennungen pruefe-ziehen pruefe-palette pruefe-undo pruefe-ansicht pruefe-ausstattung pruefe-loeschen pruefe-zeichnen pruefe-axonometrie pruefe-touch pruefe-ausstattung-3d pruefe-tueren pruefe-planer-datei pruefe-haertung pruefe-uebernahme pruefe-axo-bearbeiten pruefe-finger pruefe-kennzahlen pruefe-schutz pruefe-siegel pruefe-serve-datei pruefe-zusammenlegen pruefe-wand-bewegen pruefe-menue"
+# pruefe-zonen (W19) bewacht die gefaehrlichste Datei des Projekts. data/zonen.json
+# ersetzt Waende, die es nicht gibt: der offene Bereich misst 405 der 1207 m2 und
+# traegt fuenf Beschriftungen, weil die PDF dort ueber 12 m ausdruecklich nichts
+# zeichnet. Die Zonen sehen deshalb aus wie eine Messung und sind eine Kuration.
+# Abschnitt A ist die tragende Zusicherung: KEINE bauende Kette darf zonen.json
+# lesen — sonst ist aus einer Zuordnung eine erfundene Wand geworden.
+GATES="pruefe-saeulen pruefe-stift pruefe-kennungen pruefe-ziehen pruefe-palette pruefe-undo pruefe-ansicht pruefe-ausstattung pruefe-loeschen pruefe-zeichnen pruefe-axonometrie pruefe-touch pruefe-ausstattung-3d pruefe-tueren pruefe-planer-datei pruefe-haertung pruefe-uebernahme pruefe-axo-bearbeiten pruefe-finger pruefe-kennzahlen pruefe-schutz pruefe-siegel pruefe-serve-datei pruefe-zusammenlegen pruefe-wand-bewegen pruefe-menue pruefe-zonen"
 if [ -n "$1" ]; then GATES="$*"; fi
 gesamt=0
 for g in $GATES; do

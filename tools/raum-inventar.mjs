@@ -20,6 +20,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { uebersetzeKern, buendleKern, buendleThree, WURZEL } from './buendel-kern.mjs'
+import { ladeZonen, ordneZu } from './zonen.mjs'
 
 const PLAN = path.join(WURZEL, 'app/public/plaene/halle400.json')
 const GEO = path.join(WURZEL, 'data/plan-geometry.json')
@@ -72,7 +73,9 @@ const eintraege = raeume.map((r) => {
     name: namen.join(' + ') || '(ohne Beschriftung)',
     m2: Math.round(flaeche(ring) / 10000 * 10) / 10,
     anzahl: drin.length,
-    typen: zaehler
+    typen: zaehler,
+    ring,
+    mehrereNamen: namen.length > 1
   }
 })
 
@@ -97,3 +100,44 @@ const fehlend = geo.beschriftungen
   .map((b) => `${b.text}${b.zusatz ? ' ' + b.zusatz : ''}`)
   .filter((n) => !ankerDrin.has(n))
 if (fehlend.length) console.log(`Anker, die in KEINEM Raum liegen: ${fehlend.join(' · ')}`)
+
+/* ── Der offene Bereich, aufgeschluesselt (W19) ─────────────────────────────
+   Ein Raum mit mehreren Beschriftungen ist kein Fehler des Planers, sondern
+   die Wahrheit der PDF: dort steht keine Wand. Damit die Stueckliste trotzdem
+   aufgeht, wird er ueber data/zonen.json ZUGEORDNET — ohne dass eine Wand
+   entsteht. Faellt ein Stueck durch, sagt es das; die verworfene Naeherung war
+   deshalb unbrauchbar, weil sie immer eine Antwort hatte. */
+const offen = eintraege.filter((e) => e.mehrereNamen).sort((a, b) => b.m2 - a.m2)[0]
+if (offen) {
+  const { zonen } = ladeZonen(WURZEL)
+  const drin = stuecke.filter((s) => imRing({ x: s.x, y: s.y }, offen.ring))
+  const { jeZone, ohneZone, mehrdeutig } = ordneZu(drin, zonen)
+  console.log(`\n── Offener Bereich (${offen.m2} m², ${drin.length} Stueck) nach Zonen ──`)
+  console.log(`   keine Wand erfunden — Grenzen und ihre Herkunft stehen in data/zonen.json\n`)
+  for (const z of zonen) {
+    const liste = jeZone.get(z.name)
+    const t = {}
+    for (const s of liste) t[s.typ] = (t[s.typ] || 0) + 1
+    const typen = Object.entries(t).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${v}x ${k}`).join(', ')
+    const soll = z.gemessen_stuecke
+    const zeichen = liste.length === soll ? ' ' : '!'
+    console.log(
+      ` ${zeichen} ${z.name.padEnd(20)} ${String(liste.length).padStart(3)}` +
+        `${liste.length === soll ? '   ' : ` (gemessen war ${soll})`}  ${typen || '— leer —'}`
+    )
+  }
+  const summe = zonen.reduce((s, z) => s + jeZone.get(z.name).length, 0)
+  console.log(`\n   ${summe} von ${drin.length} Stuecken einer Zone zugeordnet`)
+  if (ohneZone.length) {
+    console.log(`   OHNE ZONE (${ohneZone.length}) — jedes einzeln, damit keines still verschwindet:`)
+    for (const s of ohneZone) {
+      console.log(`     ${s.typ} bei x=${(s.x / 100).toFixed(2)} m  y=${(s.y / 100).toFixed(2)} m`)
+    }
+  }
+  if (mehrdeutig.length) {
+    console.log(`   MEHRDEUTIG (${mehrdeutig.length}) — die Zonen ueberlappen sich, das ist ein Fehler in zonen.json:`)
+    for (const m of mehrdeutig) {
+      console.log(`     ${m.stueck.typ} bei x=${(m.stueck.x / 100).toFixed(2)} m: ${m.zonen.join(' + ')}`)
+    }
+  }
+}
