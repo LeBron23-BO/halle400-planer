@@ -47,7 +47,7 @@ cd "$(dirname "$0")/.." || exit 1
 # Entfernen IST Verbinden). Abschnitt F fuehrt das BUENDEL wirklich aus: ein
 # umbenannter Import waere im Planer unsichtbar und in der Doppelklick-Datei
 # eine tote Bedienung ohne Fehlermeldung.
-GATES="pruefe-kennungen pruefe-ziehen pruefe-palette pruefe-undo pruefe-ansicht pruefe-ausstattung pruefe-loeschen pruefe-zeichnen pruefe-axonometrie pruefe-touch pruefe-ausstattung-3d pruefe-tueren pruefe-planer-datei pruefe-haertung pruefe-uebernahme pruefe-axo-bearbeiten pruefe-finger pruefe-kennzahlen pruefe-schutz pruefe-siegel pruefe-serve-datei pruefe-zusammenlegen pruefe-wand-bewegen pruefe-menue"
+GATES="pruefe-saeulen pruefe-kennungen pruefe-ziehen pruefe-palette pruefe-undo pruefe-ansicht pruefe-ausstattung pruefe-loeschen pruefe-zeichnen pruefe-axonometrie pruefe-touch pruefe-ausstattung-3d pruefe-tueren pruefe-planer-datei pruefe-haertung pruefe-uebernahme pruefe-axo-bearbeiten pruefe-finger pruefe-kennzahlen pruefe-schutz pruefe-siegel pruefe-serve-datei pruefe-zusammenlegen pruefe-wand-bewegen pruefe-menue"
 if [ -n "$1" ]; then GATES="$*"; fi
 gesamt=0
 for g in $GATES; do

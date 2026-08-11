@@ -761,17 +761,52 @@ log('\n── M6: der letzte Zug ──')
     `M6: unmittelbar nach dem Zug steht er ungesichert im Fenster (${sofort.bytes} Bytes im Speicher)`
   )
 
-  // Der Browser fragt beim Schliessen — gemessen am echten Dialog.
+  // DIE MESSGROESSE (2026-08-11, Chrome 149): gemessen wird, ob die SEITE das
+  // Schliessen abbricht — nicht, ob der Browser daraus einen Dialog macht.
+  //
+  // Warum die Umstellung KEINE Lockerung ist, sondern dieselbe Korrektur wie
+  // im Abschnitt MG (`hidden` -> `checkVisibility`): der Dialog ist Politik des
+  // Browsers und keine Eigenschaft dieser Datei. Chrome zeigt ihn nur bei
+  // „sticky activation" und hat die Regeln mehrfach verschaerft; gemessen ist,
+  // dass er unter `page.close({runBeforeUnload:true})` in 149 nicht mehr
+  // kommt — auch auf der Fassung von VOR dieser Welle (git 6476b30, geprueft).
+  // Ein Gate, das daran haengt, misst die Chrome-Version und nicht den Schutz.
+  //
+  // Die Pflicht der Seite ist `preventDefault()` auf `beforeunload`, solange
+  // etwas ungesichert ist. Genau das wird jetzt gemessen — mit der Gegenprobe,
+  // die den Wert der Pruefung erst herstellt: nach dem Sichern MUSS dasselbe
+  // Ereignis durchgehen. Ohne sie waere ein Handler, der IMMER abbricht,
+  // ununterscheidbar von einem richtigen.
+  const haeltAuf = await page.evaluate(() => {
+    const e = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(e)
+    return e.defaultPrevented
+  })
+  pruefe(haeltAuf === true, `M6: die Seite haelt das Schliessen auf (abgebrochen: ${haeltAuf})`)
+
+  // Zusatzinformation, die das Gate NICHT faerbt: kommt der Dialog trotzdem,
+  // wird er protokolliert. Sein Ausbleiben ist ab hier ein Browser-Befund und
+  // kein Fehler dieser Datei.
   let dialogText = null
   page.on('dialog', async (d) => {
     dialogText = d.type()
     await d.dismiss()
   })
-  const seite2 = await ctx.newPage()
-  await seite2.goto('about:blank')
-  await page.close({ runBeforeUnload: true }).catch(() => {})
-  await seite2.waitForTimeout(1500)
-  pruefe(dialogText === 'beforeunload', `M6: das Schliessen wird aufgehalten (Dialog: ${dialogText})`)
+
+  // GEGENPROBE: warten, bis das entprellte Sichern durch ist — dann darf
+  // dasselbe Ereignis NICHT mehr abgebrochen werden.
+  await page.waitForTimeout(1200)
+  const nachSichern = await page.evaluate(() => {
+    const e = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(e)
+    return { abgebrochen: e.defaultPrevented, ungesichert: window.__planerDatei.ungesichert() }
+  })
+  pruefe(
+    nachSichern.ungesichert === false && nachSichern.abgebrochen === false,
+    `M6-GEGENPROBE: nach dem Sichern haelt sie NICHTS mehr auf ` +
+      `(ungesichert ${nachSichern.ungesichert}, abgebrochen ${nachSichern.abgebrochen})`
+  )
+  log(`     (Browser-Dialog: ${dialogText ?? 'kam nicht — Chrome-Politik, faerbt das Gate nicht'})`)
 
   pruefe(konsole.length === 0, `M6: keine Konsolen- oder Seitenfehler (${konsole.length}${konsole.length ? ': ' + konsole[0] : ''})`)
   await ctx.close()
