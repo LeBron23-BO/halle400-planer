@@ -1,5 +1,14 @@
 // WÄNDE BEWEGEN (W12b) — die reine Rechnung.
 //
+/**
+ * Eine mitbewegte Ecke. `gleitet` sagt, ob sie auf ihrer Nachbarwand entlang
+ * geführt wurde (dann steht in `aufWand` deren Kennung) oder ob sie als freies
+ * Ende einfach mitgenommen wurde.
+ *
+ * @typedef {{id: string, x: number, y: number, gleitet: boolean,
+ *            aufWand?: string}} WbEcke
+ */
+//
 // Nutzerwunsch, wörtlich: *„ich kann die wände immer noch nicht bewegen, was die
 // hauptsache meines anliegens war. dies muss genau so entfernt und bewegt werden
 // können wie man es mit den möbeln machen kann."*
@@ -119,13 +128,22 @@ function wbGleitWand(nachbarn, richtung) {
  * @param opts.mindestAbstand  wie nah eine Endecke dem Ende ihrer Gleitwand
  *                             kommen darf (Standard 30 cm — schmaler als eine
  *                             Türöffnung ist kein Raum mehr)
- * @returns {ecken, quer, begrenzt, grund}
+ * Die Rueckgabe steht als ECHTER JSDoc-Typ da, nicht als Aufzaehlung der
+ * Feldnamen: `{ecken, quer, begrenzt, grund}` ist keine gueltige Typangabe, und
+ * TypeScript machte daraus in `floorplanner.ts` ein `any[]` — der ganze
+ * app-Build brach mit sieben Folgefehlern ab (TS7034/TS7005/TS2339), obwohl der
+ * Code richtig ist. Eine Doku, die der Uebersetzer liest, ist Code.
+ *
+ * @returns {{ecken: WbEcke[], quer: number, strecke: number, begrenzt: boolean,
+ *            grund: string|null}}
  */
 export function verschiebeWandParallel(wand, waende, dx, dy, opts = {}) {
   const mindest = opts.mindestAbstand ?? 30
   const n = wbNormale(wand)
   if (!n) {
-    return { ecken: [], quer: 0, begrenzt: false, grund: 'Diese Wand hat keine Länge.' }
+    // `strecke` steht auch hier — sonst haette der frueheste Ausgang eine andere
+    // Form als der normale, und jeder Leser muesste beide Faelle kennen.
+    return { ecken: [], quer: 0, strecke: 0, begrenzt: false, grund: 'Diese Wand hat keine Länge.' }
   }
   const laenge = wbLaenge(wand.a, wand.b)
   const richtung = { x: (wand.b.x - wand.a.x) / laenge, y: (wand.b.y - wand.a.y) / laenge }
@@ -177,6 +195,7 @@ export function verschiebeWandParallel(wand, waende, dx, dy, opts = {}) {
     r: richtung
   }
 
+  /** @type {WbEcke[]} */
   const ecken = []
   for (const ende of enden) {
     if (!ende.gleit) {
