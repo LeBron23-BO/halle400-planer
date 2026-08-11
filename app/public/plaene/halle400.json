@@ -153,6 +153,14 @@
     "x": 0.0,
     "y": 579.0
    },
+   "5dc7fb26-1bba-5ea3-2793-392ce9cf44ef": {
+    "x": 7800.0,
+    "y": 579.0
+   },
+   "85de1bd9-61db-4ee8-5dfc-5ada46067eab": {
+    "x": 7800.0,
+    "y": 814.0
+   },
    "8593f0fb-0ad6-0253-b903-8f5553d7b780": {
     "x": 200.0,
     "y": 579.0
@@ -229,10 +237,6 @@
     "x": 7253.0,
     "y": 579.0
    },
-   "d0f1ec17-d1c6-ad5d-7708-64e806383911": {
-    "x": 7700.0,
-    "y": 579.0
-   },
    "c03d735a-e7b7-2c33-c989-bb3e18134b87": {
     "x": 100.0,
     "y": 814.0
@@ -295,10 +299,6 @@
    },
    "590a2cdf-c87c-97fe-886c-1bccf82b3ea1": {
     "x": 7200.0,
-    "y": 814.0
-   },
-   "42e52d22-4eb0-a8f4-205c-f27521b2fb11": {
-    "x": 7700.0,
     "y": 814.0
    },
    "ac1c7f2f-81dc-ba0a-c30d-e5331721aa5c": {
@@ -531,6 +531,18 @@
    },
    {
     "corner1": "715b3263-a218-20a3-eead-764b5d65171c",
+    "corner2": "5dc7fb26-1bba-5ea3-2793-392ce9cf44ef",
+    "herkunft": "T2d Ostkante",
+    "art": "aussen"
+   },
+   {
+    "corner1": "5dc7fb26-1bba-5ea3-2793-392ce9cf44ef",
+    "corner2": "85de1bd9-61db-4ee8-5dfc-5ada46067eab",
+    "herkunft": "T2d Ostkante",
+    "art": "aussen"
+   },
+   {
+    "corner1": "85de1bd9-61db-4ee8-5dfc-5ada46067eab",
     "corner2": "4aaa07e1-8d71-dc10-882f-11bf9f3bd805",
     "herkunft": "T2d Ostkante",
     "art": "aussen"
@@ -639,7 +651,7 @@
    },
    {
     "corner1": "4cb92bb8-4564-efa8-33bf-8a0b97752ab6",
-    "corner2": "d0f1ec17-d1c6-ad5d-7708-64e806383911",
+    "corner2": "5dc7fb26-1bba-5ea3-2793-392ce9cf44ef",
     "herkunft": "flur-nord, Zeilenprojektion",
     "art": "flur"
    },
@@ -729,7 +741,7 @@
    },
    {
     "corner1": "590a2cdf-c87c-97fe-886c-1bccf82b3ea1",
-    "corner2": "42e52d22-4eb0-a8f4-205c-f27521b2fb11",
+    "corner2": "85de1bd9-61db-4ee8-5dfc-5ada46067eab",
     "herkunft": "flur-sued, Zeilenprojektion",
     "art": "flur"
    },

@@ -222,8 +222,21 @@ def _flur_segmente(maske: np.ndarray, y_display: float) -> list[tuple[float, flo
     streifen = maske[reihe - dicke:reihe + dicke, c0:c1].any(axis=0)
 
     n = int(round(px_pro_m))
+    voll = (c1 - c0) // n
     belegt = [streifen[i * n:(i + 1) * n].mean() > FLUR_BELEGT
-              for i in range((c1 - c0) // n)]
+              for i in range(voll)]
+
+    # Der Streifen HINTER dem letzten vollen Meter-Block fiel bisher aus der
+    # Messung — 5443 px sind 77 volle Bloecke plus 53 px Rest. Gemessen
+    # 2026-08-11 ist die Flurachse genau dort deutlich gezeichnet: Belegung
+    # 0.64 (nord) und 0.55 (sued) gegen die Schwelle 0.15. Ohne diesen Block
+    # endeten BEIDE Flurwaende 0.76 m vor der Ostwand, und durch den Spalt
+    # verband sich der Flur mit dem Workshop im Nordosten zu einem Raum.
+    # Ein Rest unter einem Drittel Meter bleibt draussen: dort misst eine
+    # Handzeichnung nur noch ihren eigenen Rand.
+    rest = streifen[voll * n:]
+    if len(rest) >= n // 3:
+        belegt.append(rest.mean() > FLUR_BELEGT)
 
     segmente: list[list[float]] = []
     for meter, ja in enumerate(belegt):
