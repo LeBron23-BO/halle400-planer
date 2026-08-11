@@ -759,6 +759,35 @@
   <span class="fuss" id="schlossFuss">Beim Schließen der Datei fällt das Schloss wieder zu.</span>
 </div>
 
+<!-- DER WUNSCH (W17). `role="dialog"`, nicht `alertdialog`: hier wird nichts
+     zerstört, es entsteht erst ein VORSCHLAG. Die Rückfrage davor kommt später
+     und trägt dann das schwerere Gewand.
+     Kein `type="text"` mit Autokorrektur-Standard: am Telefon macht sie aus
+     "IHHT" zuverlässig "Licht". -->
+<div class="frage wunsch-frage" id="wunschFrage" role="dialog" aria-modal="true" aria-labelledby="wunschTitel" hidden>
+  <span class="txt"><b id="wunschTitel">Was soll hier entstehen?</b> <span id="wunschWo"></span></span>
+  <input type="text" id="wunschText" autocomplete="off" autocapitalize="sentences" autocorrect="off" spellcheck="false" placeholder="z. B. Badezimmer für 20 Personen" aria-labelledby="wunschTitel">
+  <span class="knoepfe">
+    <button type="button" id="btnWunschNein">Abbrechen</button>
+    <button type="button" id="btnWunschJa" class="ernst">Vorschlag holen</button>
+  </span>
+  <span class="fuss" id="wunschFuss">Es wird noch nichts geändert — erst kommt ein Vorschlag zum Ansehen.</span>
+</div>
+
+<!-- Die Rückfrage zum Vorschlag (W17). Sie liegt unten mittig wie jede andere
+     Rückfrage dieser Datei — und NICHT im Objekt-Menü: eine Frage vor einer
+     Änderung darf das nicht verdecken, worüber sie eine Auskunft verlangt.
+     `alertdialog`, weil hier zum ersten Mal wirklich etwas geändert wird.
+     Verwerfen steht zuerst (E1). -->
+<div class="frage" id="wunschVorschau" role="alertdialog" aria-modal="true" aria-labelledby="wunschVorschauTitel" hidden>
+  <span class="txt"><b id="wunschVorschauTitel">Vorschlag</b> <span id="wunschVorschauText"></span></span>
+  <span class="knoepfe">
+    <button type="button" id="btnVorschauNein">Verwerfen</button>
+    <button type="button" id="btnVorschauJa" class="ernst">Übernehmen</button>
+  </span>
+  <span class="fuss" id="wunschVorschauFuss">Ein Rückgängig macht die ganze Änderung auf einmal zurück.</span>
+</div>
+
 <!-- Lösch-Rückfrage (E1): Abbrechen zuerst, die gefährliche Wahl darf nicht die
      bequemste sein.
 
@@ -927,7 +956,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "c8051b95fb22";
-const BAU_STEMPEL = "2026-08-11 07:13";
+const BAU_STEMPEL = "2026-08-11 07:55";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -1455,7 +1484,12 @@ function pruefeKette(kette, welt) {
     wirkung.push(urteil.wirkung)
   }
 
-  return { gueltig: true, grund: null, wirkung, annahme }
+  // Die GEPRUEFTE Kette geht mit zurueck — und zwar genau hier, am Ende der
+  // Pruefung. Sie erst beim Aufrufer wieder anzuhaengen hiesse, dass irgendwo
+  // eine ungepruefte Kette neben einer geprueften Beschreibung liegt; wer die
+  // beiden verwechselt, wendet Ungeprueftes an. Gemessen: ohne dieses Feld
+  // meldete die Bedienung "Uebernommen — 0 Stueck hingestellt".
+  return { gueltig: true, grund: null, wirkung, annahme, werkzeuge: schritte }
 }
 
 /** Nur fuer die Pruefwerkzeuge. */
@@ -2771,7 +2805,7 @@ function menueFuer(treffer, welt, opts = {}) {
   if (treffer.art === 'oeffnung') return omOeffnungsMenue(treffer, welt)
   if (treffer.art === 'wand') return omWandMenue(treffer, welt, namen)
   if (treffer.art === 'ecke') return omEckenMenue(treffer, welt)
-  if (treffer.art === 'raum') return omRaumMenue(treffer, welt, namen)
+  if (treffer.art === 'raum') return omRaumMenue(treffer, welt, namen, opts)
   return null
 }
 
@@ -2884,7 +2918,7 @@ function omWandMenue(treffer, welt, namen) {
   }
 }
 
-function omRaumMenue(treffer, welt, namen) {
+function omRaumMenue(treffer, welt, namen, opts = {}) {
   const r = treffer.objekt
   const flaeche = Math.abs(omRingFlaeche(r.ring)) / 10000 // cm² → m²
   const nachbarn = nachbarnVon(r, welt)
@@ -2923,6 +2957,21 @@ function omRaumMenue(treffer, welt, namen) {
   }
 
   eintraege.push({ handlung: 'raum-einrichten', text: 'Einrichten (Matten, Geräte, Liegen)' })
+
+  // DER WUNSCH (W17) — nur wo er auch etwas tun kann.
+  //
+  // Der Eintrag entsteht nur, wenn die Datei über einen Server läuft: unter
+  // `file://` gibt es kein Netz und damit kein Sprachmodell. Ein Eintrag, der
+  // dort erschiene und dann nichts täte, wäre schlimmer als keiner — es ist
+  // dieselbe Überlegung, aus der die Werkzeugleiste im Blatt gar nicht erst
+  // gezeichnet wird, statt tote Knöpfe zu zeigen (W7 Festlegung 1).
+  if (opts.stiftMoeglich) {
+    eintraege.push({
+      handlung: 'raum-wunsch',
+      text: 'Beschreiben, was hier entstehen soll …',
+      hinweis: 'Zum Beispiel „Badezimmer für 20 Personen". Es kommt erst ein Vorschlag.'
+    })
+  }
 
   return {
     art: 'raum',
@@ -4511,7 +4560,21 @@ const AUSSTATTUNG_VORLAGEN = [
     // davor — die gehört dem Raum, nicht dem Gerät, und wäre hier erfunden.
     { typ: 'geraet', breite: 120, tiefe: 80 },
     // Verbreitetes Handelsmaß einer Massage-/Behandlungsliege.
-    { typ: 'liege', breite: 200, tiefe: 70 }
+    { typ: 'liege', breite: 200, tiefe: 70 },
+    // W17: Sanitär. Beide Arten wurden bisher nur GEZEICHNET (sie stehen in der
+    // gemessenen PDF), waren aber nicht neu SETZBAR — es fehlte allein das
+    // Standardmaß. Ohne sie lässt sich kein Sanitärbereich planen, und genau
+    // das war der erste Wunsch an den Stift ("Badezimmer für 20 Personen").
+    //
+    // Die Maße sind GESETZTE ANNAHMEN, keine Messwerte aus der PDF:
+    // - `wc` trägt das KABINEN-Rechteck, nicht das Becken — so zeichnet es der
+    //   Plan („Becken im Kabinen-Rechteck", s. AusstattungTyp). 90 × 150 cm ist
+    //   das verbreitete lichte Maß einer Standard-Kabine; schmaler wird die Tür
+    //   zum Problem, breiter ist bereits eine barrierefreie Kabine (die misst
+    //   deutlich mehr und wäre eine andere Aussage).
+    // - `waschbecken` 60 × 45 cm ist ein handelsübliches Einzelbecken.
+    { typ: 'wc', breite: 90, tiefe: 150 },
+    { typ: 'waschbecken', breite: 60, tiefe: 45 }
 ];
 /**
  * Was sich einsetzen lässt, samt lichter Weite in cm (W4).
@@ -7200,19 +7263,6 @@ class Floorplanner {
             return;
         this.menueMelden(null);
     }
-    /**
-     * Was liegt an dieser Weltkoordinate, und was kann man damit tun?
-     *
-     * Die Toleranzen werden aus dem ZOOM gerechnet und nicht aus der Rechnung
-     * übernommen: 8 Bildschirm-Pixel sind in der Übersicht 45 cm und im Detail
-     * 2 cm. Dieselbe Begründung wie bei `GREIF_TOLERANZ_PX` — eine Bedienhilfe
-     * für den Zeiger muss auf dem BILDSCHIRM konstant bleiben.
-     *
-     * Die Ringe kommen aus `room.corners` (den Wandachsen), nicht aus
-     * `interiorCorners`: die Innenkontur ist um die halbe Wanddicke versetzt, und
-     * die Trennwand-Erkennung vergleicht Kanten mit Wandachsen (W12, Festlegung 1
-     * der Brücke). Mit der Innenkontur fände sie nie einen Nachbarn.
-     */
     objektUnter(weltX, weltY) {
         const px = this.cmPerPixel;
         const treffer = objektAn({ x: weltX, y: weltY }, this.menueWelt(), {
@@ -7224,7 +7274,12 @@ class Floorplanner {
             return null;
         const menue = menueFuer(treffer, this.menueWelt(), {
             moebelNamen: AUSSTATTUNG_NAME,
-            namen: this.raumNamen()
+            namen: this.raumNamen(),
+            // W17: ob der Wunsch-Eintrag ueberhaupt erscheinen darf, entscheidet
+            // nicht dieses Modul, sondern die Bedienung — sie allein weiss, ob ein
+            // Server hinter der Seite steht. Standard ist `false`: ein Eintrag, der
+            // nichts tun kann, entsteht lieber gar nicht.
+            stiftMoeglich: this.stiftMoeglich
         });
         if (!menue)
             return null;
@@ -7607,6 +7662,27 @@ class Floorplanner {
          * mitschreiben, liefen auseinander.
          */
         this.menueOffen = false;
+        /**
+         * Was liegt an dieser Weltkoordinate, und was kann man damit tun?
+         *
+         * Die Toleranzen werden aus dem ZOOM gerechnet und nicht aus der Rechnung
+         * übernommen: 8 Bildschirm-Pixel sind in der Übersicht 45 cm und im Detail
+         * 2 cm. Dieselbe Begründung wie bei `GREIF_TOLERANZ_PX` — eine Bedienhilfe
+         * für den Zeiger muss auf dem BILDSCHIRM konstant bleiben.
+         *
+         * Die Ringe kommen aus `room.corners` (den Wandachsen), nicht aus
+         * `interiorCorners`: die Innenkontur ist um die halbe Wanddicke versetzt, und
+         * die Trennwand-Erkennung vergleicht Kanten mit Wandachsen (W12, Festlegung 1
+         * der Brücke). Mit der Innenkontur fände sie nie einen Nachbarn.
+         */
+        /**
+         * Ob die Bedienung einen Wunsch an ein Sprachmodell schicken KANN (W17).
+         *
+         * Der Kern entscheidet das nicht selbst — er weiss nichts über `file://`
+         * oder Server. Die Bedienung setzt es beim Start; ohne Server bleibt es
+         * `false`, und der Wunsch-Eintrag entsteht gar nicht erst.
+         */
+        this.stiftMoeglich = false;
         /* ────────────── Der WAND-Zug (W12b) ──────────────────────────────────
            Eine Wand ist kein Möbel, und der Unterschied ist keine Förmlichkeit: ein
            Möbel steht IM Raum, eine Wand IST der Raum. Naiv um 40 cm verschoben,
@@ -8909,7 +8985,15 @@ class Floorplanner {
      * Die Grenzprüfung (Zeichenfläche) bleibt beim Bild-Weg: in der Welt gibt es
      * keinen Rand, an dem etwas „daneben" wäre.
      */
-    stueckAblegenWelt(weltX, weltY, vorlage) {
+    stueckAblegenWelt(weltX, weltY, vorlage, 
+    /**
+     * `ohneSchnappschuss` (W17): NUR für eine Kette, die als EINE Handlung
+     * gilt — der Wunsch stellt sechs Stücke auf einmal hin, und sechs
+     * Rückgängig-Schritte wären für den Nutzer sechs halbe Badezimmer.
+     * Wer das setzt, MUSS vorher selbst einen Schnappschuss gezogen haben;
+     * sonst ist die Handlung gar nicht mehr zurücknehmbar.
+     */
+    opt) {
         if (!Number.isFinite(weltX) || !Number.isFinite(weltY)) {
             return null;
         }
@@ -8920,7 +9004,10 @@ class Floorplanner {
         }
         // Der Schnappschuss GENAU EINMAL und erst jetzt — das Ablegen ist EIN
         // Rückgängig-Schritt, nicht drei (hinstellen, verschieben, drehen).
-        this.undoManager?.snapshot();
+        // Ausnahme: eine Kette, die als EINE Handlung gilt, hat ihren Schnappschuss
+        // schon vor dem ersten Stück gezogen (W17).
+        if (!opt?.ohneSchnappschuss)
+            this.undoManager?.snapshot();
         const el = this.floorplan.fuegeAusstattungHinzu({
             typ: vorlage.typ,
             x: Math.round(weltX),
@@ -12542,6 +12629,14 @@ const zeichner = new Floorplanner('grundriss-canvas', grundriss);
 const undo = new UndoManager(grundriss);
 zeichner.setUndoManager(undo);
 
+/* DER STIFT (W17) ist nur moeglich, wo ein Server hinter der Seite steht.
+   Unter `file://` — dem Weg, auf dem diese Datei bei der Bank ankommt — gibt
+   es kein Netz, und `pruefe-planer-datei.mjs` sperrt jeden Zugriff nach
+   draussen ausdruecklich. Der Menueeintrag entsteht dort GAR NICHT, statt da
+   zu sein und nichts zu tun (W7 Festlegung 1: ein toter Knopf ist schlimmer
+   als ein fehlender). */
+zeichner.stiftMoeglich = (location.protocol === 'http:' || location.protocol === 'https:');
+
 /* Das Ende eines Zuges — hier, nicht bei jeder Bewegung: waehrend eines Ziehens
    feuert `mousemove` hundertfach, und jedes Mal den ganzen Grundriss
    auszuschreiben waere Arbeit ohne Ertrag. Am DOKUMENT und nicht am Canvas,
@@ -13875,6 +13970,207 @@ function verbindenAusfuehren(vorschlag, saeule){
   );
 }
 
+/* ── DER WUNSCH (W17) ────────────────────────────────────────────────────
+   Der Nutzer tippt einen Raum an, schreibt hinein, was dort entstehen soll,
+   und bekommt einen VORSCHLAG. Erst seine Zustimmung aendert den Plan.
+
+   Vier Festlegungen, jede aus dem Pre-Mortem:
+
+   1. DIE VORSCHAU AENDERT NICHTS. Die Wartezeit gilt einer Beschreibung, nicht
+      einer Bearbeitung — dieselbe Trennung wie beim Zusammenlegen (W12).
+   2. GENAU EINE ANFRAGE. Waehrend eine laeuft, ist der Ausloeser gesperrt.
+      Ohne das tippt der Nutzer bei 15 Sekunden Stille ein zweites Mal, und
+      danach stehen zwei Badezimmer uebereinander (Moebel haben bewusst keine
+      Kollisionspruefung, W2).
+   3. EIN RUECKGAENGIG FUER DIE GANZE KETTE. Der Kern zieht seinen Schnappschuss
+      je Aktion; sechs Stuecke waeren sechs Schritte, und ein halb entferntes
+      Badezimmer ist ein gueltiger Zustand.
+   4. DER PLAN WIRD GESTEMPELT. Hat sich der Grundriss waehrend der Anfrage
+      geaendert, wird der Vorschlag VERWORFEN statt angewendet — er wurde
+      gegen einen Stand gerechnet, den es nicht mehr gibt. */
+var wunschLaeuft = false;
+var wunschRaum = null;
+var wunschStempel = null;
+
+/* Der Stempel ist bewusst grob: es geht nicht um jedes Pixel, sondern darum,
+   ob zwischendurch etwas Wesentliches passiert ist. */
+function planStempel(){
+  const f = grundriss.saveFloorplan();
+  return [
+    Object.keys(f.corners || {}).length,
+    (f.walls || []).length,
+    (f.ausstattung || []).length,
+    (f.oeffnungen || []).length
+  ].join('/');
+}
+
+function wunschBeginnen(raumKey){
+  const raum = raumNach(raumKey);
+  if (!raum){
+    meldung('Diesen Raum gibt es nicht mehr — der Plan hat sich geändert.', true);
+    zeichner.menueSchliessen();
+    return;
+  }
+  if (wunschLaeuft){
+    meldung('Es läuft schon eine Anfrage — einen Moment.', true);
+    return;
+  }
+  /* raumNach liefert ein Room-Objekt des Kerns — es traegt "corners", nicht
+     "ring". Der Ring wird hier EINMAL gebaut und danach festgehalten: er ist
+     der Bereich, gegen den der Vorschlag gerechnet wird, und darf sich
+     waehrend der Anfrage nicht unter der Hand aendern. */
+  wunschRaum = {
+    key: raumKey,
+    ring: raum.corners.map(function(c){ return { x: c.x, y: c.y }; })
+  };
+  zeichner.menueSchliessen();
+  const flaeche = (Math.abs(ringFlaeche(wunschRaum.ring)) / 10000).toFixed(1).replace('.', ',');
+  el('wunschWo').textContent = 'Im Bereich mit ' + flaeche + ' m².';
+  el('wunschText').value = '';
+  el('btnWunschJa').disabled = false;
+  el('btnWunschJa').textContent = 'Vorschlag holen';
+  frageZeigen(el('wunschFrage'));
+  setTimeout(function(){ try { el('wunschText').focus(); } catch(_){} }, 30);
+}
+
+function wunschSenden(){
+  if (wunschLaeuft || !wunschRaum) return;
+  const text = String(el('wunschText').value || '').trim();
+  if (!text){
+    meldung('Schreiben Sie zuerst, was hier entstehen soll.', true);
+    return;
+  }
+
+  wunschLaeuft = true;
+  wunschStempel = planStempel();
+  el('btnWunschJa').disabled = true;
+  el('btnWunschJa').textContent = 'Wird gefragt …';
+
+  /* Die gemessenen Ecken gehen MIT: ohne sie kann der Endpunkt nicht pruefen,
+     ob eine Wand das Aufmass anfassen wuerde. */
+  const welt = {
+    ring: wunschRaum.ring,
+    kasten: ringKasten(wunschRaum.ring),
+    moebel: grundriss.getAusstattung().map(function(m){
+      return { id: m.id, typ: m.typ, x: m.x, y: m.y, quelle: m.quelle };
+    }),
+    gemesseneEcken: grundriss.getCorners()
+      .filter(function(c){ return (c.quelle || 'gemessen') === 'gemessen'; })
+      .map(function(c){ return { x: c.x, y: c.y }; }),
+    fangToleranz: 20
+  };
+
+  fetch('/wunsch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ wunsch: text, welt: welt })
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(a){ wunschZeigen(a); })
+    .catch(function(e){
+      wunschFertig();
+      meldung('Die Anfrage ist nicht durchgekommen: ' + (e && e.message ? e.message : e), true);
+    });
+}
+
+function wunschFertig(){
+  wunschLaeuft = false;
+  el('wunschFrage').hidden = true;
+  el('btnWunschJa').disabled = false;
+  el('btnWunschJa').textContent = 'Vorschlag holen';
+}
+
+var wunschVorschlag = null;
+
+function wunschZeigen(antwort){
+  wunschFertig();
+  if (!antwort || !antwort.gueltig){
+    /* Der Grund kommt aus der Pruefung und steht in Alltagssprache da — er
+       wird hier NICHT umformuliert (dieselbe Regel wie beim Zusammenlegen).
+       Eine Absage ist keine Rueckfrage: sie kommt in die Meldungszeile und
+       braucht keinen Knopf, den man wegdrueckt. */
+    meldung((antwort && antwort.grund) || 'Es kam keine brauchbare Antwort.', true);
+    return;
+  }
+
+  wunschVorschlag = antwort;
+  const teile = antwort.wirkung.slice(0, 10);
+  if (antwort.wirkung.length > 10) teile.push('… und ' + (antwort.wirkung.length - 10) + ' weitere');
+  const kopf = antwort.annahme ? antwort.annahme + ' ' : '';
+
+  el('wunschVorschauTitel').textContent = 'Vorschlag: ' + antwort.wirkung.length + ' Schritt(e)';
+  el('wunschVorschauText').textContent = kopf + teile.join(' · ');
+  frageZeigen(el('wunschVorschau'));
+}
+
+function wunschAnwenden(antwort){
+  el('wunschVorschau').hidden = true;
+  if (planStempel() !== wunschStempel){
+    meldung('Der Plan hat sich inzwischen geändert — der Vorschlag wurde für einen anderen Stand gerechnet und wird verworfen.', true);
+    return;
+  }
+
+  /* EIN Schnappschuss fuer die ganze Kette (Festlegung 3). */
+  undo.snapshot();
+  let gesetzt = 0;
+  let entfernt = 0;
+  try {
+    for (const s of antwort.werkzeuge || wunschSchritte(antwort)){
+      if (s.werkzeug === 'stueck_setzen'){
+        const v = vorlageFuer(s.args.typ);
+        if (!v) throw new Error('Für "' + s.args.typ + '" gibt es keine Vorlage.');
+        zeichner.stueckAblegenWelt(s.args.x, s.args.y, v, { ohneSchnappschuss: true });
+        gesetzt++;
+      } else if (s.werkzeug === 'raum_auslegen'){
+        const neue = legeAus(wunschRaum.ring, s.args.nutzung, AUSSTATTUNG_VORLAGEN, {});
+        const deckel = s.args.anzahl ? Math.min(s.args.anzahl, neue.length) : neue.length;
+        for (let i = 0; i < deckel; i++){
+          const v = vorlageFuer(neue[i].typ);
+          if (v) { zeichner.stueckAblegenWelt(neue[i].x, neue[i].y, v, { ohneSchnappschuss: true }); gesetzt++; }
+        }
+      } else if (s.werkzeug === 'stueck_entfernen'){
+        grundriss.entferneAusstattung(s.args.id);
+        entfernt++;
+      }
+    }
+  } catch (e){
+    undo.undo();
+    meldung('Der Vorschlag liess sich nicht anwenden: ' + (e && e.message ? e.message : e) + ' Es wurde nichts geändert.', true);
+    return;
+  }
+
+  /* GEMESSEN und nicht behauptet: gezaehlt wird, was wirklich im Modell steht. */
+  meldung(
+    'Übernommen — ' + gesetzt + ' Stück hingestellt' +
+    (entfernt ? ', ' + entfernt + ' entfernt' : '') +
+    '. Der Plan zählt jetzt ' + grundriss.getAusstattung().length + ' Stücke. ' +
+    'Ein Rückgängig macht die ganze Änderung zurück.'
+  );
+}
+
+/* Die Kette steckt je nach Weg unter "werkzeuge" — diese Huelle haelt beide
+   Schreibweisen aus, statt bei einer still nichts zu tun. */
+function wunschSchritte(antwort){
+  if (Array.isArray(antwort.werkzeuge)) return antwort.werkzeuge;
+  if (antwort.kette && Array.isArray(antwort.kette.werkzeuge)) return antwort.kette.werkzeuge;
+  return [];
+}
+
+function ringFlaeche(ring){
+  let s = 0;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++){
+    s += (ring[j].x + ring[i].x) * (ring[j].y - ring[i].y);
+  }
+  return s / 2;
+}
+
+function ringKasten(ring){
+  const xs = ring.map(function(p){ return p.x; });
+  const ys = ring.map(function(p){ return p.y; });
+  return { breite: Math.max.apply(null, xs) - Math.min.apply(null, xs),
+           tiefe: Math.max.apply(null, ys) - Math.min.apply(null, ys) };
+}
+
 /* Was ein Menue-Eintrag AUSLOEST.
 
    Die Werkzeugwechsel hier sind kein Rueckfall in die Werkzeugkunde: der
@@ -13958,6 +14254,10 @@ function menueHandlung(eintrag, anfrage){
          war der ganze Befund von W13 (gebaut, aber nicht gefunden). */
       zeichner.menueSchliessen();
       meldung('Ziehen Sie ein Stück aus der Palette links in den Raum — Matte, Gerät oder Liege.');
+      return;
+
+    case 'raum-wunsch':
+      wunschBeginnen(id);
       return;
 
     default:
@@ -14395,6 +14695,36 @@ el('btnSchlossNein').addEventListener('click', function(){
 el('schlossWort').addEventListener('keydown', function(ev){
   if (ev.key === 'Enter') { ev.preventDefault(); schlossVersuchen(); }
   else if (ev.key === 'Escape') { ev.preventDefault(); el('schlossFrage').hidden = true; el('schlossWort').value = ''; }
+});
+
+/* ── Der Wunsch (W17) ───────────────────────────────────────────────── */
+el('btnWunschJa').addEventListener('click', wunschSenden);
+el('btnWunschNein').addEventListener('click', function(){
+  /* Abbrechen waehrend einer laufenden Anfrage schliesst nur das Feld — der
+     Unterprozess laeuft weiter und seine Antwort wird verworfen. Ihn zu
+     unterbrechen waere ein zweiter Weg, ueber den ein halber Zustand
+     entstehen kann. */
+  el('wunschFrage').hidden = true;
+  el('wunschText').value = '';
+  wunschRaum = null;
+});
+el('wunschText').addEventListener('keydown', function(ev){
+  if (ev.key === 'Enter') { ev.preventDefault(); wunschSenden(); }
+  else if (ev.key === 'Escape') {
+    ev.preventDefault();
+    el('wunschFrage').hidden = true;
+    el('wunschText').value = '';
+    wunschRaum = null;
+  }
+});
+
+el('btnVorschauJa').addEventListener('click', function(){
+  if (wunschVorschlag) wunschAnwenden(wunschVorschlag);
+});
+el('btnVorschauNein').addEventListener('click', function(){
+  el('wunschVorschau').hidden = true;
+  wunschVorschlag = null;
+  meldung('Verworfen — es wurde nichts geändert.');
 });
 
 /* ── Zwei Fenster: die Wahl (K4) ────────────────────────────────────── */

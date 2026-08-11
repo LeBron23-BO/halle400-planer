@@ -245,7 +245,7 @@ export function menueFuer(treffer, welt, opts = {}) {
   if (treffer.art === 'oeffnung') return omOeffnungsMenue(treffer, welt)
   if (treffer.art === 'wand') return omWandMenue(treffer, welt, namen)
   if (treffer.art === 'ecke') return omEckenMenue(treffer, welt)
-  if (treffer.art === 'raum') return omRaumMenue(treffer, welt, namen)
+  if (treffer.art === 'raum') return omRaumMenue(treffer, welt, namen, opts)
   return null
 }
 
@@ -358,7 +358,7 @@ function omWandMenue(treffer, welt, namen) {
   }
 }
 
-function omRaumMenue(treffer, welt, namen) {
+function omRaumMenue(treffer, welt, namen, opts = {}) {
   const r = treffer.objekt
   const flaeche = Math.abs(omRingFlaeche(r.ring)) / 10000 // cm² → m²
   const nachbarn = nachbarnVon(r, welt)
@@ -397,6 +397,21 @@ function omRaumMenue(treffer, welt, namen) {
   }
 
   eintraege.push({ handlung: 'raum-einrichten', text: 'Einrichten (Matten, Geräte, Liegen)' })
+
+  // DER WUNSCH (W17) — nur wo er auch etwas tun kann.
+  //
+  // Der Eintrag entsteht nur, wenn die Datei über einen Server läuft: unter
+  // `file://` gibt es kein Netz und damit kein Sprachmodell. Ein Eintrag, der
+  // dort erschiene und dann nichts täte, wäre schlimmer als keiner — es ist
+  // dieselbe Überlegung, aus der die Werkzeugleiste im Blatt gar nicht erst
+  // gezeichnet wird, statt tote Knöpfe zu zeigen (W7 Festlegung 1).
+  if (opts.stiftMoeglich) {
+    eintraege.push({
+      handlung: 'raum-wunsch',
+      text: 'Beschreiben, was hier entstehen soll …',
+      hinweis: 'Zum Beispiel „Badezimmer für 20 Personen". Es kommt erst ein Vorschlag.'
+    })
+  }
 
   return {
     art: 'raum',

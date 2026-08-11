@@ -201,6 +201,22 @@ const zweiGut = { werkzeuge: gemischt.werkzeuge.slice(0, 2) }
 const gg = pruefeKette(zweiGut, WELT)
 pruefe(gg.gueltig === true && gg.wirkung.length === 2, 'GEGENPROBE: ohne ihn gehen beide durch')
 
+// DIE GEPRUEFTE KETTE MUSS ZURUECKKOMMEN. Ohne sie hat die Bedienung eine
+// Beschreibung und nichts zum Anwenden — gemessen meldete sie dann
+// "Uebernommen - 0 Stueck hingestellt", also einen Erfolg ohne Wirkung.
+pruefe(
+  Array.isArray(gg.werkzeuge) && gg.werkzeuge.length === 2,
+  `Die gepruefte Kette kommt mit zurueck (${gg.werkzeuge ? gg.werkzeuge.length : 'fehlt'} Schritte)`
+)
+pruefe(
+  gg.werkzeuge && gg.werkzeuge[0] && gg.werkzeuge[0].werkzeug === 'stueck_setzen',
+  '… und sie ist die Kette, die geprueft wurde (nicht eine andere)'
+)
+pruefe(
+  pruefeKette(gemischt, WELT).werkzeuge === undefined,
+  'GEGENPROBE: eine ABGELEHNTE Kette gibt keine Werkzeuge heraus'
+)
+
 // Leere und unsinnige Antworten
 pruefe(pruefeKette(null, WELT).gueltig === false, 'Gar keine Antwort ist ungueltig')
 pruefe(pruefeKette({}, WELT).gueltig === false, 'Eine Antwort ohne Werkzeuge ist ungueltig')
@@ -230,6 +246,151 @@ pruefe(
   mitAnnahme.gueltig === true && /20 Personen/.test(mitAnnahme.annahme || ''),
   'Die Annahme des Modells kommt bei der Vorschau an'
 )
+
+/* ══════════════════ F · DIE BEDIENUNG, OHNE DAS MODELL ══════════════════
+   Der Endpunkt wird hier durch eine FESTE Antwort ersetzt. Das ist kein
+   Abkuerzen, sondern der Kern: ein Gate, das ein Sprachmodell befragt, misst
+   das Modell — die Bedienung will aber wissen, ob SIE aus einer gueltigen
+   Antwort die richtige Wirkung macht. Und es waere nicht wiederholbar:
+   derselbe Wunsch liefert morgen andere Stellen.
+
+   Gemessen wird am MODELL des Planers (`ausstattung().length`), nicht an der
+   Meldung darueber — eine Meldung ist die Behauptung des Werkzeugs ueber sich
+   selbst. */
+log('\n=== F · Die Bedienung: Vorschau, Uebernehmen, EIN Rueckgaengig ===')
+{
+  const PW = process.env.PLAYWRIGHT_PFAD || 'file:///C:/Users/dania/.gemini/node_modules/playwright/index.js'
+  const { chromium } = (await import(PW)).default
+  const { werkstattAufschliessen } = await import(
+    pathToFileURL(path.join(WURZEL, 'tools/werkstatt-auf.mjs')).href
+  )
+
+  const ANTWORT = {
+    gueltig: true,
+    grund: null,
+    annahme: 'Fuer 20 Personen 2 WC und 2 Waschbecken angenommen.',
+    wirkung: ['wc hinstellen', 'wc hinstellen', 'waschbecken hinstellen', 'waschbecken hinstellen'],
+    werkzeuge: [
+      { werkzeug: 'stueck_setzen', args: { typ: 'wc', x: 0, y: 0 } },
+      { werkzeug: 'stueck_setzen', args: { typ: 'wc', x: 0, y: 0 } },
+      { werkzeug: 'stueck_setzen', args: { typ: 'waschbecken', x: 0, y: 0 } },
+      { werkzeug: 'stueck_setzen', args: { typ: 'waschbecken', x: 0, y: 0 } }
+    ]
+  }
+
+  const browser = await chromium.launch()
+  const seite = await browser.newPage({ viewport: { width: 1400, height: 900 } })
+  const seitenfehler = []
+  seite.on('pageerror', (e) => seitenfehler.push(String(e)))
+
+  // Die Datei wird unter http:// geladen — ueber eine abgefangene Route. Damit
+  // ist `location.protocol` http, der Stift also ueberhaupt vorhanden, ohne
+  // dass ein echter Server laufen muss.
+  const DATEI = fs.readFileSync(path.join(WURZEL, 'Halle400-Modell.html'), 'utf8')
+  await seite.route('**/*', async (route) => {
+    const u = route.request().url()
+    if (u.endsWith('/wunsch')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json; charset=utf-8',
+        body: JSON.stringify(ANTWORT)
+      })
+    }
+    return route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: DATEI })
+  })
+
+  await seite.goto('http://localhost:9977/', { waitUntil: 'domcontentloaded' })
+  await seite.waitForFunction(() => window.__planerDatei, null, { timeout: 30000 })
+  await werkstattAufschliessen(seite)
+  await seite.evaluate(() => {
+    for (const id of ['btnBearbeiten', 'btnAnsichtPlan']) {
+      const k = document.getElementById(id)
+      if (k) k.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    }
+  })
+  await seite.waitForTimeout(300)
+
+  // Einen RAUM treffen. Der kleinste Treffer gewinnt (W13), und die Raum-Mitte
+  // kann auf einer Wand liegen — deshalb wird gesucht statt geraten.
+  const punkte = await seite.evaluate(() => window.__planerDatei.raumPunkte())
+  let getroffen = false
+  for (let i = 0; i < Math.min(punkte.length, 14); i++) {
+    const z = punkte[i]
+    await seite.mouse.move(z.bildX, z.bildY)
+    await seite.mouse.down()
+    await seite.mouse.up()
+    await seite.waitForTimeout(200)
+    const h = (await seite.evaluate(() => window.__planerDatei.menueEintraege())).map(
+      (x) => x.handlung
+    )
+    if (h.includes('raum-wunsch')) {
+      getroffen = true
+      break
+    }
+    await seite.keyboard.press('Escape')
+    await seite.waitForTimeout(90)
+  }
+  pruefe(getroffen, 'F1 der Wunsch-Eintrag steht im Raum-Menue (ueber http)')
+
+  if (getroffen) {
+    const vorher = await seite.evaluate(() => window.__planerDatei.ausstattung().length)
+    await seite.evaluate(() => window.__planerDatei.menueWaehlen('raum-wunsch'))
+    await seite.waitForTimeout(300)
+    pruefe(
+      await seite.evaluate(() => !document.getElementById('wunschFrage').hidden),
+      'F2 das Eingabefeld erscheint'
+    )
+
+    await seite.fill('#wunschText', 'Badezimmer fuer 20 Personen')
+    await seite.evaluate(() =>
+      document.getElementById('btnWunschJa').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    )
+    await seite.waitForFunction(() => !document.getElementById('wunschVorschau').hidden, null, {
+      timeout: 20000
+    })
+
+    const waehrend = await seite.evaluate(() => window.__planerDatei.ausstattung().length)
+    pruefe(waehrend === vorher, `F3 die VORSCHAU aendert nichts (${vorher} -> ${waehrend})`)
+    pruefe(
+      /angenommen/.test(
+        await seite.evaluate(() => document.getElementById('wunschVorschauText').textContent)
+      ),
+      'F4 die Annahme steht in der Rueckfrage — die geschaetzte Zahl ist offengelegt'
+    )
+
+    await seite.evaluate(() =>
+      document.getElementById('btnVorschauJa').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    )
+    await seite.waitForTimeout(700)
+    const nachher = await seite.evaluate(() => window.__planerDatei.ausstattung().length)
+    pruefe(nachher === vorher + 4, `F5 Uebernehmen stellt die vier Stuecke hin (${vorher} -> ${nachher})`)
+
+    await seite.keyboard.press('Control+z')
+    await seite.waitForTimeout(600)
+    const zurueck = await seite.evaluate(() => window.__planerDatei.ausstattung().length)
+    pruefe(
+      zurueck === vorher,
+      `F6 EIN Rueckgaengig stellt genau den Stand von vorher her (${nachher} -> ${zurueck}) — ` +
+        `nicht vier halbe Schritte`
+    )
+    // GEGENPROBE: ein zweites Rueckgaengig darf von DIESER Kette nichts mehr
+    // wegnehmen — sonst waere sie doch in Einzelschritte zerfallen.
+    await seite.keyboard.press('Control+z')
+    await seite.waitForTimeout(500)
+    const nochmal = await seite.evaluate(() => window.__planerDatei.ausstattung().length)
+    pruefe(
+      nochmal === zurueck,
+      `F6-GEGENPROBE: ein zweites Rueckgaengig nimmt nichts weiteres von dieser Kette ` +
+        `(${zurueck} -> ${nochmal})`
+    )
+  }
+
+  pruefe(
+    seitenfehler.length === 0,
+    `F7 keine Seitenfehler (${seitenfehler.length}${seitenfehler.length ? ': ' + seitenfehler[0].slice(0, 120) : ''})`
+  )
+  await browser.close()
+}
 
 /* ══════════════════ ERGEBNIS ══════════════════ */
 log('\n' + '='.repeat(64))

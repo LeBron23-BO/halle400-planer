@@ -140,7 +140,21 @@ export const AUSSTATTUNG_VORLAGEN: ReadonlyArray<{
   // davor — die gehört dem Raum, nicht dem Gerät, und wäre hier erfunden.
   { typ: 'geraet', breite: 120, tiefe: 80 },
   // Verbreitetes Handelsmaß einer Massage-/Behandlungsliege.
-  { typ: 'liege', breite: 200, tiefe: 70 }
+  { typ: 'liege', breite: 200, tiefe: 70 },
+  // W17: Sanitär. Beide Arten wurden bisher nur GEZEICHNET (sie stehen in der
+  // gemessenen PDF), waren aber nicht neu SETZBAR — es fehlte allein das
+  // Standardmaß. Ohne sie lässt sich kein Sanitärbereich planen, und genau
+  // das war der erste Wunsch an den Stift ("Badezimmer für 20 Personen").
+  //
+  // Die Maße sind GESETZTE ANNAHMEN, keine Messwerte aus der PDF:
+  // - `wc` trägt das KABINEN-Rechteck, nicht das Becken — so zeichnet es der
+  //   Plan („Becken im Kabinen-Rechteck", s. AusstattungTyp). 90 × 150 cm ist
+  //   das verbreitete lichte Maß einer Standard-Kabine; schmaler wird die Tür
+  //   zum Problem, breiter ist bereits eine barrierefreie Kabine (die misst
+  //   deutlich mehr und wäre eine andere Aussage).
+  // - `waschbecken` 60 × 45 cm ist ein handelsübliches Einzelbecken.
+  { typ: 'wc', breite: 90, tiefe: 150 },
+  { typ: 'waschbecken', breite: 60, tiefe: 45 }
 ]
 
 /* ══════════════════════════════════════════════════════════════════════════

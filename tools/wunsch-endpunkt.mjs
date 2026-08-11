@@ -89,7 +89,12 @@ export const WUNSCH_SCHEMA = {
         properties: {
           werkzeug: {
             type: 'string',
-            enum: ['raum_auslegen', 'stueck_setzen', 'wand_zeichnen', 'oeffnung_setzen', 'stueck_entfernen']
+            // NUR die drei, die die Bedienung heute auch AUSFUEHREN kann.
+            // `wand_zeichnen` und `oeffnung_setzen` kennt die Werkzeug-Schicht
+            // bereits und prueft sie — angeboten werden sie erst, wenn der
+            // Anwendungs-Pfad dafuer steht. Etwas vorzuschlagen und danach
+            // abzulehnen waere fuer den Nutzer dasselbe wie ein Fehler.
+            enum: ['stueck_setzen', 'raum_auslegen', 'stueck_entfernen']
           },
           args: { type: 'object' }
         }
@@ -127,10 +132,11 @@ export function baueAuftrag(wunsch, welt) {
     '      Fuellt den GANZEN Bereich mit einem Belegungs-Muster im Raster.',
     '      NUR fuer diese fuenf Muster. Passt keines, nimm stueck_setzen.',
     '',
-    '  wand_zeichnen   { "x1": <Zahl>, "y1": <Zahl>, "x2": <Zahl>, "y2": <Zahl> }',
-    `  oeffnung_setzen { "wandId": <Kennung>, "art": <${WZ_OEFFNUNGEN.join('|')}>, `,
-    '                    "breite": <Zahl>, "lage": <Zahl> }',
     '  stueck_entfernen{ "id": <Kennung> }',
+    '      Entfernt EIN frei gesetztes Stueck. Gemessene Stuecke gehen nicht.',
+    '',
+    'Waende und Tueren kannst du hier NICHT setzen. Braucht der Wunsch das,',
+    'sag es in "antwort" statt es zu umgehen.',
     '',
     'REGELN, die du nicht brechen darfst:',
     `1. Es gibt genau diese Arten: ${WZ_TYPEN.join(', ')}.`,

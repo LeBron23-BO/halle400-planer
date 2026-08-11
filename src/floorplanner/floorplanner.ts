@@ -532,6 +532,15 @@ export class Floorplanner {
    * die Trennwand-Erkennung vergleicht Kanten mit Wandachsen (W12, Festlegung 1
    * der Brücke). Mit der Innenkontur fände sie nie einen Nachbarn.
    */
+  /**
+   * Ob die Bedienung einen Wunsch an ein Sprachmodell schicken KANN (W17).
+   *
+   * Der Kern entscheidet das nicht selbst — er weiss nichts über `file://`
+   * oder Server. Die Bedienung setzt es beim Start; ohne Server bleibt es
+   * `false`, und der Wunsch-Eintrag entsteht gar nicht erst.
+   */
+  public stiftMoeglich = false
+
   public objektUnter(weltX: number, weltY: number): MenueAnfrage | null {
     const px = this.cmPerPixel
     const treffer = objektAn(
@@ -546,7 +555,12 @@ export class Floorplanner {
     if (!treffer) return null
     const menue = menueFuer(treffer, this.menueWelt(), {
       moebelNamen: AUSSTATTUNG_NAME,
-      namen: this.raumNamen()
+      namen: this.raumNamen(),
+      // W17: ob der Wunsch-Eintrag ueberhaupt erscheinen darf, entscheidet
+      // nicht dieses Modul, sondern die Bedienung — sie allein weiss, ob ein
+      // Server hinter der Seite steht. Standard ist `false`: ein Eintrag, der
+      // nichts tun kann, entsteht lieber gar nicht.
+      stiftMoeglich: this.stiftMoeglich
     })
     if (!menue) return null
     return {
@@ -2213,7 +2227,15 @@ export class Floorplanner {
   public stueckAblegenWelt(
     weltX: number,
     weltY: number,
-    vorlage: { typ: AusstattungTyp; breite: number; tiefe: number }
+    vorlage: { typ: AusstattungTyp; breite: number; tiefe: number },
+    /**
+     * `ohneSchnappschuss` (W17): NUR für eine Kette, die als EINE Handlung
+     * gilt — der Wunsch stellt sechs Stücke auf einmal hin, und sechs
+     * Rückgängig-Schritte wären für den Nutzer sechs halbe Badezimmer.
+     * Wer das setzt, MUSS vorher selbst einen Schnappschuss gezogen haben;
+     * sonst ist die Handlung gar nicht mehr zurücknehmbar.
+     */
+    opt?: { ohneSchnappschuss?: boolean }
   ): AusstattungElement | null {
     if (!Number.isFinite(weltX) || !Number.isFinite(weltY)) {
       return null
@@ -2226,7 +2248,9 @@ export class Floorplanner {
 
     // Der Schnappschuss GENAU EINMAL und erst jetzt — das Ablegen ist EIN
     // Rückgängig-Schritt, nicht drei (hinstellen, verschieben, drehen).
-    this.undoManager?.snapshot()
+    // Ausnahme: eine Kette, die als EINE Handlung gilt, hat ihren Schnappschuss
+    // schon vor dem ersten Stück gezogen (W17).
+    if (!opt?.ohneSchnappschuss) this.undoManager?.snapshot()
 
     const el = this.floorplan.fuegeAusstattungHinzu({
       typ: vorlage.typ,

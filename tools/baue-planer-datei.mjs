@@ -911,6 +911,35 @@ let html = `<!DOCTYPE html>
   <span class="fuss" id="schlossFuss">Beim Schließen der Datei fällt das Schloss wieder zu.</span>
 </div>
 
+<!-- DER WUNSCH (W17). \`role="dialog"\`, nicht \`alertdialog\`: hier wird nichts
+     zerstört, es entsteht erst ein VORSCHLAG. Die Rückfrage davor kommt später
+     und trägt dann das schwerere Gewand.
+     Kein \`type="text"\` mit Autokorrektur-Standard: am Telefon macht sie aus
+     "IHHT" zuverlässig "Licht". -->
+<div class="frage wunsch-frage" id="wunschFrage" role="dialog" aria-modal="true" aria-labelledby="wunschTitel" hidden>
+  <span class="txt"><b id="wunschTitel">Was soll hier entstehen?</b> <span id="wunschWo"></span></span>
+  <input type="text" id="wunschText" autocomplete="off" autocapitalize="sentences" autocorrect="off" spellcheck="false" placeholder="z. B. Badezimmer für 20 Personen" aria-labelledby="wunschTitel">
+  <span class="knoepfe">
+    <button type="button" id="btnWunschNein">Abbrechen</button>
+    <button type="button" id="btnWunschJa" class="ernst">Vorschlag holen</button>
+  </span>
+  <span class="fuss" id="wunschFuss">Es wird noch nichts geändert — erst kommt ein Vorschlag zum Ansehen.</span>
+</div>
+
+<!-- Die Rückfrage zum Vorschlag (W17). Sie liegt unten mittig wie jede andere
+     Rückfrage dieser Datei — und NICHT im Objekt-Menü: eine Frage vor einer
+     Änderung darf das nicht verdecken, worüber sie eine Auskunft verlangt.
+     \`alertdialog\`, weil hier zum ersten Mal wirklich etwas geändert wird.
+     Verwerfen steht zuerst (E1). -->
+<div class="frage" id="wunschVorschau" role="alertdialog" aria-modal="true" aria-labelledby="wunschVorschauTitel" hidden>
+  <span class="txt"><b id="wunschVorschauTitel">Vorschlag</b> <span id="wunschVorschauText"></span></span>
+  <span class="knoepfe">
+    <button type="button" id="btnVorschauNein">Verwerfen</button>
+    <button type="button" id="btnVorschauJa" class="ernst">Übernehmen</button>
+  </span>
+  <span class="fuss" id="wunschVorschauFuss">Ein Rückgängig macht die ganze Änderung auf einmal zurück.</span>
+</div>
+
 <!-- Lösch-Rückfrage (E1): Abbrechen zuerst, die gefährliche Wahl darf nicht die
      bequemste sein.
 
@@ -1483,6 +1512,14 @@ const zeichner = new Floorplanner('grundriss-canvas', grundriss);
    zieht KEINE eigenen, sonst waere ein Ziehen mehrere Undo-Schritte. */
 const undo = new UndoManager(grundriss);
 zeichner.setUndoManager(undo);
+
+/* DER STIFT (W17) ist nur moeglich, wo ein Server hinter der Seite steht.
+   Unter \`file://\` — dem Weg, auf dem diese Datei bei der Bank ankommt — gibt
+   es kein Netz, und \`pruefe-planer-datei.mjs\` sperrt jeden Zugriff nach
+   draussen ausdruecklich. Der Menueeintrag entsteht dort GAR NICHT, statt da
+   zu sein und nichts zu tun (W7 Festlegung 1: ein toter Knopf ist schlimmer
+   als ein fehlender). */
+zeichner.stiftMoeglich = (location.protocol === 'http:' || location.protocol === 'https:');
 
 /* Das Ende eines Zuges — hier, nicht bei jeder Bewegung: waehrend eines Ziehens
    feuert \`mousemove\` hundertfach, und jedes Mal den ganzen Grundriss
@@ -2817,6 +2854,207 @@ function verbindenAusfuehren(vorschlag, saeule){
   );
 }
 
+/* ── DER WUNSCH (W17) ────────────────────────────────────────────────────
+   Der Nutzer tippt einen Raum an, schreibt hinein, was dort entstehen soll,
+   und bekommt einen VORSCHLAG. Erst seine Zustimmung aendert den Plan.
+
+   Vier Festlegungen, jede aus dem Pre-Mortem:
+
+   1. DIE VORSCHAU AENDERT NICHTS. Die Wartezeit gilt einer Beschreibung, nicht
+      einer Bearbeitung — dieselbe Trennung wie beim Zusammenlegen (W12).
+   2. GENAU EINE ANFRAGE. Waehrend eine laeuft, ist der Ausloeser gesperrt.
+      Ohne das tippt der Nutzer bei 15 Sekunden Stille ein zweites Mal, und
+      danach stehen zwei Badezimmer uebereinander (Moebel haben bewusst keine
+      Kollisionspruefung, W2).
+   3. EIN RUECKGAENGIG FUER DIE GANZE KETTE. Der Kern zieht seinen Schnappschuss
+      je Aktion; sechs Stuecke waeren sechs Schritte, und ein halb entferntes
+      Badezimmer ist ein gueltiger Zustand.
+   4. DER PLAN WIRD GESTEMPELT. Hat sich der Grundriss waehrend der Anfrage
+      geaendert, wird der Vorschlag VERWORFEN statt angewendet — er wurde
+      gegen einen Stand gerechnet, den es nicht mehr gibt. */
+var wunschLaeuft = false;
+var wunschRaum = null;
+var wunschStempel = null;
+
+/* Der Stempel ist bewusst grob: es geht nicht um jedes Pixel, sondern darum,
+   ob zwischendurch etwas Wesentliches passiert ist. */
+function planStempel(){
+  const f = grundriss.saveFloorplan();
+  return [
+    Object.keys(f.corners || {}).length,
+    (f.walls || []).length,
+    (f.ausstattung || []).length,
+    (f.oeffnungen || []).length
+  ].join('/');
+}
+
+function wunschBeginnen(raumKey){
+  const raum = raumNach(raumKey);
+  if (!raum){
+    meldung('Diesen Raum gibt es nicht mehr — der Plan hat sich geändert.', true);
+    zeichner.menueSchliessen();
+    return;
+  }
+  if (wunschLaeuft){
+    meldung('Es läuft schon eine Anfrage — einen Moment.', true);
+    return;
+  }
+  /* raumNach liefert ein Room-Objekt des Kerns — es traegt "corners", nicht
+     "ring". Der Ring wird hier EINMAL gebaut und danach festgehalten: er ist
+     der Bereich, gegen den der Vorschlag gerechnet wird, und darf sich
+     waehrend der Anfrage nicht unter der Hand aendern. */
+  wunschRaum = {
+    key: raumKey,
+    ring: raum.corners.map(function(c){ return { x: c.x, y: c.y }; })
+  };
+  zeichner.menueSchliessen();
+  const flaeche = (Math.abs(ringFlaeche(wunschRaum.ring)) / 10000).toFixed(1).replace('.', ',');
+  el('wunschWo').textContent = 'Im Bereich mit ' + flaeche + ' m².';
+  el('wunschText').value = '';
+  el('btnWunschJa').disabled = false;
+  el('btnWunschJa').textContent = 'Vorschlag holen';
+  frageZeigen(el('wunschFrage'));
+  setTimeout(function(){ try { el('wunschText').focus(); } catch(_){} }, 30);
+}
+
+function wunschSenden(){
+  if (wunschLaeuft || !wunschRaum) return;
+  const text = String(el('wunschText').value || '').trim();
+  if (!text){
+    meldung('Schreiben Sie zuerst, was hier entstehen soll.', true);
+    return;
+  }
+
+  wunschLaeuft = true;
+  wunschStempel = planStempel();
+  el('btnWunschJa').disabled = true;
+  el('btnWunschJa').textContent = 'Wird gefragt …';
+
+  /* Die gemessenen Ecken gehen MIT: ohne sie kann der Endpunkt nicht pruefen,
+     ob eine Wand das Aufmass anfassen wuerde. */
+  const welt = {
+    ring: wunschRaum.ring,
+    kasten: ringKasten(wunschRaum.ring),
+    moebel: grundriss.getAusstattung().map(function(m){
+      return { id: m.id, typ: m.typ, x: m.x, y: m.y, quelle: m.quelle };
+    }),
+    gemesseneEcken: grundriss.getCorners()
+      .filter(function(c){ return (c.quelle || 'gemessen') === 'gemessen'; })
+      .map(function(c){ return { x: c.x, y: c.y }; }),
+    fangToleranz: 20
+  };
+
+  fetch('/wunsch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ wunsch: text, welt: welt })
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(a){ wunschZeigen(a); })
+    .catch(function(e){
+      wunschFertig();
+      meldung('Die Anfrage ist nicht durchgekommen: ' + (e && e.message ? e.message : e), true);
+    });
+}
+
+function wunschFertig(){
+  wunschLaeuft = false;
+  el('wunschFrage').hidden = true;
+  el('btnWunschJa').disabled = false;
+  el('btnWunschJa').textContent = 'Vorschlag holen';
+}
+
+var wunschVorschlag = null;
+
+function wunschZeigen(antwort){
+  wunschFertig();
+  if (!antwort || !antwort.gueltig){
+    /* Der Grund kommt aus der Pruefung und steht in Alltagssprache da — er
+       wird hier NICHT umformuliert (dieselbe Regel wie beim Zusammenlegen).
+       Eine Absage ist keine Rueckfrage: sie kommt in die Meldungszeile und
+       braucht keinen Knopf, den man wegdrueckt. */
+    meldung((antwort && antwort.grund) || 'Es kam keine brauchbare Antwort.', true);
+    return;
+  }
+
+  wunschVorschlag = antwort;
+  const teile = antwort.wirkung.slice(0, 10);
+  if (antwort.wirkung.length > 10) teile.push('… und ' + (antwort.wirkung.length - 10) + ' weitere');
+  const kopf = antwort.annahme ? antwort.annahme + ' ' : '';
+
+  el('wunschVorschauTitel').textContent = 'Vorschlag: ' + antwort.wirkung.length + ' Schritt(e)';
+  el('wunschVorschauText').textContent = kopf + teile.join(' · ');
+  frageZeigen(el('wunschVorschau'));
+}
+
+function wunschAnwenden(antwort){
+  el('wunschVorschau').hidden = true;
+  if (planStempel() !== wunschStempel){
+    meldung('Der Plan hat sich inzwischen geändert — der Vorschlag wurde für einen anderen Stand gerechnet und wird verworfen.', true);
+    return;
+  }
+
+  /* EIN Schnappschuss fuer die ganze Kette (Festlegung 3). */
+  undo.snapshot();
+  let gesetzt = 0;
+  let entfernt = 0;
+  try {
+    for (const s of antwort.werkzeuge || wunschSchritte(antwort)){
+      if (s.werkzeug === 'stueck_setzen'){
+        const v = vorlageFuer(s.args.typ);
+        if (!v) throw new Error('Für "' + s.args.typ + '" gibt es keine Vorlage.');
+        zeichner.stueckAblegenWelt(s.args.x, s.args.y, v, { ohneSchnappschuss: true });
+        gesetzt++;
+      } else if (s.werkzeug === 'raum_auslegen'){
+        const neue = legeAus(wunschRaum.ring, s.args.nutzung, AUSSTATTUNG_VORLAGEN, {});
+        const deckel = s.args.anzahl ? Math.min(s.args.anzahl, neue.length) : neue.length;
+        for (let i = 0; i < deckel; i++){
+          const v = vorlageFuer(neue[i].typ);
+          if (v) { zeichner.stueckAblegenWelt(neue[i].x, neue[i].y, v, { ohneSchnappschuss: true }); gesetzt++; }
+        }
+      } else if (s.werkzeug === 'stueck_entfernen'){
+        grundriss.entferneAusstattung(s.args.id);
+        entfernt++;
+      }
+    }
+  } catch (e){
+    undo.undo();
+    meldung('Der Vorschlag liess sich nicht anwenden: ' + (e && e.message ? e.message : e) + ' Es wurde nichts geändert.', true);
+    return;
+  }
+
+  /* GEMESSEN und nicht behauptet: gezaehlt wird, was wirklich im Modell steht. */
+  meldung(
+    'Übernommen — ' + gesetzt + ' Stück hingestellt' +
+    (entfernt ? ', ' + entfernt + ' entfernt' : '') +
+    '. Der Plan zählt jetzt ' + grundriss.getAusstattung().length + ' Stücke. ' +
+    'Ein Rückgängig macht die ganze Änderung zurück.'
+  );
+}
+
+/* Die Kette steckt je nach Weg unter "werkzeuge" — diese Huelle haelt beide
+   Schreibweisen aus, statt bei einer still nichts zu tun. */
+function wunschSchritte(antwort){
+  if (Array.isArray(antwort.werkzeuge)) return antwort.werkzeuge;
+  if (antwort.kette && Array.isArray(antwort.kette.werkzeuge)) return antwort.kette.werkzeuge;
+  return [];
+}
+
+function ringFlaeche(ring){
+  let s = 0;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++){
+    s += (ring[j].x + ring[i].x) * (ring[j].y - ring[i].y);
+  }
+  return s / 2;
+}
+
+function ringKasten(ring){
+  const xs = ring.map(function(p){ return p.x; });
+  const ys = ring.map(function(p){ return p.y; });
+  return { breite: Math.max.apply(null, xs) - Math.min.apply(null, xs),
+           tiefe: Math.max.apply(null, ys) - Math.min.apply(null, ys) };
+}
+
 /* Was ein Menue-Eintrag AUSLOEST.
 
    Die Werkzeugwechsel hier sind kein Rueckfall in die Werkzeugkunde: der
@@ -2900,6 +3138,10 @@ function menueHandlung(eintrag, anfrage){
          war der ganze Befund von W13 (gebaut, aber nicht gefunden). */
       zeichner.menueSchliessen();
       meldung('Ziehen Sie ein Stück aus der Palette links in den Raum — Matte, Gerät oder Liege.');
+      return;
+
+    case 'raum-wunsch':
+      wunschBeginnen(id);
       return;
 
     default:
@@ -3337,6 +3579,36 @@ el('btnSchlossNein').addEventListener('click', function(){
 el('schlossWort').addEventListener('keydown', function(ev){
   if (ev.key === 'Enter') { ev.preventDefault(); schlossVersuchen(); }
   else if (ev.key === 'Escape') { ev.preventDefault(); el('schlossFrage').hidden = true; el('schlossWort').value = ''; }
+});
+
+/* ── Der Wunsch (W17) ───────────────────────────────────────────────── */
+el('btnWunschJa').addEventListener('click', wunschSenden);
+el('btnWunschNein').addEventListener('click', function(){
+  /* Abbrechen waehrend einer laufenden Anfrage schliesst nur das Feld — der
+     Unterprozess laeuft weiter und seine Antwort wird verworfen. Ihn zu
+     unterbrechen waere ein zweiter Weg, ueber den ein halber Zustand
+     entstehen kann. */
+  el('wunschFrage').hidden = true;
+  el('wunschText').value = '';
+  wunschRaum = null;
+});
+el('wunschText').addEventListener('keydown', function(ev){
+  if (ev.key === 'Enter') { ev.preventDefault(); wunschSenden(); }
+  else if (ev.key === 'Escape') {
+    ev.preventDefault();
+    el('wunschFrage').hidden = true;
+    el('wunschText').value = '';
+    wunschRaum = null;
+  }
+});
+
+el('btnVorschauJa').addEventListener('click', function(){
+  if (wunschVorschlag) wunschAnwenden(wunschVorschlag);
+});
+el('btnVorschauNein').addEventListener('click', function(){
+  el('wunschVorschau').hidden = true;
+  wunschVorschlag = null;
+  meldung('Verworfen — es wurde nichts geändert.');
 });
 
 /* ── Zwei Fenster: die Wahl (K4) ────────────────────────────────────── */

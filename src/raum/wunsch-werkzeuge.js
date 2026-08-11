@@ -315,7 +315,12 @@ export function pruefeKette(kette, welt) {
     wirkung.push(urteil.wirkung)
   }
 
-  return { gueltig: true, grund: null, wirkung, annahme }
+  // Die GEPRUEFTE Kette geht mit zurueck — und zwar genau hier, am Ende der
+  // Pruefung. Sie erst beim Aufrufer wieder anzuhaengen hiesse, dass irgendwo
+  // eine ungepruefte Kette neben einer geprueften Beschreibung liegt; wer die
+  // beiden verwechselt, wendet Ungeprueftes an. Gemessen: ohne dieses Feld
+  // meldete die Bedienung "Uebernommen — 0 Stueck hingestellt".
+  return { gueltig: true, grund: null, wirkung, annahme, werkzeuge: schritte }
 }
 
 /** Nur fuer die Pruefwerkzeuge. */
