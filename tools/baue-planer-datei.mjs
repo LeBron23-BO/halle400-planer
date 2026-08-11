@@ -635,7 +635,15 @@ let html = `<!DOCTYPE html>
 
        Die Knopfhoehe bleibt ueber 44 px (Vorschau 88 x 34 plus Name) — unter
        einer Fingerkuppe waere eine kleinere Flaeche ein Glueckstreffer. */
-    .palette{left:8px;top:96px;width:102px;max-height:calc(100vh - 300px)}
+    /* Die 344 px sind KEINE runde Zahl, sondern gemessen: die Werkzeugleiste
+       ist am 390x800-Bildschirm 218 px hoch und beginnt bei y=572; die Palette
+       startet bei y=96. Mehr als 100vh-344 und sie waechst in die Leiste
+       hinein — genau das ist beim Ergaenzen von WC und Waschbecken passiert
+       (pruefe-finger H1c, Ueberlappung 20 px). Waechst die Leiste, muss diese
+       Zahl mit; H1c ist der Waechter, der es meldet, statt es durchgehen zu
+       lassen. Die Palette scrollt intern (.palette-leib overflow-y:auto), es
+       geht also kein Eintrag verloren. */
+    .palette{left:8px;top:96px;width:102px;max-height:calc(100vh - 344px)}
     .palette-kopf{padding:8px 8px 6px;font-size:9px;letter-spacing:.11em}
     .palette-leib{padding:3px 3px 4px}
     .pstueck{padding:4px 2px;font-size:10.5px}
