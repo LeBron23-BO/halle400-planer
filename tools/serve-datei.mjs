@@ -21,6 +21,7 @@
  * Abbildung von URL auf Dateisystem. Siehe `bearbeite()`.
  */
 import { createServer } from 'node:http'
+import { behandleWunschAnfrage } from './wunsch-endpunkt.mjs'
 import { readFile, stat } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join, resolve, basename } from 'node:path'
@@ -42,6 +43,11 @@ const arg = (name, standard) => {
 // Servers. Beide Server gleichzeitig braucht niemand: der eine liefert den
 // Planer, der andere die fertige Datei. Ist der Port belegt, sagt es der Server
 // im Klartext (s. unten) statt einen Stapelauszug zu drucken.
+// Der Stift ist an, solange er nicht ausdruecklich abgeschaltet wird. Der
+// Schalter steht hier oben und nicht im Endpunkt: wer wissen will, was dieser
+// Server tun kann, soll es beim Lesen der ersten Seite sehen.
+const STIFT_AN = process.env.HALLE400_STIFT !== '0'
+
 const PORT_ROH = arg('port', '3301')
 const PORT = Number(PORT_ROH)
 const DATEI = resolve(WURZEL, arg('datei', 'Halle400-Modell.html'))
@@ -170,6 +176,16 @@ function handyAdresse(port) {
  * passieren kann, ist die ohne Abbildung.
  */
 async function bearbeite(req, res) {
+  // DER STIFT (W17). Der einzige Pfad, der etwas anderes tut als eine Datei
+  // auszuliefern — und er tut es nur, wenn er eingeschaltet ist.
+  //
+  // Warum ein Schalter: dieser Server ist ueber Tailscale erreichbar, und der
+  // Endpunkt startet einen Unterprozess. Beides zusammen soll eine bewusste
+  // Entscheidung sein und kein Nebeneffekt davon, dass jemand eine Datei
+  // ausliefern wollte. `HALLE400_STIFT=0` schaltet ihn ab; die Auslieferung
+  // laeuft unveraendert weiter.
+  if (STIFT_AN && behandleWunschAnfrage(req, res)) return
+
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.writeHead(405, { 'Content-Type': 'text/plain; charset=utf-8', Allow: 'GET, HEAD' })
     return res.end('405 — nur GET\n')
