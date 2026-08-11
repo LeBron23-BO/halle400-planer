@@ -1,6 +1,13 @@
 // RAUM-INVENTAR — was steht laut PLANER in welchem Raum? (W18)
 //
 //   node tools/raum-inventar.mjs
+//   node tools/raum-inventar.mjs --raum "Konferenz 10-12"   (W20: EIN Raum im Detail)
+//
+// Der Detail-Modus beantwortet die Anschlussfrage von t2: WELCHE Stuecke zaehlt
+// ein Raum eigentlich, und WO stehen sie? Eine Stueckzahl allein sagt nur, DASS
+// Soll und Ist auseinandergehen — nicht, ob die Raumgrenze zu weit greift oder
+// die Kuration zu viel enthaelt. Ausgegeben wird deshalb der Umriss in Metern
+// und jedes Stueck mit Position, Mass und Beleg.
 //
 // WARUM ES DIESES WERKZEUG BRAUCHT
 // Die Frage „ist jeder Raum so eingerichtet wie in der PDF?" laesst sich nur
@@ -80,6 +87,47 @@ const eintraege = raeume.map((r) => {
 })
 
 eintraege.sort((a, b) => b.m2 - a.m2)
+
+/* ── Detail-Modus (W20): EIN Raum, jedes Stueck einzeln ─────────────────────
+   Gesucht wird ueber den Namen des Raums, nicht ueber eine laufende Nummer:
+   die Nummer haengt an der Sortierung und wandert bei jeder Planaenderung. */
+const wunsch = process.argv.includes('--raum')
+  ? process.argv[process.argv.indexOf('--raum') + 1]
+  : null
+// --lagen: die Lagekarte ALLER Raeume (Kopf + Umriss, ohne Stueckliste). Sie
+// beantwortet "welcher benannte Raum ist die PDF-Zeile 'Nord, dritter von
+// West'?" — ohne diese Frage bliebe die Zuordnung Soll->Ist eine Vermutung.
+const nurLagen = process.argv.includes('--lagen')
+if (wunsch || nurLagen) {
+  const treffer = nurLagen
+    ? eintraege
+    : eintraege.filter((e) => e.name.toLowerCase().includes(wunsch.toLowerCase()))
+  if (!treffer.length) {
+    console.error(`Kein Raum enthaelt "${wunsch}". Vorhandene Namen:`)
+    for (const e of eintraege) console.error(`  ${e.name}`)
+    process.exit(1)
+  }
+  for (const e of treffer) {
+    const xs = e.ring.map((p) => p.x / 100)
+    const ys = e.ring.map((p) => p.y / 100)
+    console.log(`\n══ ${e.name} · ${e.m2} m² · ${e.anzahl} Stueck`)
+    console.log(
+      `   Umriss: x ${Math.min(...xs).toFixed(2)}..${Math.max(...xs).toFixed(2)} m · ` +
+        `y ${Math.min(...ys).toFixed(2)}..${Math.max(...ys).toFixed(2)} m · ${e.ring.length} Ecken`
+    )
+    if (nurLagen) continue
+    const drin = stuecke.filter((s) => imRing({ x: s.x, y: s.y }, e.ring))
+    drin.sort((a, b) => a.typ.localeCompare(b.typ) || a.x - b.x)
+    for (const s of drin) {
+      const mass = s.breite && s.tiefe ? `${s.breite}x${s.tiefe} cm` : '—'
+      console.log(
+        `   ${s.typ.padEnd(12)} x=${(s.x / 100).toFixed(2).padStart(6)} m  y=${(s.y / 100).toFixed(2).padStart(5)} m  ` +
+          `${mass.padEnd(12)} ${s.quelle || 'gemessen'}${s.beleg ? '  beleg=' + s.beleg : ''}`
+      )
+    }
+  }
+  process.exit(0)
+}
 
 console.log(`Raeume laut Planer: ${raeume.length} · Ausstattung gesamt: ${stuecke.length}`)
 console.log(`Namens-Anker: ${geo.beschriftungen.length}\n`)
