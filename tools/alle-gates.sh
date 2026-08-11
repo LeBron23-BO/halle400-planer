@@ -53,7 +53,14 @@ cd "$(dirname "$0")/.." || exit 1
 # zeichnet. Die Zonen sehen deshalb aus wie eine Messung und sind eine Kuration.
 # Abschnitt A ist die tragende Zusicherung: KEINE bauende Kette darf zonen.json
 # lesen — sonst ist aus einer Zuordnung eine erfundene Wand geworden.
-GATES="pruefe-saeulen pruefe-stift pruefe-kennungen pruefe-ziehen pruefe-palette pruefe-undo pruefe-ansicht pruefe-ausstattung pruefe-loeschen pruefe-zeichnen pruefe-axonometrie pruefe-touch pruefe-ausstattung-3d pruefe-tueren pruefe-planer-datei pruefe-haertung pruefe-uebernahme pruefe-axo-bearbeiten pruefe-finger pruefe-kennzahlen pruefe-schutz pruefe-siegel pruefe-serve-datei pruefe-zusammenlegen pruefe-wand-bewegen pruefe-menue pruefe-zonen"
+# pruefe-soll-ist (t2/W20) beantwortet die Frage, auf die es dem Betreiber
+# ankommt: ist der Raum so eingerichtet WIE IM PLAN? Es prueft NICHT jede
+# Stueckzahl hart — data/pdf-soll.json ist eine Lesart des freihaendig
+# gezeichneten Blattes, und ein Gate, das jede Unschaerfe rot meldet, wird
+# abgeschaltet. Hart geprueft wird, was am Overlay belegt ist; jede Abweichung
+# MUSS benannt sein, eine neue unbenannte ist rot. Was offen ist, wird als
+# offen GENANNT statt still bestanden.
+GATES="pruefe-saeulen pruefe-stift pruefe-kennungen pruefe-ziehen pruefe-palette pruefe-undo pruefe-ansicht pruefe-ausstattung pruefe-loeschen pruefe-zeichnen pruefe-axonometrie pruefe-touch pruefe-ausstattung-3d pruefe-tueren pruefe-planer-datei pruefe-haertung pruefe-uebernahme pruefe-axo-bearbeiten pruefe-finger pruefe-kennzahlen pruefe-schutz pruefe-siegel pruefe-serve-datei pruefe-zusammenlegen pruefe-wand-bewegen pruefe-menue pruefe-zonen pruefe-soll-ist"
 if [ -n "$1" ]; then GATES="$*"; fi
 gesamt=0
 for g in $GATES; do

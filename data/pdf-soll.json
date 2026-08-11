@@ -1,0 +1,105 @@
+{
+  "_zweck": "Das SOLL der Einrichtung je BENANNTEM Raum und je Zone, gelesen aus 'Nur Buero.pdf'. Begruendung und Volltext: docs/pdf-soll-einrichtung.md. Gegenstueck: node tools/raum-inventar.mjs liefert das IST.",
+  "_kein_messwert": "Diese Datei ist eine LESART des Blattes, keine Messung. Sie darf NIE von einer bauenden Kette gelesen werden (export_blueprint.py, build_walls.py, baue-planer-datei.mjs, uebernimm-bearbeitung.py) — sonst waere aus einer Lesart Geometrie geworden. Dieselbe Zusicherung wie fuer data/zonen.json, geprueft in tools/pruefe-soll-ist.mjs Abschnitt A.",
+  "_sicher": "sicher=true heisst: die Stueckzahl ist am Overlay belegt (python tools/mess_kachel.py --von X --bis Y --mit-ausstattung) und wird HART geprueft. sicher=false heisst: die PDF-Lesart ist offen — der Raum wird sichtbar als UNGEPRUEFT gemeldet und faerbt das Gate NICHT rot. Eine geratene Zahl saehe belegt aus und waere schlimmer als die offene Luecke.",
+  "_stand": "2026-08-11 (t2/W20). 4 von 14 benannten Raeumen belegt, 1 von 6 Zonen. Die uebrigen warten auf ihre Overlay-Runde.",
+
+  "raeume": [
+    {
+      "name": "Toiletten",
+      "sicher": true,
+      "beleg": "mess/x1-6_y0-15.31_modell.png",
+      "blatt": "4 Kabinen an der Nordwand, Waschtisch mit 4 Becken (2x2), Kabinen oeffnen nach Sueden",
+      "soll": { "wc": 4, "waschbecken": 4 }
+    },
+    {
+      "name": "Konferenz 10-12 Personen",
+      "sicher": true,
+      "beleg": "mess/x1-6_y0-15.31_modell.png",
+      "blatt": "1 Rechtecktisch OST-WEST, 6 Stuehle Nord + 6 Sued (keine Kopfplaetze), Sideboard an der Suedwand, 3 Pflanzen an der Nordkante",
+      "soll": { "tisch": 1, "stuhl": 12, "schrank": 1, "pflanze": 3 }
+    },
+    {
+      "name": "Konferenz 6-8 Personen",
+      "sicher": true,
+      "beleg": "mess/x6-13_y0-15.31_modell.png",
+      "blatt": "runder Tisch (Durchmesser ca. 1,3 m), genau 6 Stuehle ringsum",
+      "soll": { "rundtisch": 1, "stuhl": 6 }
+    },
+    {
+      "name": "Lager",
+      "sicher": true,
+      "beleg": "das Blatt zeichnet den Raum ausdruecklich LEER",
+      "blatt": "leer",
+      "soll": {}
+    },
+
+    { "name": "Einzelbüro", "sicher": false, "blatt": "1 Schreibtisch NORD-SUED, ca. 3 Stuehle. Zweimal vorhanden, beschriftet ist einer." },
+    { "name": "Workspace", "sicher": false, "blatt": "Workspace Nord: ca. 4 Bench-Bloecke NORD-SUED, je 3 Stuehle West + 3 Ost. Ob ein Block 4 oder 6 Plaetze hat, haengt an einer verwischten Mittelfuge." },
+    { "name": "Loggia", "sicher": false, "blatt": "1 Langtisch OST-WEST, 3+3 Stuehle" },
+    { "name": "Videokonf", "sicher": false, "blatt": "1 zweiteiliger Tisch NORD-SUED, 2 Stuehle gegenueber" },
+    { "name": "Storage", "sicher": false, "blatt": "Regalriegel ca. 9 Faecher, sonst leer" },
+    { "name": "Workshop", "sicher": false, "blatt": "Workshop Ost: 1 Tisch NORD-SUED, 4 Hocker, Schrank 3 Faecher, Flipchart, Wandtafel an der Suedwand" },
+    { "name": "Workshop 6-8 Personen", "sicher": false, "blatt": "1 Tisch OST-WEST, 3+3 Stuehle, 4 runde Poufs suedlich" },
+    { "name": "Phone Booth", "sicher": false, "blatt": "2 Kabinen, je 1 V-Sitz (Oeffnung nach Norden) + 1 ovaler Tisch. Derselbe Riegeltyp kommt mindestens zweimal vor, beschriftet ist nur einer." },
+    { "name": "Doppelbüro", "sicher": false, "blatt": "2 Schreibtischbloecke NORD-SUED, dazwischen hoher Schrankbalken, je 2 Stuehle diagonal versetzt, Regalriegel an der Ostwand" }
+  ],
+
+  "zonen": [
+    {
+      "name": "Aufzug",
+      "sicher": true,
+      "beleg": "das Blatt zeigt Quadrat mit Diagonalkreuz und Vorbau, keine Moeblierung",
+      "blatt": "keine Moeblierung",
+      "soll": {}
+    },
+    { "name": "Treppenhaus West", "sicher": false, "blatt": "schraffierte Treppenlaeufe, ausserhalb der grauen Bueroflaeche" },
+    { "name": "Kueche / Teamtable", "sicher": false, "blatt": "1 Langtisch OST-WEST, 8 Hocker (4 noerdlich, 4 suedlich). Eine Kuechenzeile ist auf dem Blatt NICHT beschriftet." },
+    { "name": "Empfang", "sicher": false, "blatt": "L-foermiger Tresen 7-8 Felder, Laengsseite NORD-SUED, KEIN einziger Stuhl; oestlich Sitznische mit Bank (4 Polster) + 1 Rundsessel + 2 Hocker" },
+    { "name": "Workspace Sued", "sicher": false, "blatt": "2 Cluster a 2x2 = 4 Tische, je 2 Stuehle West + 2 Ost, Laengsachsen NORD-SUED" },
+    { "name": "Erschliessung", "sicher": false, "blatt": "Verkehrsflaeche — das Blatt zeigt hier keine eigene Moeblierung, die Stuecke gehoeren zu den angrenzenden Bereichen" }
+  ],
+
+  "abweichungen": [
+    {
+      "id": "E1",
+      "wo": ["Konferenz 10-12 Personen", "Konferenz 6-8 Personen"],
+      "schwere": "schwer",
+      "befund": "Eine Sitzgruppe steht ZWEIMAL im Modell. Das Blatt zeigt EINEN runden Tisch (ca. 1,3 m) mit 6 Stuehlen bei x ca. 9,4 m. Das Modell traegt rundtisch 150x150 bei x 7,80 m mit 4 Stuehlen UND rundtisch 170x170 bei x 10,45 m mit 6 Stuehlen — keiner liegt auf dem gezeichneten Kreis.",
+      "ursache": "Dieselbe Gruppe wurde in zwei benachbarten Mess-Kacheln je einmal abgelesen, beide Male am Kachelrand und mit Versatz. Die Belege zeigen es: die westliche Gruppe traegt mess/x0-10_..., die oestliche mess/x9-19_.... Die Trennwand bei x 8,10 m verteilt das Ergebnis auf zwei Raeume.",
+      "wirkung": { "Konferenz 10-12 Personen": "+4 stuhl, +1 rundtisch", "Konferenz 6-8 Personen": "+2 stuhl" },
+      "beleg": "mess/x6-13_y0-15.31_modell.png",
+      "status": "offen — Korrektur setzt eine neue Position in data/ausstattung.json und braucht eine Messrunde an der Kachel, keine Aufraeumarbeit"
+    },
+    {
+      "id": "E2",
+      "wo": ["Konferenz 10-12 Personen"],
+      "schwere": "mittel",
+      "befund": "Drei Stuecke vom Typ rundtisch (75x55, 65x65, 70x55 cm) liegen an der Nordkante bei y ca. 8,18 m genau auf drei gezeichneten PFLANZSYMBOLEN. Der Raum fuehrt im Modell keine einzige pflanze.",
+      "ursache": "Typ bei der Kuration falsch gesetzt — Kreis mit Blattkontur als Rundtisch gelesen.",
+      "wirkung": { "gesamt": "rundtisch um 3 ueberzaehlt, pflanze um 3 unterzaehlt" },
+      "beleg": "mess/x1-6_y0-15.31_modell.png",
+      "status": "offen — reiner Typwechsel ohne neue Position, anders als E1"
+    },
+    {
+      "id": "E3",
+      "wo": ["Konferenz 10-12 Personen"],
+      "schwere": "behoben",
+      "befund": "Die erste PDF-Auswertung las '5 Stuehle Nord + 5 Sued'. Gezeichnet sind 6 und 6; die zwoelf Modell-Umrisse liegen genau auf zwoelf gezeichneten Symbolen, und der Raumname sagt '10-12 Personen'.",
+      "ursache": "Zaehlung am Bild ohne Gegenhalt.",
+      "wirkung": {},
+      "beleg": "mess/x1-6_y0-15.31_modell.png",
+      "status": "behoben — das Soll traegt jetzt 12"
+    },
+    {
+      "id": "E4",
+      "wo": ["Empfang"],
+      "schwere": "offen",
+      "befund": "Das Blatt sagt fuer den Empfangstresen ausdruecklich 'KEIN einziger Stuhl'. Die Zone Empfang traegt im Modell 1 stuhl, 2 waschbecken und 3 schrank.",
+      "ursache": "unklar — die Zonengrenze ist eine Kuration (data/zonen.json), kein gezeichneter Raum. Es kann die Grenze sein oder die Zuordnung der Sitznische.",
+      "wirkung": {},
+      "beleg": "noch keiner — die Overlay-Runde fuer den offenen Bereich steht aus",
+      "status": "offen — braucht ihre eigene Overlay-Runde, vorher ist jede Aussage eine Vermutung"
+    }
+  ]
+}

@@ -34,7 +34,27 @@ node tools/pruefe-uebernahme.mjs   # W5: der Rueckweg — 51 Pruefungen OHNE Bro
                                    #        --ohne-gesetzt ist byte-identisch mit
                                    #        git show HEAD:app/public/plaene/halle400.json
 python tools/mess_kachel.py --von 27 --bis 37   # Lineal: Ausschnitt mit xy-Meterraster (A1..A4)
+python tools/mess_kachel.py --von 6 --bis 13 --mit-ausstattung
+                                   # t2/W20: DAS MECHANISCHE AUGE. Legt jedes Stueck des
+                                   #        ausgelieferten Plans als roten Umriss ueber die PDF.
+                                   #        Deckt sich der Umriss nicht mit dem gezeichneten
+                                   #        Moebel, ist das ein BEFUND statt Ansichtssache —
+                                   #        Augenmass auf zwei nebeneinander gehaltenen Bildern
+                                   #        ist genau die Schaetzung, die die DNA verbietet.
+                                   #        Eigener Dateiname (_modell), damit kein `beleg`
+                                   #        in ausstattung.json sich selbst belegt.
 python tools/compare_plan.py       # -> data/vergleich.png : Original vs. Nachbildung ANSEHEN
+node tools/raum-inventar.mjs       # W18: was steht laut PLANER in welchem Raum? Fragt den
+                                   #        KERN (Floorplan.getRooms), nicht eine Naeherung.
+                                   #        --raum "Konferenz"  ein Raum im Detail (jedes
+                                   #        Stueck mit Position, Mass, Beleg)
+                                   #        --lagen             Lagekarte aller 27 Raeume
+node tools/pruefe-soll-ist.mjs     # t2/W20: ist der Raum eingerichtet WIE IM PLAN?
+                                   #        Soll = data/pdf-soll.json (LESART, nie Geometrie),
+                                   #        Begruendung in docs/pdf-soll-einrichtung.md.
+                                   #        Hart geprueft wird nur, was am Overlay BELEGT ist;
+                                   #        jede Abweichung MUSS benannt sein, eine neue
+                                   #        unbenannte ist rot; Offenes wird als offen GENANNT.
 cd app && ./node_modules/.bin/next build && cp out/de.html out/index.html   # statischer Export (T6: Deutsch ist Standardsprache)
 node tools/serve-local.mjs         # Auslieferung: PC http://localhost:3301/?plan=halle400
                                    #               Handy https://zen.taild936f8.ts.net:8458/?plan=halle400
