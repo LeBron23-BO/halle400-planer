@@ -222,9 +222,18 @@ function istRechteckAchsparallel(punkte) {
 }
 
 const rechteckig = RB.raeume.filter((r) => istRechteckAchsparallel(r.punkte))
+// Geprueft wird die STRUKTUR, nicht mehr eine Stueckzahl: GENAU EIN Zyklus darf
+// unregelmaessig sein, und das muss die Erschliessungszone sein. Die alte
+// Fassung stand fest auf 24 und wurde rot, sobald eine gefundene Trennwand
+// einen Raum mehr ergab (2026-08-11: 24 -> 26) — sie meldete also einen
+// FORTSCHRITT als Fehler. Diese Fassung ist schaerfer: sie schlaegt auch an,
+// wenn irgendein anderer Raum schief wird, ohne dass sich eine Zahl aendert.
+const unregelmaessig = RB.raeume.filter((r) => !istRechteckAchsparallel(r.punkte))
 pruefe(
-  rechteckig.length === 24,
-  `A1 ${rechteckig.length} von ${RB.raeume.length} Zyklen sind viereckig und achsparallel (erwartet 24)`
+  unregelmaessig.length === 1 && unregelmaessig[0] === RB.raeume[RB.erschliessungIndex],
+  `A1 ${rechteckig.length} von ${RB.raeume.length} Zyklen sind viereckig und achsparallel — ` +
+    `der einzige unregelmaessige ist die Erschliessungszone ` +
+    `(${unregelmaessig.length} unregelmaessig)`
 )
 let groessteAbweichung = 0
 for (const r of rechteckig) {
@@ -272,10 +281,14 @@ pruefe(
     `${((1 - schlechtestesVerhaeltnisBbox) * 100).toFixed(2)} %`
 )
 const flur = RB.raeume[RB.erschliessungIndex]
+// Nachgemessen 2026-08-11 nach dem Fund in tools/build_walls.py: die
+// Zeilenprojektion warf den letzten Teil-Meter weg, beide Flurwaende endeten
+// 0,76 m vor der Ostwand, und durch diesen Spalt gehoerte der Workshop im
+// Nordosten zur Erschliessungszone. Vorher 46 Ecken / 479,9 m².
 pruefe(
-  flur && flur.ecken === 46 && Math.abs(flur.flaeche - 479.9) < 0.1,
+  flur && flur.ecken === 44 && Math.abs(flur.flaeche - 405.2) < 0.1,
   `A6 die Erschliessungszone: ${flur ? flur.ecken : '?'} Ecken, ` +
-    `${flur ? flur.flaeche.toFixed(1) : '?'} m² (gemessen 46 / 479,9)`
+    `${flur ? flur.flaeche.toFixed(1) : '?'} m² (gemessen 44 / 405,2)`
 )
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -292,20 +305,57 @@ pruefe(
   `B1 ${s.inRaeumen} in Raeumen + ${s.inErschliessung} in der Erschliessungszone + ` +
     `${s.ausserhalb} ausserhalb === ${s.stuecke} Stuecke`
 )
+// Nachgemessen 2026-08-11 (vorher 224 / 65 / 0). Die neun Stuecke, die von der
+// Erschliessungszone in einen Raum gewandert sind, stehen im Workshop im
+// Nordosten — er war vorher durch einen Messfehler Teil des Flurs.
+// `ausserhalb === 0` ist die tragende Aussage und steht deshalb noch einmal
+// einzeln da: eine Null, die in einer Dreier-Kette mitlaeuft, faellt beim
+// Nachziehen der anderen beiden Zahlen zu leicht mit um.
+pruefe(s.ausserhalb === 0, `B2a kein einziges Stueck liegt ausserhalb (${s.ausserhalb})`)
 pruefe(
-  s.inRaeumen === 224 && s.inErschliessung === 65 && s.ausserhalb === 0,
-  `B2 die gemessenen Zahlen: 224 / 65 / 0`
+  s.inRaeumen === 233 && s.inErschliessung === 56,
+  `B2b die gemessenen Zahlen: ${s.inRaeumen} / ${s.inErschliessung} (erwartet 233 / 56)`
 )
 const summeJeRaum = RB.raeume.reduce((a, r) => a + r.stueckeGesamt, 0)
 pruefe(
   summeJeRaum === s.inRaeumen + s.inErschliessung,
   `B3 die Histogramme der ${RB.raeume.length} Zyklen summieren sich auf dieselben ${summeJeRaum} Stuecke`
 )
+// Geprueft werden die NAMEN, nicht ihre Anzahl. Welche Beschriftungen in der
+// Erschliessungszone landen, ist die eigentliche Aussage — und sie hat einen
+// Grund je Name: Teamtable, Aufzug und Empfang liegen im offenen Kuechen- und
+// Empfangsbereich (Flur-Nordwand ist zwischen 11 und 23 m NICHT gezeichnet,
+// Belegung 0,00), Workspace im offenen Suedbereich (Flur-Suedwand fehlt
+// zwischen 24 und 27 m, ebenfalls 0,00), und Break out liegt 11 cm zu weit
+// noerdlich — sein Textanker faellt knapp in den Flur statt in den Raum
+// darunter. Eine blosse Zahl bliebe gruen, wenn ein ANDERER Name hineinrutscht
+// und einer von diesen herausfaellt; genau das waere der stille Fehler.
+const ANKER_IN_ZONE = ['Aufzug', 'Break out', 'Empfang', 'Teamtable', 'Workspace']
+const zoneAnker = flur ? flur.namensAnker.slice().sort() : []
 pruefe(
-  s.namensAnker === 18 && s.ankerInRaeumen === 12,
-  `B4 ${s.ankerInRaeumen} von ${s.namensAnker} Namens-Ankern liegen in einem geschlossenen Raum ` +
-    `(erwartet 12 von 18, die uebrigen 6 in der Erschliessungszone)`
+  s.namensAnker === 18 &&
+    zoneAnker.length === ANKER_IN_ZONE.length &&
+    zoneAnker.every((n, i) => n === ANKER_IN_ZONE[i]),
+  `B4 von ${s.namensAnker} Namens-Ankern liegen genau diese in der Erschliessungszone: ` +
+    `${zoneAnker.join(', ')} (erwartet ${ANKER_IN_ZONE.join(', ')})`
 )
+// GEGENPROBE: eine Namensliste, die nie widerspricht, prueft nichts. Ein Anker
+// wird absichtlich in den Flur gesetzt (x 40 m, y 7 m liegt zwischen den beiden
+// Flurachsen 5,79 und 8,14 m) — die Liste MUSS ihn dann nennen.
+const planMitFehler = kopie(PLAN)
+const opfer = (planMitFehler.labels || []).find((l) => l.text === 'Lager')
+if (opfer) {
+  opfer.anker_cm = [4000, 700]
+  const RB_FEHLER = baueRaumbuch(planMitFehler, { namen: NAMEN })
+  const zoneFehler = RB_FEHLER.raeume[RB_FEHLER.erschliessungIndex].namensAnker.slice().sort()
+  pruefe(
+    zoneFehler.length === ANKER_IN_ZONE.length + 1 && zoneFehler.includes('Lager'),
+    `B4-GEGENPROBE: ein Anker mitten im Flur faellt auf — die Liste waechst auf ` +
+      `${zoneFehler.length} und nennt Lager`
+  )
+} else {
+  pruefe(false, `B4-GEGENPROBE: das Label "Lager" fehlt — die Gegenprobe kann nicht messen`)
+}
 
 /* ── Jede Raumzeile braucht eine EINDEUTIGE Bezeichnung ──────────────────
    Die PDF beschriftet nur die Haelfte der Raeume. Die andere Haelfte bekommt
