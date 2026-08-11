@@ -3,8 +3,8 @@
   "plan": "halle400",
   "verfahren": "ECDSA P-256 / SHA-256",
   "inhaber": "Dania — Halle 400, Businessplan",
-  "signiertAm": "2026-07-28T06:12:24.695Z",
-  "planAbdruck": "ce6034509ecd0de408754f976411e626147419926be5af74e834f2417ab98ca2",
-  "planBytes": 78451,
-  "signatur": "GubWXplkwwFdfFzg2e55Zk69ZbbfONkOB/o/2NZfgjCFpxX5lRGnDhn9Q0jU0MCvzuCgur0beZPGVrk5PQJpzg=="
+  "signiertAm": "2026-08-11T13:22:21.811Z",
+  "planAbdruck": "eeabb9a913b001755835895b4a20005e1301d3f0b642ced168d652fb5a9d3fe1",
+  "planBytes": 78809,
+  "signatur": "4FdBfOFfTKOXYQVUaQKmWfWOdrgMuXhzxNxH5pLH+c96XgnjMu0i7GjgzYHjXpBhpk91ea89YO7KAAPJ2HhkLQ=="
 }

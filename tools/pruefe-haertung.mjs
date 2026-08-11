@@ -49,6 +49,17 @@ const { chromium } = (await import(process.env.PLAYWRIGHT_PFAD || PW_STANDARD)).
 
 const HIER = path.dirname(fileURLToPath(import.meta.url))
 const WURZEL = path.resolve(HIER, '..')
+
+/* Die Wandzahl wird GELESEN, nicht abgeschrieben (2026-08-11). Hier stand 100
+   als Zahl; eine gefundene Trennwand machte 102 daraus, und M7 meldete einen
+   Fehler fuer einen Plan, der vollstaendig war. Die Frage der Pruefung ist
+   richtig — "steht nach dem Neustart wieder der Auslieferungszustand?" —, nur
+   ihr Massstab war eine Kopie. Aus der Quelle gelesen veraltet er nicht und
+   faengt zusaetzlich den Fall, dass die Datei nach einer Planaenderung nicht
+   neu gebaut wurde. */
+const SOLL_WAENDE = JSON.parse(
+  fs.readFileSync(path.join(WURZEL, 'app/public/plaene/halle400.json'), 'utf8')
+).floorplan.walls.length
 const arg = (name, standard) => {
   const i = process.argv.indexOf(name)
   return i !== -1 && process.argv[i + 1] ? process.argv[i + 1] : standard
@@ -916,7 +927,7 @@ log('\n── M7: zurueck auf Anfang ──')
   }))
   pruefe(
     nachNeustart.bearbeitet === false && nachNeustart.ansicht === 'axo' &&
-      nachNeustart.zahlen.waende === 100 && nachNeustart.gesetzte === 0,
+      nachNeustart.zahlen.waende === SOLL_WAENDE && nachNeustart.gesetzte === 0,
     `M7: und auch nach einem Neustart — wie am ersten Tag (${JSON.stringify(nachNeustart.zahlen)})`
   )
 

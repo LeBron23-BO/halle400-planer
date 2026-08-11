@@ -46,6 +46,32 @@ if (!fs.existsSync(DATEI)) {
   process.exit(1)
 }
 
+/* Die Groesse des Plans wird GELESEN, nicht abgeschrieben.
+   Bis 2026-08-11 standen 76 Ecken / 100 Waende / 25 Raeume an sechs Stellen
+   als Zahl im Text. Als eine gefundene Trennwand daraus 76 / 102 / 27 machte,
+   meldeten sieben Pruefungen einen Fehler — und alle sieben waren in der Sache
+   richtig: sie fragen "ist der Plan vollstaendig da?". Falsch war nur ihr
+   Massstab, eine Kopie vom Juli.
+   Aus der Quelle gelesen kann er nicht mehr veralten. Er wird dadurch sogar
+   SCHAERFER: wird die ausgelieferte Datei nach einer Planaenderung nicht neu
+   gebaut, faellt genau das jetzt auf. Es ist der Fehler, der heute passiert
+   ist — das Siegel hatte den Neubau blockiert und die Datei trug wochenlang
+   einen aelteren Plan. */
+const QUELLPLAN = JSON.parse(
+  fs.readFileSync(path.join(WURZEL, 'app/public/plaene/halle400.json'), 'utf8')
+)
+const SOLL = {
+  ecken: Object.keys(QUELLPLAN.floorplan.corners).length,
+  waende: QUELLPLAN.floorplan.walls.length
+}
+// Die Raumzahl steht in keiner Datei — sie entsteht erst aus der
+// Wand-Verfolgung. Sie kommt deshalb aus dem Kern, nicht aus einer Konstante.
+const { uebersetzeKern: _uk, buendleKern: _bk, buendleThree: _bt } = await import('./buendel-kern.mjs')
+const _KERN = new Function(`${_bt()}\n${_bk(_uk())}\nreturn { Floorplan };`)()
+const _fp = new _KERN.Floorplan()
+_fp.loadFloorplan(QUELLPLAN.floorplan)
+SOLL.raeume = _fp.getRooms().length
+
 const DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'h400-planer-'))
 const BERICHT = path.join(DIR, 'bericht.txt')
 fs.writeFileSync(BERICHT, '')
@@ -298,9 +324,9 @@ await page.screenshot({ path: path.join(DIR, 'B2_bearbeiten_grundriss.png') })
 /* ══ G3 — dasselbe Modell wie im Planer ═══════════════════════════════ */
 const zahlen = await page.evaluate(() => window.__planerDatei.zahlen())
 log(`     Modell: ${zahlen.ecken} Ecken, ${zahlen.waende} Waende, ${zahlen.raeume} Raeume, ${zahlen.ausstattung} Ausstattung`)
-pruefe(zahlen.ecken === 76, `G3: 76 Ecken (${zahlen.ecken})`)
-pruefe(zahlen.waende === 100, `G3: 100 Waende (${zahlen.waende})`)
-pruefe(zahlen.raeume === 25, `G3: 25 Raeume (${zahlen.raeume})`)
+pruefe(zahlen.ecken === SOLL.ecken, `G3: ${SOLL.ecken} Ecken (${zahlen.ecken})`)
+pruefe(zahlen.waende === SOLL.waende, `G3: ${SOLL.waende} Waende (${zahlen.waende})`)
+pruefe(zahlen.raeume === SOLL.raeume, `G3: ${SOLL.raeume} Raeume (${zahlen.raeume})`)
 
 /* ══ G4 — der Maus-Beweis ═════════════════════════════════════════════
    Eine Ecke am UNTEREN Rand des Grundrisses wird nach unten ins Leere
@@ -449,7 +475,7 @@ if (exportPfad && fs.existsSync(exportPfad)) {
   const waendeDrin = inhalt.floorplan ? inhalt.floorplan.walls.length : 0
   log(`     gesicherte Datei: ${eckenDrin} Ecken, ${waendeDrin} Waende, ${(inhalt.labels || []).length} Namen, ${(fs.statSync(exportPfad).size / 1024).toFixed(0)} KB`)
   pruefe(
-    eckenDrin === 76 && waendeDrin === 100 && Array.isArray(inhalt.labels),
+    eckenDrin === SOLL.ecken && waendeDrin === SOLL.waende && Array.isArray(inhalt.labels),
     `G7: sie hat das Format des Planers ({floorplan, items, labels}) — ${eckenDrin} Ecken, ${waendeDrin} Waende`
   )
 
@@ -507,7 +533,7 @@ await klick(page, 'btnBearbeiten')
     frage: window.__planerDatei.ladeFrageOffen()
   }))
   pruefe(
-    abgelehntSichtbar && abgelehnt.ecken === 76 && abgelehnt.frage === false,
+    abgelehntSichtbar && abgelehnt.ecken === SOLL.ecken && abgelehnt.frage === false,
     `G7: eine fremde Datei wird abgelehnt statt zu zerbrechen ("${abgelehnt.text}")`
   )
 }
@@ -639,7 +665,8 @@ pruefe(
 )
 pruefe(nachReset.stand === null, 'G6: GEGENPROBE — der eigene Stand ist danach wirklich weg (nicht nur verdeckt)')
 pruefe(
-  nachReset.zahlen.ecken === 76 && nachReset.zahlen.waende === 100 && nachReset.zahlen.raeume === 25,
+  nachReset.zahlen.ecken === SOLL.ecken && nachReset.zahlen.waende === SOLL.waende &&
+    nachReset.zahlen.raeume === SOLL.raeume,
   `G6: GEGENPROBE — der gemessene Plan ist vollstaendig zurueck (${nachReset.zahlen.ecken}/${nachReset.zahlen.waende}/${nachReset.zahlen.raeume})`
 )
 
@@ -758,7 +785,7 @@ if (wand) {
   await seiteB.waitForTimeout(300)
   const nachAbbruch = await seiteB.evaluate(() => window.__planerDatei.zahlen())
   pruefe(
-    (await sichtbar(seiteB, '#rueckfrage')) === false && nachAbbruch.waende === 100,
+    (await sichtbar(seiteB, '#rueckfrage')) === false && nachAbbruch.waende === SOLL.waende,
     `G10: GEGENPROBE — "Abbrechen" loescht NICHTS (${nachAbbruch.waende} Waende)`
   )
 
@@ -768,15 +795,15 @@ if (wand) {
   await seiteB.waitForTimeout(500)
   const nachLoeschen = await seiteB.evaluate(() => window.__planerDatei.zahlen())
   pruefe(
-    (await sichtbar(seiteB, '#rueckfrage')) === false && nachLoeschen.waende === 99,
-    `G10: "Entfernen" nimmt genau eine Wand weg (${nachLoeschen.waende} Waende)`
+    (await sichtbar(seiteB, '#rueckfrage')) === false && nachLoeschen.waende === SOLL.waende - 1,
+    `G10: "Entfernen" nimmt genau eine Wand weg (${nachLoeschen.waende} statt ${SOLL.waende})`
   )
 
   await klick(seiteB, 'btnUndo')
   await seiteB.waitForTimeout(500)
   const nachUndo2 = await seiteB.evaluate(() => window.__planerDatei.zahlen())
   pruefe(
-    nachUndo2.waende === 100 && nachUndo2.raeume === 25,
+    nachUndo2.waende === SOLL.waende && nachUndo2.raeume === SOLL.raeume,
     `G10: Rueckgaengig bringt sie zurueck (${nachUndo2.waende} Waende, ${nachUndo2.raeume} Raeume)`
   )
 }
