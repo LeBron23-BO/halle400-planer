@@ -212,8 +212,11 @@ export const AXO_MODULE = [
 // `saeulen.js` (W14) steht ZUERST, weil es als einziges Raum-Modul von keinem
 // anderen abhängt: es führt nur die neun Säulen und ihre Belegungs-Zuordnung.
 // Es MUSS aber vor der Oberfläche stehen, die daraus das Menü baut.
+// `wunsch-werkzeuge.js` (W17) steht wie `saeulen.js` vorn: es ist reine
+// Rechnung ohne Abhaengigkeit auf die anderen Raum-Module.
 export const RAUM_MODULE = [
   'saeulen.js',
+  'wunsch-werkzeuge.js',
   'raum-zusammenlegen.js',
   'wand-bewegen.js',
   'objekt-menue.js'
