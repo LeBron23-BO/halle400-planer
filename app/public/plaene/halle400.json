@@ -1212,68 +1212,6 @@
     "beleg": "mess/x0-10_y0-15.31.png"
    },
    {
-    "typ": "rundtisch",
-    "x": 780.0,
-    "y": 1035.0,
-    "breite": 150.0,
-    "tiefe": 150.0,
-    "text": "Runder Besprechungstisch",
-    "beleg": "mess/x0-10_y0-15.31.png"
-   },
-   {
-    "typ": "stuhl",
-    "x": 690.0,
-    "y": 1000.0,
-    "breite": 45.0,
-    "tiefe": 45.0,
-    "drehung": 1.571,
-    "beleg": "mess/x0-10_y0-15.31.png"
-   },
-   {
-    "typ": "stuhl",
-    "x": 700.0,
-    "y": 1090.0,
-    "breite": 45.0,
-    "tiefe": 45.0,
-    "drehung": 1.571,
-    "beleg": "mess/x0-10_y0-15.31.png"
-   },
-   {
-    "typ": "stuhl",
-    "x": 780.0,
-    "y": 940.0,
-    "breite": 45.0,
-    "tiefe": 45.0,
-    "drehung": 3.142,
-    "beleg": "mess/x0-10_y0-15.31.png"
-   },
-   {
-    "typ": "stuhl",
-    "x": 780.0,
-    "y": 1130.0,
-    "breite": 45.0,
-    "tiefe": 45.0,
-    "beleg": "mess/x0-10_y0-15.31.png"
-   },
-   {
-    "typ": "stuhl",
-    "x": 865.0,
-    "y": 1000.0,
-    "breite": 45.0,
-    "tiefe": 45.0,
-    "drehung": -1.571,
-    "beleg": "mess/x0-10_y0-15.31.png"
-   },
-   {
-    "typ": "stuhl",
-    "x": 865.0,
-    "y": 1085.0,
-    "breite": 45.0,
-    "tiefe": 45.0,
-    "drehung": -1.571,
-    "beleg": "mess/x0-10_y0-15.31.png"
-   },
-   {
     "typ": "schrank",
     "x": 618.0,
     "y": 1020.0,
@@ -1458,65 +1396,65 @@
    },
    {
     "typ": "rundtisch",
-    "x": 1045.0,
+    "x": 973.0,
     "y": 1035.0,
-    "breite": 170.0,
-    "tiefe": 170.0,
+    "breite": 110.0,
+    "tiefe": 110.0,
     "text": "Runder Besprechungstisch",
-    "beleg": "mess/x9-19_y0-15.31.png"
+    "beleg": "mess/x8.4-11.4_y0-15.31.png"
    },
    {
     "typ": "stuhl",
-    "x": 950.0,
+    "x": 878.0,
     "y": 990.0,
     "breite": 45.0,
     "tiefe": 45.0,
     "drehung": 1.571,
-    "beleg": "mess/x9-19_y0-15.31.png"
+    "beleg": "mess/x8.4-11.4_y0-15.31.png"
    },
    {
     "typ": "stuhl",
-    "x": 950.0,
+    "x": 878.0,
     "y": 1085.0,
     "breite": 45.0,
     "tiefe": 45.0,
     "drehung": 1.571,
-    "beleg": "mess/x9-19_y0-15.31.png"
+    "beleg": "mess/x8.4-11.4_y0-15.31.png"
    },
    {
     "typ": "stuhl",
-    "x": 1045.0,
+    "x": 973.0,
     "y": 935.0,
     "breite": 45.0,
     "tiefe": 45.0,
     "drehung": 3.142,
-    "beleg": "mess/x9-19_y0-15.31.png"
+    "beleg": "mess/x8.4-11.4_y0-15.31.png"
    },
    {
     "typ": "stuhl",
-    "x": 1045.0,
+    "x": 973.0,
     "y": 1135.0,
     "breite": 45.0,
     "tiefe": 45.0,
-    "beleg": "mess/x9-19_y0-15.31.png"
+    "beleg": "mess/x8.4-11.4_y0-15.31.png"
    },
    {
     "typ": "stuhl",
-    "x": 1140.0,
+    "x": 1068.0,
     "y": 990.0,
     "breite": 45.0,
     "tiefe": 45.0,
     "drehung": -1.571,
-    "beleg": "mess/x9-19_y0-15.31.png"
+    "beleg": "mess/x8.4-11.4_y0-15.31.png"
    },
    {
     "typ": "stuhl",
-    "x": 1140.0,
+    "x": 1068.0,
     "y": 1085.0,
     "breite": 45.0,
     "tiefe": 45.0,
     "drehung": -1.571,
-    "beleg": "mess/x9-19_y0-15.31.png"
+    "beleg": "mess/x8.4-11.4_y0-15.31.png"
    },
    {
     "typ": "schrank",

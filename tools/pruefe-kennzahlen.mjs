@@ -312,9 +312,19 @@ pruefe(
 // einzeln da: eine Null, die in einer Dreier-Kette mitlaeuft, faellt beim
 // Nachziehen der anderen beiden Zahlen zu leicht mit um.
 pruefe(s.ausserhalb === 0, `B2a kein einziges Stueck liegt ausserhalb (${s.ausserhalb})`)
+// Seit t2b AUS DER QUELLE statt eingefroren. Die Zahl 233 war am 2026-08-11
+// richtig und meldete am 2026-08-13 die Korrektur einer doppelt erfassten
+// Sitzgruppe als Fehler — dieselbe Falle wie zwoelfmal in W19. Der Sollwert
+// der Erschliessung steht in data/zonen.json (gemessen_stuecke je Zone), der
+// Rest folgt aus der Gesamtzahl. Das ist zugleich schaerfer: verschiebt jemand
+// eine Zonengrenze, ohne die Zahl dort nachzuziehen, faellt es hier auf.
+const ZONEN_SOLL = JSON.parse(
+  fs.readFileSync(path.join(WURZEL, 'data/zonen.json'), 'utf8')
+).zonen.reduce((a, z) => a + (z.gemessen_stuecke || 0), 0)
 pruefe(
-  s.inRaeumen === 233 && s.inErschliessung === 56,
-  `B2b die gemessenen Zahlen: ${s.inRaeumen} / ${s.inErschliessung} (erwartet 233 / 56)`
+  s.inErschliessung === ZONEN_SOLL && s.inRaeumen === s.stuecke - s.inErschliessung - s.ausserhalb,
+  `B2b die Aufteilung stimmt mit der Quelle: ${s.inErschliessung} im offenen Bereich ` +
+    `(zonen.json sagt ${ZONEN_SOLL}), ${s.inRaeumen} in Raeumen`
 )
 const summeJeRaum = RB.raeume.reduce((a, r) => a + r.stueckeGesamt, 0)
 pruefe(
@@ -668,9 +678,14 @@ pruefe(
   `E1 die Stueckliste summiert sich auf ${RB.summen.stuecke} Stuecke ` +
     `(${RB.stueckliste.length} Arten)`
 )
+// AUS DER QUELLE (t2b): die tragende Aussage ist "im Auslieferungszustand ist
+// KEIN Stueck gesetzt", nicht die Zahl 289. Die Gesamtzahl kommt aus dem Plan
+// selbst — so ueberlebt die Pruefung jede Planaenderung und bleibt trotzdem
+// scharf: ein verlorenes Stueck faellt bei E1 auf, ein gekipptes hier.
+const STUECKE_IM_PLAN = PLAN.floorplan.ausstattung.length
 pruefe(
-  RB.summen.gemessen === 289 && RB.summen.gesetzt === 0,
-  `E2 gemessen ${RB.summen.gemessen} / gesetzt ${RB.summen.gesetzt} — der Auslieferungszustand`
+  RB.summen.gemessen === STUECKE_IM_PLAN && RB.summen.gesetzt === 0,
+  `E2 gemessen ${RB.summen.gemessen} von ${STUECKE_IM_PLAN} / gesetzt ${RB.summen.gesetzt} — der Auslieferungszustand`
 )
 const ohneNamen = RB.stueckliste.filter((z) => z.name === z.typ)
 pruefe(
@@ -706,7 +721,7 @@ pruefe(
   einsGekippt.floorplan.ausstattung[0].quelle = 'gesetzt'
   const rb = baueRaumbuch(einsGekippt, { namen: NAMEN })
   pruefe(
-    rb.summen.gemessen === 288 && rb.summen.gesetzt === 1,
+    rb.summen.gemessen === STUECKE_IM_PLAN - 1 && rb.summen.gesetzt === 1,
     `E5 GEGENPROBE: EIN gekipptes Stueck -> ${rb.summen.gemessen} / ${rb.summen.gesetzt}`
   )
 }
