@@ -157,10 +157,6 @@
     "x": 835.0,
     "y": 60.0
    },
-   "76a96d02-70ba-4f99-b1f1-03bbb81fafb4": {
-    "x": 835.0,
-    "y": 220.0
-   },
    "8b2ad557-ad3c-11e2-6a48-3afdb517d9ee": {
     "x": 850.0,
     "y": 60.0
@@ -177,6 +173,10 @@
     "x": 895.0,
     "y": 955.0
    },
+   "432e0aa1-3016-4d65-af2f-7cbe281d5173": {
+    "x": 975.0,
+    "y": 10.0
+   },
    "5267ed11-e40a-567f-5a0c-8fdfd45d1474": {
     "x": 975.0,
     "y": 220.0
@@ -184,10 +184,6 @@
    "0691bc2a-96c6-f6b3-974e-067119ab61d2": {
     "x": 975.0,
     "y": 535.0
-   },
-   "791feab9-1fa8-dd8e-6dcf-3c8f38da4dbd": {
-    "x": 1015.0,
-    "y": 700.0
    },
    "f92a5578-1149-45aa-9931-410cac783989": {
     "x": 1015.0,
@@ -237,6 +233,14 @@
     "x": 1180.0,
     "y": 1295.0
    },
+   "31b08135-8523-4c51-82f8-4504ddda5725": {
+    "x": 1180.0,
+    "y": 1453.0
+   },
+   "e28c835a-a975-4fd8-9edf-18dab8a16647": {
+    "x": 1180.0,
+    "y": 1547.8
+   },
    "7db5a9fd-69d2-1b4d-1087-eeb63e638f41": {
     "x": 1300.0,
     "y": -5.0
@@ -257,10 +261,6 @@
     "x": 1300.0,
     "y": 700.0
    },
-   "a28fde0a-4d29-ed94-f7fd-a99b7835d588": {
-    "x": 1300.0,
-    "y": 940.0
-   },
    "fda3156f-3ffa-259c-0766-09dd80091211": {
     "x": 1300.0,
     "y": 1292.0
@@ -276,18 +276,6 @@
    "be9c6279-e727-bae4-27bd-64eccfe2ae5f": {
     "x": 1340.0,
     "y": 700.0
-   },
-   "f5814a11-29ed-859f-4ab1-79300b282cb6": {
-    "x": 1340.0,
-    "y": 940.0
-   },
-   "b296f12a-961c-b355-ab0d-7a1070f80326": {
-    "x": 1365.0,
-    "y": 940.0
-   },
-   "c0f7c681-2558-9886-c4ed-9df685586b8f": {
-    "x": 1370.0,
-    "y": 1290.0
    },
    "86364230-e558-d275-74b0-fea5f436b8aa": {
     "x": 1370.0,
@@ -325,10 +313,6 @@
     "x": 1455.0,
     "y": 700.0
    },
-   "8d6f9fe2-7c36-d514-63d9-eef220bbe742": {
-    "x": 1455.0,
-    "y": 925.0
-   },
    "5cff7453-2182-3991-81ad-98da160fffb3": {
     "x": 1530.0,
     "y": 700.0
@@ -340,6 +324,10 @@
    "b04265fb-fee2-9625-bfdd-d8c8aca536a6": {
     "x": 1530.0,
     "y": 1290.0
+   },
+   "2994eeb1-cffd-407a-b874-35d6474f23bd": {
+    "x": 1530.0,
+    "y": 1453.0
    },
    "46fd3f3d-86b2-96f3-a136-252987831fb9": {
     "x": 1530.0,
@@ -357,25 +345,13 @@
     "x": 1610.0,
     "y": 925.0
    },
-   "e77c0a87-e06e-eef5-457a-1ff06ee87562": {
-    "x": 1715.0,
-    "y": 1290.0
-   },
    "e90d1324-7993-04cd-6040-4c85a8c138e0": {
     "x": 1715.0,
     "y": 1515.0
    },
-   "d3934f74-07aa-9155-dfaf-497412fd4592": {
-    "x": 1715.0,
-    "y": 1560.0
-   },
    "6da2e929-d7c2-526f-7b6f-ba06eaf14f65": {
     "x": 1730.0,
     "y": 700.0
-   },
-   "ee43ac68-528e-b8e6-946e-2cc2df049bc0": {
-    "x": 1730.0,
-    "y": 925.0
    },
    "0801688e-7d35-405b-9a54-c8b2bbc7a9fa": {
     "x": 1837.0,
@@ -411,7 +387,11 @@
    },
    "64f71633-3c4b-8dbf-b0b8-892eb9296b16": {
     "x": 1870.0,
-    "y": 1290.0
+    "y": 1360.0
+   },
+   "686a6ce1-7729-43f6-9e7e-84737d06b0be": {
+    "x": 1870.0,
+    "y": 1453.0
    },
    "aff17bb2-2bce-44f6-936f-510d9ed59c94": {
     "x": 1890.0,
@@ -447,7 +427,7 @@
    },
    "0e9987c1-f986-7061-8af7-79a32b9d4e13": {
     "x": 2045.0,
-    "y": 1290.0
+    "y": 1360.0
    },
    "220fcd5a-aef8-6194-9192-e189a8c666bb": {
     "x": 2045.0,
@@ -468,10 +448,6 @@
    "acb6553f-b44e-e6c8-4712-3ba8436a7a31": {
     "x": 2120.0,
     "y": 700.0
-   },
-   "37dd85ae-26b7-2f5f-8b5a-164ee06785ae": {
-    "x": 2120.0,
-    "y": 920.0
    },
    "215a5b54-fb26-46c7-9d86-62114ab0279d": {
     "x": 2155.0,
@@ -531,7 +507,7 @@
    },
    "0120ad34-2294-07e5-59b6-d9b9e0ab6c73": {
     "x": 2205.0,
-    "y": 1290.0
+    "y": 1360.0
    },
    "e4135eb6-6999-abab-a9d0-480f96809e5c": {
     "x": 2205.0,
@@ -564,6 +540,10 @@
    "e9937d96-018b-6e8d-c41b-7d4543d60429": {
     "x": 2390.0,
     "y": 1290.0
+   },
+   "a98765f7-43ab-4bed-b2d8-6e35eaeaeea1": {
+    "x": 2390.0,
+    "y": 1360.0
    },
    "e2c4faf0-694e-b41d-9de8-fc16348557a4": {
     "x": 2390.0,
@@ -2199,7 +2179,7 @@
    },
    {
     "corner1": "a1096b63-0700-f841-07a6-1f3797707f27",
-    "corner2": "9a1e7ebe-0da3-cf42-1f82-35d8ce8ab15b",
+    "corner2": "432e0aa1-3016-4d65-af2f-7cbe281d5173",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt kopf-west, beleg_kopf-west.png - Nordfassade, Doppellinie ca. -15/+35 cm; Achse = Median aus 28 Streifen (11 cm)",
     "art": "aussen"
    },
@@ -2224,18 +2204,6 @@
    {
     "corner1": "1967d028-5277-6f53-d7a9-ab160bfa4e81",
     "corner2": "0066f3fc-e15c-f3be-b51b-afe5b9afff49",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt kopf-west, beleg_kopf-west.png - durchgehende Laengswand; Freihand zwei Linien 215/225",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "0066f3fc-e15c-f3be-b51b-afe5b9afff49",
-    "corner2": "76a96d02-70ba-4f99-b1f1-03bbb81fafb4",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt kopf-west, beleg_kopf-west.png - durchgehende Laengswand; Freihand zwei Linien 215/225",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "76a96d02-70ba-4f99-b1f1-03bbb81fafb4",
-    "corner2": "5267ed11-e40a-567f-5a0c-8fdfd45d1474",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt kopf-west, beleg_kopf-west.png - durchgehende Laengswand; Freihand zwei Linien 215/225",
     "art": "trennwand"
    },
@@ -2397,7 +2365,7 @@
    },
    {
     "corner1": "8bf85fac-2ec8-0904-115a-147e4c9dfeb4",
-    "corner2": "5abbc535-eb01-e729-0337-297eb1ea583b",
+    "corner2": "e28c835a-a975-4fd8-9edf-18dab8a16647",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt kopf-west, beleg_kopf-west.png - Suedfassade, durchgehend; Streifenmedian 1543 cm, Streuung 11 cm",
     "art": "aussen"
    },
@@ -2444,12 +2412,6 @@
     "art": "trennwand"
    },
    {
-    "corner1": "f5aa4692-510b-9286-a9d4-89cfa2f821c2",
-    "corner2": "76a96d02-70ba-4f99-b1f1-03bbb81fafb4",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt kopf-west, beleg_kopf-west.png",
-    "art": "trennwand"
-   },
-   {
     "corner1": "5267ed11-e40a-567f-5a0c-8fdfd45d1474",
     "corner2": "0691bc2a-96c6-f6b3-974e-067119ab61d2",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt kopf-west, beleg_kopf-west.png",
@@ -2477,12 +2439,6 @@
     "corner1": "0b2411d6-4739-936b-7267-deb782637cba",
     "corner2": "020dbc49-0d11-2a1b-960c-7eff6125206c",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt kopf-west, beleg_kopf-west.png (unsicher)",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "791feab9-1fa8-dd8e-6dcf-3c8f38da4dbd",
-    "corner2": "f92a5578-1149-45aa-9931-410cac783989",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt kopf-west, beleg_kopf-west.png (unsicher) - koennte Kante des Bettblocks sein",
     "art": "trennwand"
    },
    {
@@ -2876,45 +2832,9 @@
     "art": "flur"
    },
    {
-    "corner1": "a28fde0a-4d29-ed94-f7fd-a99b7835d588",
-    "corner2": "f5814a11-29ed-859f-4ab1-79300b282cb6",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Suedkante der Kaesten am Flur, Zimmer 1",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "f5814a11-29ed-859f-4ab1-79300b282cb6",
-    "corner2": "b296f12a-961c-b355-ab0d-7a1070f80326",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Suedkante der Kaesten am Flur, Zimmer 1",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "8d6f9fe2-7c36-d514-63d9-eef220bbe742",
-    "corner2": "bc24f0fd-60c9-b715-88a5-707dd9e24d9e",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Suedkante der Kaesten, Zimmer 1/2",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "bc24f0fd-60c9-b715-88a5-707dd9e24d9e",
-    "corner2": "5e3f0955-712b-c2f0-0df5-9fda01f27722",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Suedkante der Kaesten, Zimmer 1/2",
-    "art": "trennwand"
-   },
-   {
     "corner1": "5e3f0955-712b-c2f0-0df5-9fda01f27722",
     "corner2": "2a87fc89-7498-4a4d-1efc-2354c6df0f13",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Suedkante der Kaesten, Zimmer 1/2",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "ee43ac68-528e-b8e6-946e-2cc2df049bc0",
-    "corner2": "9af22c33-da79-9114-53f0-312069f36b21",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Suedkante der Kaesten, Zimmer 2/3",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "9af22c33-da79-9114-53f0-312069f36b21",
-    "corner2": "c91ba058-7614-37a5-4fdb-b1546da9718d",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Suedkante der Kaesten, Zimmer 2/3",
     "art": "trennwand"
    },
    {
@@ -2924,27 +2844,9 @@
     "art": "trennwand"
    },
    {
-    "corner1": "37dd85ae-26b7-2f5f-8b5a-164ee06785ae",
-    "corner2": "bfe2cb85-c362-034c-ee4f-509a450b8c43",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Suedkante der Kaesten, Zimmer 3/4",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "bfe2cb85-c362-034c-ee4f-509a450b8c43",
-    "corner2": "c271eac5-5689-4269-323e-282de0ef5f5d",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Suedkante der Kaesten, Zimmer 3/4",
-    "art": "trennwand"
-   },
-   {
     "corner1": "c271eac5-5689-4269-323e-282de0ef5f5d",
     "corner2": "ee07950b-42e7-892c-5291-d783be292a5b",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Suedkante der Kaesten, Zimmer 3/4",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "01c82018-63ac-9444-9a1b-792bce136181",
-    "corner2": "3bd2a281-b56d-4154-c945-e70d5ad764cc",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Suedkante der Kaesten, Zimmer 4/5",
     "art": "trennwand"
    },
    {
@@ -2990,45 +2892,21 @@
     "art": "trennwand"
    },
    {
-    "corner1": "fda3156f-3ffa-259c-0766-09dd80091211",
-    "corner2": "c0f7c681-2558-9886-c4ed-9df685586b8f",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Nordwand des Suedstreifens, ueber den ganzen Abschnitt ohne Unterbrechung; Achse 12,89 m",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "c0f7c681-2558-9886-c4ed-9df685586b8f",
-    "corner2": "b04265fb-fee2-9625-bfdd-d8c8aca536a6",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Nordwand des Suedstreifens, ueber den ganzen Abschnitt ohne Unterbrechung; Achse 12,89 m",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "b04265fb-fee2-9625-bfdd-d8c8aca536a6",
-    "corner2": "e77c0a87-e06e-eef5-457a-1ff06ee87562",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Nordwand des Suedstreifens, ueber den ganzen Abschnitt ohne Unterbrechung; Achse 12,89 m",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "e77c0a87-e06e-eef5-457a-1ff06ee87562",
-    "corner2": "64f71633-3c4b-8dbf-b0b8-892eb9296b16",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Nordwand des Suedstreifens, ueber den ganzen Abschnitt ohne Unterbrechung; Achse 12,89 m",
-    "art": "trennwand"
-   },
-   {
     "corner1": "64f71633-3c4b-8dbf-b0b8-892eb9296b16",
     "corner2": "0e9987c1-f986-7061-8af7-79a32b9d4e13",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Nordwand des Suedstreifens, ueber den ganzen Abschnitt ohne Unterbrechung; Achse 12,89 m",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Nordwand des Suedstreifens, ueber den ganzen Abschnitt ohne Unterbrechung; Achse 12,89 m | Handskizze Seite 2 (PDF-Seite 2), Umbau Westkopf 2026-09-18; Tinte-Schwelle 190, Messband +-10 cm; Eichung Regelabschnitt p05=0.68; von y=1290 auf y=1360 gezogen; Zeilenprofil Seite 2 y 1280..1420 -> 1359..1364, Probe der Ziellage 1.00, alte Lage 0.07..0.26",
     "art": "trennwand"
    },
    {
     "corner1": "0e9987c1-f986-7061-8af7-79a32b9d4e13",
     "corner2": "0120ad34-2294-07e5-59b6-d9b9e0ab6c73",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Nordwand des Suedstreifens, ueber den ganzen Abschnitt ohne Unterbrechung; Achse 12,89 m",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Nordwand des Suedstreifens, ueber den ganzen Abschnitt ohne Unterbrechung; Achse 12,89 m | Handskizze Seite 2 (PDF-Seite 2), Umbau Westkopf 2026-09-18; Tinte-Schwelle 190, Messband +-10 cm; Eichung Regelabschnitt p05=0.68; von y=1290 auf y=1360 gezogen; Zeilenprofil Seite 2 y 1280..1420 -> 1359..1364, Probe der Ziellage 1.00, alte Lage 0.07..0.26",
     "art": "trennwand"
    },
    {
     "corner1": "0120ad34-2294-07e5-59b6-d9b9e0ab6c73",
-    "corner2": "e9937d96-018b-6e8d-c41b-7d4543d60429",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Nordwand des Suedstreifens, ueber den ganzen Abschnitt ohne Unterbrechung; Achse 12,89 m",
+    "corner2": "a98765f7-43ab-4bed-b2d8-6e35eaeaeea1",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Nordwand des Suedstreifens, ueber den ganzen Abschnitt ohne Unterbrechung; Achse 12,89 m | Handskizze Seite 2 (PDF-Seite 2), Umbau Westkopf 2026-09-18; Tinte-Schwelle 190, Messband +-10 cm; Eichung Regelabschnitt p05=0.68; von y=1290 auf y=1360 gezogen; Zeilenprofil Seite 2 y 1280..1420 -> 1359..1364, Probe der Ziellage 1.00, alte Lage 0.07..0.26",
     "art": "trennwand"
    },
    {
@@ -3266,30 +3144,6 @@
     "art": "trennwand"
    },
    {
-    "corner1": "be9c6279-e727-bae4-27bd-64eccfe2ae5f",
-    "corner2": "f5814a11-29ed-859f-4ab1-79300b282cb6",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Ostwand des Bades, Zimmer 1",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "c0f7c681-2558-9886-c4ed-9df685586b8f",
-    "corner2": "86364230-e558-d275-74b0-fea5f436b8aa",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Trennwand im Suedstreifen",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "86364230-e558-d275-74b0-fea5f436b8aa",
-    "corner2": "5e8b6d20-aec4-fe0b-64ba-2488d0f05be5",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Trennwand im Suedstreifen",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "e50376ec-9e9c-d085-0153-291d578de33e",
-    "corner2": "8d6f9fe2-7c36-d514-63d9-eef220bbe742",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Westwand des kleinen Kastens, Zimmer 1",
-    "art": "trennwand"
-   },
-   {
     "corner1": "5cff7453-2182-3991-81ad-98da160fffb3",
     "corner2": "bc24f0fd-60c9-b715-88a5-707dd9e24d9e",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Zimmertrennwand, DURCHGEHEND bis zur Suedfassade",
@@ -3303,32 +3157,8 @@
    },
    {
     "corner1": "b04265fb-fee2-9625-bfdd-d8c8aca536a6",
-    "corner2": "46fd3f3d-86b2-96f3-a136-252987831fb9",
+    "corner2": "2994eeb1-cffd-407a-b874-35d6474f23bd",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Zimmertrennwand, DURCHGEHEND bis zur Suedfassade",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "0d9606fa-268a-a57b-fe2b-4e20cff5ca2f",
-    "corner2": "5e3f0955-712b-c2f0-0df5-9fda01f27722",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Ostwand des kleinen Kastens, Zimmer 2",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "e77c0a87-e06e-eef5-457a-1ff06ee87562",
-    "corner2": "e90d1324-7993-04cd-6040-4c85a8c138e0",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Trennwand im Suedstreifen",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "e90d1324-7993-04cd-6040-4c85a8c138e0",
-    "corner2": "d3934f74-07aa-9155-dfaf-497412fd4592",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Trennwand im Suedstreifen",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "6da2e929-d7c2-526f-7b6f-ba06eaf14f65",
-    "corner2": "ee43ac68-528e-b8e6-946e-2cc2df049bc0",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Westwand des Bades, Zimmer 2",
     "art": "trennwand"
    },
    {
@@ -3344,27 +3174,9 @@
     "art": "trennwand"
    },
    {
-    "corner1": "04d1c059-5b09-cedb-95a9-f05b7a85e5fa",
-    "corner2": "c91ba058-7614-37a5-4fdb-b1546da9718d",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Ostwand des Bades, Zimmer 3",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "0e9987c1-f986-7061-8af7-79a32b9d4e13",
-    "corner2": "220fcd5a-aef8-6194-9192-e189a8c666bb",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Trennwand im Suedstreifen",
-    "art": "trennwand"
-   },
-   {
     "corner1": "220fcd5a-aef8-6194-9192-e189a8c666bb",
     "corner2": "f3efde2f-155f-28c6-757c-ac1e11daa542",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Trennwand im Suedstreifen",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "acb6553f-b44e-e6c8-4712-3ba8436a7a31",
-    "corner2": "37dd85ae-26b7-2f5f-8b5a-164ee06785ae",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Westwand des kleinen Kastens, Zimmer 3",
     "art": "trennwand"
    },
    {
@@ -3399,7 +3211,7 @@
    },
    {
     "corner1": "e9937d96-018b-6e8d-c41b-7d4543d60429",
-    "corner2": "e2c4faf0-694e-b41d-9de8-fc16348557a4",
+    "corner2": "a98765f7-43ab-4bed-b2d8-6e35eaeaeea1",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Trennwand im Suedstreifen",
     "art": "trennwand"
    },
@@ -6182,12 +5994,6 @@
     "art": "trennwand"
    },
    {
-    "corner1": "791feab9-1fa8-dd8e-6dcf-3c8f38da4dbd",
-    "corner2": "3b7025e7-f7a0-4207-b330-cc55eec730e3",
-    "herkunft": "Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-4; Flur-Suedwand, Zeilenprofil x 1020..1160 -> Band y 700..710; setzt #97 nach Westen fort",
-    "art": "flur"
-   },
-   {
     "corner1": "3b7025e7-f7a0-4207-b330-cc55eec730e3",
     "corner2": "83d1da6d-6cb4-99bb-3d14-df614bb97e51",
     "herkunft": "Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-4; Flur-Suedwand, Zeilenprofil x 1190..1340 -> Band y 700..710; setzt #97 nach Westen fort",
@@ -6197,18 +6003,6 @@
     "corner1": "3b7025e7-f7a0-4207-b330-cc55eec730e3",
     "corner2": "4fa175db-0e0f-43aa-9a06-acc6a961faa8",
     "herkunft": "Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-4; Mitteltrennwand, Spaltenprofil y 720..930 -> Tintenband x 1166..1187 (Mitte 1176), durchgehend y 700..952",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "f92a5578-1149-45aa-9931-410cac783989",
-    "corner2": "4fa175db-0e0f-43aa-9a06-acc6a961faa8",
-    "herkunft": "Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-4; Rueckwand des Suedbandes, Zeilenprofil x 1020..1160 -> Band y 941..952; setzt #116 nach Westen fort",
-    "art": "trennwand"
-   },
-   {
-    "corner1": "4fa175db-0e0f-43aa-9a06-acc6a961faa8",
-    "corner2": "a28fde0a-4d29-ed94-f7fd-a99b7835d588",
-    "herkunft": "Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-4; Rueckwand des Suedbandes, Zeilenprofil x 1190..1340 -> Band y 941..952; setzt #116 nach Westen fort",
     "art": "trennwand"
    },
    {
@@ -6263,6 +6057,72 @@
     "corner1": "a507f541-1213-4776-b794-a7bc54fbae5b",
     "corner2": "0742446b-23e8-4bb9-88ed-e7ada84ce01b",
     "herkunft": "Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-12: Versatz der Flur-Nordwand am gezeichneten Pfosten x=4190; Tintenbelegung Fenster x 4180..4200 / y 520..575 = 0.44 (danach 0.00)",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "a98765f7-43ab-4bed-b2d8-6e35eaeaeea1",
+    "corner2": "e2c4faf0-694e-b41d-9de8-fc16348557a4",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Trennwand im Suedstreifen",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "2994eeb1-cffd-407a-b874-35d6474f23bd",
+    "corner2": "46fd3f3d-86b2-96f3-a136-252987831fb9",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Zimmertrennwand, DURCHGEHEND bis zur Suedfassade",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "4fa175db-0e0f-43aa-9a06-acc6a961faa8",
+    "corner2": "0f9a0e36-b144-10e6-61ca-5d2ed6cc7945",
+    "herkunft": "Handskizze Seite 2 (PDF-Seite 2), Umbau Westkopf 2026-09-18; Tinte-Schwelle 190, Messband +-10 cm; Eichung Regelabschnitt p05=0.68; B5/B4-Trennwand: auf Seite 2 laeuft der Strich x 1200..1222 OHNE Unterbrechung von y 734 bis 1322; die Luecke 940..970 stammt aus Seite 1",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "3d576a41-6812-5c4d-232d-535f1219b874",
+    "corner2": "31b08135-8523-4c51-82f8-4504ddda5725",
+    "herkunft": "Handskizze Seite 2 (PDF-Seite 2), Umbau Westkopf 2026-09-18; Tinte-Schwelle 190, Messband +-10 cm; Eichung Regelabschnitt p05=0.68; B5-Westwand bis zur Zimmer-Suedwand; Probe 1.00",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "31b08135-8523-4c51-82f8-4504ddda5725",
+    "corner2": "2994eeb1-cffd-407a-b874-35d6474f23bd",
+    "herkunft": "Handskizze Seite 2 (PDF-Seite 2), Umbau Westkopf 2026-09-18; Tinte-Schwelle 190, Messband +-10 cm; Eichung Regelabschnitt p05=0.68; Suedwand B5; Zeilenprofil Seite 2 im Feld x 1230..1528 -> y 1446..1466 (Mitte 1455); Probe 1.00",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "2994eeb1-cffd-407a-b874-35d6474f23bd",
+    "corner2": "686a6ce1-7729-43f6-9e7e-84737d06b0be",
+    "herkunft": "Handskizze Seite 2 (PDF-Seite 2), Umbau Westkopf 2026-09-18; Tinte-Schwelle 190, Messband +-10 cm; Eichung Regelabschnitt p05=0.68; Suedwand B4; Zeilenprofil Seite 2 im Feld x 1562..1863 -> y 1442..1462 (Mitte 1452); Probe 1.00",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "64f71633-3c4b-8dbf-b0b8-892eb9296b16",
+    "corner2": "686a6ce1-7729-43f6-9e7e-84737d06b0be",
+    "herkunft": "Handskizze Seite 2 (PDF-Seite 2), Umbau Westkopf 2026-09-18; Tinte-Schwelle 190, Messband +-10 cm; Eichung Regelabschnitt p05=0.68; B3-Westwand bis zur Zimmer-Suedwand; auf Seite 2 laeuft der Strich x 1864..1888 bis y 1532; Probe 1.00",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "432e0aa1-3016-4d65-af2f-7cbe281d5173",
+    "corner2": "9a1e7ebe-0da3-cf42-1f82-35d8ce8ab15b",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt kopf-west, beleg_kopf-west.png - Nordfassade, Doppellinie ca. -15/+35 cm; Achse = Median aus 28 Streifen (11 cm)",
+    "art": "aussen"
+   },
+   {
+    "corner1": "432e0aa1-3016-4d65-af2f-7cbe281d5173",
+    "corner2": "5267ed11-e40a-567f-5a0c-8fdfd45d1474",
+    "herkunft": "Handskizze Seite 2, Umbau Westkopf 2026-09-18; Tinte-Schwelle 190, Messband +-10 cm; Kuechen-Ostwand: Senkrechte x 982..1006 durchgehend y 20..520 (Probe (975,10)-(975,535) = 0.93)",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "e28c835a-a975-4fd8-9edf-18dab8a16647",
+    "corner2": "5abbc535-eb01-e729-0337-297eb1ea583b",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt kopf-west, beleg_kopf-west.png - Suedfassade, durchgehend; Streifenmedian 1543 cm, Streuung 11 cm",
+    "art": "aussen"
+   },
+   {
+    "corner1": "31b08135-8523-4c51-82f8-4504ddda5725",
+    "corner2": "e28c835a-a975-4fd8-9edf-18dab8a16647",
+    "herkunft": "Handskizze Seite 2, Umbau Westkopf 2026-09-18; Tinte-Schwelle 190, Messband +-10 cm; B5-Westwand bis zur Suedfassade; Probe (1180,1453)-(1180,1545) = 0.83, ganze Wand (1180,1295)-(1180,1545) = 0.92 - schliesst die Loggia des Sonderzimmers, die ohne die entfallene Wand 1300..1370/1290 offen bliebe",
     "art": "trennwand"
    }
   ],
@@ -6822,16 +6682,6 @@
    "text": "Loggia",
    "zusatz": "Deutung unsicher",
    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west",
-   "seite": "sued",
-   "anker_cm": [
-    1450.0,
-    1402.5
-   ]
-  },
-  {
-   "text": "Loggia",
-   "zusatz": "Deutung unsicher",
-   "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west",
    "seite": "nord",
    "anker_cm": [
     1630.0,
@@ -6856,36 +6706,6 @@
    "anker_cm": [
     1700.0,
     1110.0
-   ]
-  },
-  {
-   "text": "Loggia",
-   "zusatz": "Deutung unsicher",
-   "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west",
-   "seite": "sued",
-   "anker_cm": [
-    1622.5,
-    1402.5
-   ]
-  },
-  {
-   "text": "Bad",
-   "zusatz": "Deutung unsicher",
-   "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west",
-   "seite": "sued",
-   "anker_cm": [
-    1800.0,
-    815.0
-   ]
-  },
-  {
-   "text": "Bad",
-   "zusatz": "Deutung unsicher",
-   "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west",
-   "seite": "sued",
-   "anker_cm": [
-    1942.5,
-    815.0
    ]
   },
   {
@@ -6946,16 +6766,6 @@
    "anker_cm": [
     2390.0,
     382.5
-   ]
-  },
-  {
-   "text": "Bad",
-   "zusatz": "Deutung unsicher",
-   "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west",
-   "seite": "sued",
-   "anker_cm": [
-    2455.0,
-    812.5
    ]
   },
   {
