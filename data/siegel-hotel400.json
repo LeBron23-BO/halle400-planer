@@ -3,8 +3,8 @@
   "plan": "hotel400",
   "verfahren": "ECDSA P-256 / SHA-256",
   "inhaber": "Dania — Halle 400, Businessplan",
-  "signiertAm": "2026-09-18T11:38:31.146Z",
-  "planAbdruck": "e07b13b58d0a75404896c452e4c9887dc6835ba12661a47a11f68f941925f452",
-  "planBytes": 265056,
-  "signatur": "t4t2WCF3c6NEmiZp5XcQkjpr8AZu+Zsb9nQKkjUbn7O10F20INsVrwidU/wdp0iYLu3ArQhku/ucB/ScbkhLpg=="
+  "signiertAm": "2026-09-18T12:43:49.600Z",
+  "planAbdruck": "1a73d0f2ae11561ba6821519cd360a1937e2e41dda5a20eb7f0152a3b221a0ab",
+  "planBytes": 283410,
+  "signatur": "DZgXUDCsstZpPmUfPYrOgJhL6LLDNp71vTGTJp/vt8BdcGb994XPJo93ZfGDfVHTnMJzfiPxymIaDR8Nrc+aKg=="
 }
