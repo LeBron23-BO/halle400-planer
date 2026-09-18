@@ -1,0 +1,228 @@
+{
+ "_zweck": "Die SECHS Zellen, die der Plan in Zimmerbreite ZEICHNET, aber nicht BESCHRIFTET, bekommen hier einen Namen. Das ist alles, was diese Datei tut: BESCHRIFTUNG. Keine Geometrie, kein Moebel, keine Nutzung, keine Saeulen-Zuordnung - es kommt nichts in den Plan, was nicht in der PDF steht. Jeder Eintrag hat den Feldsatz der labels[] aus app/public/plaene/hotel400.json ({text, zusatz, herkunft, seite, anker_cm}) und zusaetzlich \"grund\" (warum genau diese Nummer). Felder mit _-Praefix sind Beleg fuer den Leser und beim Zusammenfuehren zu verwerfen.",
+ "_stand": "2026-09-18. NICHT zusammengefuehrt: app/public/plaene/hotel400.json ist von dieser Datei unberuehrt, alle 74 bestehenden Labels bleiben Wort fuer Wort stehen. Nach dem Anhaengen der sechs Eintraege stehen dort 80 Labels.",
+ "_quelle": {
+  "plan": "app/public/plaene/hotel400.json (505 Ecken, 636 Waende, 74 Labels)",
+  "geometrie": "data/hotel/zimmer-geometrie.json (29 Zimmerrechtecke: 23 beschriftet, 6 ohne Label)",
+  "legende": "Hotel-PDF Seite 1: 19 x Zimmer Typ 1 + 8 x Zimmer Typ 2 + 2 Sonderzimmer = 29"
+ },
+ "_verfahren": [
+  "1. NUMMERNWAHL: im Plan sind die Nummern 01..23 vollstaendig vergeben. Die sechs Zellen bekommen 24..29 - die naechsten freien. Damit doppelt keine Nummer, kein bestehendes Label wird ueberschrieben, und 01..29 sind nach der Ergaenzung genau die 29 Zimmer der Legende, ohne Luecke.",
+  "2. REIHENFOLGE: vergeben von WEST nach OST, also nach x des Raumrechtecks - dieselbe Ordnung, der die bestehenden Nummern folgen. Die Alternative, geometrisch einzuschieben (03a, 03b ...) oder die bestehenden Labels umzunummerieren, ist VERWORFEN: sie aendert Nummern, die im Businessplan schon stehen. Der Preis steht offen in jedem \"grund\": Zimmer 24 liegt raeumlich zwischen Zimmer 03 und Zimmer 04, nicht am Ende der Reihe.",
+  "3. ANKER: Mittelpunkt des Raumrechtecks aus zimmer-geometrie.json, auf 0,1 cm gerundet. Das ist zugleich die Konvention der bestehenden Labels (Zimmer 04: Rechteckmitte x 1699,3, Anker 1700,0; Zimmer 21: Mitte 6976,7, Anker 6977,5). Eine zweite Nachkommastelle waere Scheingenauigkeit - der Plan ist freihaendig gezeichnet.",
+  "4. TYP: aus der Reihenzugehoerigkeit, nicht aus dem Plantext - die Sued-Reihe ist Typ 1, die Nord-Reihe Typ 2. Der Plan beschriftet fuer KEIN Zimmer einen Typ; auch die 23 vorhandenen Labels tragen \"Typ unbelegt\". Sonderzimmer wird KEINER der sechs Zellen zugesprochen - beide Sonderzimmer sind bereits vergeben.",
+  "5. SCHREIBWEISE: reines ASCII, weil hotel400.json vollstaendig ASCII ist (gemessen: null Nicht-ASCII-Zeichen in 74 Labels). Umlaute als ae/oe/ue, damit die zusammengefuehrte Datei nicht auf halber Strecke die Kodierung wechselt."
+ ],
+ "_bilanz": {
+  "labels_im_plan_vorher": 74,
+  "labels_neu": 6,
+  "labels_im_plan_nachher": 80,
+  "zimmer_beschriftet_vorher": 23,
+  "zimmer_beschriftet_nachher": 29,
+  "typ_1_nachher": 19,
+  "typ_2_nachher": 8,
+  "sonderzimmer_nachher": 2,
+  "legende_seite_1": "19 + 8 + 2 = 29",
+  "geht_auf": true,
+  "alle_pruefungen_bestanden": true
+ },
+ "labels": [
+  {
+   "text": "Zimmer 24",
+   "zusatz": "ergaenzt - im Plan nicht beschriftet",
+   "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west | ERGAENZT 2026-09-18, KEIN Leitlinienende - der Plan ZEICHNET diese Zelle, BESCHRIFTET sie aber nicht. Mechanischer Beleg: (1) Bandzaehlung - das Sued-Zimmerband y 926,1..1288,5 cm enthaelt 22 Zellen zwischen teilenden Querwaenden; 19 davon tragen ein Zimmer-Label, diese eine nicht. (2) Breite 352,5 cm liegt mitten im Raster der 18 beschrifteten Sued-Zimmer (315,0..360,3 cm, Mittel 336,4 cm). (3) Nachbarschaft - westlich Zimmer 03 (x 827,1..1177,5), fugenlos angeschlossen; oestlich Zimmer 04 (x 1530,0..1868,6), fugenlos angeschlossen. (4) Legende Seite 1 der PDF fordert 19 x Typ 1; beschriftet sind 18. Mit dieser einen Zelle sind es 19. Rechteck x 1177,5..1530,0 / y 926,1..1288,5 cm (Achsmass), 12,77 m2, Guete \"nicht_geschlossen\", sicher=false. Quelle: data/hotel/zimmer-geometrie.json, Zelle \"Unbeschriftete Zimmerzelle S1\"; Geometrie aus app/public/plaene/hotel400.json (505 Ecken, 636 Waende, 74 Labels). | Urspruenglicher Zusatztext: Typ 1 - ERGAENZT, im Plan NICHT beschriftet. Die Typzuordnung folgt der Reihe (Sued-Zimmerband), nicht dem Plantext.",
+   "seite": "sued",
+   "anker_cm": [
+    1353.8,
+    1107.3
+   ],
+   "grund": "Die Nummern 01..23 sind im Plan vollstaendig vergeben, 24..29 sind frei. Vergeben wird nach der Lage von WEST nach OST - dieselbe Ordnung, der die bestehenden Nummern folgen. Diese Zelle ist mit x 1177,5 die 1. der sechs von Westen und bekommt darum die 1. freie Nummer. VERWORFENE ALTERNATIVEN: (a) Ein Buchstaben-Zusatz (\"Zimmer 03a\", weil die Zelle direkt an Zimmer 03 anschliesst) waere raeumlich stimmiger, erfindet aber eine zweite Nummernart, die der Plan nirgends kennt. (b) Die bestehenden Labels umnummerieren waere die sauberste Reihenfolge, aendert aber Nummern, die im Businessplan schon stehen, und der Auftrag verbietet es. FOLGE, offen benannt: Zimmer 24 liegt raeumlich zwischen Zimmer 03 und Zimmer 04 und nicht am Ende der Reihe. Gewonnen wird dafuer, dass 01..29 nach der Ergaenzung luecken- und doppelungsfrei genau die 29 Zimmer der Legende sind.",
+   "_zelle": "Unbeschriftete Zimmerzelle S1",
+   "_rechteck_cm": [
+    1177.5,
+    926.1,
+    1530.0,
+    1288.5
+   ],
+   "_typ": "1",
+   "_flaeche_m2": 12.77,
+   "_guete": "nicht_geschlossen",
+   "_sicher": false
+  },
+  {
+   "text": "Zimmer 25",
+   "zusatz": "ergaenzt - im Plan nicht beschriftet",
+   "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west | ERGAENZT 2026-09-18, KEIN Leitlinienende - der Plan ZEICHNET diese Zelle, BESCHRIFTET sie aber nicht. Mechanischer Beleg: (1) Bandzaehlung - das Nord-Zimmerband y 209,2..531,4 cm enthaelt 23 Zellen zwischen teilenden Querwaenden; nur vier tragen ein Zimmer-Label (Zimmer 02, 18, 21, 23), die uebrigen sind Nebenraeume, Badzellen oder unbeschriftet. Fuenf Zellen haben Zimmerbreite und kein Label. (2) Breite 454,7 cm liegt im Raster aller neun Nord-Zimmerzellen (454,7..560,8 cm) und ist klar von den Badzellen derselben Reihe (150..220 cm) getrennt. (3) Nachbarschaft - westlich Zimmer 02 (x 495,0..975,0), dazwischen 1785,0 cm Nebenraeume (Backoffice, Empfang, Waschraum); oestlich Zimmer 26 (Zelle N2) (x 3214,7..3690,0), fugenlos angeschlossen. Der Takt der Nordreihe oestlich der Nebenraeume lautet Zimmer|Zimmer - Badpaar - Zimmer|Zimmer; Zimmer 02 steht als einziges allein am Westkopf. Die Reihe vollstaendig: Zimmer 02 480,0 cm - 1785,0 cm Nebenraeume (Backoffice, Empfang, Waschraum) - Zimmer 25 (Zelle N1) 454,7 cm - Zimmer 26 (Zelle N2) 475,3 cm - 400,0 cm Badpaar - Zimmer 27 (Zelle N3) 455,0 cm - Zimmer 28 (Zelle N4) 485,0 cm - 330,0 cm Badpaar - Zimmer 29 (Zelle N5) 505,0 cm - Zimmer 18 500,9 cm - 353,2 cm Badpaar - Zimmer 21 515,1 cm - Zimmer 23 560,8 cm. Dass die Zwischenraeume Badpaare sind, ist am Ostende BESCHRIFTET: der 353,2 cm breite Zwischenraum bei x 6365,9..6719,1 traegt die beiden Bad-Label bei x 6455,0 und x 6627,5. (4) Legende Seite 1 der PDF fordert 8 x Typ 2; beschriftet sind 3 (Zimmer 02, Zimmer 18, Zimmer 21). Mit den fuenf ergaenzten Zellen sind es 8. Rechteck x 2760,0..3214,7 / y 209,2..531,4 cm (Achsmass), 14,65 m2, Guete \"rechteck\", sicher=false. Quelle: data/hotel/zimmer-geometrie.json, Zelle \"Unbeschriftete Zimmerzelle N1\"; Geometrie aus app/public/plaene/hotel400.json (505 Ecken, 636 Waende, 74 Labels). | Urspruenglicher Zusatztext: Typ 2 - ERGAENZT, im Plan NICHT beschriftet. Die Typzuordnung folgt der Reihe (Nord-Zimmerband), nicht dem Plantext.",
+   "seite": "nord",
+   "anker_cm": [
+    2987.3,
+    370.3
+   ],
+   "grund": "Die Nummern 01..23 sind im Plan vollstaendig vergeben, 24..29 sind frei. Vergeben wird nach der Lage von WEST nach OST - dieselbe Ordnung, der die bestehenden Nummern folgen. Diese Zelle ist mit x 2760,0 die 2. der sechs von Westen und bekommt darum die 2. freie Nummer. VERWORFENE ALTERNATIVEN: (a) Ein Buchstaben-Zusatz ist hier nicht einmal moeglich: zwischen Zimmer 02 (endet x 975,0) und Zimmer 18 (beginnt x 5865,0) liegen 48,9 m Nordreihe ohne ein einziges nummeriertes Zimmer, an das sich ein Buchstabe anhaengen liesse. (b) Die bestehenden Labels umnummerieren waere die sauberste Reihenfolge, aendert aber Nummern, die im Businessplan schon stehen, und der Auftrag verbietet es. FOLGE, offen benannt: Zimmer 25 liegt raeumlich zwischen Zimmer 02 und Zimmer 26 (Zelle N2) und nicht am Ende der Reihe. Gewonnen wird dafuer, dass 01..29 nach der Ergaenzung luecken- und doppelungsfrei genau die 29 Zimmer der Legende sind.",
+   "_zelle": "Unbeschriftete Zimmerzelle N1",
+   "_rechteck_cm": [
+    2760.0,
+    209.2,
+    3214.7,
+    531.4
+   ],
+   "_typ": "2",
+   "_flaeche_m2": 14.65,
+   "_guete": "rechteck",
+   "_sicher": false
+  },
+  {
+   "text": "Zimmer 26",
+   "zusatz": "ergaenzt - im Plan nicht beschriftet",
+   "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel | ERGAENZT 2026-09-18, KEIN Leitlinienende - der Plan ZEICHNET diese Zelle, BESCHRIFTET sie aber nicht. Mechanischer Beleg: (1) Bandzaehlung - das Nord-Zimmerband y 209,2..531,4 cm enthaelt 23 Zellen zwischen teilenden Querwaenden; nur vier tragen ein Zimmer-Label (Zimmer 02, 18, 21, 23), die uebrigen sind Nebenraeume, Badzellen oder unbeschriftet. Fuenf Zellen haben Zimmerbreite und kein Label. (2) Breite 475,3 cm liegt im Raster aller neun Nord-Zimmerzellen (454,7..560,8 cm) und ist klar von den Badzellen derselben Reihe (150..220 cm) getrennt. (3) Nachbarschaft - westlich Zimmer 25 (Zelle N1) (x 2760,0..3214,7), fugenlos angeschlossen; oestlich Zimmer 27 (Zelle N3) (x 4090,0..4545,0), dazwischen 400,0 cm Badpaar. Der Takt der Nordreihe oestlich der Nebenraeume lautet Zimmer|Zimmer - Badpaar - Zimmer|Zimmer; Zimmer 02 steht als einziges allein am Westkopf. Die Reihe vollstaendig: Zimmer 02 480,0 cm - 1785,0 cm Nebenraeume (Backoffice, Empfang, Waschraum) - Zimmer 25 (Zelle N1) 454,7 cm - Zimmer 26 (Zelle N2) 475,3 cm - 400,0 cm Badpaar - Zimmer 27 (Zelle N3) 455,0 cm - Zimmer 28 (Zelle N4) 485,0 cm - 330,0 cm Badpaar - Zimmer 29 (Zelle N5) 505,0 cm - Zimmer 18 500,9 cm - 353,2 cm Badpaar - Zimmer 21 515,1 cm - Zimmer 23 560,8 cm. Dass die Zwischenraeume Badpaare sind, ist am Ostende BESCHRIFTET: der 353,2 cm breite Zwischenraum bei x 6365,9..6719,1 traegt die beiden Bad-Label bei x 6455,0 und x 6627,5. (4) Legende Seite 1 der PDF fordert 8 x Typ 2; beschriftet sind 3 (Zimmer 02, Zimmer 18, Zimmer 21). Mit den fuenf ergaenzten Zellen sind es 8. Rechteck x 3214,7..3690,0 / y 209,2..531,4 cm (Achsmass), 15,31 m2, Guete \"nicht_geschlossen\", sicher=false. Quelle: data/hotel/zimmer-geometrie.json, Zelle \"Unbeschriftete Zimmerzelle N2\"; Geometrie aus app/public/plaene/hotel400.json (505 Ecken, 636 Waende, 74 Labels). | Urspruenglicher Zusatztext: Typ 2 - ERGAENZT, im Plan NICHT beschriftet. Die Typzuordnung folgt der Reihe (Nord-Zimmerband), nicht dem Plantext.",
+   "seite": "nord",
+   "anker_cm": [
+    3452.3,
+    370.3
+   ],
+   "grund": "Die Nummern 01..23 sind im Plan vollstaendig vergeben, 24..29 sind frei. Vergeben wird nach der Lage von WEST nach OST - dieselbe Ordnung, der die bestehenden Nummern folgen. Diese Zelle ist mit x 3214,7 die 3. der sechs von Westen und bekommt darum die 3. freie Nummer. VERWORFENE ALTERNATIVEN: (a) Ein Buchstaben-Zusatz ist hier nicht einmal moeglich: zwischen Zimmer 02 (endet x 975,0) und Zimmer 18 (beginnt x 5865,0) liegen 48,9 m Nordreihe ohne ein einziges nummeriertes Zimmer, an das sich ein Buchstabe anhaengen liesse. (b) Die bestehenden Labels umnummerieren waere die sauberste Reihenfolge, aendert aber Nummern, die im Businessplan schon stehen, und der Auftrag verbietet es. FOLGE, offen benannt: Zimmer 26 liegt raeumlich zwischen Zimmer 25 (Zelle N1) und Zimmer 27 (Zelle N3) und nicht am Ende der Reihe. Gewonnen wird dafuer, dass 01..29 nach der Ergaenzung luecken- und doppelungsfrei genau die 29 Zimmer der Legende sind.",
+   "_zelle": "Unbeschriftete Zimmerzelle N2",
+   "_rechteck_cm": [
+    3214.7,
+    209.2,
+    3690.0,
+    531.4
+   ],
+   "_typ": "2",
+   "_flaeche_m2": 15.31,
+   "_guete": "nicht_geschlossen",
+   "_sicher": false
+  },
+  {
+   "text": "Zimmer 27",
+   "zusatz": "ergaenzt - im Plan nicht beschriftet",
+   "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel | ERGAENZT 2026-09-18, KEIN Leitlinienende - der Plan ZEICHNET diese Zelle, BESCHRIFTET sie aber nicht. Mechanischer Beleg: (1) Bandzaehlung - das Nord-Zimmerband y 209,2..531,4 cm enthaelt 23 Zellen zwischen teilenden Querwaenden; nur vier tragen ein Zimmer-Label (Zimmer 02, 18, 21, 23), die uebrigen sind Nebenraeume, Badzellen oder unbeschriftet. Fuenf Zellen haben Zimmerbreite und kein Label. (2) Breite 455,0 cm liegt im Raster aller neun Nord-Zimmerzellen (454,7..560,8 cm) und ist klar von den Badzellen derselben Reihe (150..220 cm) getrennt. (3) Nachbarschaft - westlich Zimmer 26 (Zelle N2) (x 3214,7..3690,0), dazwischen 400,0 cm Badpaar; oestlich Zimmer 28 (Zelle N4) (x 4545,0..5030,0), fugenlos angeschlossen. Der Takt der Nordreihe oestlich der Nebenraeume lautet Zimmer|Zimmer - Badpaar - Zimmer|Zimmer; Zimmer 02 steht als einziges allein am Westkopf. Die Reihe vollstaendig: Zimmer 02 480,0 cm - 1785,0 cm Nebenraeume (Backoffice, Empfang, Waschraum) - Zimmer 25 (Zelle N1) 454,7 cm - Zimmer 26 (Zelle N2) 475,3 cm - 400,0 cm Badpaar - Zimmer 27 (Zelle N3) 455,0 cm - Zimmer 28 (Zelle N4) 485,0 cm - 330,0 cm Badpaar - Zimmer 29 (Zelle N5) 505,0 cm - Zimmer 18 500,9 cm - 353,2 cm Badpaar - Zimmer 21 515,1 cm - Zimmer 23 560,8 cm. Dass die Zwischenraeume Badpaare sind, ist am Ostende BESCHRIFTET: der 353,2 cm breite Zwischenraum bei x 6365,9..6719,1 traegt die beiden Bad-Label bei x 6455,0 und x 6627,5. (4) Legende Seite 1 der PDF fordert 8 x Typ 2; beschriftet sind 3 (Zimmer 02, Zimmer 18, Zimmer 21). Mit den fuenf ergaenzten Zellen sind es 8. Rechteck x 4090,0..4545,0 / y 209,2..531,4 cm (Achsmass), 14,66 m2, Guete \"rechteck_mit_wandstummel\", sicher=false. Quelle: data/hotel/zimmer-geometrie.json, Zelle \"Unbeschriftete Zimmerzelle N3\"; Geometrie aus app/public/plaene/hotel400.json (505 Ecken, 636 Waende, 74 Labels). | Urspruenglicher Zusatztext: Typ 2 - ERGAENZT, im Plan NICHT beschriftet. Die Typzuordnung folgt der Reihe (Nord-Zimmerband), nicht dem Plantext.",
+   "seite": "nord",
+   "anker_cm": [
+    4317.5,
+    370.3
+   ],
+   "grund": "Die Nummern 01..23 sind im Plan vollstaendig vergeben, 24..29 sind frei. Vergeben wird nach der Lage von WEST nach OST - dieselbe Ordnung, der die bestehenden Nummern folgen. Diese Zelle ist mit x 4090,0 die 4. der sechs von Westen und bekommt darum die 4. freie Nummer. VERWORFENE ALTERNATIVEN: (a) Ein Buchstaben-Zusatz ist hier nicht einmal moeglich: zwischen Zimmer 02 (endet x 975,0) und Zimmer 18 (beginnt x 5865,0) liegen 48,9 m Nordreihe ohne ein einziges nummeriertes Zimmer, an das sich ein Buchstabe anhaengen liesse. (b) Die bestehenden Labels umnummerieren waere die sauberste Reihenfolge, aendert aber Nummern, die im Businessplan schon stehen, und der Auftrag verbietet es. FOLGE, offen benannt: Zimmer 27 liegt raeumlich zwischen Zimmer 26 (Zelle N2) und Zimmer 28 (Zelle N4) und nicht am Ende der Reihe. Gewonnen wird dafuer, dass 01..29 nach der Ergaenzung luecken- und doppelungsfrei genau die 29 Zimmer der Legende sind.",
+   "_zelle": "Unbeschriftete Zimmerzelle N3",
+   "_rechteck_cm": [
+    4090.0,
+    209.2,
+    4545.0,
+    531.4
+   ],
+   "_typ": "2",
+   "_flaeche_m2": 14.66,
+   "_guete": "rechteck_mit_wandstummel",
+   "_sicher": false
+  },
+  {
+   "text": "Zimmer 28",
+   "zusatz": "ergaenzt - im Plan nicht beschriftet",
+   "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel | ERGAENZT 2026-09-18, KEIN Leitlinienende - der Plan ZEICHNET diese Zelle, BESCHRIFTET sie aber nicht. Mechanischer Beleg: (1) Bandzaehlung - das Nord-Zimmerband y 209,2..531,4 cm enthaelt 23 Zellen zwischen teilenden Querwaenden; nur vier tragen ein Zimmer-Label (Zimmer 02, 18, 21, 23), die uebrigen sind Nebenraeume, Badzellen oder unbeschriftet. Fuenf Zellen haben Zimmerbreite und kein Label. (2) Breite 485,0 cm liegt im Raster aller neun Nord-Zimmerzellen (454,7..560,8 cm) und ist klar von den Badzellen derselben Reihe (150..220 cm) getrennt. (3) Nachbarschaft - westlich Zimmer 27 (Zelle N3) (x 4090,0..4545,0), fugenlos angeschlossen; oestlich Zimmer 29 (Zelle N5) (x 5360,0..5865,0), dazwischen 330,0 cm Badpaar. Der Takt der Nordreihe oestlich der Nebenraeume lautet Zimmer|Zimmer - Badpaar - Zimmer|Zimmer; Zimmer 02 steht als einziges allein am Westkopf. Die Reihe vollstaendig: Zimmer 02 480,0 cm - 1785,0 cm Nebenraeume (Backoffice, Empfang, Waschraum) - Zimmer 25 (Zelle N1) 454,7 cm - Zimmer 26 (Zelle N2) 475,3 cm - 400,0 cm Badpaar - Zimmer 27 (Zelle N3) 455,0 cm - Zimmer 28 (Zelle N4) 485,0 cm - 330,0 cm Badpaar - Zimmer 29 (Zelle N5) 505,0 cm - Zimmer 18 500,9 cm - 353,2 cm Badpaar - Zimmer 21 515,1 cm - Zimmer 23 560,8 cm. Dass die Zwischenraeume Badpaare sind, ist am Ostende BESCHRIFTET: der 353,2 cm breite Zwischenraum bei x 6365,9..6719,1 traegt die beiden Bad-Label bei x 6455,0 und x 6627,5. (4) Legende Seite 1 der PDF fordert 8 x Typ 2; beschriftet sind 3 (Zimmer 02, Zimmer 18, Zimmer 21). Mit den fuenf ergaenzten Zellen sind es 8. Rechteck x 4545,0..5030,0 / y 209,2..531,4 cm (Achsmass), 15,63 m2, Guete \"rechteck_mit_wandstummel\", sicher=false. Quelle: data/hotel/zimmer-geometrie.json, Zelle \"Unbeschriftete Zimmerzelle N4\"; Geometrie aus app/public/plaene/hotel400.json (505 Ecken, 636 Waende, 74 Labels). | Urspruenglicher Zusatztext: Typ 2 - ERGAENZT, im Plan NICHT beschriftet. Die Typzuordnung folgt der Reihe (Nord-Zimmerband), nicht dem Plantext.",
+   "seite": "nord",
+   "anker_cm": [
+    4787.5,
+    370.3
+   ],
+   "grund": "Die Nummern 01..23 sind im Plan vollstaendig vergeben, 24..29 sind frei. Vergeben wird nach der Lage von WEST nach OST - dieselbe Ordnung, der die bestehenden Nummern folgen. Diese Zelle ist mit x 4545,0 die 5. der sechs von Westen und bekommt darum die 5. freie Nummer. VERWORFENE ALTERNATIVEN: (a) Ein Buchstaben-Zusatz ist hier nicht einmal moeglich: zwischen Zimmer 02 (endet x 975,0) und Zimmer 18 (beginnt x 5865,0) liegen 48,9 m Nordreihe ohne ein einziges nummeriertes Zimmer, an das sich ein Buchstabe anhaengen liesse. (b) Die bestehenden Labels umnummerieren waere die sauberste Reihenfolge, aendert aber Nummern, die im Businessplan schon stehen, und der Auftrag verbietet es. FOLGE, offen benannt: Zimmer 28 liegt raeumlich zwischen Zimmer 27 (Zelle N3) und Zimmer 29 (Zelle N5) und nicht am Ende der Reihe. Gewonnen wird dafuer, dass 01..29 nach der Ergaenzung luecken- und doppelungsfrei genau die 29 Zimmer der Legende sind.",
+   "_zelle": "Unbeschriftete Zimmerzelle N4",
+   "_rechteck_cm": [
+    4545.0,
+    209.2,
+    5030.0,
+    531.4
+   ],
+   "_typ": "2",
+   "_flaeche_m2": 15.63,
+   "_guete": "rechteck_mit_wandstummel",
+   "_sicher": false
+  },
+  {
+   "text": "Zimmer 29",
+   "zusatz": "ergaenzt - im Plan nicht beschriftet",
+   "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel | ERGAENZT 2026-09-18, KEIN Leitlinienende - der Plan ZEICHNET diese Zelle, BESCHRIFTET sie aber nicht. Mechanischer Beleg: (1) Bandzaehlung - das Nord-Zimmerband y 209,2..531,4 cm enthaelt 23 Zellen zwischen teilenden Querwaenden; nur vier tragen ein Zimmer-Label (Zimmer 02, 18, 21, 23), die uebrigen sind Nebenraeume, Badzellen oder unbeschriftet. Fuenf Zellen haben Zimmerbreite und kein Label. (2) Breite 505,0 cm liegt im Raster aller neun Nord-Zimmerzellen (454,7..560,8 cm) und ist klar von den Badzellen derselben Reihe (150..220 cm) getrennt. (3) Nachbarschaft - westlich Zimmer 28 (Zelle N4) (x 4545,0..5030,0), dazwischen 330,0 cm Badpaar; oestlich Zimmer 18 (x 5865,0..6365,9), fugenlos angeschlossen. Der Takt der Nordreihe oestlich der Nebenraeume lautet Zimmer|Zimmer - Badpaar - Zimmer|Zimmer; Zimmer 02 steht als einziges allein am Westkopf. Die Reihe vollstaendig: Zimmer 02 480,0 cm - 1785,0 cm Nebenraeume (Backoffice, Empfang, Waschraum) - Zimmer 25 (Zelle N1) 454,7 cm - Zimmer 26 (Zelle N2) 475,3 cm - 400,0 cm Badpaar - Zimmer 27 (Zelle N3) 455,0 cm - Zimmer 28 (Zelle N4) 485,0 cm - 330,0 cm Badpaar - Zimmer 29 (Zelle N5) 505,0 cm - Zimmer 18 500,9 cm - 353,2 cm Badpaar - Zimmer 21 515,1 cm - Zimmer 23 560,8 cm. Dass die Zwischenraeume Badpaare sind, ist am Ostende BESCHRIFTET: der 353,2 cm breite Zwischenraum bei x 6365,9..6719,1 traegt die beiden Bad-Label bei x 6455,0 und x 6627,5. (4) Legende Seite 1 der PDF fordert 8 x Typ 2; beschriftet sind 3 (Zimmer 02, Zimmer 18, Zimmer 21). Mit den fuenf ergaenzten Zellen sind es 8. Rechteck x 5360,0..5865,0 / y 209,2..531,4 cm (Achsmass), 16,27 m2, Guete \"rechteck_mit_wandstummel\", sicher=false. Quelle: data/hotel/zimmer-geometrie.json, Zelle \"Unbeschriftete Zimmerzelle N5\"; Geometrie aus app/public/plaene/hotel400.json (505 Ecken, 636 Waende, 74 Labels). | Urspruenglicher Zusatztext: Typ 2 - ERGAENZT, im Plan NICHT beschriftet. Die Typzuordnung folgt der Reihe (Nord-Zimmerband), nicht dem Plantext.",
+   "seite": "nord",
+   "anker_cm": [
+    5612.5,
+    370.3
+   ],
+   "grund": "Die Nummern 01..23 sind im Plan vollstaendig vergeben, 24..29 sind frei. Vergeben wird nach der Lage von WEST nach OST - dieselbe Ordnung, der die bestehenden Nummern folgen. Diese Zelle ist mit x 5360,0 die 6. der sechs von Westen und bekommt darum die 6. freie Nummer. VERWORFENE ALTERNATIVEN: (a) Ein Buchstaben-Zusatz ist hier nicht einmal moeglich: zwischen Zimmer 02 (endet x 975,0) und Zimmer 18 (beginnt x 5865,0) liegen 48,9 m Nordreihe ohne ein einziges nummeriertes Zimmer, an das sich ein Buchstabe anhaengen liesse. (b) Die bestehenden Labels umnummerieren waere die sauberste Reihenfolge, aendert aber Nummern, die im Businessplan schon stehen, und der Auftrag verbietet es. FOLGE, offen benannt: Zimmer 29 liegt raeumlich zwischen Zimmer 28 (Zelle N4) und Zimmer 18 und nicht am Ende der Reihe. Gewonnen wird dafuer, dass 01..29 nach der Ergaenzung luecken- und doppelungsfrei genau die 29 Zimmer der Legende sind.",
+   "_zelle": "Unbeschriftete Zimmerzelle N5",
+   "_rechteck_cm": [
+    5360.0,
+    209.2,
+    5865.0,
+    531.4
+   ],
+   "_typ": "2",
+   "_flaeche_m2": 16.27,
+   "_guete": "rechteck_mit_wandstummel",
+   "_sicher": false
+  }
+ ],
+ "_pruefungen": [
+  {
+   "pruefung": "A Anker liegt in seinem eigenen Raumrechteck (alle 6, echt innen)",
+   "ergebnis": "bestanden",
+   "detail": "kleinster Abstand eines Ankers zur naechsten Raumkante: 161,1 cm (Zimmer 25). Jeder Anker ist der Mittelpunkt seines Rechtecks, liegt also zwangslaeufig innen - hier nachgerechnet statt behauptet."
+  },
+  {
+   "pruefung": "B kein neuer Name doppelt ein bestehendes Label",
+   "ergebnis": "bestanden",
+   "detail": "im Plan vergeben: Zimmer 01..23 (23 Stueck). Neu vergeben: Zimmer 24, Zimmer 25, Zimmer 26, Zimmer 27, Zimmer 28, Zimmer 29. Schnittmenge: leer."
+  },
+  {
+   "pruefung": "C kein bestehendes Label liegt in einer der sechs Zellen (nichts wird ueberschrieben)",
+   "ergebnis": "bestanden",
+   "detail": "geprueft: alle 74 bestehenden Anker gegen alle 6 Raumrechtecke. Treffer: keiner."
+  },
+  {
+   "pruefung": "D kein neuer Anker faellt auf einen bestehenden (Toleranz 1 cm)",
+   "ergebnis": "bestanden",
+   "detail": "Kollisionen: keine."
+  },
+  {
+   "pruefung": "E Legende Seite 1 geht auf: 19 x Typ 1 + 8 x Typ 2 + 2 Sonderzimmer = 29",
+   "ergebnis": "bestanden",
+   "detail": "nach der Ergaenzung beschriftet: Typ 1 = 19 (18 vorhanden + 1 neu), Typ 2 = 8 (3 vorhanden + 5 neu), Sonderzimmer = 2 (Zimmer 01 beschriftet, Zimmer 23 abgeleitet). Summe 29 = Legende. Labels im Plan danach: 74 + 6 = 80."
+  },
+  {
+   "pruefung": "F Feldsatz deckungsgleich mit labels[] aus hotel400.json (+ grund)",
+   "ergebnis": "bestanden",
+   "detail": "labels[]: ['anker_cm', 'herkunft', 'seite', 'text', 'zusatz'] | hier: ['anker_cm', 'herkunft', 'seite', 'text', 'zusatz'] + \"grund\" + Beleg-Felder mit _-Praefix (beim Zusammenfuehren zu verwerfen)."
+  },
+  {
+   "pruefung": "G Feld \"seite\" stimmt mit der gemessenen Lage gegen die Flurmitte y=618 cm (Regel 8)",
+   "ergebnis": "bestanden",
+   "detail": "abweichend: keines."
+  },
+  {
+   "pruefung": "H Nummernfolge 01..29 ist nach der Ergaenzung luecken- und doppelungsfrei",
+   "ergebnis": "bestanden",
+   "detail": "vorher 01..23, neu 24, 25, 26, 27, 28, 29, zusammen 01..29 ohne Luecke und ohne Doppelung."
+  },
+  {
+   "pruefung": "J jeder als \"Badpaar\" bezeichnete Zwischenraum ist wirklich einer",
+   "ergebnis": "bestanden",
+   "detail": "Zwischenraeume der Nordreihe, die als Badpaar benannt sind: 3690,0..4090,0; 5030,0..5360,0; 6365,9..6719,1 - alle <= 400 cm und ohne benannten Nebenraum darin. Falsch benannt: keiner. Der 1785,0-cm-Zwischenraum zwischen Zimmer 02 und Zimmer 25 ist ausdruecklich NICHT als Badpaar benannt, sondern als Nebenraeume (Backoffice, Empfang, Waschraum)."
+  },
+  {
+   "pruefung": "K Vorab-Namen (Takt/Nachbarschaft) stimmen mit den vergebenen Namen ueberein",
+   "ergebnis": "bestanden",
+   "detail": "die Texte nennen Nachbarn beim NEUEN Namen; gegengeprueft gegen die tatsaechliche Vergabe."
+  },
+  {
+   "pruefung": "I Ausgabe ist reines ASCII wie hotel400.json",
+   "ergebnis": "bestanden",
+   "detail": "Nicht-ASCII-Zeichen in der erzeugten Datei: 0."
+  }
+ ],
+ "_luecken": [
+  "ALLE SECHS ZELLEN TRAGEN sicher=false. Das ist der Zustand der MESSUNG, nicht der Benennung: mindestens eine Rechteckseite ist im Plan nicht durchgehend gezeichnet oder es steht ein Wandstummel im Inneren. Die Benennung macht die Geometrie nicht sicherer - sie sagt nur, dass an dieser Stelle ein Zimmer liegt. Die Guete jeder Zelle steht in ihrem herkunft.",
+  "ZIMMER 26 (Zelle N2) ist der schwaechste der sechs: die Nordwand y=209,2 hat dort eine Messluecke von 525 cm (x 3220..3745), der Seitenschluss nord betraegt 1 Prozent. Ohne die Bandtreue-Regel haette die davorliegende Loggia die Zimmerzelle verschluckt. Dass dort ein Zimmer liegt, folgt aus der Ost- und der Westwand und aus dem Takt der Reihe - nicht aus der Nordwand.",
+  "DIE TYPZUORDNUNG IST ABGELEITET, NICHT BESCHRIFTET. Der Plan nennt fuer kein einziges Zimmer einen Typ; die Legende nennt nur Stueckzahlen. Dass die Sued-Reihe Typ 1 und die Nord-Reihe Typ 2 ist, kommt aus den Leitlinien der Seite 1 und aus den Massen (Sued 315..360 cm breit bei 362 cm Tiefe, Nord 455..561 cm bei 322 cm). Stimmig, aber eine Lesart.",
+  "DAS ZWEITE SONDERZIMMER BLEIBT ABGELEITET. Beschriftet ist nur Zimmer 01. Zimmer 23 gilt als das zweite, weil es die breiteste Zelle der Nordreihe ist (560,8 cm) und die einzige ohne zugehoeriges Badpaar. Diese Ergaenzung aendert daran NICHTS und haengt nicht davon ab: die Gesamtzahl 29 steht in jedem Fall, und die sechs neuen Namen blieben dieselben. Faellt die Ableitung, waeren es 9 x Typ 2 statt 8 + 1 Sonderzimmer.",
+  "FOLGE FUER WERKZEUGE, DIE LABELS ZAEHLEN: nach dem Zusammenfuehren stehen 29 Labels der Form \"Zimmer NN\" im Plan statt 23, und insgesamt 80 statt 74. Wer 23 oder 74 als Sollwert verdrahtet hat (Berichte, Gates, Zusammenfassungen), bekommt dort ein rotes Ergebnis - das ist der beabsichtigte Effekt und kein Fehler, muss aber nachgezogen werden.",
+  "NICHT ERGAENZT, obwohl unbeschriftet: die 35 Nassraumzellen der Suedreihe, die 6 Badzellen der Nordreihe und die Zwischenraeume x 975..2185 (Backoffice/Empfang) und x 2560..2760. Sie haben KEINE Zimmerbreite und sind darum keine Zimmer. Benannt wird hier nur, was im Zimmerraster liegt."
+ ]
+}

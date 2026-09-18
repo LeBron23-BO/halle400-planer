@@ -1,0 +1,1148 @@
+{
+ "_zweck": "Zimmer- und Flaechenbilanz eines Hotel-Zimmergeschosses, gerechnet aus den 636 gemessenen Wandachsen in app/public/plaene/hotel400.json. Grundlage fuer Businessplan und Banktermin. Jede Zahl ist gerechnet.",
+ "_quelle": {
+  "plan": "app/public/plaene/hotel400.json (505 Ecken, 636 Waende, 74 Labels)",
+  "bericht": "data/hotel/hotel400-bericht.json",
+  "handskizze": "Auswertung Seite 2 + Legende Seite 1 (19x Typ 1, 8x Typ 2, 2 Sonderzimmer = 29)",
+  "stand": "2026-09-18"
+ },
+ "_verfahren": [
+  "1. WANDBAENDER: die 636 Waende werden in achsparallele Linien zerlegt (|dx| oder |dy| <= 2 cm; 12 Waende sind schraeg oder entartet und bleiben aussen vor). Zwei Achsen sind DIESELBE Wand, wenn sie weniger als 15 cm auseinander liegen UND sich in ihrer Ausdehnung zu weniger als 20 % ueberlappen - der Bericht nennt 11..13 cm Freihand-Streuung je Messabschnitt. Ueberlappen sie sich, sind es ZWEI parallele Linien (Doppellinie, Bruestung) und bleiben getrennt. Ergebnis: 17 Laengsbaender (y) und 79 Querbaender (x).",
+  "2. STRAHL: vom Label-Anker aus in vier Richtungen bis zum ersten Band, das den Anker deckt. Eine Luecke bis 150 cm gilt als Tuer oder Durchgang, die Wand zaehlt dort weiter als Wand.",
+  "3. TEILUNG: deckt eine Wandlinie im Inneren mindestens 40 % der Spannweite, teilt sie das Rechteck; die Haelfte mit dem Anker bleibt. Wird wiederholt, bis nichts mehr teilt.",
+  "4. FLUR: der Flur ist ein eigener, durch vier Labels belegter Raum (Band y 531,4..704,6). Kein Zimmerrechteck reicht hinein, es wird an der Flurwand gekappt.",
+  "5. BANDTREUE: die Laengswaende y=209,2 / 1288,5 / 1514,1 laufen ueber mehr als 60 % der Gebaeudelaenge durch. Springt ein Rechteck ueber eine von ihnen, obwohl sie links UND rechts davon gemessen ist, liegt eine MESSLUECKE vor - es wird trotzdem gekappt und die Luecke benannt.",
+  "6. PRUEFUNG: je Seite wird gemessen, wie viel Prozent ihrer Laenge tatsaechlich durch gemessene Wand gedeckt sind (Tuerluecken mitgezaehlt), und ob im Inneren noch Wandstuecke ab 15 % Spannweite stehen. Nur wenn alle vier Seiten mindestens 90 % erreichen UND nichts im Inneren steht, ist sicher=true. guete unterscheidet feiner: rechteck / rechteck_mit_wandstummel / unregelmaessig / nicht_geschlossen.",
+  "7. WANDSTAERKE: rechteck_cm sind ACHSMASSE. Der Bericht sagt ausdruecklich \"Wandstaerken sind nicht massstaeblich gezeichnet (Strichbreite 4..12 cm); alle Werte sind Achsmasse der belegungsgewichteten Mittellinie\". Eine lichte Nutzflaeche ist daraus NICHT ableitbar. Statt einen Abzug zu erfinden, stehen je Raum flaeche_m2_abzug_4cm und flaeche_m2_abzug_12cm daneben - die Spanne aus den im Bericht genannten Strichbreiten.",
+  "8. SEITE: nord/sued kommt NICHT aus dem Feld \"seite\" des Plan-JSON, sondern aus der y-Koordinate des Ankers gegen die Flurmitte y=618 cm. Gegenprobe: das Feld stimmt bei 72 der 74 Labels; die zwei Abweichungen sind beide \"Flur\" (Anker y=617,5 - einen halben Zentimeter noerdlich der Mitte). Fuer alle 23 Zimmer stimmt das Feld."
+ ],
+ "zimmer": [
+  {
+   "name": "Zimmer 01",
+   "typ": "Sonderzimmer",
+   "seite": "sued",
+   "rechteck_cm": [
+    80.0,
+    980.0,
+    590.0,
+    1330.0
+   ],
+   "flaeche_m2": 17.85,
+   "sicher": false,
+   "beschriftet": true,
+   "guete": "nicht_geschlossen",
+   "variante": "",
+   "breite_cm": 510.0,
+   "tiefe_cm": 350.0,
+   "anker_cm": [
+    312.5,
+    1060.0
+   ],
+   "seite_im_plan_json": "sued",
+   "flaeche_m2_abzug_4cm": 17.51,
+   "flaeche_m2_abzug_12cm": 16.83,
+   "seitenschluss": {
+    "west": 0.47,
+    "nord": 0.58,
+    "ost": 0.61,
+    "sued": 1.0
+   },
+   "anmerkung": "Im Plan als \"Sonderzimmer\" beschriftet (Leitlinienende 355/1110). Der Westkopf ist der schwaechste Teil der Messung: der Bericht fuehrt drei nicht erfasste schraege Wandstuecke (x 310..515/y 650..780, x 830..960/y 440..540, x 1385..1460/y 300..450). | Seite west nur zu 47 % durch gemessene Wand gedeckt | Seite nord nur zu 58 % durch gemessene Wand gedeckt | Seite ost nur zu 61 % durch gemessene Wand gedeckt"
+  },
+  {
+   "name": "Zimmer 03",
+   "typ": "1",
+   "seite": "sued",
+   "rechteck_cm": [
+    827.1,
+    704.6,
+    1177.5,
+    1288.5
+   ],
+   "flaeche_m2": 20.46,
+   "sicher": false,
+   "beschriftet": true,
+   "guete": "nicht_geschlossen_und_unregelmaessig",
+   "variante": "Typ 1b (volle Tiefe 584 cm, Bad an der Suedfassade)",
+   "breite_cm": 350.4,
+   "tiefe_cm": 583.9,
+   "anker_cm": [
+    1112.5,
+    1000.0
+   ],
+   "seite_im_plan_json": "sued",
+   "flaeche_m2_abzug_4cm": 20.09,
+   "flaeche_m2_abzug_12cm": 19.35,
+   "seitenschluss": {
+    "west": 0.99,
+    "nord": 0.0,
+    "ost": 0.55,
+    "sued": 1.0
+   },
+   "anmerkung": "Nordkante auf die Flur-Suedwand y=704,6 gekappt (Regel 4: der Flur ist ein eigener, vierfach beschrifteter Raum) | Seite nord nur zu 0 % durch gemessene Wand gedeckt | Seite ost nur zu 55 % durch gemessene Wand gedeckt | Wandstueck im Inneren: senkrecht bei 895 cm, 245 cm lang (42 % der Spannweite) | Wandstueck im Inneren: senkrecht bei 1020 cm, 265 cm lang (45 % der Spannweite)"
+  },
+  {
+   "name": "Unbeschriftete Zimmerzelle S1",
+   "typ": "1",
+   "seite": "sued",
+   "rechteck_cm": [
+    1177.5,
+    926.1,
+    1530.0,
+    1288.5
+   ],
+   "flaeche_m2": 12.77,
+   "sicher": false,
+   "beschriftet": false,
+   "guete": "nicht_geschlossen",
+   "variante": "Typ 1a (Tiefe 362 cm)",
+   "breite_cm": 352.5,
+   "tiefe_cm": 362.4,
+   "anker_cm": null,
+   "seite_im_plan_json": null,
+   "flaeche_m2_abzug_4cm": 12.49,
+   "flaeche_m2_abzug_12cm": 11.93,
+   "seitenschluss": {
+    "west": 0.88,
+    "nord": 0.65,
+    "ost": 1.0,
+    "sued": 1.0
+   },
+   "anmerkung": "Zelle im Zimmerband ohne Beschriftung. Breite 352 cm liegt im Raster der beschrifteten Zimmer derselben Reihe (Sued 315..360 cm). Kein Label im Plan-JSON - hier liegt die Differenz 23 gegen 29. Seite west nur zu 88 % durch gemessene Wand gedeckt | Seite nord nur zu 65 % durch gemessene Wand gedeckt"
+  },
+  {
+   "name": "Zimmer 04",
+   "typ": "1",
+   "seite": "sued",
+   "rechteck_cm": [
+    1530.0,
+    926.1,
+    1868.6,
+    1288.5
+   ],
+   "flaeche_m2": 12.27,
+   "sicher": true,
+   "beschriftet": true,
+   "guete": "rechteck",
+   "variante": "Typ 1a (Tiefe 362 cm, Bad am Flur im Norden)",
+   "breite_cm": 338.6,
+   "tiefe_cm": 362.4,
+   "anker_cm": [
+    1700.0,
+    1110.0
+   ],
+   "seite_im_plan_json": "sued",
+   "flaeche_m2_abzug_4cm": 11.99,
+   "flaeche_m2_abzug_12cm": 11.44,
+   "seitenschluss": {
+    "west": 1.0,
+    "nord": 1.0,
+    "ost": 1.0,
+    "sued": 1.0
+   },
+   "anmerkung": ""
+  },
+  {
+   "name": "Zimmer 05",
+   "typ": "1",
+   "seite": "sued",
+   "rechteck_cm": [
+    1868.6,
+    926.1,
+    2205.0,
+    1288.5
+   ],
+   "flaeche_m2": 12.19,
+   "sicher": true,
+   "beschriftet": true,
+   "guete": "rechteck",
+   "variante": "Typ 1a (Tiefe 362 cm, Bad am Flur im Norden)",
+   "breite_cm": 336.4,
+   "tiefe_cm": 362.4,
+   "anker_cm": [
+    2037.5,
+    1110.0
+   ],
+   "seite_im_plan_json": "sued",
+   "flaeche_m2_abzug_4cm": 11.91,
+   "flaeche_m2_abzug_12cm": 11.37,
+   "seitenschluss": {
+    "west": 1.0,
+    "nord": 1.0,
+    "ost": 1.0,
+    "sued": 1.0
+   },
+   "anmerkung": ""
+  },
+  {
+   "name": "Zimmer 06",
+   "typ": "1",
+   "seite": "sued",
+   "rechteck_cm": [
+    2205.0,
+    926.1,
+    2535.0,
+    1288.5
+   ],
+   "flaeche_m2": 11.96,
+   "sicher": true,
+   "beschriftet": true,
+   "guete": "rechteck",
+   "variante": "Typ 1a (Tiefe 362 cm, Bad am Flur im Norden)",
+   "breite_cm": 330.0,
+   "tiefe_cm": 362.4,
+   "anker_cm": [
+    2370.0,
+    1107.5
+   ],
+   "seite_im_plan_json": "sued",
+   "flaeche_m2_abzug_4cm": 11.68,
+   "flaeche_m2_abzug_12cm": 11.14,
+   "seitenschluss": {
+    "west": 1.0,
+    "nord": 1.0,
+    "ost": 1.0,
+    "sued": 1.0
+   },
+   "anmerkung": ""
+  },
+  {
+   "name": "Zimmer 07",
+   "typ": "1",
+   "seite": "sued",
+   "rechteck_cm": [
+    2535.0,
+    926.1,
+    2875.0,
+    1288.5
+   ],
+   "flaeche_m2": 12.32,
+   "sicher": true,
+   "beschriftet": true,
+   "guete": "rechteck",
+   "variante": "Typ 1a (Tiefe 362 cm, Bad am Flur im Norden)",
+   "breite_cm": 340.0,
+   "tiefe_cm": 362.4,
+   "anker_cm": [
+    2705.0,
+    1105.0
+   ],
+   "seite_im_plan_json": "sued",
+   "flaeche_m2_abzug_4cm": 12.04,
+   "flaeche_m2_abzug_12cm": 11.49,
+   "seitenschluss": {
+    "west": 1.0,
+    "nord": 1.0,
+    "ost": 1.0,
+    "sued": 1.0
+   },
+   "anmerkung": ""
+  },
+  {
+   "name": "Zimmer 08",
+   "typ": "1",
+   "seite": "sued",
+   "rechteck_cm": [
+    2875.0,
+    926.1,
+    3214.7,
+    1288.5
+   ],
+   "flaeche_m2": 12.31,
+   "sicher": true,
+   "beschriftet": true,
+   "guete": "rechteck",
+   "variante": "Typ 1a (Tiefe 362 cm, Bad am Flur im Norden)",
+   "breite_cm": 339.7,
+   "tiefe_cm": 362.4,
+   "anker_cm": [
+    3042.5,
+    1107.5
+   ],
+   "seite_im_plan_json": "sued",
+   "flaeche_m2_abzug_4cm": 12.03,
+   "flaeche_m2_abzug_12cm": 11.48,
+   "seitenschluss": {
+    "west": 1.0,
+    "nord": 1.0,
+    "ost": 1.0,
+    "sued": 1.0
+   },
+   "anmerkung": ""
+  },
+  {
+   "name": "Zimmer 09",
+   "typ": "1",
+   "seite": "sued",
+   "rechteck_cm": [
+    3214.7,
+    926.1,
+    3555.0,
+    1288.5
+   ],
+   "flaeche_m2": 12.33,
+   "sicher": false,
+   "beschriftet": true,
+   "guete": "rechteck_mit_wandstummel",
+   "variante": "Typ 1a (Tiefe 362 cm, Bad am Flur im Norden)",
+   "breite_cm": 340.3,
+   "tiefe_cm": 362.4,
+   "anker_cm": [
+    3382.5,
+    1105.0
+   ],
+   "seite_im_plan_json": "sued",
+   "flaeche_m2_abzug_4cm": 12.05,
+   "flaeche_m2_abzug_12cm": 11.5,
+   "seitenschluss": {
+    "west": 1.0,
+    "nord": 1.0,
+    "ost": 1.0,
+    "sued": 1.0
+   },
+   "anmerkung": "Wandstueck im Inneren: senkrecht bei 3500 cm, 84 cm lang (23 % der Spannweite)"
+  },
+  {
+   "name": "Zimmer 10",
+   "typ": "1",
+   "seite": "sued",
+   "rechteck_cm": [
+    3555.0,
+    926.1,
+    3870.0,
+    1288.5
+   ],
+   "flaeche_m2": 11.42,
+   "sicher": false,
+   "beschriftet": true,
+   "guete": "rechteck_mit_wandstummel",
+   "variante": "Typ 1a (Tiefe 362 cm, Bad am Flur im Norden)",
+   "breite_cm": 315.0,
+   "tiefe_cm": 362.4,
+   "anker_cm": [
+    3712.5,
+    1105.0
+   ],
+   "seite_im_plan_json": "sued",
+   "flaeche_m2_abzug_4cm": 11.15,
+   "flaeche_m2_abzug_12cm": 10.62,
+   "seitenschluss": {
+    "west": 1.0,
+    "nord": 1.0,
+    "ost": 0.99,
+    "sued": 1.0
+   },
+   "anmerkung": "Wandstueck im Inneren: senkrecht bei 3615 cm, 78 cm lang (22 % der Spannweite)"
+  },
+  {
+   "name": "Zimmer 11",
+   "typ": "1",
+   "seite": "sued",
+   "rechteck_cm": [
+    3870.0,
+    926.1,
+    4215.0,
+    1288.5
+   ],
+   "flaeche_m2": 12.5,
+   "sicher": false,
+   "beschriftet": true,
+   "guete": "rechteck_mit_wandstummel",
+   "variante": "Typ 1a (Tiefe 362 cm, Bad am Flur im Norden)",
+   "breite_cm": 345.0,
+   "tiefe_cm": 362.4,
+   "anker_cm": [
+    4042.5,
+    1105.0
+   ],
+   "seite_im_plan_json": "sued",
+   "flaeche_m2_abzug_4cm": 12.22,
+   "flaeche_m2_abzug_12cm": 11.67,
+   "seitenschluss": {
+    "west": 0.99,
+    "nord": 1.0,
+    "ost": 1.0,
+    "sued": 1.0
+   },
+   "anmerkung": "Wandstueck im Inneren: senkrecht bei 4145 cm, 68 cm lang (19 % der Spannweite)"
+  },
+  {
+   "name": "Zimmer 12",
+   "typ": "1",
+   "seite": "sued",
+   "rechteck_cm": [
+    4215.0,
+    926.1,
+    4545.0,
+    1288.5
+   ],
+   "flaeche_m2": 11.96,
+   "sicher": false,
+   "beschriftet": true,
+   "guete": "rechteck_mit_wandstummel",
+   "variante": "Typ 1a (Tiefe 362 cm, Bad am Flur im Norden)",
+   "breite_cm": 330.0,
+   "tiefe_cm": 362.4,
+   "anker_cm": [
+    4380.0,
+    1105.0
+   ],
+   "seite_im_plan_json": "sued",
+   "flaeche_m2_abzug_4cm": 11.68,
+   "flaeche_m2_abzug_12cm": 11.14,
+   "seitenschluss": {
+    "west": 1.0,
+    "nord": 1.0,
+    "ost": 0.99,
+    "sued": 1.0
+   },
+   "anmerkung": "Wandstueck im Inneren: senkrecht bei 4285 cm, 70 cm lang (19 % der Spannweite)"
+  },
+  {
+   "name": "Zimmer 13",
+   "typ": "1",
+   "seite": "sued",
+   "rechteck_cm": [
+    4545.0,
+    926.1,
+    4875.0,
+    1288.5
+   ],
+   "flaeche_m2": 11.96,
+   "sicher": false,
+   "beschriftet": true,
+   "guete": "rechteck_mit_wandstummel",
+   "variante": "Typ 1a (Tiefe 362 cm, Bad am Flur im Norden)",
+   "breite_cm": 330.0,
+   "tiefe_cm": 362.4,
+   "anker_cm": [
+    4710.0,
+    1105.0
+   ],
+   "seite_im_plan_json": "sued",
+   "flaeche_m2_abzug_4cm": 11.68,
+   "flaeche_m2_abzug_12cm": 11.14,
+   "seitenschluss": {
+    "west": 0.99,
+    "nord": 1.0,
+    "ost": 1.0,
+    "sued": 1.0
+   },
+   "anmerkung": "Wandstueck im Inneren: senkrecht bei 4800 cm, 85 cm lang (23 % der Spannweite)"
+  },
+  {
+   "name": "Zimmer 14",
+   "typ": "1",
+   "seite": "sued",
+   "rechteck_cm": [
+    4875.0,
+    926.1,
+    5210.0,
+    1288.5
+   ],
+   "flaeche_m2": 12.14,
+   "sicher": false,
+   "beschriftet": true,
+   "guete": "rechteck_mit_wandstummel",
+   "variante": "Typ 1a (Tiefe 362 cm, Bad am Flur im Norden)",
+   "breite_cm": 335.0,
+   "tiefe_cm": 362.4,
+   "anker_cm": [
+    5042.5,
+    1105.0
+   ],
+   "seite_im_plan_json": "sued",
+   "flaeche_m2_abzug_4cm": 11.86,
+   "flaeche_m2_abzug_12cm": 11.32,
+   "seitenschluss": {
+    "west": 1.0,
+    "nord": 1.0,
+    "ost": 0.99,
+    "sued": 1.0
+   },
+   "anmerkung": "Wandstueck im Inneren: senkrecht bei 4940 cm, 85 cm lang (23 % der Spannweite)"
+  },
+  {
+   "name": "Zimmer 15",
+   "typ": "1",
+   "seite": "sued",
+   "rechteck_cm": [
+    5210.0,
+    926.1,
+    5540.0,
+    1288.5
+   ],
+   "flaeche_m2": 11.96,
+   "sicher": false,
+   "beschriftet": true,
+   "guete": "rechteck_mit_wandstummel",
+   "variante": "Typ 1a (Tiefe 362 cm, Bad am Flur im Norden)",
+   "breite_cm": 330.0,
+   "tiefe_cm": 362.4,
+   "anker_cm": [
+    5375.0,
+    1105.0
+   ],
+   "seite_im_plan_json": "sued",
+   "flaeche_m2_abzug_4cm": 11.68,
+   "flaeche_m2_abzug_12cm": 11.14,
+   "seitenschluss": {
+    "west": 0.99,
+    "nord": 1.0,
+    "ost": 1.0,
+    "sued": 1.0
+   },
+   "anmerkung": "Wandstueck im Inneren: senkrecht bei 5485 cm, 87 cm lang (24 % der Spannweite)"
+  },
+  {
+   "name": "Zimmer 16",
+   "typ": "1",
+   "seite": "sued",
+   "rechteck_cm": [
+    5540.0,
+    926.1,
+    5865.0,
+    1288.5
+   ],
+   "flaeche_m2": 11.78,
+   "sicher": false,
+   "beschriftet": true,
+   "guete": "rechteck_mit_wandstummel",
+   "variante": "Typ 1a (Tiefe 362 cm, Bad am Flur im Norden)",
+   "breite_cm": 325.0,
+   "tiefe_cm": 362.4,
+   "anker_cm": [
+    5702.5,
+    1105.0
+   ],
+   "seite_im_plan_json": "sued",
+   "flaeche_m2_abzug_4cm": 11.5,
+   "flaeche_m2_abzug_12cm": 10.97,
+   "seitenschluss": {
+    "west": 1.0,
+    "nord": 1.0,
+    "ost": 0.99,
+    "sued": 1.0
+   },
+   "anmerkung": "Wandstueck im Inneren: senkrecht bei 5605 cm, 87 cm lang (24 % der Spannweite)"
+  },
+  {
+   "name": "Zimmer 17",
+   "typ": "1",
+   "seite": "sued",
+   "rechteck_cm": [
+    5865.0,
+    704.6,
+    6186.9,
+    1288.5
+   ],
+   "flaeche_m2": 18.8,
+   "sicher": true,
+   "beschriftet": true,
+   "guete": "rechteck",
+   "variante": "Typ 1b (volle Tiefe 584 cm, Bad an der Suedfassade)",
+   "breite_cm": 321.9,
+   "tiefe_cm": 583.9,
+   "anker_cm": [
+    6027.5,
+    997.5
+   ],
+   "seite_im_plan_json": "sued",
+   "flaeche_m2_abzug_4cm": 18.44,
+   "flaeche_m2_abzug_12cm": 17.72,
+   "seitenschluss": {
+    "west": 0.99,
+    "nord": 1.0,
+    "ost": 0.99,
+    "sued": 1.0
+   },
+   "anmerkung": ""
+  },
+  {
+   "name": "Zimmer 19",
+   "typ": "1",
+   "seite": "sued",
+   "rechteck_cm": [
+    6186.9,
+    704.6,
+    6536.8,
+    1288.5
+   ],
+   "flaeche_m2": 20.43,
+   "sicher": true,
+   "beschriftet": true,
+   "guete": "rechteck",
+   "variante": "Typ 1b (volle Tiefe 584 cm, Bad an der Suedfassade)",
+   "breite_cm": 349.9,
+   "tiefe_cm": 583.9,
+   "anker_cm": [
+    6362.5,
+    997.5
+   ],
+   "seite_im_plan_json": "sued",
+   "flaeche_m2_abzug_4cm": 20.06,
+   "flaeche_m2_abzug_12cm": 19.32,
+   "seitenschluss": {
+    "west": 0.99,
+    "nord": 1.0,
+    "ost": 1.0,
+    "sued": 1.0
+   },
+   "anmerkung": ""
+  },
+  {
+   "name": "Zimmer 20",
+   "typ": "1",
+   "seite": "sued",
+   "rechteck_cm": [
+    6536.8,
+    704.6,
+    6897.1,
+    1288.5
+   ],
+   "flaeche_m2": 21.04,
+   "sicher": true,
+   "beschriftet": true,
+   "guete": "rechteck",
+   "variante": "Typ 1b (volle Tiefe 584 cm, Bad an der Suedfassade)",
+   "breite_cm": 360.3,
+   "tiefe_cm": 583.9,
+   "anker_cm": [
+    6715.0,
+    997.5
+   ],
+   "seite_im_plan_json": "sued",
+   "flaeche_m2_abzug_4cm": 20.66,
+   "flaeche_m2_abzug_12cm": 19.92,
+   "seitenschluss": {
+    "west": 1.0,
+    "nord": 1.0,
+    "ost": 0.99,
+    "sued": 1.0
+   },
+   "anmerkung": ""
+  },
+  {
+   "name": "Zimmer 22",
+   "typ": "1",
+   "seite": "sued",
+   "rechteck_cm": [
+    6897.1,
+    704.6,
+    7234.2,
+    1288.5
+   ],
+   "flaeche_m2": 19.68,
+   "sicher": true,
+   "beschriftet": true,
+   "guete": "rechteck",
+   "variante": "Typ 1b (volle Tiefe 584 cm, Bad an der Suedfassade)",
+   "breite_cm": 337.1,
+   "tiefe_cm": 583.9,
+   "anker_cm": [
+    7062.5,
+    997.5
+   ],
+   "seite_im_plan_json": "sued",
+   "flaeche_m2_abzug_4cm": 19.32,
+   "flaeche_m2_abzug_12cm": 18.59,
+   "seitenschluss": {
+    "west": 0.99,
+    "nord": 0.99,
+    "ost": 0.99,
+    "sued": 1.0
+   },
+   "anmerkung": ""
+  },
+  {
+   "name": "Zimmer 02",
+   "typ": "2",
+   "seite": "nord",
+   "rechteck_cm": [
+    495.0,
+    209.2,
+    975.0,
+    531.4
+   ],
+   "flaeche_m2": 15.47,
+   "sicher": true,
+   "beschriftet": true,
+   "guete": "rechteck",
+   "variante": "",
+   "breite_cm": 480.0,
+   "tiefe_cm": 322.2,
+   "anker_cm": [
+    665.0,
+    377.5
+   ],
+   "seite_im_plan_json": "nord",
+   "flaeche_m2_abzug_4cm": 15.15,
+   "flaeche_m2_abzug_12cm": 14.52,
+   "seitenschluss": {
+    "west": 1.0,
+    "nord": 1.0,
+    "ost": 0.97,
+    "sued": 0.97
+   },
+   "anmerkung": ""
+  },
+  {
+   "name": "Unbeschriftete Zimmerzelle N1",
+   "typ": "2",
+   "seite": "nord",
+   "rechteck_cm": [
+    2760.0,
+    209.2,
+    3214.7,
+    531.4
+   ],
+   "flaeche_m2": 14.65,
+   "sicher": false,
+   "beschriftet": false,
+   "guete": "rechteck",
+   "variante": "",
+   "breite_cm": 454.7,
+   "tiefe_cm": 322.2,
+   "anker_cm": null,
+   "seite_im_plan_json": null,
+   "flaeche_m2_abzug_4cm": 14.34,
+   "flaeche_m2_abzug_12cm": 13.73,
+   "seitenschluss": {
+    "west": 1.0,
+    "nord": 1.0,
+    "ost": 1.0,
+    "sued": 1.0
+   },
+   "anmerkung": "Zelle im Zimmerband ohne Beschriftung. Breite 455 cm liegt im Raster der beschrifteten Zimmer derselben Reihe (Nord 480..515 cm). Kein Label im Plan-JSON - hier liegt die Differenz 23 gegen 29. "
+  },
+  {
+   "name": "Unbeschriftete Zimmerzelle N2",
+   "typ": "2",
+   "seite": "nord",
+   "rechteck_cm": [
+    3214.7,
+    209.2,
+    3690.0,
+    531.4
+   ],
+   "flaeche_m2": 15.31,
+   "sicher": false,
+   "beschriftet": false,
+   "guete": "nicht_geschlossen",
+   "variante": "",
+   "breite_cm": 475.3,
+   "tiefe_cm": 322.2,
+   "anker_cm": null,
+   "seite_im_plan_json": null,
+   "flaeche_m2_abzug_4cm": 15.0,
+   "flaeche_m2_abzug_12cm": 14.37,
+   "seitenschluss": {
+    "west": 1.0,
+    "nord": 0.01,
+    "ost": 1.0,
+    "sued": 1.0
+   },
+   "anmerkung": "Zelle im Zimmerband ohne Beschriftung. Breite 475 cm liegt im Raster der beschrifteten Zimmer derselben Reihe (Nord 480..515 cm). Kein Label im Plan-JSON - hier liegt die Differenz 23 gegen 29. Regel 5 (Bandtreue): die durchlaufende Laengswand y=209.2 teilt hier, ist aber ueber 470 cm der Raumbreite nicht gemessen | Seite nord nur zu 1 % durch gemessene Wand gedeckt"
+  },
+  {
+   "name": "Unbeschriftete Zimmerzelle N3",
+   "typ": "2",
+   "seite": "nord",
+   "rechteck_cm": [
+    4090.0,
+    209.2,
+    4545.0,
+    531.4
+   ],
+   "flaeche_m2": 14.66,
+   "sicher": false,
+   "beschriftet": false,
+   "guete": "rechteck_mit_wandstummel",
+   "variante": "",
+   "breite_cm": 455.0,
+   "tiefe_cm": 322.2,
+   "anker_cm": null,
+   "seite_im_plan_json": null,
+   "flaeche_m2_abzug_4cm": 14.35,
+   "flaeche_m2_abzug_12cm": 13.74,
+   "seitenschluss": {
+    "west": 1.0,
+    "nord": 1.0,
+    "ost": 1.0,
+    "sued": 1.0
+   },
+   "anmerkung": "Zelle im Zimmerband ohne Beschriftung. Breite 455 cm liegt im Raster der beschrifteten Zimmer derselben Reihe (Nord 480..515 cm). Kein Label im Plan-JSON - hier liegt die Differenz 23 gegen 29. Wandstueck im Inneren: senkrecht bei 4285 cm, 76 cm lang (24 % der Spannweite)"
+  },
+  {
+   "name": "Unbeschriftete Zimmerzelle N4",
+   "typ": "2",
+   "seite": "nord",
+   "rechteck_cm": [
+    4545.0,
+    209.2,
+    5030.0,
+    531.4
+   ],
+   "flaeche_m2": 15.63,
+   "sicher": false,
+   "beschriftet": false,
+   "guete": "rechteck_mit_wandstummel",
+   "variante": "",
+   "breite_cm": 485.0,
+   "tiefe_cm": 322.2,
+   "anker_cm": null,
+   "seite_im_plan_json": null,
+   "flaeche_m2_abzug_4cm": 15.31,
+   "flaeche_m2_abzug_12cm": 14.67,
+   "seitenschluss": {
+    "west": 1.0,
+    "nord": 1.0,
+    "ost": 1.0,
+    "sued": 1.0
+   },
+   "anmerkung": "Zelle im Zimmerband ohne Beschriftung. Breite 485 cm liegt im Raster der beschrifteten Zimmer derselben Reihe (Nord 480..515 cm). Kein Label im Plan-JSON - hier liegt die Differenz 23 gegen 29. Wandstueck im Inneren: senkrecht bei 4800 cm, 61 cm lang (19 % der Spannweite)"
+  },
+  {
+   "name": "Unbeschriftete Zimmerzelle N5",
+   "typ": "2",
+   "seite": "nord",
+   "rechteck_cm": [
+    5360.0,
+    209.2,
+    5865.0,
+    531.4
+   ],
+   "flaeche_m2": 16.27,
+   "sicher": false,
+   "beschriftet": false,
+   "guete": "rechteck_mit_wandstummel",
+   "variante": "",
+   "breite_cm": 505.0,
+   "tiefe_cm": 322.2,
+   "anker_cm": null,
+   "seite_im_plan_json": null,
+   "flaeche_m2_abzug_4cm": 15.94,
+   "flaeche_m2_abzug_12cm": 15.29,
+   "seitenschluss": {
+    "west": 1.0,
+    "nord": 1.0,
+    "ost": 1.0,
+    "sued": 1.0
+   },
+   "anmerkung": "Zelle im Zimmerband ohne Beschriftung. Breite 505 cm liegt im Raster der beschrifteten Zimmer derselben Reihe (Nord 480..515 cm). Kein Label im Plan-JSON - hier liegt die Differenz 23 gegen 29. Wandstueck im Inneren: senkrecht bei 5485 cm, 105 cm lang (33 % der Spannweite) | Wandstueck im Inneren: senkrecht bei 5705 cm, 76 cm lang (24 % der Spannweite)"
+  },
+  {
+   "name": "Zimmer 18",
+   "typ": "2",
+   "seite": "nord",
+   "rechteck_cm": [
+    5865.0,
+    209.2,
+    6365.9,
+    531.4
+   ],
+   "flaeche_m2": 16.14,
+   "sicher": true,
+   "beschriftet": true,
+   "guete": "rechteck",
+   "variante": "",
+   "breite_cm": 500.9,
+   "tiefe_cm": 322.2,
+   "anker_cm": [
+    6122.5,
+    367.5
+   ],
+   "seite_im_plan_json": "nord",
+   "flaeche_m2_abzug_4cm": 15.81,
+   "flaeche_m2_abzug_12cm": 15.17,
+   "seitenschluss": {
+    "west": 1.0,
+    "nord": 1.0,
+    "ost": 1.0,
+    "sued": 1.0
+   },
+   "anmerkung": ""
+  },
+  {
+   "name": "Zimmer 21",
+   "typ": "2",
+   "seite": "nord",
+   "rechteck_cm": [
+    6719.1,
+    209.2,
+    7234.2,
+    531.4
+   ],
+   "flaeche_m2": 16.6,
+   "sicher": true,
+   "beschriftet": true,
+   "guete": "rechteck",
+   "variante": "",
+   "breite_cm": 515.1,
+   "tiefe_cm": 322.2,
+   "anker_cm": [
+    6977.5,
+    367.5
+   ],
+   "seite_im_plan_json": "nord",
+   "flaeche_m2_abzug_4cm": 16.26,
+   "flaeche_m2_abzug_12cm": 15.61,
+   "seitenschluss": {
+    "west": 1.0,
+    "nord": 1.0,
+    "ost": 0.96,
+    "sued": 1.0
+   },
+   "anmerkung": ""
+  },
+  {
+   "name": "Zimmer 23",
+   "typ": "Sonderzimmer",
+   "seite": "nord",
+   "rechteck_cm": [
+    7234.2,
+    209.2,
+    7795.0,
+    531.4
+   ],
+   "flaeche_m2": 18.07,
+   "sicher": false,
+   "beschriftet": true,
+   "guete": "nicht_geschlossen",
+   "variante": "",
+   "breite_cm": 560.8,
+   "tiefe_cm": 322.2,
+   "anker_cm": [
+    7615.0,
+    390.0
+   ],
+   "seite_im_plan_json": "nord",
+   "flaeche_m2_abzug_4cm": 17.72,
+   "flaeche_m2_abzug_12cm": 17.02,
+   "seitenschluss": {
+    "west": 0.96,
+    "nord": 1.0,
+    "ost": 1.0,
+    "sued": 0.12
+   },
+   "anmerkung": "Als zweites Sonderzimmer gefuehrt - ABGELEITET, nicht beschriftet: breiteste Zelle der Nordreihe (561 cm gegen 455..515 cm) und die einzige ohne zugehoeriges Badpaar. Nur mit dieser Zuordnung ergibt die Legende 19 + 8 + 2. Bleibt es Typ 2, waeren es 9 Typ-2-Zimmer. | Suedkante auf die Flur-Nordwand y=531,4 gekappt (Regel 4) | Seite sued nur zu 12 % durch gemessene Wand gedeckt"
+  }
+ ],
+ "bilanz": {
+  "zimmer_labels_im_plan": 23,
+  "zimmer_laut_legende_seite1": 29,
+  "zimmer_gefunden_gesamt": 29,
+  "aufloesung": "23 beschriftete + 6 unbeschriftete Zellen im Zimmerraster = 29. Die Legende geht exakt auf.",
+  "typ_1_sued": 19,
+  "typ_2_nord": 8,
+  "sonderzimmer": 2,
+  "flaeche_zimmer_gesamt_m2": 430.93,
+  "flaeche_zimmer_beschriftet_m2": 341.64,
+  "flaeche_zimmer_unbeschriftet_m2": 89.29,
+  "flaeche_typ1_m2": 270.28,
+  "flaeche_typ2_m2": 124.73,
+  "flaeche_sonderzimmer_m2": 35.92,
+  "zimmer_mit_sicher_true": 12,
+  "loggien_anzahl": 32,
+  "loggien_m2": 144.41,
+  "baeder_beschriftet_anzahl": 10,
+  "baeder_beschriftet_m2": 43.2,
+  "nassraumzellen_ohne_label_anzahl": 35,
+  "nassraumzellen_ohne_label_m2": 80.08,
+  "nordzellen_badbreite_ohne_label_anzahl": 6,
+  "nordzellen_badbreite_ohne_label_m2": 36.48,
+  "flur_m2": 120.15,
+  "nebenraeume": [
+   {
+    "name": "Treppenhaus",
+    "m2": 7.41,
+    "rechteck_cm": [
+     35.0,
+     209.2,
+     265.0,
+     531.4
+    ]
+   },
+   {
+    "name": "Backoffice",
+    "m2": 7.01,
+    "rechteck_cm": [
+     1177.5,
+     209.2,
+     1395.0,
+     531.4
+    ]
+   },
+   {
+    "name": "Empfang",
+    "m2": 24.49,
+    "rechteck_cm": [
+     1395.0,
+     209.2,
+     2155.0,
+     531.4
+    ]
+   },
+   {
+    "name": "Waschraum",
+    "m2": 12.08,
+    "rechteck_cm": [
+     2185.0,
+     209.2,
+     2560.0,
+     531.4
+    ]
+   },
+   {
+    "name": "Treppe",
+    "m2": 12.65,
+    "rechteck_cm": [
+     7234.2,
+     1288.5,
+     7795.0,
+     1514.1
+    ]
+   }
+  ],
+  "nebenraeume_m2": 63.64,
+  "bruttoflaeche_m2": {
+   "Bericht bezug.json 1527 cm": 1190.3,
+   "aeusserste gemessene Achse 1545,1 cm": 1204.4,
+   "durchgehende Suedfassade 1514,1 cm": 1180.2
+  },
+  "deckungsrechnung": {
+   "summe_aller_zugeordneten_raeume_m2": 926.3,
+   "wandachsen_gesamt_m": 979.5,
+   "wandquerschnitt_m2_bei_4cm": 39.2,
+   "wandquerschnitt_m2_bei_12cm": 117.5,
+   "hinweis": "Bruttoflaeche minus zugeordnete Raeume ergibt rund 254..278 m2. Darin stecken die Wandquerschnitte (39..118 m2, gerechnet aus 979,5 m Wandachse mal 4 bzw. 12 cm Strichbreite), die Fassaden- und Bruestungszone vor den Loggien (rund 63..87 m2) und die vom Bericht gezaehlten 80 unklaren Kleinzellen. Der Rest ist NICHT weiter aufgeloest - er wird hier als Rest benannt, nicht verteilt."
+  },
+  "bruttoflaeche_erlaeuterung": "Rechteckhuelle Laenge x Tiefe. Laenge 7795 cm ist der gemessene x-Bereich (der Bericht beschneidet auf 78,00 m Bezugslaenge; vier Kanten liegen bis 20 cm weiter oestlich). Fuer die Tiefe nennt der Bericht drei verschiedene Werte - alle drei stehen hier, keiner ist erfunden. Der Aufzugs-Vorbau noerdlich der Nordfassade (gemessen bis y=-90 cm, real bis rund -330 cm) ist NICHT enthalten; der Bericht nennt ihn seine groesste Luecke."
+ },
+ "luecken": [
+  {
+   "thema": "Die sechs fehlenden Zimmer",
+   "befund": "Im Plan-JSON stehen 23 Labels \"Zimmer NN\", die Legende Seite 1 nennt 29. Mechanisch nachgezaehlt ueber das Zimmerraster: im Sued-Zimmerband (y 926,1..1288,5) liegen 22 Zellen zwischen teilenden Querwaenden, im Nord-Zimmerband (y 209,2..531,4) 23. Sechs davon haben Zimmerbreite und KEIN Label.",
+   "koordinaten": [
+    {
+     "name": "Unbeschriftete Zimmerzelle S1",
+     "rechteck_cm": [
+      1177.5,
+      926.1,
+      1530.0,
+      1288.5
+     ],
+     "breite_cm": 352.5,
+     "m2": 12.77,
+     "reihe": "sued"
+    },
+    {
+     "name": "Unbeschriftete Zimmerzelle N1",
+     "rechteck_cm": [
+      2760.0,
+      209.2,
+      3214.7,
+      531.4
+     ],
+     "breite_cm": 454.7,
+     "m2": 14.65,
+     "reihe": "nord"
+    },
+    {
+     "name": "Unbeschriftete Zimmerzelle N2",
+     "rechteck_cm": [
+      3214.7,
+      209.2,
+      3690.0,
+      531.4
+     ],
+     "breite_cm": 475.3,
+     "m2": 15.31,
+     "reihe": "nord"
+    },
+    {
+     "name": "Unbeschriftete Zimmerzelle N3",
+     "rechteck_cm": [
+      4090.0,
+      209.2,
+      4545.0,
+      531.4
+     ],
+     "breite_cm": 455.0,
+     "m2": 14.66,
+     "reihe": "nord"
+    },
+    {
+     "name": "Unbeschriftete Zimmerzelle N4",
+     "rechteck_cm": [
+      4545.0,
+      209.2,
+      5030.0,
+      531.4
+     ],
+     "breite_cm": 485.0,
+     "m2": 15.63,
+     "reihe": "nord"
+    },
+    {
+     "name": "Unbeschriftete Zimmerzelle N5",
+     "rechteck_cm": [
+      5360.0,
+      209.2,
+      5865.0,
+      531.4
+     ],
+     "breite_cm": 505.0,
+     "m2": 16.27,
+     "reihe": "nord"
+    }
+   ],
+   "beleg": "Breitenvergleich: beschriftete Sued-Zimmer 315..360 cm (Mittel 337), die unbeschriftete Sued-Zelle 352,5 cm. Beschriftete Nord-Zimmer 480/501/515/561 cm, die fuenf unbeschrifteten Nord-Zellen 455/475/455/485/505 cm. Der Bericht selbst nennt fuer den Regelabschnitt \"zwei gleich aufgebaute Bloecke von 1335 bzw. 1320 cm (Achsen 3210/4545/5865) mit je vier Raeumen 480/180/220/455 bzw. 485/180/150/505 cm\" - genau das Muster Zimmer/Bad/Bad/Zimmer, das am Ostende beschriftet vorliegt (Zimmer 18 501 cm / Bad 171 cm / Bad 182 cm / Zimmer 21 515 cm)."
+  },
+  {
+   "thema": "Geprueft und widerlegt: \"Zimmer wurden als Loggia oder Bad gezaehlt\"",
+   "befund": "Kein einziger der 32 Loggia-Anker liegt in einem Zimmerband - alle 32 liegen in den Fassadenbaendern (y 36,3..209,2 nord bzw. y 1288,5..1473,1 sued). Von den 10 Bad-Ankern liegen sechs im Sued-Nassraumband (y 704,6..926,1, Zellenbreiten 146..160 cm), zwei im Sued-Loggiaband am Ostende (164 und 353 cm) und zwei tatsaechlich im Nord-Zimmerband (x 6455 und x 6628) - das sind aber genau die 171 und 182 cm breiten Zellen des Badpaars zwischen Zimmer 18 und Zimmer 21, also Badbreite und keine Zimmerbreite. KEINE Zelle in Zimmerbreite traegt ein Loggia- oder Bad-Label. Die Differenz von 6 entsteht nicht durch falsch benannte Raeume."
+  },
+  {
+   "thema": "Geprueft und widerlegt: \"die Zimmer liegen ausserhalb des Ausschnitts\"",
+   "befund": "Der Ausschnitt reicht von x=0 bis x=7795 cm und deckt beide Giebel. Der Bericht vermutete, die Nordreihe zwischen x 33 und 59 m sei leer (\"dort ist kein Zimmer\"). Gemessen liegt dort ein regelmaessiges Raster aus fuenf Zimmerzellen von 455..505 cm mit vier dazwischenliegenden Badzellen von 150..220 cm - dieselbe Abfolge wie am beschrifteten Ostende. Der Befund des Berichts ist damit widerlegt: die Zimmer sind da, nur unbeschriftet."
+  },
+  {
+   "thema": "Das zweite Sonderzimmer",
+   "befund": "ABGELEITET, nicht belegt. Die Legende nennt 2 Sonderzimmer, im Plan ist nur eines beschriftet (Zimmer 01, Suedwestkopf). Zimmer 23 (Nordostkopf, x 7234..7795, 561 cm breit) ist die breiteste Zelle der Nordreihe und die einzige ohne zugehoeriges Badpaar - nur mit dieser Zuordnung ergeben sich 19 + 8 + 2 = 29. Die GESAMTZAHL 29 haengt nicht an dieser Zuordnung, die Typenaufteilung schon."
+  },
+  {
+   "thema": "Wandstaerke ist nicht im Plan enthalten",
+   "befund": "Alle Rechtecke sind Achsmasse. Der Abzugskorridor 4..12 cm je Richtung stammt aus der im Bericht genannten Strichbreite und ist eine Spanne, keine Messung.",
+   "wirkung_auf_die_zimmersumme": {
+    "achsmass_m2": 430.93,
+    "abzug_4cm_m2": 421.92,
+    "abzug_12cm_m2": 404.2
+   }
+  },
+  {
+   "thema": "Treppenhaus West wird halbiert gemessen",
+   "befund": "Das Rechteck [35, 209,2, 265, 531,4] = 7,41 m2 ist nur die HALBE Treppenhausflaeche. x=265 ist laut Bericht das Treppenauge, keine raumtrennende Wand. Ueber beide Laeufe gerechnet: [35, 209,2, 495, 531,4] = 14,82 m2. Der Wert 7,41 bleibt in der Tabelle, weil er das ist, was die Waende hergeben; fuer die Flaechenbilanz ist 14,82 m2 der richtige Wert."
+  },
+  {
+   "thema": "Loggia bei x 3055..3365 ist nach Sueden offen",
+   "befund": "Label 28. Die Wand y=1288,5 hat eine Luecke x 3300..3365, die Bruestung y=1473,1 beginnt erst bei x=3300. Der Bericht fuehrt hier ein verworfenes Randstueck (x 3370..3400, 0,68 m2). Ersatzweise ist die Zelle zwischen den Querwaenden 3055 und 3365 angesetzt."
+  },
+  {
+   "thema": "Nordwand y=209,2 hat eine Messluecke von 525 cm",
+   "befund": "Zwischen x=3220 und x=3745 fehlt die Wand zwischen Nordloggia und Nordzimmer. Ohne Regel 5 waere die Loggia (Label 29) 16,85 m2 gross geworden und haette die dahinterliegende Zimmerzelle mitgeschluckt. Mit Regel 5: Loggia 5,88 m2, Zimmerzelle N2 15,31 m2."
+  },
+  {
+   "thema": "Westkopf x < 1530 ist der schwaechste Teil der Messung",
+   "befund": "Der Bericht fuehrt dort drei nicht erfasste schraege Wandstuecke, eine dreifach gezeichnete Nordfassade und nicht trennbare Moebel-/Wandkanten. Zimmer 01 und Zimmer 03 tragen deshalb sicher=false. Zimmer 03 misst als Rechteck 20,46 m2, enthaelt aber zwei unbeschriftete Nasszellen (Querwaende bei x=895 und x=1020) - die reine Zimmerflaeche liegt darunter."
+  },
+  {
+   "thema": "Zwei Bauarten in der Suedreihe - fuer die Kalkulation zwei Produkte",
+   "befund": "Zimmer 04..16 (13 Stueck, dazu die unbeschriftete Zelle S1) sind 362 cm tief, das Bad liegt noerdlich davon am Flur; Rechteck rund 12 m2. Zimmer 17, 19, 20 und 22 sind 584 cm tief, weil oestlich von x=5865 die Trennwand y=926,1 nicht mehr gezeichnet ist - dort laeuft das Zimmer vom Flur bis zur Loggia durch und das Bad liegt an der Suedfassade; Rechteck 19..21 m2. Zimmer 03 am Westkopf hat dieselbe Tiefe, aber aus einem anderen Grund: dort fehlt die Flur-Suedwand westlich von x=1200 (der Bericht fuehrt sie nur in EINEM Abschnitt), und im Rechteck stehen zwei unbeschriftete Nasszellen. Alle gelten laut Legende als Typ 1 - fuer eine Zimmerkalkulation sind es zwei Produkte."
+  },
+  {
+   "thema": "12 Waende bleiben ausserhalb der Rechnung",
+   "befund": "Von 636 Waenden sind 12 weder waagerecht noch senkrecht (schraege Wandstuecke und entartete Segmente). Sie gehen in kein Rechteck ein. Der Bericht nennt sie im Westkopf namentlich."
+  }
+ ]
+}
