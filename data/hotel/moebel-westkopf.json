@@ -195,16 +195,6 @@
    "text": "Stuhl am runden Tisch",
    "beleg": "Skizze Seite 2, Messkacheln g_rund.jpg + rund2.jpg (sketch x 640-800 / 668-748, y 315-410 / 328-400)"
   },
-  {
-   "typ": "pflanze",
-   "x": 1089,
-   "y": 1208,
-   "breite": 125,
-   "tiefe": 95,
-   "drehung": 0,
-   "text": "Pflanzsymbol Suedostecke Sonderzimmer",
-   "beleg": "Skizze Seite 2, Blob-Messung Bereich sketch x 640-690, y 375-420"
-  },
   "--- BACKOFFICE / KUECHE (Nord, Plan-x 500..1180) ---",
   {
    "typ": "kochfeld",
@@ -421,44 +411,44 @@
   "--- TREPPENHAUS WEST (Nord, Plan-x 0..220) ---",
   {
    "typ": "treppe",
-   "x": 51,
-   "y": 382,
-   "breite": 85,
-   "tiefe": 374,
+   "x": 164,
+   "y": 403,
+   "breite": 173,
+   "tiefe": 387,
    "drehung": 0,
-   "text": "Treppenlauf West 1 (nordseitig)",
-   "beleg": "Skizze Seite 2, Messkachel g_treppe_w.jpg (sketch x 825-1010, y 100-245, 480 dpi, cm-Gitter)"
+   "text": "Treppenlauf West, westlicher Lauf",
+   "beleg": "PDF Seite 1 (Bestandsplan, eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-1/A-7: Stufenzahl je Bildspalte im Fenster y 215..590 -> Schar x 77..240 mit 13 Stufenlinien (Zeilenprofil y 217..593). Ersetzt die Skizzenwerte von Seite 2, die den Lauf auf den Westgiebel stellten."
   },
   {
    "typ": "treppe",
-   "x": 169,
-   "y": 362,
-   "breite": 96,
-   "tiefe": 319,
+   "x": 381,
+   "y": 403,
+   "breite": 167,
+   "tiefe": 394,
    "drehung": 0,
-   "text": "Treppenlauf West 2 (suedseitig)",
-   "beleg": "Skizze Seite 2, Messkachel g_treppe_w.jpg (sketch x 825-1010, y 100-245, 480 dpi, cm-Gitter)"
+   "text": "Treppenlauf West, oestlicher Lauf",
+   "beleg": "PDF Seite 1 (Bestandsplan, eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-1/A-7: Stufenzahl je Bildspalte im Fenster y 215..590 -> Schar x 300..464 mit 13 Stufenlinien (Zeilenprofil y 206..600). Ersetzt die Skizzenwerte von Seite 2, die den Lauf auf den Westgiebel stellten."
   },
   "--- AUFZUG (Anbau VOR der Nordfassade, Plan-x 1790..2155) ---",
   {
    "typ": "aufzug",
-   "x": 1968,
-   "y": -145,
-   "breite": 162,
-   "tiefe": 217,
+   "x": 2013,
+   "y": -119,
+   "breite": 167,
+   "tiefe": 237,
    "drehung": 0,
    "text": "Aufzugsschacht (Quadrat mit Diagonalkreuz)",
-   "beleg": "Skizze Seite 2, Messkachel g_aufzug.jpg (sketch x 960-1095, y 575-715, 520 dpi, cm-Gitter)"
+   "beleg": "PDF Seite 1, Nachtrag 2026-09-18 Befund A-9: Schachtrechteck x 1929..2096 (Spaltenbaender 1922..1936 und 2085..2100), y -237..0 (Zeilenbaender -240..-235 und -5..0); Kreuzungspunkt der beiden Diagonalen 2012/-118 bestaetigt die Mitte."
   },
   {
    "typ": "flaeche",
-   "x": 1974,
-   "y": -156,
-   "breite": 359,
-   "tiefe": 395,
+   "x": 2011,
+   "y": -158,
+   "breite": 348,
+   "tiefe": 345,
    "drehung": 0,
    "text": "Aufzugsvorbau, umschliessendes Mauerwerk vor der Nordfassade",
-   "beleg": "Skizze Seite 2, Messkachel g_aufzug.jpg (sketch x 960-1095, y 575-715, 520 dpi, cm-Gitter)"
+   "beleg": "PDF Seite 1, Nachtrag 2026-09-18 Befund A-9: Aussenrechteck des Vorbaus, Westflanke Tintenband x 1830..1844 (Mitte 1837), Nordkante y -333..-322 (Mitte -328), Ostflanke x 2167..2181; Ostkante auf die Modellachse 2185 gezogen, Suedkante an der Nordfassade y=15."
   }
  ],
  "_luecken": [
@@ -468,12 +458,13 @@
   "DREI NISCHEN an der Nordwand des Kuechenraums (Plan-x 629..697 und 862..935, Plan-y 96..176) liegen im Loggia-/Fassadenband. Schrankeinbau oder bauliche Nische - nicht entscheidbar, deshalb kein Element.",
   "ABGEWINKELTES 'Z'-ELEMENT nordwestlich des Kochblocks (ca. Plan-x 530..630, Plan-y 480..580): Theke, Sitzbank oder Tuerblatt - nicht entscheidbar.",
   "ZICKZACKLINIE quer durch das Sonderzimmer bei Plan-x ca. 760: Faltwand, Trennwand oder zeichnerische Bruchkante. Kein Moebel, deshalb nicht aufgenommen.",
-  "TREPPENHAUS WEST: die beiden Laeufe sind als Stufenscharen gemessen, ein Zwischenpodest ist aber nicht separierbar (zwischen den Scharen liegen nur ca. 28 cm). Die Lauflinie ist als einzelne Diagonale mit Pfeil skizziert; die Steigungsrichtung ist daraus nur grob (nach Westen ansteigend) lesbar. Gegenprobe: data/ausstattung.json (Halle-Aufmass) setzt die Treppenlaeufe bei x 195 und 370 - meine Skizzenwerte liegen bei x 51 und 169, also 1,4-2,0 m weiter westlich. Die Skizze ist hier plan-konform (Planwand x 265 begrenzt das Treppenhaus nach Osten), die Abweichung zum Halle-Aufmass bleibt offen.",
+  "TREPPENHAUS WEST - AUFGELOEST am 2026-09-18 an Seite 1: die beiden Laeufe liegen bei x 77..240 und x 300..464 (Stufenzahl je Bildspalte, 13 Stufenlinien je Lauf, y 217..593 bzw. 206..600). Die frueheren Skizzenwerte x 51 und 169 waren um rund 1,1 bzw. 2,1 m zu weit westlich; der erste Lauf stand zu 40 % auf dem Westgiebel. Damit bestaetigt Seite 1 das Halle-Aufmass (x 195 / 370) und widerlegt die Skizze. Offen bleibt weiterhin: Zwischenpodest nicht separierbar, Steigungsrichtung nur grob.",
   "TREPPE OST gehoert nicht zum Westkopf und steht deshalb nicht in 'elemente'. Gemessene Werte, falls gebraucht: Lauf 1 (nord) x 7349, y 1235, breite 185, tiefe 157; Lauf 2 (sued) x 7553, y 1418, breite 169, tiefe 167; Beleg g_treppe_o2.jpg (sketch x 560-720, y 2040-2200).",
   "LOGGIEN: Punktraster (Belag/Bepflanzung) und Kammschraffur (Gelaender bzw. geschlossenes Fassadenfeld) sind nirgends legendiert. Der Pflanzstreifen vor dem Empfang (Plan-x 1190..1830, Plan-y 33..197) enthaelt 2-4 Pflanzsymbole, deren Einzelmittelpunkte sich im Punktraster nicht sauber trennen lassen - deshalb dort keine pflanze-Elemente.",
   "ZWEITES SONDERZIMMER: die Legende auf Seite 1 nennt 2 Sonderzimmer. Auf Seite 2 ist nur das westliche auffindbar. Das zweite ist nicht identifiziert.",
   "VARIANTENKONFLIKT: Seite 1 desselben PDF moebliert DASSELBE Sonderzimmer West anders (2 Sessel + runder Beistelltisch, 1 Bett, 1 runder Tisch mit 2 Stuehlen). Diese Datei gibt ausschliesslich die Fassung von Seite 2 wieder.",
   "AUFZUG LIEGT BEWUSST AUSSERHALB DER BESTANDSKONTUR: Schacht y -254..-36, Vorbau y -354..42. Das ist kein Messfehler, sondern die Aussage der Skizze - der Aufzug ist ein Anbau VOR der Nordfassade. Wer gegen y >= -100 prueft, muss diese beiden Elemente ausnehmen.",
   "MASSTOLERANZ: Seite 2 hat weder Masskette noch Massstab noch Nordpfeil. Alle Werte stammen aus der oben dokumentierten Anpassung. Moebelmasse daher +/- 10-20 %, Mittelpunkte +/- 30 cm."
- ]
+ ],
+ "_nachtrag": "2026-09-18: 'pflanze' 1089/1208 entfernt (war die handschriftliche Raumnummer B5, nachgewiesen am 400-dpi-Rendering der Seite 2); Treppenlaeufe und Aufzug/Vorbau auf die GEMESSENEN Werte der Seite 1 gesetzt. Seite 1 ist fuer diese vier Stuecke die bessere Quelle als Seite 2, weil sie masstaeblich getuscht ist - fuer alle uebrigen Stuecke gilt unveraendert Seite 2 (siehe _zweck und _luecken[10])."
 }
