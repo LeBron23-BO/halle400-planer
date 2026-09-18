@@ -18,6 +18,10 @@
 //   --ohne-saeulen       laesst die Neun-Saeulen-Tafel und ihre Schalter WEG
 //                        (Vorgabe: Tafel bleibt — die Buero-Datei aendert sich nicht)
 //   --nur-ansicht        die Fassung fuer die Bank (Werkstatt ENTFERNT, kein Schloss)
+//   --nur-modell         die Fassung fuer die Bank OHNE BEDIENUNG: schliesst
+//                        --nur-ansicht ein und schneidet zusaetzlich JEDE Leiste,
+//                        jeden Umschalter und jedes Menue heraus. Was bleibt, ist
+//                        das raeumliche Modell (drehen, zoomen) und der Titelblock.
 //   --ohne-siegel        Bau ohne Unterschrift (die Datei sagt es dann selbst)
 //
 // WAS SICH GEGENUEBER DER BANK-ANSICHT AENDERT
@@ -137,7 +141,18 @@ const BAU_STEMPEL = new Date().toISOString().slice(0, 16).replace('T', ' ')
    FEHLT das Siegel, wird NICHT still weitergebaut: eine Datei, die aussieht wie
    die gesiegelte und keine ist, waere schlimmer als gar keine — sie lehrt den
    Leser, auf ein Zeichen zu vertrauen, das mal da ist und mal nicht. */
-const NUR_ANSICHT = process.argv.includes('--nur-ansicht')
+/* ── DIE FASSUNG OHNE BEDIENUNG (--nur-modell) ────────────────────────
+   Betreiber-Auftrag, woertlich: „nur das 3d model … nichts anderes zum klicken
+   und zu sehen" und „es darf nicht auf alle bezeichnungen geklickt werden
+   koennen denn diese bezeichnungen sind nicht gewuenscht".
+
+   --nur-modell ist eine ZWEITE Stufe auf --nur-ansicht, kein zweites Verfahren:
+   derselbe mechanische Schnitt (schneideBlock + Gegenprobe), nur eine laengere
+   Liste. Es SETZT --nur-ansicht darum voraus und schaltet es selbst ein — eine
+   Fassung, die die Leisten schneidet und die Werkstatt stehen liesse, waere
+   genau die halbe Datei, vor der der Schnitt unten warnt. */
+const NUR_MODELL = process.argv.includes('--nur-modell')
+const NUR_ANSICHT = NUR_MODELL || process.argv.includes('--nur-ansicht')
 const OHNE_SIEGEL = process.argv.includes('--ohne-siegel')
 
 /* ── DIE NAMENSSCHICHT UND DIE SAEULEN-TAFEL ──────────────────────
@@ -190,7 +205,7 @@ if (OHNE_SAEULEN && NAMEN_START === 'saeulen') {
   process.exit(1)
 }
 if (NUR_ANSICHT && !process.argv.includes('--ziel')) {
-  console.error('Abbruch: --nur-ansicht ohne --ziel wuerde die Werkstatt-Datei ueberschreiben.')
+  console.error(`Abbruch: ${NUR_MODELL ? '--nur-modell' : '--nur-ansicht'} ohne --ziel wuerde die Werkstatt-Datei ueberschreiben.`)
   console.error('  Gemessen (Gegner-Fund M1): der Speicherschluessel haengt am Pfad — ein liegen')
   console.error('  gebliebenes `bearbeiten:1` derselben Stelle macht die Ansicht wieder scharf.')
   console.error('  node tools/baue-planer-datei.mjs --nur-ansicht --ziel "<pfad>/Halle400-fuer-die-Bank.html"')
@@ -817,7 +832,23 @@ let html = `<!DOCTYPE html>
     .kopf .gesetzt{color:#A33A2A}
     .nurDruck{display:block}
   }
-</style>
+${!NUR_MODELL ? '' : `
+  /* ── NUR DAS MODELL (--nur-modell) ─────────────────────────────────
+     Zwei Zeilen Ausgleich fuer zwei Schnitte, beide am Standbild gemessen:
+
+     (1) \`top:52px\` liess Platz fuer die Kopfleiste. Die gibt es hier nicht
+         mehr; der Abstand waere jetzt eine Luecke ohne Grund.
+     (2) Die Siegel-Aussage stand bisher nur auf dem PAPIER, wo der Blattkopf
+         ueber die volle Breite laeuft. Auf dem Bildschirm brach sie in
+         46 Zeichen Breite auf SECHS Zeilen um und machte aus dem Titelblock
+         einen Textblock — das Gegenteil von „sparsam". Etwas mehr Breite und
+         ein Absatz davor: derselbe Satz, drei Zeilen, ein eigener Gedanke. */
+  .kopf{top:18px;max-width:min(66ch,74vw)}
+  .kopf .siegelDruck{margin-top:8px}
+  /* Aus demselben Grund: „ZIEHEN DREHT · RAD ZOOMT · ZWEI FINGER / ZOOMEN"
+     brach die einzige Bedienanleitung dieser Datei mitten im Satz um. */
+  .hinweis{max-width:min(62ch,74vw)}
+`}</style>
 </head>
 <body>
 
@@ -840,7 +871,12 @@ let html = `<!DOCTYPE html>
     <!-- Das Siegel auf dem PAPIER. Es steht bewusst als Satz da und nicht als
          Haken: einen Haken kann jeder hinmalen, einen Namen mit Datum prüft
          man nach. -->
-    <div class="sub nurDruck siegelDruck" id="siegelDruck"></div>
+    <!-- In --nur-modell OHNE \`nurDruck\`: dort ist die Siegel-Marke der Kopfleiste
+         weggeschnitten, und ein Blatt ohne jede Herkunftsangabe laesst den
+         Bankmitarbeiter nicht wissen, was er ansieht und von wem. Als SATZ im
+         Blattkopf ist das Siegel reiner Text und kein Knopf — genau das, was in
+         dieser Fassung ueberhaupt noch dastehen darf. -->
+    <div class="sub ${NUR_MODELL ? '' : 'nurDruck '}siegelDruck" id="siegelDruck"></div>
     <div class="gesetzt" id="gesetztZaehler" hidden></div>
     <!-- M2: was der Nutzer an den WÄNDEN verändert hat. Bis hierher sagte das
          Blatt „Der Grundriss ist gemessen", auch nachdem eine gemessene Wand
@@ -884,7 +920,10 @@ ${OHNE_SAEULEN ? '' : `  <aside class="tafel" id="tafel">
     <div class="tafel-fuss" id="tafelFuss"></div>
   </aside>
 
-`}  <div class="leiste" role="toolbar" aria-label="Ansicht steuern">
+`}  <!-- Eigene Kennung, damit --nur-modell die GANZE Leiste schneiden kann —
+       dieselbe Ueberlegung wie bei \`grpBearbeiten\` weiter unten. Ohne sie
+       bliebe ein leerer Rahmen ueber dem Blatt stehen. -->
+  <div class="leiste" id="ansichtsleiste" role="toolbar" aria-label="Ansicht steuern">
     <div class="grp">
       <span class="lbl">Blick</span>
       <button type="button" data-blick="0">Nord</button>
@@ -1107,7 +1146,11 @@ ${OHNE_SAEULEN ? '' : `    <div class="grp">
   <span class="fuss"><span class="lang">Rückgängig mit Strg+Z &middot; Abbrechen mit Esc</span><span class="kurz">Rückgängig geht auch danach noch.</span></span>
 </div>
 
-<div class="kopfleiste" role="toolbar" aria-label="Ansicht wählen">
+<!-- Eigene Kennung aus demselben Grund wie bei \`ansichtsleiste\`: --nur-modell
+     schneidet die ganze Kopfleiste (Umschalter, Bearbeiten, Siegel-Marke). Das
+     Siegel bleibt in dieser Fassung trotzdem sichtbar — es wandert als SATZ in
+     den Blattkopf (s. \`siegelDruck\`), wo es kein Bedienelement mehr ist. -->
+<div class="kopfleiste" id="kopfleiste" role="toolbar" aria-label="Ansicht wählen">
   <div class="grp">
     <button type="button" id="btnAnsichtPlan" aria-pressed="false">Grundriss</button>
     <button type="button" id="btnAnsichtAxo" aria-pressed="true">Axonometrie</button>
@@ -4814,12 +4857,52 @@ const WERKSTATT_BLOECKE = [
   'palette', 'werkzeuge', 'zurueckFrage', 'schlossFrage', 'rueckfrage',
   'grpBearbeiten', 'standleiste', 'ortFrage', 'ladeFrage', 'dateiWahl',
 ]
+
+/* ══════════════════════════════════════════════════════════════════════
+   DIE ZWEITE STUFE (--nur-modell) — die Fassung ohne jede Bedienung
+
+   Die reine Ansicht nimmt der Bankberaterin das WERKZEUG. Sie laesst ihr aber
+   weiter zwei Leisten, einen Ansichts-Umschalter, einen Namen-Schalter und ein
+   Menue, das auf jeden Klick antwortet. Der Betreiber will genau das nicht:
+   „nur das 3d model … nichts anderes zum klicken und zu sehen", und
+   ausdruecklich keine anklickbaren Bezeichnungen.
+
+   WAS BLEIBT: das raeumliche Modell, Drehen durch Ziehen, Zoomen mit Rad und
+   zwei Fingern — ein Modell, das man nicht drehen kann, ist ein Bild. Dazu der
+   Titelblock (Bauwerk, Masse, Siegel als SATZ) und die Meldungszeile, die eine
+   gebrochene Unterschrift meldet. Beides ist Text, kein Bedienelement.
+
+   WAS GEHT: Kopfleiste (Grundriss/Axonometrie, Bearbeiten, Siegel-Marke),
+   Ansichtsleiste (Blick, Namen, Saeulen), das Objekt-Menue und die beiden
+   Wunsch-Rueckfragen, der Arbeitshinweis und die drei Zustands-Zaehler im
+   Blattkopf — Letztere koennen in einer Datei ohne Bearbeitung nie etwas
+   anderes als leer sein.
+
+   DER GRUNDRISS-ZEICHNER BLEIBT IM DOKUMENT, und das ist eine bewusste,
+   gemessene Grenze: `new Floorplanner('grundriss-canvas', …)` haengt am Canvas,
+   und dieselbe 2D-Rechnung liefert die Raeume, aus denen die Axonometrie ihre
+   Szene baut (`grundriss.saveFloorplan()`). Ihn herauszuschneiden hiesse, das
+   Modell selbst herauszuschneiden. Erreichbar ist er nicht: `#plan` traegt
+   `.weg` (`visibility:hidden; pointer-events:none`, im Druck `display:none`),
+   und der einzige Weg dorthin war der Umschalter, den diese Stufe entfernt.
+
+   Die Namen sind hier KEINE Schnitt-Sache, sondern eine Bau-Sache: sie werden
+   auf das Canvas gemalt, nicht ins Dokument gehaengt. `--namen aus` heisst
+   darum, dass sie gar nicht erst entstehen — kein Etikett, keine Fuehrungslinie,
+   nichts, was ein Klick treffen koennte. Ohne die Namen-Knoepfe kann diese
+   Stellung auch nicht mehr umgeschaltet werden. */
+const MODELL_BLOECKE = [
+  'kopfleiste', 'ansichtsleiste', 'objektMenue', 'wunschFrage', 'wunschVorschau',
+  'arbeitshinweis', 'gesetztZaehler', 'grundrissZaehler', 'oeffnungZaehler',
+]
+const SCHNITT_BLOECKE = NUR_MODELL ? [...WERKSTATT_BLOECKE, ...MODELL_BLOECKE] : WERKSTATT_BLOECKE
+
 const kennungenVon = (t) => new Set([...t.matchAll(/id="([^"]+)"/g)].map((m) => m[1]))
 const ANSICHT_BERICHT = { bloecke: 0, kennungen: 0 }
 if (NUR_ANSICHT) {
   const vorher = kennungenVon(html)
   const fehlend = []
-  for (const id of WERKSTATT_BLOECKE) {
+  for (const id of SCHNITT_BLOECKE) {
     const r = schneideBlock(html, id)
     if (!r.gefunden) fehlend.push(id)
     html = r.text
@@ -4832,7 +4915,7 @@ if (NUR_ANSICHT) {
   }
   // Die Gegenprobe zum Schnitt: keine der Kennungen darf noch DA sein — auch
   // nicht als Zugriff im Skript, denn der liefe ins Leere.
-  const uebrig = WERKSTATT_BLOECKE.filter((id) => html.includes(`id="${id}"`))
+  const uebrig = SCHNITT_BLOECKE.filter((id) => html.includes(`id="${id}"`))
   if (uebrig.length) {
     console.error(`Abbruch: nach dem Schnitt stehen noch da: ${uebrig.join(', ')}`)
     process.exit(1)
@@ -4850,8 +4933,25 @@ if (NUR_ANSICHT) {
     process.exit(1)
   }
   html = html.replace(marke, JSON.stringify(geschnitten))
-  ANSICHT_BERICHT.bloecke = WERKSTATT_BLOECKE.length
+  ANSICHT_BERICHT.bloecke = SCHNITT_BLOECKE.length
   ANSICHT_BERICHT.kennungen = geschnitten.length
+}
+
+/* Die LETZTE Gegenprobe der zweiten Stufe: in der fertigen Datei darf kein
+   `<button>` mehr stehen. Sie ist absichtlich nicht auf die Schnittliste
+   gestuetzt, sondern auf das ERGEBNIS — wer morgen einen Knopf an eine Stelle
+   haengt, die auf keiner Liste steht, faellt hier auf, und nicht erst der
+   Bankberaterin. Dasselbe fuer `<input>`: ein Eingabefeld ist in einem Blatt
+   zum Ansehen ebenso wenig zu erklaeren. */
+if (NUR_MODELL) {
+  const knoepfe = (html.match(/<button[\s>]/g) || []).length
+  const felder = (html.match(/<input[\s>]/g) || []).length
+  if (knoepfe || felder) {
+    console.error(`Abbruch: --nur-modell, aber die Datei traegt noch ${knoepfe} Schaltflaeche(n) und ${felder} Eingabefeld(er).`)
+    console.error('  In dieser Fassung darf es NICHTS zum Anklicken geben. Steht ein neuer Knopf')
+    console.error('  in einem Block, der nicht auf MODELL_BLOECKE steht, gehoert er dort hinein.')
+    process.exit(1)
+  }
 }
 
 /* ── Letzte Pruefung vor dem Schreiben ────────────────────────────────
@@ -4894,6 +4994,6 @@ console.log(`  Axonometrie:  ${teilKb(axo)} KB (${AXO_MODULE.join(', ')})`)
 console.log(`  Plan:         ${(Buffer.byteLength(planRoh, 'utf8') / 1024).toFixed(0)} KB — ${Object.keys(plan.floorplan.corners).length} Ecken, ${plan.floorplan.walls.length} Waende, ${(plan.floorplan.ausstattung || []).length} Ausstattung, ${(plan.labels || []).length} Namen`)
 console.log(`  Hoehen aus:   src/three/ausstattung.ts (${Object.keys(HOEHEN.oberkante).length} Typen, gelesen statt abgeschrieben)`)
 console.log(`  Namen:        ${namen.size} Bezeichner geprueft, keine Kollision`)
-if (NUR_ANSICHT) console.log(`  Schnitt:      ${ANSICHT_BERICHT.bloecke} Werkstatt-Bloecke entfernt, ${ANSICHT_BERICHT.kennungen} Kennungen verschwunden (reine ANSICHT)`)
+if (NUR_ANSICHT) console.log(`  Schnitt:      ${ANSICHT_BERICHT.bloecke} ${NUR_MODELL ? 'Bedien-Bloecke' : 'Werkstatt-Bloecke'} entfernt, ${ANSICHT_BERICHT.kennungen} Kennungen verschwunden (${NUR_MODELL ? 'NUR MODELL — 0 Schaltflaechen, 0 Eingabefelder' : 'reine ANSICHT'})`)
 console.log(`  Plan-Abdruck: ${PLAN_ABDRUCK} (Speicher-Schluessel je Plan UND Ablageort)`)
 console.log(`  Bau-Stempel:  ${BAU_STEMPEL}`)
