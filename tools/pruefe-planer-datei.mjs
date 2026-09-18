@@ -57,8 +57,13 @@ if (!fs.existsSync(DATEI)) {
    gebaut, faellt genau das jetzt auf. Es ist der Fehler, der heute passiert
    ist — das Siegel hatte den Neubau blockiert und die Datei trug wochenlang
    einen aelteren Plan. */
+/* Der Massstab folgt der GEPRUEFTEN Datei, nicht dem Buero-Plan. Mit --datei
+   Hotel400-Modell.html und einem fest auf halle400.json verdrahteten SOLL
+   meldete dieser Pruefer neun Fehler, von denen keiner einer war: er verglich
+   505 Ecken gegen 76. Ein Pruefer, der den falschen Massstab anlegt, macht die
+   richtige Datei rot und waere beim naechsten Mal ignoriert worden. */
 const QUELLPLAN = JSON.parse(
-  fs.readFileSync(path.join(WURZEL, 'app/public/plaene/halle400.json'), 'utf8')
+  fs.readFileSync(path.join(WURZEL, 'app/public/plaene', `${arg('--plan', 'halle400')}.json`), 'utf8')
 )
 const SOLL = {
   ecken: Object.keys(QUELLPLAN.floorplan.corners).length,

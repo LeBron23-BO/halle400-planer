@@ -931,7 +931,7 @@ const PLAN = JSON.parse(PLAN_TEXT);
 /* Die Unterschrift und der oeffentliche Schluessel, mit dem man sie nachprueft.
    Aus einem oeffentlichen Schluessel laesst sich keine gueltige Unterschrift
    herstellen — er darf darum offen in der Datei stehen. */
-const SIEGEL = null;
+const SIEGEL = {"inhaber":"Dania — Halle 400, Businessplan","signiertAm":"2026-09-18T10:11:41.919Z","verfahren":"ECDSA P-256 / SHA-256","signatur":"duW/rYkHbb52oXpxu56guvdkTJ88WvgSUhTIWxoRPeF72Ax6otUtfv0khHWzoiEqODFJq1mnB9JHQAufqfUARg=="};
 const SIEGEL_SCHLUESSEL = {"kty":"EC","crv":"P-256","x":"I8mYg4UB5k2NfcuQySim0Qr2EbrUF_41TnKxMjdVMok","y":"5OSQph8nmstr_xPnZF1nX7gqf5RY4Di6-Oz0ubtwTPo"};
 
 /* Das Schloss vor der Werkstatt: ein Paket, dessen Klartext bekannt ist und das
@@ -969,7 +969,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "0cbeda2a79bf";
-const BAU_STEMPEL = "2026-09-18 03:19";
+const BAU_STEMPEL = "2026-09-18 10:13";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
