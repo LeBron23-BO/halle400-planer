@@ -183,6 +183,43 @@ export type OeffnungsArt =
   | 'durchgang' // nur die beiden Laibungen — kein Blatt, keine Schwelle
 
 /**
+ * Wie sicher ist eine Öffnung ERKANNT worden? (H1)
+ *
+ * NICHT dasselbe wie `AusstattungQuelle`. `quelle` beantwortet „stammt das aus
+ * einem Aufmass oder hat es jemand hingestellt?"; dieses Feld beantwortet
+ * „WIE GUT war das Aufmass an DIESER Stelle lesbar?". Beide Fragen sind
+ * unabhängig: eine Tür kann aus der Zeichnung GEMESSEN und trotzdem nur zu
+ * erahnen sein.
+ *
+ * Gebraucht wird es, seit die Öffnungen aus einer HANDSKIZZE kommen
+ * (Hotel-PDF Seite 2, Zimmergeschoss). Dort ist die Wandlinie an keiner Tür
+ * unterbrochen — eine Öffnung ist allein am Symbol (Blatt + Bogen) zu erkennen,
+ * und das ist mal kräftig gezeichnet und mal ein Kratzer. Eine Tür, die nur zu
+ * 60 % eine ist, als gleichwertig neben eine eindeutige zu stellen, wäre genau
+ * die Scheingenauigkeit, die die Projekt-DNA (Punkt 3) verbietet.
+ *
+ * Fehlt das Feld, gilt `'sicher'` — und zwar bewusst: alle Öffnungen, die ein
+ * NUTZER setzt, sind eindeutig (er weiss ja, dass er sie gesetzt hat), und das
+ * sind alle Öffnungen, die es vor H1 geben konnte.
+ */
+export type Erkennungssicherheit =
+  | 'sicher' // das Symbol ist vollständig und eindeutig
+  | 'mittel' // Symbol erkennbar, aber eine Angabe daran ist mehrdeutig
+  | 'schwach' // nur ein Indiz — plausibel, nicht belegt
+
+/**
+ * Dieselben Stufen als Liste — zur PRÜFUNG einer Angabe aus einer Datei.
+ * Eine Typ-Angabe in Typescript ist beim Laden nicht da; ohne diese Liste
+ * landete ein Tippfehler (`"hoch"`) ungeprüft im Modell und der Zeichner
+ * fiele lautlos auf seinen `default`-Zweig zurück.
+ */
+export const SICHERHEITS_STUFEN: ReadonlyArray<Erkennungssicherheit> = [
+  'sicher',
+  'mittel',
+  'schwach'
+]
+
+/**
  * EINE Öffnung in EINER Wand.
  *
  * DREI FESTLEGUNGEN, die man kennen muss, bevor man hier etwas ändert:
@@ -201,9 +238,14 @@ export type OeffnungsArt =
  *    weil sich daran beide Laibungen symmetrisch aufhängen und ein Wechsel der
  *    Breite die Öffnung nicht wandern lässt.
  *
- * 3. KEINE `hoehe`. Ein Grundriss enthält keine (Projekt-DNA Punkt 4). Die
- *    Axonometrie schneidet die Wände auf 1,16 m und sagt das in ihrer Legende;
- *    eine Türhöhe von 2,01 m wäre erfunden und sähe gemessen aus.
+ * 3. Die `hoehe` ist eine ANNAHME und trägt ihre Herkunft (H1). Bis dahin stand
+ *    hier „KEINE `hoehe`" — die Begründung (ein Grundriss enthält keine, ein
+ *    erfundenes Mass sähe gemessen aus) ist unverändert richtig, der SCHLUSS
+ *    daraus war zu weit. Projekt-DNA Punkt 4 verlangt nicht, den Wert
+ *    wegzulassen, sondern ihn als externen Wert zu kennzeichnen — genau wie
+ *    `wallHeight = 300 cm`. Das Feld ist darum optional, sein Standard steht
+ *    an EINER Stelle (`OEFFNUNGS_HOEHE_CM`), und die Axonometrie sagt in ihrer
+ *    Legende weiterhin, dass sie die Wände auf 1,16 m schneidet.
  */
 export type Oeffnung = {
   /** Dauerhafte Kennung — Pflichtfeld, aus demselben Grund wie bei
@@ -232,6 +274,39 @@ export type Oeffnung = {
    * Brüstungshöhe steht in keinem Grundriss.
    */
   bruestung?: number
+  /**
+   * OBERKANTE der Öffnung über dem Fertigfussboden in cm (H1) — bei einer Tür
+   * die lichte Höhe, bei einem Fenster die Sturzhöhe. Zusammen mit `bruestung`
+   * (Unterkante) beschreibt sie die ganze Öffnung; ein Wert, zwei Bedeutungen
+   * wären zwei Felder gewesen, und das zweite hiesse dann bei der Tür „0".
+   *
+   * IMMER EINE GESETZTE ANNAHME, NIE EIN MESSWERT — dieselbe Ehrlichkeit wie
+   * bei `wallHeight = 300 cm` (Projekt-DNA Punkt 4): ein Grundriss ist ein
+   * waagerechter Schnitt und enthält keine einzige Höhe. Bis H1 gab es dieses
+   * Feld deshalb gar nicht. Was sich geändert hat, ist NICHT die Faktenlage,
+   * sondern der Umgang damit: Punkt 4 verlangt nicht, den Wert wegzulassen,
+   * sondern ihn als externen Wert ZU KENNZEICHNEN. Fehlt er, gilt
+   * `OEFFNUNGS_HOEHE_CM` — dort steht auch, woher die Zahl kommt.
+   *
+   * WIRKUNG: In der Axonometrie bleibt über einer Öffnung, deren Oberkante
+   * UNTER der Schnitthöhe liegt, ein STURZ stehen (`axo-szene.js`). Bei einer
+   * 2,01-m-Tür und einem Schnitt bei 1,16 m ist das nie der Fall — die Tür ist
+   * dort eine durchgehende Lücke, und das ist richtig so. Das Feld ist trotzdem
+   * kein totes Gewicht: für eine Durchreiche, eine Brüstungsöffnung oder einen
+   * höheren Schnitt trägt es die einzige Angabe, die den Unterschied macht.
+   *
+   * PFLICHTFELD im Modell, optional in der DATEI — dieselbe Zweiteilung wie bei
+   * `quelle` und `anker`: in einer Datei darf die Angabe fehlen, im Modell nie.
+   * Sonst müsste jeder Leser den Standard selbst kennen, und drei Leser sind
+   * drei Annahmen.
+   */
+  hoehe: number
+  /**
+   * Wie sicher ist diese Öffnung ERKANNT? Siehe `Erkennungssicherheit`.
+   * Pflichtfeld im Modell, optional in der Datei (dort heisst Fehlen
+   * `'sicher'`).
+   */
+  sicherheit: Erkennungssicherheit
   /** Aufmaß oder Annahme? Dieselbe Bedeutung wie bei `AusstattungQuelle`. */
   quelle: AusstattungQuelle
   /**
@@ -256,13 +331,37 @@ export type Oeffnung = {
   verwaist?: boolean
 }
 
-/** So darf eine Öffnung in einer DATEI liegen: Kennung, Herkunft und Anker
- *  dürfen fehlen und werden beim Laden ergänzt (siehe `uebernehmeOeffnungen`). */
-export type GespeicherteOeffnung = Omit<Oeffnung, 'id' | 'quelle' | 'anker'> & {
+/** So darf eine Öffnung in einer DATEI liegen: Kennung, Herkunft, Anker, Höhe
+ *  und Erkennungssicherheit dürfen fehlen und werden beim Laden ergänzt
+ *  (siehe `uebernehmeOeffnungen`). */
+export type GespeicherteOeffnung = Omit<
+  Oeffnung,
+  'id' | 'quelle' | 'anker' | 'hoehe' | 'sicherheit'
+> & {
   id?: string
   quelle?: AusstattungQuelle
   anker?: { x: number; y: number }
+  hoehe?: number
+  sicherheit?: Erkennungssicherheit
 }
+
+/**
+ * Oberkante einer Öffnung über dem Fertigfussboden in cm, wenn niemand etwas
+ * anderes sagt (H1).
+ *
+ * HERKUNFT — und sie ist ausdrücklich KEIN Messwert: 201 cm ist die verbreitete
+ * lichte Höhe einer Türöffnung im deutschen Wohn- und Bürobau (Türblatt 198,5 cm
+ * plus Luft unter dem Sturz; die Rohbau-Reihe lautet 2,125 / 2,25 / 2,50 m).
+ * Eine DIN-Nummer steht hier bewusst NICHT — dieselbe Regel wie bei den
+ * Standardbreiten oben und bei Matte, Gerät und Liege in W3: eine erfundene
+ * Norm sähe belegt aus und wäre schlimmer als eine offene Annahme.
+ *
+ * WARUM ÜBERHAUPT EINE ZAHL, wo ein Grundriss keine enthält: weil eine Öffnung
+ * ohne Oberkante in jeder räumlichen Ansicht eine bis zur Decke reichende Lücke
+ * ist — auch das ist eine Höhenaussage, nur eine unausgesprochene und falsche.
+ * Die Annahme zu benennen ist ehrlicher, als sie zu verschweigen.
+ */
+export const OEFFNUNGS_HOEHE_CM = 201
 
 /**
  * Was sich einsetzen lässt, samt lichter Weite in cm (W4).
@@ -285,14 +384,19 @@ export const OEFFNUNGS_VORLAGEN: ReadonlyArray<{
   art: OeffnungsArt
   breite: number
   bruestung?: number
+  hoehe: number
 }> = [
-  { art: 'tuer', breite: 87.5 },
-  { art: 'doppeltuer', breite: 175 },
+  { art: 'tuer', breite: 87.5, hoehe: OEFFNUNGS_HOEHE_CM },
+  { art: 'doppeltuer', breite: 175, hoehe: OEFFNUNGS_HOEHE_CM },
   // 90 cm Brüstung ist die verbreitete Höhe eines Bürofensters — gesetzte
   // Annahme. In der Axonometrie bleibt darunter ein Brüstungsblock stehen,
   // sonst sähe ein Fenster aus wie ein Durchgang.
-  { art: 'fenster', breite: 125, bruestung: 90 },
-  { art: 'durchgang', breite: 100 }
+  //
+  // Der Sturz liegt bei einem Fenster üblicherweise auf derselben Höhe wie der
+  // Türsturz, damit Türen und Fenster eines Raumes oben eine Linie bilden —
+  // ebenfalls eine gesetzte Annahme, aber keine beliebige.
+  { art: 'fenster', breite: 125, bruestung: 90, hoehe: OEFFNUNGS_HOEHE_CM },
+  { art: 'durchgang', breite: 100, hoehe: OEFFNUNGS_HOEHE_CM }
 ]
 
 /**
@@ -407,6 +511,42 @@ function kennungAusAusstattung(el: GespeichertesAusstattungElement): string {
  */
 function kennungAusOeffnung(o: { wandId: string; lage: number; art: string }): string {
   return `o-${o.art}-${o.wandId.slice(0, 8)}-${Math.round(o.lage)}`
+}
+
+/**
+ * Die beiden Angaben, die eine DATEI weglassen darf, im MODELL aber nie fehlen
+ * dürfen (H1) — an EINER Stelle ergänzt.
+ *
+ * Genau EINE Stelle, weil es zwei Wege ins Modell gibt: über eine Datei
+ * (`uebernehmeOeffnungen`) und über eine Handlung (`fuegeOeffnungHinzu`). Jeder
+ * Weg mit eigenem `?? 201` wäre zweimal dieselbe Annahme — und beim nächsten
+ * Ändern einmal zu wenig. Dieselbe Begründung, aus der `frischeAnker` die
+ * einzige Stelle ist, an der ein Anker entsteht.
+ *
+ * Die Prüfung ist nicht Zierde: eine Zahl kommt hier aus einer Datei, und eine
+ * Datei kann `null`, `"201"` oder `NaN` enthalten (K2, die Härtung aus W6). Ein
+ * `NaN` als Höhe wäre in der Axonometrie ein Vieleck ohne Ausdehnung — sichtbar
+ * als nichts, meldend als nichts.
+ */
+function ergaenzeAnnahmen(o: {
+  hoehe?: number
+  sicherheit?: Erkennungssicherheit
+}): { hoehe: number; sicherheit: Erkennungssicherheit } {
+  return {
+    // Obergrenze 10 000 cm = 100 m. Sie fängt nicht den Tippfehler (2100 statt
+    // 210 ist baulich unsinnig und rechnerisch harmlos), sondern den Unfall:
+    // `1e12` liess das Laden in W6 nach 68 Sekunden nicht mehr antworten. Die
+    // Form-Prüfung der Doppelklick-Datei (K2) deckt `hoehe` bewusst NICHT ab —
+    // sonst wäre jede Plandatei aus der Zeit vor H1 plötzlich unbrauchbar, nur
+    // weil ihr ein Feld fehlt, das es damals nicht gab.
+    hoehe:
+      typeof o.hoehe === 'number' && Number.isFinite(o.hoehe) && o.hoehe > 0 && o.hoehe <= 10000
+        ? o.hoehe
+        : OEFFNUNGS_HOEHE_CM,
+    sicherheit: SICHERHEITS_STUFEN.includes(o.sicherheit as Erkennungssicherheit)
+      ? (o.sicherheit as Erkennungssicherheit)
+      : 'sicher'
+  }
 }
 
 /** Kennung für eine Wand ohne eigene — aus dem Eckenpaar, das sie beim Laden
@@ -1303,6 +1443,7 @@ export class Floorplan {
       ...neu,
       id: eindeutigeKennung(neu.id || kennungAusOeffnung(neu), vergeben),
       quelle: 'gesetzt',
+      ...ergaenzeAnnahmen(neu),
       anker: { x: 0, y: 0 }
     }
     this.oeffnungen.push(o)
@@ -1375,6 +1516,7 @@ export class Floorplan {
         // nicht 'gemessen': eine Öffnung kann es vor W4 gar nicht gegeben
         // haben, und der gemessene Plan trägt keine.
         quelle: o.quelle ?? 'gesetzt',
+        ...ergaenzeAnnahmen(o),
         anker: o.anker ? { ...o.anker } : { x: 0, y: 0 }
       }
       // Fehlt der Anker, wird er aus (Wand, Lage) abgeleitet — dafür ist er da.

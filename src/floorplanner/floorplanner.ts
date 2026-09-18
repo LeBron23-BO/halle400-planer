@@ -1836,6 +1836,14 @@ export class Floorplanner {
   public oeffnungsBruestung: number | undefined = OEFFNUNGS_VORLAGEN[0].bruestung
 
   /**
+   * Oberkante der nächsten Öffnung in cm (H1) — eine GESETZTE Annahme aus
+   * `OEFFNUNGS_VORLAGEN`, kein Mass aus der PDF. Sie liegt hier und nicht in
+   * der Oberfläche, aus demselben Grund wie Breite und Brüstung: eine zweite
+   * Masstabelle in der Leiste liefe auseinander, sobald jemand nur eine anfasst.
+   */
+  public oeffnungsHoehe: number = OEFFNUNGS_VORLAGEN[0].hoehe
+
+  /**
    * Die GEISTER-Öffnung: wo eine Öffnung entstünde, wenn man jetzt klickte.
    * `null` heisst: hier ist keine Wand, die eine tragen kann.
    *
@@ -1911,6 +1919,7 @@ export class Floorplanner {
     this.oeffnungsArt = vorlage.art
     this.oeffnungsBreite = vorlage.breite
     this.oeffnungsBruestung = vorlage.bruestung
+    this.oeffnungsHoehe = vorlage.hoehe
     this.geistNeuBestimmen()
     this.view.draw()
     this.oeffnungsCallbacks.forEach((cb) => cb(art))
@@ -2047,7 +2056,12 @@ export class Floorplanner {
       art: geist.art,
       seite: geist.seite,
       anschlag: geist.anschlag,
-      bruestung: geist.art === 'fenster' ? this.oeffnungsBruestung : undefined
+      bruestung: geist.art === 'fenster' ? this.oeffnungsBruestung : undefined,
+      hoehe: this.oeffnungsHoehe,
+      // Was der Nutzer selbst setzt, ist nie ein Erkennungs-Zweifel — er hat es
+      // ja gerade gesehen und getan. `schwach` kann nur aus einer Auswertung
+      // kommen (H1), nicht aus einem Klick.
+      sicherheit: 'sicher'
     })
     this.view.draw()
     return o

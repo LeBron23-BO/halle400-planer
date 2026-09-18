@@ -4577,6 +4577,11 @@ window.__planerDatei = {
       return {
         id: o.id, wandId: o.wandId, lage: o.lage, breite: o.breite, art: o.art,
         seite: o.seite, anschlag: o.anschlag, bruestung: o.bruestung,
+        /* H1 — MIT herausgeben, nicht nur fuehren. Dieses Verzeichnis ist eine
+           WEISSE LISTE: was hier fehlt, ist fuer jedes Gate unsichtbar, auch
+           wenn das Modell es sauber traegt. Genau so faellt eine Angabe durch
+           alle Pruefungen, ohne dass eine rot wird. */
+        hoehe: o.hoehe, sicherheit: o.sicherheit,
         quelle: o.quelle, verwaist: !!o.verwaist,
         anker: { x: o.anker.x, y: o.anker.y },
         wx: g ? g.mx : null, wy: g ? g.my : null,

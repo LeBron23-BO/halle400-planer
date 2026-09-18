@@ -1,4 +1,10 @@
-import { Floorplan, AusstattungElement, AusstattungTyp, Oeffnung } from '../model/floorplan'
+import {
+  Floorplan,
+  AusstattungElement,
+  AusstattungTyp,
+  Oeffnung,
+  OEFFNUNGS_HOEHE_CM
+} from '../model/floorplan'
 import { Wall } from '../model/wall'
 import { Corner } from '../model/corner'
 import { Room } from '../model/room'
@@ -138,6 +144,31 @@ export const AUSSTATTUNG_UMRISS_AB = 0.03
    genau der Fehler, den die Ausstattung in A1 schon einmal gemacht hat. Grün
    (g−r = 40, g−b = 16) ist von beiden eindeutig verschieden. */
 const oeffnungLinie = '#3f6757'
+/* ── Wie sicher ist die Öffnung ERKANNT? (H1) ────────────────────────────
+   DERSELBE Grünton, nur blasser — und das ist kein Geschmack, sondern die
+   ehrlichste verfügbare Abbildung: je schwächer das Symbol in der Handskizze
+   gezeichnet war, desto schwächer steht es hier. Die Strichstärke des Belegs
+   wird zur Strichstärke des Zeichens.
+
+   WARUM KEINE SIGNALFARBE: Amber gehört dem Geist („was entstünde"), Rot dem
+   Gesperrten. Eine dritte Bedeutung in eine dieser beiden Farben zu legen
+   machte aus einer Auskunft eine Warnung — eine mittel erkannte Tür ist aber
+   kein Fehler, sondern eine Angabe mit Vorbehalt.
+
+   WARUM KEIN GESTRICHELT: das ist seit W2 mit `quelle: 'gesetzt'` belegt.
+   Herkunft und Lesbarkeit sind zwei unabhängige Fragen (siehe
+   `Erkennungssicherheit`); sie auf EIN Merkmal zu legen hiesse, eine von
+   beiden nicht mehr beantworten zu können.
+
+   MESSBAR bleiben alle drei: g−r ist 40 / 35 / 29 — dieselbe Prüfung, die
+   `oeffnungLinie` von Wandgrau (r=g=b) und Ausstattung (blaustichig) trennt,
+   trennt auch diese Stufen von beiden. Untereinander unterscheiden sie sich in
+   der HELLIGKEIT (Grünkanal 103 / 144 / 186). */
+const oeffnungSicherheitsFarbe: Record<string, string> = {
+  sicher: oeffnungLinie,
+  mittel: '#6d9084',
+  schwach: '#9dbab0'
+}
 /** Der Geist (was entstünde, wenn man klickte) — Amber, die Akzentfarbe. */
 const oeffnungGeist = '#c8703a'
 /** Der Geist an einer Stelle, an der nichts entstehen kann. */
@@ -927,7 +958,13 @@ export class FloorplannerView {
       if (o.verwaist) {
         return
       }
-      this.zeichneOeffnung(o, oeffnungLinie, o.quelle === 'gesetzt')
+      // Die Farbe sagt, wie sicher die Öffnung ERKANNT ist; der Strich sagt,
+      // ob sie gemessen oder gesetzt ist. Zwei Fragen, zwei Merkmale.
+      this.zeichneOeffnung(
+        o,
+        oeffnungSicherheitsFarbe[o.sicherheit] ?? oeffnungLinie,
+        o.quelle === 'gesetzt'
+      )
       if (o.id === kandidat) {
         this.markiereOeffnung(o, true)
       } else if (o.id === this.viewmodel.activeOeffnung) {
@@ -949,6 +986,13 @@ export class FloorplannerView {
           seite: geist.seite,
           anschlag: geist.anschlag,
           quelle: 'gesetzt',
+          // Der Geist zeigt, was ENTSTÜNDE. Was durch einen Klick entsteht,
+          // ist immer eindeutig — der Nutzer setzt es ja selbst. Die
+          // Standardhöhe ebenso: sie ist die Annahme, mit der `oeffnungSetzen`
+          // gleich wirklich baut, und ein Geist, der etwas anderes zeigt als
+          // das Entstehende, wäre schlimmer als gar keiner.
+          hoehe: OEFFNUNGS_HOEHE_CM,
+          sicherheit: 'sicher',
           anker: { x: 0, y: 0 }
         },
         geist.passt ? oeffnungGeist : oeffnungGeistSperrt,

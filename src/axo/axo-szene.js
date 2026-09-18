@@ -66,9 +66,16 @@ function wandStuecke(a, b, dicke, y1, material, normale, oeffnungen = [], wandId
   const pz = (ex * dicke) / 2
   const stuecke = []
 
-  /** Ein Wandstueck von t0 bis t1 (Meter entlang der Wand), von y0 bis yTop. */
-  const legeAn = (t0, t1, yTop) => {
-    if (t1 - t0 < 1e-6 || yTop <= 0) return
+  /** Ein Wandstueck von t0 bis t1 (Meter entlang der Wand), von yFuss bis yTop.
+   *
+   *  `yFuss` ist seit H1 kein fester Nullpunkt mehr: ueber einer Tuer steht ein
+   *  STURZ, und der faengt nicht am Boden an. Der Koerper schwebt dann — was in
+   *  dieser Ansicht kein Sonderfall ist, sondern genau das, wofuer sie gebaut
+   *  wurde: `axo-zeichnen.js` zieht jedes Vieleck von `y0` nach `y1` aus, und
+   *  `axo-treffer.js` prueft den Sehstrahl gegen dieselben zwei Zahlen. Keine
+   *  der beiden musste dafuer angefasst werden. */
+  const legeAn = (t0, t1, yTop, yFuss = 0) => {
+    if (t1 - t0 < 1e-6 || yTop <= yFuss) return
     const p0 = { x: a.x + ex * t0, z: a.z + ez * t0 }
     const p1 = { x: a.x + ex * t1, z: a.z + ez * t1 }
     stuecke.push({
@@ -78,7 +85,7 @@ function wandStuecke(a, b, dicke, y1, material, normale, oeffnungen = [], wandId
         { x: p1.x - px, z: p1.z - pz },
         { x: p0.x - px, z: p0.z - pz }
       ],
-      y0: 0,
+      y0: yFuss,
       y1: yTop,
       material,
       normale,
@@ -94,12 +101,12 @@ function wandStuecke(a, b, dicke, y1, material, normale, oeffnungen = [], wandId
   }
 
   /** Ein Stueck in Kacheln von hoechstens `DARSTELLUNG.kachel` zerlegen. */
-  const kacheln = (t0, t1, yTop) => {
+  const kacheln = (t0, t1, yTop, yFuss = 0) => {
     const l = t1 - t0
     if (l < 1e-6) return
     const n = Math.max(1, Math.ceil(l / DARSTELLUNG.kachel))
     for (let i = 0; i < n; i++) {
-      legeAn(t0 + (l * i) / n, t0 + (l * (i + 1)) / n, yTop)
+      legeAn(t0 + (l * i) / n, t0 + (l * (i + 1)) / n, yTop, yFuss)
     }
   }
 
@@ -116,7 +123,15 @@ function wandStuecke(a, b, dicke, y1, material, normale, oeffnungen = [], wandId
     .map((o) => ({
       von: Math.max(0, Math.min(laenge, o.von)),
       bis: Math.max(0, Math.min(laenge, o.bis)),
-      bruestung: o.bruestung || 0
+      bruestung: o.bruestung || 0,
+      /* Oberkante der Oeffnung (H1). NULL heisst hier ausdruecklich „keine
+         Hoehenaussage" und NICHT „null hoch": dann bleibt die Luecke
+         durchgehend, also genau das Verhalten von W4. Eine Ersatzzahl stuende
+         hier falsch — der Standard gehoert ins Modell
+         (`OEFFNUNGS_HOEHE_CM`), und eine zweite Fassung davon in der
+         Axonometrie waere eine zweite Annahme, die beim naechsten Aendern
+         zurueckbliebe. */
+      sturz: o.sturz > 0 ? o.sturz : 0
     }))
     .filter((o) => o.bis - o.von > 1e-6)
     .sort((p, q) => p.von - q.von)
@@ -129,6 +144,15 @@ function wandStuecke(a, b, dicke, y1, material, normale, oeffnungen = [], wandId
     // begrenzt: die Ansicht schneidet die Waende ohnehin auf 1,16 m, ein
     // hoeherer Block waere eine Hoehenaussage, die dieses Bild nicht trifft.
     if (l.bruestung > 0) kacheln(l.von, l.bis, Math.min(l.bruestung, y1))
+    /* DER STURZ (H1): ueber der Oeffnung steht Mauerwerk — von ihrer Oberkante
+       bis zur Schnitthoehe. Bei einer 2,01-m-Tuer und einem Schnitt bei 1,16 m
+       ist diese Spanne leer, und dann entsteht hier NICHTS: die Tuer reisst die
+       Wandscheibe auf voller Hoehe auf, unveraendert zu W4. Sichtbar wird der
+       Sturz nur, wo er wirklich einer ist — bei einer Durchreiche, einer
+       niedrigen Oeffnung oder einem hoeher gelegten Schnitt. Genau darin liegt
+       der Unterschied zu einem geratenen Wert: er behauptet nie etwas, er
+       zeichnet nur, was dasteht. */
+    if (l.sturz > 0 && l.sturz < y1) kacheln(l.von, l.bis, y1, l.sturz)
     cursor = Math.max(cursor, l.bis)
   }
   if (cursor < laenge) kacheln(cursor, laenge, y1)
@@ -303,7 +327,12 @@ export function baueSzene(plan, opt = {}) {
     oeffnungenJeWand.get(o.wandId).push({
       von: (o.lage - o.breite / 2) * CM,
       bis: (o.lage + o.breite / 2) * CM,
-      bruestung: o.art === 'fenster' && o.bruestung ? o.bruestung * CM : 0
+      bruestung: o.art === 'fenster' && o.bruestung ? o.bruestung * CM : 0,
+      /* Oberkante (H1). Anders als bei der Bruestung gilt sie fuer JEDE Art:
+         eine Tuer hat einen Sturz, ein Durchgang auch. Fehlt die Angabe — eine
+         Plandatei aus der Zeit vor H1, oder eine, die nie durch das Modell
+         gelaufen ist —, bleibt sie 0 und die Luecke geht durch. */
+      sturz: Number.isFinite(o.hoehe) && o.hoehe > 0 ? o.hoehe * CM : 0
     })
   }
 

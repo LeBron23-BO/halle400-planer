@@ -347,6 +347,16 @@ def klassifiziere_oeffnungen(fp: dict, befund: Befund) -> None:
                              "y": round(float(anker["y"]), 2)}}
         if o.get("bruestung") is not None:
             eintrag["bruestung"] = round(float(o["bruestung"]), 2)
+        # H1 — Oberkante und Erkennungssicherheit muessen MIT zurueck.
+        # Diese Liste ist eine WEISSE LISTE: was hier nicht steht, faellt beim
+        # Rueckweg lautlos heraus. Genau das ist die Fehlerart, die W5 nicht
+        # zulassen darf ("stiller Verlust ist damit unmoeglich") — eine
+        # schwach erkannte Tuer kaeme sonst als sichere zurueck, und niemand
+        # saehe, dass die Unsicherheit verschwunden ist.
+        if o.get("hoehe") is not None:
+            eintrag["hoehe"] = round(float(o["hoehe"]), 2)
+        if o.get("sicherheit") in ("sicher", "mittel", "schwach"):
+            eintrag["sicherheit"] = o["sicherheit"]
         if o.get("verwaist"):
             # Nicht still entsorgen: der Nutzer hat sie gesetzt. Der Kern
             # entscheidet beim naechsten Laden neu, ob sie eine Wand findet.
