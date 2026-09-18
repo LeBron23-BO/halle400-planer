@@ -872,6 +872,14 @@ ${(!NUR_MODELL || SIEGEL_WEG) ? '' : `
   @media print { .siegelDruck { display: none !important } }
 `}
 ${!NUR_MODELL ? '' : `
+  /* Kein Blattkopf in dieser Fassung. Der Betreiber gibt die Datei aus der Hand
+     und will genau das Modell zeigen, sonst nichts. Der Bedienhinweis unten
+     bleibt: ohne ihn weiss niemand, dass sich das Modell drehen laesst.
+     ACHTUNG, gemessen: diese Regel stand zuerst im Block der Unterschrift und wurde
+     dort mit jenem Block HERAUSGESCHNITTEN — sie sah im Quelltext richtig
+     aus und fehlte in der gebauten Datei. Sie gehoert in diesen Block. */
+  .kopf { display: none !important }
+
   /* ── NUR DAS MODELL (--nur-modell) ─────────────────────────────────
      Zwei Zeilen Ausgleich fuer zwei Schnitte, beide am Standbild gemessen:
 
