@@ -876,7 +876,13 @@ ${!NUR_MODELL ? '' : `
          Bankmitarbeiter nicht wissen, was er ansieht und von wem. Als SATZ im
          Blattkopf ist das Siegel reiner Text und kein Knopf — genau das, was in
          dieser Fassung ueberhaupt noch dastehen darf. -->
-    <div class="sub ${NUR_MODELL ? '' : 'nurDruck '}siegelDruck" id="siegelDruck"></div>
+    <!-- Auch in der reinen Modell-Fassung bleibt dieser Satz dem PAPIER
+         vorbehalten. Er nennt den Inhaber beim Namen ("angeblich <Name>") — auf
+         einem Blatt, das der Betreiber weitergibt, ist das der Echtheitshinweis;
+         auf dem Bildschirm des Empfaengers ist es ein fremder Name ueber einem
+         Grundriss. Betreiber-Ansage: "keinen namen raufschreiben. keinen satz."
+         Das Siegel selbst bleibt in der Datei und laesst sich jederzeit pruefen. -->
+    <div class="sub nurDruck siegelDruck" id="siegelDruck"></div>
     <div class="gesetzt" id="gesetztZaehler" hidden></div>
     <!-- M2: was der Nutzer an den WÄNDEN verändert hat. Bis hierher sagte das
          Blatt „Der Grundriss ist gemessen", auch nachdem eine gemessene Wand
