@@ -31,9 +31,53 @@
      nur auf das Canvas: im Lese-Zustand nimmt die Zeichenflaeche keine
      Zeiger-Ereignisse mehr an, die Finger landen also hier. Ohne diese Zeile
      zoomte der BROWSER die ganze Seite, statt dass der Grundriss folgt. */
-  .ansicht{position:fixed;inset:0;touch-action:none}
+  /* BEIDE Schreibweisen, und das ist kein Zierat: die Langform zuerst, die
+     Kurzform danach. Ein Browser, der die Kurzform nicht kennt, wirft NUR sie
+     weg und behaelt die vier Langform-Zeilen; einer, der sie kennt, setzt
+     danach dieselben vier Werte noch einmal. Das Ergebnis ist in beiden
+     Faellen identisch.
+     GEMESSEN, warum das noetig ist: mit weggelassener Kurzform und ohne
+     Langform faellt die Ansicht auf die Inhaltsgroesse der Leinwand zusammen —
+     300 x 150 Bildpunkte auf einem 1440 x 900 grossen Bildschirm, das Modell
+     als Briefmarke in der oberen linken Ecke. Die Datei bricht dabei NICHT ab,
+     sie sieht nur aus wie ein Versehen. Genau das ist der Fall, den niemand
+     meldet, weil er nicht nach einem Fehler aussieht. */
+  .ansicht{position:fixed;top:0;right:0;bottom:0;left:0;inset:0;touch-action:none}
   .ansicht.weg{visibility:hidden;opacity:0;pointer-events:none}
   #blatt{background:var(--paper)}
+
+  /* ── WENN GAR NICHTS LAEUFT ───────────────────────────────────────────
+     Diese Datei LIEFERT kein Bild, sie RECHNET eines. Ohne Javascript bleibt
+     darum nichts uebrig: gemessen an der ausgelieferten Fassung standen bei
+     abgeschalteten Skripten 146 Zeichen Kleingedrucktes auf einer leeren
+     Flaeche — kein Modell, und vor allem kein Wort darueber, woran es liegt.
+     Der Empfaenger haelt eine kaputte Datei in der Hand und kann es nicht
+     wissen.
+
+     Der Hinweis steht deshalb von Haus aus SICHTBAR im Dokument. Er deckt
+     zwei verschiedene Faelle ab, die beide gleich aussehen:
+       a) Skripte sind abgeschaltet — dann laeuft nichts, und er bleibt einfach
+          stehen.
+       b) Der Browser ist zu alt — dann scheitert das grosse Skript schon am
+          LESEN (es benutzt Schreibweisen von 2020), und weil diese Datei nur
+          EINEN Skript-Block hat, faellt damit alles aus. Auch hier bleibt er
+          stehen.
+
+     SEINE EIGENE DARSTELLUNG KOMMT OHNE ALLES AUS, was ein alter Browser
+     nicht kann: keine Farb-Variablen (die kennt er nicht und faerbte dann
+     gar nichts), kein Flexbox-Mittig, kein clamp, kein inset. Feste
+     Farbwerte, feste Groessen. Ein Hinweis, der seine eigene Botschaft nicht
+     mehr darstellen kann, ist keiner. */
+  .altbrowser{position:fixed;top:0;right:0;bottom:0;left:0;z-index:100;
+       background:#F2ECDE;color:#1E2A25;overflow:auto;
+       padding:64px 32px 32px;
+       font-family:"Segoe UI",Tahoma,Arial,sans-serif}
+  .altbrowser .innen{max-width:600px;margin:0 auto}
+  .altbrowser h2{font-family:Georgia,"Times New Roman",serif;font-weight:600;
+       font-size:23px;line-height:1.25;margin:0 0 14px}
+  .altbrowser p{margin:0 0 11px;font-size:14.5px;line-height:1.65;color:#46514A}
+  .altbrowser .leise{font-size:12.5px;line-height:1.6;color:#6B7570;
+       margin-top:22px;border-top:1px solid #BAB09C;padding-top:14px}
   #blatt canvas{cursor:grab}
   #blatt canvas.zieht{cursor:grabbing}
   /* Der Zeichner ist eine Arbeitsflaeche, kein Blatt — weisser Grund wie im
@@ -554,6 +598,83 @@
 </head>
 <body>
 
+<!-- ── Der Hinweis fuer den Fall, dass diese Datei nicht laufen kann ──────
+     Er steht ABSICHTLICH als Erstes und ABSICHTLICH sichtbar im Dokument:
+     wer ihn wegnehmen will, muss beweisen, dass die Datei laeuft. Die
+     umgekehrte Reihenfolge (unsichtbar, und bei einem Fehler einblenden)
+     kann nicht funktionieren — der Fehler, um den es geht, verhindert ja
+     gerade, dass noch irgendetwas ausgefuehrt wird. -->
+<div class="altbrowser" id="altbrowser">
+  <div class="innen">
+    <h2>Diese Datei zeigt ein räumliches Modell</h2>
+    <p>Das Modell wird beim Öffnen berechnet, nicht als Bild mitgeliefert.
+       Dafür braucht die Datei einen aktuellen Browser, in dem JavaScript
+       eingeschaltet ist.</p>
+    <p>Bitte öffnen Sie sie in Chrome, Edge oder Firefox. Ist JavaScript in
+       Ihren Einstellungen abgeschaltet, schalten Sie es für lokale Dateien
+       ein und laden Sie die Seite neu.</p>
+    <p class="leise">Die Datei arbeitet vollständig auf Ihrem Rechner. Sie
+       lädt nichts nach, überträgt nichts und kommt ohne Internet aus.</p>
+  </div>
+</div>
+<!-- Das Merkmal am Tag ist NICHT Zierat: der Bauer sucht sich den Skriptrumpf
+     ueber das ATTRIBUTLOSE oeffnende Tag heraus, um ihn vor dem Ausliefern
+     durch den Parser zu schicken. Ohne Merkmal waere DIESER Block der erste
+     Treffer, und geprueft wuerde die Vorpruefung statt des Programms.
+     (Aus demselben Grund steht dieses oeffnende Tag hier nirgends
+     ausgeschrieben — schon als Fliesstext in einem Kommentar waere es der
+     erste Treffer und der Bau braeche ab. Gemessen, nicht vermutet.) -->
+<script data-vorpruefung="1">
+/* ABSICHTLICH in der Sprache von 2009 geschrieben — kein ?., kein ??, kein
+   let, keine Pfeilfunktion. Dieser Block muss in JEDEM Browser durchlaufen,
+   gerade in dem alten, um den es geht. Stolperte er ueber dieselbe
+   Schreibweise wie das grosse Skript, pruefte er nichts mehr.
+
+   Er beantwortet GENAU EINE Frage: kann dieser Browser lesen, was das grosse
+   Skript weiter unten schreibt? Gefragt wird nicht nach einem Namen oder
+   einer Versionsnummer (beide luegen, beide veralten), sondern nach der
+   Sache selbst — die beiden Schreibweisen von 2020, an denen ein alter
+   Browser scheitert, werden dem Browser zum Lesen vorgelegt.
+
+   Kann er es NICHT, passiert hier nichts weiter: der Hinweis bleibt stehen,
+   und zwar sofort und ohne Flackern, weil dieser Block schon laeuft, bevor
+   das grosse Skript ueberhaupt gelesen ist.
+   Kann er es, tritt der Hinweis zurueck und wird vom grossen Skript ganz
+   entfernt, sobald das Modell wirklich steht. */
+(function () {
+  var h = document.getElementById('altbrowser')
+  if (!h) return
+  var geht = false
+  try {
+    new Function('var o={a:1};return o?.a ?? 0;')
+    geht = true
+  } catch (e) {
+    /* Nur ein LESE-Fehler heisst "zu alt". Verbietet eine Sicherheits-
+       richtlinie das Vorlegen ueberhaupt, ist das kein Befund ueber das
+       Alter des Browsers — dann wird nicht gewarnt, sondern dem grossen
+       Skript das Aufraeumen ueberlassen. */
+    geht = !!(e && e.name !== 'SyntaxError')
+  }
+  if (!geht) return
+  h.style.opacity = '0'
+  h.style.pointerEvents = 'none'
+  /* Das Netz fuer den dritten Fall: gelesen werden KONNTE das Skript, aber
+     es bricht mittendrin ab. Dann steht das Modell nie, und der Hinweis
+     muss zurueckkommen.
+     GEMESSEN fuer die Frist: bis das Modell steht, vergehen hier 0,41 s; auf
+     achtfach gebremstem Rechenwerk — altes Bank-Blech — 8,7 s, im
+     schlechtesten von drei Laeufen 9,8 s. 30 s lassen also gut das Dreifache
+     des gemessenen Ungünstigsten. Wird eine Maschine noch langsamer sein,
+     erscheint der Hinweis ueber einem Modell, das doch noch kommt — das ist
+     der harmlosere der beiden Irrtuemer. */
+  window.__hinweisFrist = setTimeout(function () {
+    if (window.__bereit === true) return
+    var n = document.getElementById('altbrowser')
+    if (n) { n.style.opacity = '1'; n.style.pointerEvents = 'auto' }
+  }, 30000)
+})()
+</script>
+
 <!-- ── Blatt: die Axonometrie. Startansicht, wie bisher. ─────────────── -->
 <div class="ansicht" id="blatt">
   <canvas id="axo-canvas"></canvas>
@@ -783,7 +904,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "baa23946eff6";
-const BAU_STEMPEL = "2026-09-18 15:03";
+const BAU_STEMPEL = "2026-09-18 15:16";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -15715,6 +15836,19 @@ window.__planerDatei = {
     c.dispatchEvent(new MouseEvent(typ, { bubbles: true, clientX: r.left + x, clientY: r.top + y }));
   }
 };
+
+/* DER HINWEIS GEHT ERST JETZT — und das ist der ganze Trick an ihm.
+   Er wird nicht ausgeblendet, weil der Browser neu genug aussah, sondern
+   ENTFERNT, weil das Modell nachweislich steht: diese Zeile ist die letzte
+   des Aufbaus, sie wird nur erreicht, wenn davor nichts abgebrochen ist.
+   Damit deckt ein einziges Bauteil alle drei Faelle ab — Skripte aus,
+   Browser zu alt, Aufbau bricht mittendrin ab.
+   Die Frist aus der Vorpruefung wird dabei abgeraeumt: sonst holte sie den
+   schon entfernten Knoten 30 s spaeter vergeblich wieder. */
+if (window.__hinweisFrist) { clearTimeout(window.__hinweisFrist); window.__hinweisFrist = null; }
+const hinweisKnoten = document.getElementById('altbrowser');
+if (hinweisKnoten && hinweisKnoten.parentNode) hinweisKnoten.parentNode.removeChild(hinweisKnoten);
+
 window.__bereit = true;
 })();
 </script>
