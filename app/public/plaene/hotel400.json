@@ -425,6 +425,10 @@
     "x": 1890.0,
     "y": 50.0
    },
+   "8d03f2e2-e674-5a03-6d0e-b9304c6849c3": {
+    "x": 1930.0,
+    "y": 220.0
+   },
    "04d1c059-5b09-cedb-95a9-f05b7a85e5fa": {
     "x": 2015.0,
     "y": 700.0
@@ -452,10 +456,6 @@
    "f3efde2f-155f-28c6-757c-ac1e11daa542": {
     "x": 2045.0,
     "y": 1565.0
-   },
-   "8d03f2e2-e674-5a03-6d0e-b9304c6849c3": {
-    "x": 2055.0,
-    "y": 220.0
    },
    "41497296-f1a3-e863-339d-49b3db73deb3": {
     "x": 2065.0,
@@ -887,7 +887,7 @@
    },
    "6f81c589-e551-4a78-c0d8-a50bc25cb7bd": {
     "x": 3600.0,
-    "y": 535.0
+    "y": 546.0
    },
    "42083b7e-bc67-4e01-dab0-800468d965bf": {
     "x": 3615.0,
@@ -931,7 +931,7 @@
    },
    "4f61368f-0925-a9d5-1d87-98069d9ef020": {
     "x": 3690.0,
-    "y": 535.0
+    "y": 551.0
    },
    "21775879-0b98-4664-46d3-913012a275be": {
     "x": 3690.0,
@@ -965,6 +965,10 @@
     "x": 3735.0,
     "y": 1510.0
    },
+   "8d4897df-d598-4b2a-bdd5-ae0c400a58e8": {
+    "x": 3735.0,
+    "y": 1528.0
+   },
    "a36a616e-d2d1-e7bf-7b1a-c5260212536a": {
     "x": 3735.0,
     "y": 1545.0
@@ -979,7 +983,7 @@
    },
    "e947fde4-1e5e-d497-cc73-30b2fd811f92": {
     "x": 3780.0,
-    "y": 1510.0
+    "y": 1528.0
    },
    "32af5bb7-0d5a-6a58-bc65-a4c8f40cd851": {
     "x": 3870.0,
@@ -987,7 +991,7 @@
    },
    "9dfb59aa-f222-75ca-ab61-a052d4988a9e": {
     "x": 3870.0,
-    "y": 535.0
+    "y": 558.0
    },
    "de5369eb-53bd-c995-e474-a6a1caed421d": {
     "x": 3870.0,
@@ -1007,7 +1011,7 @@
    },
    "3ca9e616-e246-64d1-13b3-c5f64da1bce4": {
     "x": 3870.0,
-    "y": 1510.0
+    "y": 1528.0
    },
    "cfeaf342-3a7c-3ab5-693d-76678118a990": {
     "x": 3870.0,
@@ -1015,7 +1019,7 @@
    },
    "d940d78a-9541-6d82-b68f-20a95b6b2122": {
     "x": 3945.0,
-    "y": 535.0
+    "y": 560.0
    },
    "4b4a2b0c-1265-8f3a-e53b-fbcf02eb7cdc": {
     "x": 4000.0,
@@ -1031,7 +1035,7 @@
    },
    "82cff25c-f3cf-587a-ed6c-ac0a4344a71b": {
     "x": 4000.0,
-    "y": 1510.0
+    "y": 1528.0
    },
    "51f80ff6-4b75-8b67-0728-8545dc11dfa4": {
     "x": 4030.0,
@@ -1049,13 +1053,17 @@
     "x": 4035.0,
     "y": 1510.0
    },
+   "c38d4025-52c0-43bc-94b1-59a6d7391c64": {
+    "x": 4035.0,
+    "y": 1528.0
+   },
    "910c6ef2-77ec-7cc8-3f1f-78f9282df219": {
     "x": 4035.0,
     "y": 1545.0
    },
    "c6558efd-aa7d-e390-358f-6ab73bab3741": {
     "x": 4040.0,
-    "y": 530.0
+    "y": 556.0
    },
    "06b7c33d-3b48-9ad4-b5fa-a9b26faf59b7": {
     "x": 4060.0,
@@ -1067,11 +1075,11 @@
    },
    "6b7bdb96-f553-dc82-f50d-b688ec5dbba1": {
     "x": 4090.0,
-    "y": 530.0
+    "y": 556.0
    },
    "3bb74bd7-fcfc-d218-0971-0af2ea855f9d": {
     "x": 4090.0,
-    "y": 565.0
+    "y": 591.0
    },
    "7dfbfea9-2fe4-c45e-5dc6-c832cd749365": {
     "x": 4090.0,
@@ -1116,6 +1124,14 @@
    "a891049a-b88c-d411-4012-eb1cb387c2f7": {
     "x": 4145.0,
     "y": 1510.0
+   },
+   "a507f541-1213-4776-b794-a7bc54fbae5b": {
+    "x": 4190.0,
+    "y": 530.0
+   },
+   "0742446b-23e8-4bb9-88ed-e7ada84ce01b": {
+    "x": 4190.0,
+    "y": 556.0
    },
    "af264b04-14a2-834b-f4ee-202e5a0a8353": {
     "x": 4200.0,
@@ -1265,6 +1281,10 @@
     "x": 4405.0,
     "y": 1510.0
    },
+   "635fbb62-bdf2-4cd9-a3f8-3a9f8bf45e41": {
+    "x": 4405.0,
+    "y": 1528.0
+   },
    "eb6dff82-930b-246a-b9b6-70cfa87942ec": {
     "x": 4545.0,
     "y": 25.0
@@ -1299,7 +1319,7 @@
    },
    "2929102b-5936-8614-e6f8-caa410e34a6a": {
     "x": 4545.0,
-    "y": 1510.0
+    "y": 1528.0
    },
    "343926f9-1117-75f6-96e8-9f8e042474b1": {
     "x": 4695.0,
@@ -1332,6 +1352,10 @@
    "b982ffb1-2894-d43e-20cb-1508f64e56ba": {
     "x": 4695.0,
     "y": 1510.0
+   },
+   "61091920-f541-4b67-a4bf-3e7cafd7ecbd": {
+    "x": 4695.0,
+    "y": 1528.0
    },
    "81d27bf9-88f9-b36e-7ea7-a718fc5ca9fa": {
     "x": 4725.0,
@@ -1493,6 +1517,10 @@
     "x": 5070.0,
     "y": 1510.0
    },
+   "c4c7e473-c317-4b20-bdf3-1cef4a111af1": {
+    "x": 5070.0,
+    "y": 1531.0
+   },
    "1bf45f85-256f-7b4d-89c4-9581b0dfac0d": {
     "x": 5070.0,
     "y": 1545.0
@@ -1523,7 +1551,7 @@
    },
    "af71131a-933c-1e90-39b0-85d290674a97": {
     "x": 5210.0,
-    "y": 1510.0
+    "y": 1531.0
    },
    "7c743944-08ee-6417-ee95-c21793eae50d": {
     "x": 5210.0,
@@ -1556,6 +1584,10 @@
    "ef90c535-45fc-6e78-e042-70fded3c6db8": {
     "x": 5360.0,
     "y": 1510.0
+   },
+   "b5fff8a2-8419-4c0b-adb5-86550e469d88": {
+    "x": 5360.0,
+    "y": 1531.0
    },
    "06268086-5fd0-a202-2f2a-5c65ca9a3103": {
     "x": 5375.0,
@@ -1721,6 +1753,10 @@
     "x": 5705.0,
     "y": 1510.0
    },
+   "5a351e86-ce94-4756-a832-121fe46e25da": {
+    "x": 5705.0,
+    "y": 1525.0
+   },
    "e1e6af2c-ddb2-ca2e-222d-c1c58b775696": {
     "x": 5865.0,
     "y": 25.0
@@ -1755,7 +1791,7 @@
    },
    "19dd0d46-90d7-dc63-9b1b-e41707165552": {
     "x": 5865.0,
-    "y": 1510.0
+    "y": 1525.0
    },
    "ad30529b-6a1b-b7f1-996f-4ecd0ec832e0": {
     "x": 5900.0,
@@ -1788,10 +1824,6 @@
    "af111c7e-8a84-f825-6060-1ec8b18c303f": {
     "x": 5900.0,
     "y": 1288.0
-   },
-   "ddd614c6-f048-9005-ea1c-5923e6601d5f": {
-    "x": 5900.0,
-    "y": 1470.0
    },
    "2b0cbc2b-47b1-55eb-41e3-f47741cef67a": {
     "x": 5900.0,
@@ -2642,7 +2674,7 @@
    {
     "corner1": "30083a4a-fc8d-f043-e972-43d7e17935ec",
     "corner2": "8d03f2e2-e674-5a03-6d0e-b9304c6849c3",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Nord-Laengswand zwischen Nordstreifen und Nordraeumen, Westteil; Achse 2,18 m",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Nord-Laengswand zwischen Nordstreifen und Nordraeumen, Westteil; Achse 2,18 m | Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-13: von 190 auf 65 cm gekuerzt - Zeilenprofil y 140..300 zeigt nur bei x 1870..1930 eine volle Linie (y 228..235, Belegung 1.00); x 1935..2105 ist Tueroeffnung (Zickzack = zwei Tuerblaetter, v_A13_82.png)",
     "art": "trennwand"
    },
    {
@@ -3746,31 +3778,31 @@
    {
     "corner1": "6f81c589-e551-4a78-c0d8-a50bc25cb7bd",
     "corner2": "4f61368f-0925-a9d5-1d87-98069d9ef020",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Nord-Flurwand; Luecken sind Tueroeffnungen",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Nord-Flurwand; Luecken sind Tueroeffnungen | Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-12: von y=535/530 auf die gemessene Lage gezogen (Zeilenprofil 50-cm-Fenster, volle Linie bei y 545..561)",
     "art": "flur"
    },
    {
     "corner1": "4f61368f-0925-a9d5-1d87-98069d9ef020",
     "corner2": "9dfb59aa-f222-75ca-ab61-a052d4988a9e",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Nord-Flurwand; Luecken sind Tueroeffnungen",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Nord-Flurwand; Luecken sind Tueroeffnungen | Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-12: von y=535/530 auf die gemessene Lage gezogen (Zeilenprofil 50-cm-Fenster, volle Linie bei y 545..561)",
     "art": "flur"
    },
    {
     "corner1": "9dfb59aa-f222-75ca-ab61-a052d4988a9e",
     "corner2": "d940d78a-9541-6d82-b68f-20a95b6b2122",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Nord-Flurwand; Luecken sind Tueroeffnungen",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Nord-Flurwand; Luecken sind Tueroeffnungen | Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-12: von y=535/530 auf die gemessene Lage gezogen (Zeilenprofil 50-cm-Fenster, volle Linie bei y 545..561)",
     "art": "flur"
    },
    {
     "corner1": "c6558efd-aa7d-e390-358f-6ab73bab3741",
     "corner2": "6b7bdb96-f553-dc82-f50d-b688ec5dbba1",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Nord-Flurwand",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Nord-Flurwand | Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-12: von y=535/530 auf die gemessene Lage gezogen (Zeilenprofil 50-cm-Fenster, volle Linie bei y 545..561)",
     "art": "flur"
    },
    {
     "corner1": "6b7bdb96-f553-dc82-f50d-b688ec5dbba1",
-    "corner2": "7fd485d5-dd0d-92bf-1fd4-4e8c3211fa12",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Nord-Flurwand",
+    "corner2": "0742446b-23e8-4bb9-88ed-e7ada84ce01b",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Nord-Flurwand | Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-12: von y=535/530 auf die gemessene Lage gezogen (Zeilenprofil 50-cm-Fenster, volle Linie bei y 545..561)",
     "art": "flur"
    },
    {
@@ -4326,30 +4358,6 @@
     "art": "aussen"
    },
    {
-    "corner1": "e5e46bc4-a029-9ca5-513e-0c6a6fd8907a",
-    "corner2": "412d352a-1953-48de-dc92-88abc92595ef",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Vorderkante der Fassadenzone (Bruestung), durchgehend",
-    "art": "aussen"
-   },
-   {
-    "corner1": "412d352a-1953-48de-dc92-88abc92595ef",
-    "corner2": "441af2a9-c6e5-8a00-7fac-916717cd037b",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Vorderkante der Fassadenzone (Bruestung), durchgehend",
-    "art": "aussen"
-   },
-   {
-    "corner1": "441af2a9-c6e5-8a00-7fac-916717cd037b",
-    "corner2": "1e056ffc-4947-2907-4c27-5ae32d111597",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Vorderkante der Fassadenzone (Bruestung), durchgehend",
-    "art": "aussen"
-   },
-   {
-    "corner1": "1e056ffc-4947-2907-4c27-5ae32d111597",
-    "corner2": "7887932e-9828-4610-6b79-61e6a66cd28d",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Vorderkante der Fassadenzone (Bruestung), durchgehend",
-    "art": "aussen"
-   },
-   {
     "corner1": "7887932e-9828-4610-6b79-61e6a66cd28d",
     "corner2": "9459c1a2-df6c-869e-8522-bce28a2a63cc",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Vorderkante der Fassadenzone (Bruestung), durchgehend",
@@ -4386,18 +4394,6 @@
     "art": "aussen"
    },
    {
-    "corner1": "b883213c-0d19-4240-71be-6f595d7f2cf5",
-    "corner2": "65f3801b-95dd-8191-7573-30f5f876396e",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Vorderkante der Fassadenzone (Bruestung), durchgehend",
-    "art": "aussen"
-   },
-   {
-    "corner1": "65f3801b-95dd-8191-7573-30f5f876396e",
-    "corner2": "606f84bb-2d26-166e-0de2-838173ba272a",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Vorderkante der Fassadenzone (Bruestung), durchgehend",
-    "art": "aussen"
-   },
-   {
     "corner1": "606f84bb-2d26-166e-0de2-838173ba272a",
     "corner2": "459b19e1-b5bb-a55c-9a90-18674f975785",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Vorderkante der Fassadenzone (Bruestung), durchgehend",
@@ -4428,18 +4424,6 @@
     "art": "aussen"
    },
    {
-    "corner1": "dbbbcda2-5c8c-6b5f-770b-5b9aa1ec1b35",
-    "corner2": "122d0a8b-1063-e936-9fac-99e7e377a66e",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Vorderkante der Fassadenzone (Bruestung), durchgehend",
-    "art": "aussen"
-   },
-   {
-    "corner1": "122d0a8b-1063-e936-9fac-99e7e377a66e",
-    "corner2": "0d8203f5-84e3-abd6-1353-d965c673bc4a",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Vorderkante der Fassadenzone (Bruestung), durchgehend",
-    "art": "aussen"
-   },
-   {
     "corner1": "0d8203f5-84e3-abd6-1353-d965c673bc4a",
     "corner2": "b5028ab3-945b-81ea-7e30-c115df9fd3ae",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Vorderkante der Fassadenzone (Bruestung), durchgehend",
@@ -4460,18 +4444,6 @@
    {
     "corner1": "9f18860b-5ccb-0f84-f173-33bec60397b9",
     "corner2": "8403a533-ca5a-264f-5652-199bebc892ec",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Vorderkante der Fassadenzone (Bruestung), durchgehend",
-    "art": "aussen"
-   },
-   {
-    "corner1": "8403a533-ca5a-264f-5652-199bebc892ec",
-    "corner2": "ffddae94-02c2-ca83-9004-4ae502ca7381",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Vorderkante der Fassadenzone (Bruestung), durchgehend",
-    "art": "aussen"
-   },
-   {
-    "corner1": "ffddae94-02c2-ca83-9004-4ae502ca7381",
-    "corner2": "ddd614c6-f048-9005-ea1c-5923e6601d5f",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Vorderkante der Fassadenzone (Bruestung), durchgehend",
     "art": "aussen"
    },
@@ -4512,27 +4484,27 @@
     "art": "aussen"
    },
    {
-    "corner1": "1f8800c6-ce37-925f-afc5-1325bbe2ae12",
+    "corner1": "8d4897df-d598-4b2a-bdd5-ae0c400a58e8",
     "corner2": "e947fde4-1e5e-d497-cc73-30b2fd811f92",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Suedfassade, durchgehend",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Suedfassade, durchgehend | Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-8; von y=1510 auf y=1528 gezogen: in dieser geschlossenen Bucht zeichnet der Plan nur EINE Linie, volle Linie 1523..1534 (Mitte 1528), y=1470 Belegung 0.00",
     "art": "aussen"
    },
    {
     "corner1": "e947fde4-1e5e-d497-cc73-30b2fd811f92",
     "corner2": "3ca9e616-e246-64d1-13b3-c5f64da1bce4",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Suedfassade, durchgehend",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Suedfassade, durchgehend | Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-8; von y=1510 auf y=1528 gezogen: in dieser geschlossenen Bucht zeichnet der Plan nur EINE Linie, volle Linie 1523..1534 (Mitte 1528), y=1470 Belegung 0.00",
     "art": "aussen"
    },
    {
     "corner1": "3ca9e616-e246-64d1-13b3-c5f64da1bce4",
     "corner2": "82cff25c-f3cf-587a-ed6c-ac0a4344a71b",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Suedfassade, durchgehend",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Suedfassade, durchgehend | Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-8; von y=1510 auf y=1528 gezogen: in dieser geschlossenen Bucht zeichnet der Plan nur EINE Linie, volle Linie 1523..1534 (Mitte 1528), y=1470 Belegung 0.00",
     "art": "aussen"
    },
    {
     "corner1": "82cff25c-f3cf-587a-ed6c-ac0a4344a71b",
-    "corner2": "a73a1369-3393-7359-cde4-113dd400b7c4",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Suedfassade, durchgehend",
+    "corner2": "c38d4025-52c0-43bc-94b1-59a6d7391c64",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Suedfassade, durchgehend | Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-8; von y=1510 auf y=1528 gezogen: in dieser geschlossenen Bucht zeichnet der Plan nur EINE Linie, volle Linie 1523..1534 (Mitte 1528), y=1470 Belegung 0.00",
     "art": "aussen"
    },
    {
@@ -4572,15 +4544,15 @@
     "art": "aussen"
    },
    {
-    "corner1": "61d1912e-eb9e-4540-471d-b6da9d6b7205",
+    "corner1": "635fbb62-bdf2-4cd9-a3f8-3a9f8bf45e41",
     "corner2": "2929102b-5936-8614-e6f8-caa410e34a6a",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Suedfassade, durchgehend",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Suedfassade, durchgehend | Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-8; von y=1510 auf y=1528 gezogen: in dieser geschlossenen Bucht zeichnet der Plan nur EINE Linie, volle Linie 1523..1537 (Mitte 1528), y=1470 Belegung 0.00",
     "art": "aussen"
    },
    {
     "corner1": "2929102b-5936-8614-e6f8-caa410e34a6a",
-    "corner2": "b982ffb1-2894-d43e-20cb-1508f64e56ba",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Suedfassade, durchgehend",
+    "corner2": "61091920-f541-4b67-a4bf-3e7cafd7ecbd",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Suedfassade, durchgehend | Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-8; von y=1510 auf y=1528 gezogen: in dieser geschlossenen Bucht zeichnet der Plan nur EINE Linie, volle Linie 1523..1537 (Mitte 1528), y=1470 Belegung 0.00",
     "art": "aussen"
    },
    {
@@ -4614,15 +4586,15 @@
     "art": "aussen"
    },
    {
-    "corner1": "bc517f54-d8d7-e68e-a282-c462ca5027c9",
+    "corner1": "c4c7e473-c317-4b20-bdf3-1cef4a111af1",
     "corner2": "af71131a-933c-1e90-39b0-85d290674a97",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Suedfassade, durchgehend",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Suedfassade, durchgehend | Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-8; von y=1510 auf y=1531 gezogen: in dieser geschlossenen Bucht zeichnet der Plan nur EINE Linie, volle Linie 1530..1541 bzw. 1523..1537 (Mitte 1531), y=1470 Belegung 0.00",
     "art": "aussen"
    },
    {
     "corner1": "af71131a-933c-1e90-39b0-85d290674a97",
-    "corner2": "ef90c535-45fc-6e78-e042-70fded3c6db8",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Suedfassade, durchgehend",
+    "corner2": "b5fff8a2-8419-4c0b-adb5-86550e469d88",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Suedfassade, durchgehend | Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-8; von y=1510 auf y=1531 gezogen: in dieser geschlossenen Bucht zeichnet der Plan nur EINE Linie, volle Linie 1530..1541 bzw. 1523..1537 (Mitte 1531), y=1470 Belegung 0.00",
     "art": "aussen"
    },
    {
@@ -4650,9 +4622,9 @@
     "art": "aussen"
    },
    {
-    "corner1": "9ddc7077-8d49-3db0-18ae-25c7bb92c195",
+    "corner1": "5a351e86-ce94-4756-a832-121fe46e25da",
     "corner2": "19dd0d46-90d7-dc63-9b1b-e41707165552",
-    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Suedfassade, durchgehend",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Suedfassade, durchgehend | Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-8; von y=1510 auf y=1525 gezogen: in dieser geschlossenen Bucht zeichnet der Plan nur EINE Linie, volle Linie 1520..1534 (Mitte 1525), y=1470 Belegung 0.00",
     "art": "aussen"
    },
    {
@@ -4795,7 +4767,7 @@
    },
    {
     "corner1": "1f8800c6-ce37-925f-afc5-1325bbe2ae12",
-    "corner2": "a36a616e-d2d1-e7bf-7b1a-c5260212536a",
+    "corner2": "8d4897df-d598-4b2a-bdd5-ae0c400a58e8",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png (unsicher) - Steg zwischen Bruestung und Suedfassade",
     "art": "aussen"
    },
@@ -4861,7 +4833,7 @@
    },
    {
     "corner1": "a73a1369-3393-7359-cde4-113dd400b7c4",
-    "corner2": "910c6ef2-77ec-7cc8-3f1f-78f9282df219",
+    "corner2": "c38d4025-52c0-43bc-94b1-59a6d7391c64",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png (unsicher) - Steg zwischen Bruestung und Suedfassade",
     "art": "aussen"
    },
@@ -5227,7 +5199,7 @@
    },
    {
     "corner1": "bc517f54-d8d7-e68e-a282-c462ca5027c9",
-    "corner2": "1bf45f85-256f-7b4d-89c4-9581b0dfac0d",
+    "corner2": "c4c7e473-c317-4b20-bdf3-1cef4a111af1",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png (unsicher) - Steg zwischen Bruestung und Suedfassade",
     "art": "aussen"
    },
@@ -6237,6 +6209,60 @@
     "corner1": "4fa175db-0e0f-43aa-9a06-acc6a961faa8",
     "corner2": "a28fde0a-4d29-ed94-f7fd-a99b7835d588",
     "herkunft": "Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-4; Rueckwand des Suedbandes, Zeilenprofil x 1190..1340 -> Band y 941..952; setzt #116 nach Westen fort",
+    "art": "trennwand"
+   },
+   {
+    "corner1": "8d4897df-d598-4b2a-bdd5-ae0c400a58e8",
+    "corner2": "a36a616e-d2d1-e7bf-7b1a-c5260212536a",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png (unsicher) - Steg zwischen Bruestung und Suedfassade",
+    "art": "aussen"
+   },
+   {
+    "corner1": "c38d4025-52c0-43bc-94b1-59a6d7391c64",
+    "corner2": "910c6ef2-77ec-7cc8-3f1f-78f9282df219",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png (unsicher) - Steg zwischen Bruestung und Suedfassade",
+    "art": "aussen"
+   },
+   {
+    "corner1": "61d1912e-eb9e-4540-471d-b6da9d6b7205",
+    "corner2": "635fbb62-bdf2-4cd9-a3f8-3a9f8bf45e41",
+    "herkunft": "Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-8; Versatzstueck am Buchtrand x=4405; Tintenbelegung im Band y 1500..1535 (Fenster +-9 cm) = 0.90",
+    "art": "aussen"
+   },
+   {
+    "corner1": "b982ffb1-2894-d43e-20cb-1508f64e56ba",
+    "corner2": "61091920-f541-4b67-a4bf-3e7cafd7ecbd",
+    "herkunft": "Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-8; Versatzstueck am Buchtrand x=4695; Tintenbelegung im Band y 1500..1535 (Fenster +-9 cm) = 0.62",
+    "art": "aussen"
+   },
+   {
+    "corner1": "c4c7e473-c317-4b20-bdf3-1cef4a111af1",
+    "corner2": "1bf45f85-256f-7b4d-89c4-9581b0dfac0d",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png (unsicher) - Steg zwischen Bruestung und Suedfassade",
+    "art": "aussen"
+   },
+   {
+    "corner1": "ef90c535-45fc-6e78-e042-70fded3c6db8",
+    "corner2": "b5fff8a2-8419-4c0b-adb5-86550e469d88",
+    "herkunft": "Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-8; Versatzstueck am Buchtrand x=5360; Tintenbelegung im Band y 1500..1535 (Fenster +-9 cm) = 0.52",
+    "art": "aussen"
+   },
+   {
+    "corner1": "9ddc7077-8d49-3db0-18ae-25c7bb92c195",
+    "corner2": "5a351e86-ce94-4756-a832-121fe46e25da",
+    "herkunft": "Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-8; Versatzstueck am Buchtrand x=5705; Tintenbelegung im Band y 1500..1535 (Fenster +-9 cm) = 0.56",
+    "art": "aussen"
+   },
+   {
+    "corner1": "a507f541-1213-4776-b794-a7bc54fbae5b",
+    "corner2": "7fd485d5-dd0d-92bf-1fd4-4e8c3211fa12",
+    "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Nord-Flurwand",
+    "art": "flur"
+   },
+   {
+    "corner1": "a507f541-1213-4776-b794-a7bc54fbae5b",
+    "corner2": "0742446b-23e8-4bb9-88ed-e7ada84ce01b",
+    "herkunft": "Hotel-PDF Seite 1 (eingebettetes Bild 1696x2417), Nachtrag 2026-09-18 Befund A-12: Versatz der Flur-Nordwand am gezeichneten Pfosten x=4190; Tintenbelegung Fenster x 4180..4200 / y 520..575 = 0.44 (danach 0.00)",
     "art": "trennwand"
    }
   ],
