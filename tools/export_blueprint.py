@@ -218,6 +218,9 @@ ERLAUBTE_TYPEN = {
     "tisch", "rundtisch", "stuhl", "schrank", "treppe", "wc",
     "waschbecken", "kochfeld", "pflanze", "aufzug", "flaeche",
     "matte", "geraet", "liege",
+    # Hotel-Zimmergeschoss — ebenfalls aus KEINER gemessenen Quelle, aus
+    # demselben Grund mit drin: eine gesicherte Datei traegt sie.
+    "bett", "nachttisch", "dusche", "tresen",
 }
 
 

@@ -23,6 +23,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { WURZEL } from './buendel-kern.mjs'
+import { liesHoehen } from './lies-hoehen.mjs'
 
 const DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'h400-stift-'))
 const BERICHT = path.join(DIR, 'bericht.txt')
@@ -68,13 +69,40 @@ pruefe(
 // GEGENPROBE: derselbe Vergleich, angewandt auf eine verbogene Liste, MUSS
 // die Abweichung finden. Ohne sie hiesse "gruen" nur, dass zwei Listen zufaellig
 // gleich lang sind.
+//
+// Die Ersatz-Art heisst 'phantom-typ', NICHT mehr 'dusche': seit dem
+// Hotel-Zimmergeschoss ist 'dusche' eine ECHTE Art, und eine Gegenprobe mit
+// einer inzwischen echten Art bewiese nichts mehr ueber eine erfundene.
 {
-  const verbogen = WZ_TYPEN.filter((t) => t !== 'liege').concat(['dusche'])
+  const verbogen = WZ_TYPEN.filter((t) => t !== 'liege').concat(['phantom-typ'])
   const deckt =
     TYPEN_ECHT.length === verbogen.length && TYPEN_ECHT.every((t) => verbogen.includes(t))
   pruefe(deckt === false, 'Gegenprobe: eine vertauschte Art wird vom selben Vergleich gefunden')
 }
-pruefe(!WZ_TYPEN.includes('dusche'), 'Es gibt KEINE Dusche — ein Badezimmer entsteht aus wc + waschbecken')
+// Bis zum Hotel-Zimmergeschoss galt hier: "Es gibt KEINE Dusche — ein
+// Badezimmer entsteht aus wc + waschbecken". Das war eine Regel aus dem
+// Buero-Zeitalter der Halle, keine Eigenschaft des Stifts. Der Planer traegt
+// jetzt auch ein Hotelgeschoss, und dort ist die Dusche ein eigenes
+// Moebelstueck mit eigener Hoehe (Duschtasse 10 cm) — sie aus wc + waschbecken
+// zusammenzusetzen waere eine Luege im Plan. Was bleibt, ist die eigentliche
+// Absicht der alten Zeile: der Stift darf keine Art ERFINDEN, die es in
+// `AusstattungTyp` nicht gibt. Genau das prueft der Deckungs-Vergleich oben
+// bereits fuer ALLE Arten — hier wird zusaetzlich die konkrete Erwartung
+// an `dusche` festgehalten, damit diese Stelle nicht zu einer Pruefung
+// verkommt, die nichts mehr behauptet.
+pruefe(WZ_TYPEN.includes('dusche'), 'Es GIBT eine Dusche — ein eigenes Moebelstueck, kein wc+waschbecken-Ersatz')
+{
+  const hoehen = liesHoehen()
+  pruefe(
+    hoehen.oberkante.dusche !== undefined,
+    `"dusche" hat eine eigene Oberkante in OBERKANTE_CM (${hoehen.oberkante.dusche} cm)`
+  )
+  pruefe(
+    hoehen.oberkante.dusche !== hoehen.oberkante.wc && hoehen.oberkante.dusche !== hoehen.oberkante.waschbecken,
+    `"dusche" hat eine EIGENE Hoehe, keine geerbte von wc (${hoehen.oberkante.wc} cm) ` +
+      `oder waschbecken (${hoehen.oberkante.waschbecken} cm) — sonst waere sie kein eigenes Moebelstueck`
+  )
+}
 
 const NUTZ_ECHT = Object.keys(NUTZUNGEN)
 pruefe(
@@ -181,11 +209,14 @@ pruefe(
 /* ══════════════════ E · FAIL-CLOSED ══════════════════ */
 log('\n=== E · Ein schlechter Schritt verwirft die GANZE Kette ===')
 
+// Die dritte Art heisst 'phantom-typ', NICHT mehr 'dusche': seit dem
+// Hotel-Zimmergeschoss ist 'dusche' eine ECHTE Art, und dieser Abschnitt
+// braucht eine, die es WIRKLICH nicht gibt.
 const gemischt = {
   werkzeuge: [
     { werkzeug: 'stueck_setzen', args: { typ: 'wc', x: 100, y: 100 } },
     { werkzeug: 'stueck_setzen', args: { typ: 'waschbecken', x: 200, y: 100 } },
-    { werkzeug: 'stueck_setzen', args: { typ: 'dusche', x: 300, y: 100 } }
+    { werkzeug: 'stueck_setzen', args: { typ: 'phantom-typ', x: 300, y: 100 } }
   ]
 }
 const g = pruefeKette(gemischt, WELT)
@@ -194,7 +225,10 @@ pruefe(
   Array.isArray(g.wirkung) && g.wirkung.length === 0,
   'Und es bleibt keine halbe Wirkung uebrig — halb ist schlimmer als gar nicht (W3)'
 )
-pruefe(/dusche/.test(g.grund || ''), `Der Grund nennt den Uebeltaeter ("${(g.grund || '').slice(0, 60)}…")`)
+pruefe(
+  /phantom-typ/.test(g.grund || ''),
+  `Der Grund nennt den Uebeltaeter ("${(g.grund || '').slice(0, 60)}…")`
+)
 
 // GEGENPROBE: dieselbe Kette ohne den dritten Schritt MUSS durchgehen.
 const zweiGut = { werkzeuge: gemischt.werkzeuge.slice(0, 2) }

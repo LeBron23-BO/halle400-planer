@@ -313,7 +313,17 @@ export const AUSSTATTUNG_STIL = {
   // diese halbe Kette prueft `tools/pruefe-palette.mjs`.
   matte: { material: 'sitz' }, // weiche Auflage, Farbfamilie der Sitzflaechen
   geraet: { material: 'metall' }, // Stahlrahmen
-  liege: { material: 'liege' }
+  liege: { material: 'liege' },
+  // ── Hotel-Zimmergeschoss ──────────────────────────────────────────────────
+  // Drei bislang UNBENUTZTE Toene aus der PALETTE (oben, seit der Vorlage
+  // mitgefuehrt, aber nie an einen Typ vergeben) — kein neuer Farbwert noetig.
+  // `nachttisch` teilt sich bewusst den Ton mit `schrank`: ein Nachttisch IST
+  // ein kleines Schrankmoebel, und beide stehen nie im selben Sichtfeld wie
+  // WC/Waschbecken (Bad) neben Nachttisch (Zimmer).
+  bett: { material: 'schirm' }, // gedaempftes Gruen, bisher unbenutzt
+  nachttisch: { material: 'schrank' },
+  dusche: { material: 'kabine' }, // Duschkabinen-Ton, bisher unbenutzt
+  tresen: { material: 'topf' } // warmer Holzton, bisher unbenutzt
 }
 
 /**

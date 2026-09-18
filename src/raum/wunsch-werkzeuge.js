@@ -42,10 +42,12 @@
  * eine Art dazukommt oder wegfällt.
  */
 
-/** Die 14 Arten, die der Plan zeichnen kann. Mehr gibt es nicht. */
+/** Die 18 Arten, die der Plan zeichnen kann. Mehr gibt es nicht. */
 export const WZ_TYPEN = [
   'tisch', 'rundtisch', 'stuhl', 'schrank', 'treppe', 'wc', 'waschbecken',
-  'kochfeld', 'pflanze', 'aufzug', 'flaeche', 'matte', 'geraet', 'liege'
+  'kochfeld', 'pflanze', 'aufzug', 'flaeche', 'matte', 'geraet', 'liege',
+  // Hotel-Zimmergeschoss: dieselben vier wie in `AusstattungTyp`.
+  'bett', 'nachttisch', 'dusche', 'tresen'
 ]
 
 /** Die Belegungs-Muster, die `legeAus` kennt. */

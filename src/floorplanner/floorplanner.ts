@@ -135,7 +135,11 @@ export const AUSSTATTUNG_NAME: Record<string, string> = {
   flaeche: 'Fläche',
   matte: 'Matte',
   geraet: 'Fitnessgerät',
-  liege: 'Liege'
+  liege: 'Liege',
+  bett: 'Bett',
+  nachttisch: 'Nachttisch',
+  dusche: 'Dusche',
+  tresen: 'Tresen'
 }
 
 /**

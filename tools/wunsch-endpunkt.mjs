@@ -140,7 +140,11 @@ export function baueAuftrag(wunsch, welt) {
     '',
     'REGELN, die du nicht brechen darfst:',
     `1. Es gibt genau diese Arten: ${WZ_TYPEN.join(', ')}.`,
-    '   Es gibt KEINE Dusche, kein Urinal, keine Kabinenwand als Art.',
+    // Seit dem Hotel-Zimmergeschoss ist 'dusche' eine ECHTE Art (s. Liste
+    // oben) — sie hier weiter als Beispiel fuer eine NICHT existierende Art
+    // zu nennen, widerspraeche der Zeile direkt darueber. Urinal und
+    // Kabinenwand bleiben: die gibt es weiterhin nicht.
+    '   Es gibt kein Urinal, keine Kabinenwand als eigene Art — auch wenn sie oft gewuenscht werden.',
     '   Fehlt dir eine Art, sag es in "antwort" — ERSETZE sie NICHT durch eine aehnliche.',
     '2. JEDES Werkzeug braucht ALLE seine Pflichtangaben. Eine fehlende Angabe',
     '   verwirft die ganze Kette.',

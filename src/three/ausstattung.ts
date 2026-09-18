@@ -83,7 +83,25 @@ export const OBERKANTE_CM: Record<AusstattungTyp, number> = {
   // Gesetzte Annahme: Behandlungs- und Massageliegen sind in der Regel
   // höhenverstellbar; die Herstellerangaben liegen meist zwischen 60 und 85 cm.
   // 65 cm ist die übliche Arbeitsstellung. Eine Norm dazu gibt es nicht.
-  liege: 65
+  liege: 65,
+  // ── Hotel-Zimmergeschoss ──────────────────────────────────────────────────
+  // Auch für diese vier gibt es keine Norm — genau wie bei den drei W3-Typen.
+  // Gesetzte Annahme statt Messwert, mit Begründung nach üblichen Möbelmaßen.
+  //
+  // Gesetzte Annahme: übliche Matratzenoberkante eines Doppel-/Einzelbetts
+  // (Unterfederung/Lattenrost plus Matratze) liegt bei rund 50 cm.
+  bett: 50,
+  // Gesetzte Annahme: handelsübliche Nachttische liegen in Griffhöhe des
+  // Bettes, üblicherweise zwischen 45 und 55 cm — 50 cm liegt mittig und auf
+  // Höhe der Matratzenoberkante.
+  nachttisch: 50,
+  // Gesetzte Annahme: eine Duschtasse liegt flach am Boden; handelsübliche
+  // Tassen sind 3 bis rund 10 cm hoch (bodengleiche vs. erhöhte Ausführung).
+  // 10 cm ist die dickere, verbreitete Ausführung.
+  dusche: 10,
+  // Gesetzte Annahme: ein Empfangstresen wird im Stehen bedient; übliche
+  // Tresen-/Thekenhöhe liegt bei rund 110 cm.
+  tresen: 110
 }
 
 /**
@@ -108,9 +126,14 @@ export const KOERPER_CM: Partial<Record<AusstattungTyp, number>> = {
   // bei einer 200 × 70 cm grossen Liege ein massiver Block, wo in Wirklichkeit
   // ein schmales Gestell steht. Das Gestell selbst bleibt weg: seine Form ist
   // nicht gemessen, jedes Bein wäre erfunden.
-  liege: 8
-  // `matte` und `geraet` stehen auf dem Boden und brauchen keinen Eintrag —
-  // ihre Körperhöhe IST ihre Oberkante.
+  liege: 8,
+  // Gesetzte Annahme wie bei Tisch und Liege: der Grundriss zeigt die
+  // LIEGEFLÄCHE der Matratze, nicht das Bettgestell darunter — dessen Form
+  // ist nicht gemessen, jedes Bein wäre erfunden. Übliche Matratzendicke rund
+  // 20 cm; der Körper schwebt also von 30 bis 50 cm über dem Boden.
+  bett: 20
+  // `nachttisch`, `dusche` und `tresen` stehen auf dem Boden und brauchen
+  // keinen Eintrag — ihre Körperhöhe IST ihre Oberkante.
 }
 
 /**
@@ -148,7 +171,17 @@ const FARBE: Record<AusstattungTyp, number> = {
   // neutralgrauen Wandkanten trennen.
   matte: 0x2f4a63,
   geraet: 0x2a3c52,
-  liege: 0x35496b
+  liege: 0x35496b,
+  // Hotel-Zimmergeschoss — dieselbe Regel, nachgerechnet statt nach Gefühl:
+  // bett       b−r = 0x6a−0x30 = 58
+  // nachttisch b−r = 0x49−0x26 = 35
+  // dusche     b−r = 0x82−0x3f = 67
+  // tresen     b−r = 0x58−0x2c = 44
+  // Alle deutlich über der Schwelle von 12.
+  bett: 0x30456a,
+  nachttisch: 0x263449,
+  dusche: 0x3f5c82,
+  tresen: 0x2c3f58
 }
 
 /**

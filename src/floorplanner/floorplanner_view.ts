@@ -833,6 +833,42 @@ export class FloorplannerView {
         this.ausRechteck(el, ausstattungFuellung)
         return
 
+      // ── Hotel-Zimmergeschoss ────────────────────────────────────────────
+      case 'bett':
+        this.ausRechteck(el, ausstattungFuellung)
+        // Kopfende (lokal -x), IMMER gezeichnet: die Ausrichtung eines Betts
+        // ist kein Detail, sondern das Zeichen selbst — ohne sie wäre ein
+        // Bett von einer Liege im Bild nicht zu unterscheiden.
+        this.ausLinie(el, -hb * 0.66, -ht, -hb * 0.66, ht)
+        return
+
+      case 'nachttisch':
+        // Kleines Möbelstück ohne eigene Detailzeichnung — dieselbe Doktrin
+        // wie beim Tisch: ein Nachttisch ist im Grundriss ein schlichtes
+        // Rechteck.
+        this.ausRechteck(el, ausstattungFuellung)
+        return
+
+      case 'dusche':
+        // Duschtasse als Rechteck, Ablauf als kleiner Kreis in der Mitte —
+        // dieselbe Zeichenidee wie beim WC-Becken, nur zentriert statt an
+        // der Rückwand.
+        this.ausRechteck(el, ausstattungFuellung)
+        if (detail) {
+          const r = Math.min(hb, ht) * 0.15
+          this.ausEllipse(el, 0, 0, r, r, null)
+        }
+        return
+
+      case 'tresen':
+        this.ausRechteck(el, ausstattungFuellung)
+        // Die Kundenseite ist die Seite, an der die Gäste stehen. Sie wird
+        // IMMER gezeichnet, auch ohne Detailstufe — dieselbe Begründung wie
+        // beim Trainingsgerät: ein Tresen, dessen Ausrichtung man nicht
+        // sieht, ist im Plan wertlos.
+        this.ausLinie(el, -hb, ht * 0.34, hb, ht * 0.34)
+        return
+
       default:
         // FAIL-OPEN, ABER NICHT MEHR STUMM.
         //

@@ -42,6 +42,15 @@ export type AusstattungTyp =
   | 'matte' // abgerundetes Rechteck — Gymnastik-/Yogamatte (Atem, Aktivierung)
   | 'geraet' // Rechteck mit markierter Vorderseite — Trainingsgerät (Aktivierung)
   | 'liege' // Rechteck mit Kopfende — Behandlungs-/Massageliege (Regeneration, Balance)
+  // ── Hotel-Zimmergeschoss: Moeblierung fuer Zimmer und Lobby ───────────────
+  // Diese vier stehen in KEINEM gemessenen Plan — `Hotel400-Grundriss.pdf`
+  // zeigt die Raumkontur, nicht die Moeblierung. Sie entstehen ausschliesslich
+  // dadurch, dass der Nutzer sie hinstellt, und tragen deshalb immer
+  // `quelle: 'gesetzt'`.
+  | 'bett' // Rechteck mit Kopfende — Doppel-/Einzelbett im Hotelzimmer
+  | 'nachttisch' // kleines Rechteck ohne Detail — Nachttisch neben dem Bett
+  | 'dusche' // Rechteck mit Ablauf-Kreis — Duschtasse im Bad
+  | 'tresen' // Rechteck mit markierter Vorderseite — Empfangstresen in der Lobby
 
 /**
  * Woher ein Ausstattungs-Zeichen kommt — das WICHTIGSTE Feld dieser Struktur.
