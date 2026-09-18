@@ -1,0 +1,479 @@
+{
+ "_zweck": "Aus der Handskizze 'Zimmer Typ 2 Backoffice Empfang Aufzug Waschraum.pdf' Seite 2 (PyMuPDF-Index 1) GEMESSENE Moeblierung des WESTKOPFS. Einheit cm, Mittelpunkt-bezogen, gleicher Bezugsrahmen wie die Ecken in hotel400.json. Jedes Element traegt seinen Beleg (die Messkachel, an der es abgelesen wurde) - eine Position ohne Beleg ist geraten, und geratene Geometrie sieht exakt aus, ohne es zu sein. Die 27 Regelzimmer sind auf der Skizze LEER gezeichnet und stehen deshalb NICHT in dieser Datei.",
+ "_bezug": "Seite 2 ist um 90 Grad gedreht gezeichnet: Blattoberkante = Westgiebel, Blattunterkante = Ostgiebel, rechte Blattspalte = Nordfassade, linke Blattspalte = Suedfassade. Umrechnung, an 17 Querwaenden des Plans linear angepasst (Restfehler <= 30 cm laengs, <= 15 cm quer): Plan_x [cm] = (sketch_y [pt] - 104) * 3.656   und   Plan_y [cm] = 1285 - (sketch_x [pt] - 639) * 3.667. Kontrollpunkte: Loggia-Innenwand sued sketch_x 639 -> Plan_y 1285 (Plan 1285); Flurwaende sketch_x 794 / 842 -> Plan_y 717 / 541 (Plan 700 / 535); Nord-Loggiawand sketch_x 933.5 -> Plan_y 205 (Plan 205). Laengsprobe: die gemessene Waschmaschinenreihe liegt bei Plan-x 2318..2409, der Waschraum-Anker aus hotel400.json bei 2364. Orientierung zusaetzlich belegt ueber Seite 1 desselben PDF (getuschte Fassung mit Beschriftungen): deren Leitlinienenden treffen die anker_cm aus hotel400.json nur unter genau dieser Orientierung.",
+ "_drehung": "Bogenmass um den Mittelpunkt, gleiche Konvention wie data/ausstattung.json: die Lehne zeigt in lokal +y, Rueckenrichtung also (-sin(drehung), cos(drehung)). Stuhl mit kleinerem y als der Tisch = 3.142, mit groesserem y = 0. Am runden Tisch aus der gemessenen Sitzposition relativ zum Tischmittelpunkt gerechnet: drehung = atan2(-(x_stuhl - x_tisch), y_stuhl - y_tisch). Quadratische Hocker-Symbole zeigen KEINE Richtung - dort steht 0 als neutraler Wert, nicht als Messwert.",
+ "_stand": "2026-09-18 - nur Westkopf (Plan-x 0..2410) plus Aufzug. Sitzmoebel sind auf 55x55 bzw. 45x45 cm normiert, weil die freihaendigen Sitzsymbole zwischen 40 und 80 cm streuen; GEMESSEN ist jeweils der Mittelpunkt, nicht die Kantenlaenge. Alle uebrigen Masse sind am cm-Gitter der jeweiligen Messkachel abgelesene Aussenkanten.",
+ "elemente": [
+  "--- SONDERZIMMER WEST (Sued, Plan-x 20..1170) ---",
+  {
+   "typ": "schrank",
+   "x": 403,
+   "y": 1236,
+   "breite": 405,
+   "tiefe": 63,
+   "drehung": 0,
+   "text": "Sideboard Sonderzimmer West, laengs an der Loggia-Wand",
+   "beleg": "Skizze Seite 2, Messkachel g_sonder.jpg (sketch x 640-800, y 145-300, 420 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "tisch",
+   "x": 394,
+   "y": 1032,
+   "breite": 405,
+   "tiefe": 140,
+   "drehung": 0,
+   "text": "Tafel Sonderzimmer West, 10 Plaetze",
+   "beleg": "Skizze Seite 2, Messkachel g_sonder.jpg (sketch x 640-800, y 145-300, 420 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 246,
+   "y": 1125,
+   "breite": 55,
+   "tiefe": 55,
+   "drehung": 0,
+   "text": "Stuhl an der Tafel, Loggiaseite",
+   "beleg": "Skizze Seite 2, Messkachel g_sonder.jpg (sketch x 640-800, y 145-300, 420 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 310,
+   "y": 1125,
+   "breite": 55,
+   "tiefe": 55,
+   "drehung": 0,
+   "text": "Stuhl an der Tafel, Loggiaseite",
+   "beleg": "Skizze Seite 2, Messkachel g_sonder.jpg (sketch x 640-800, y 145-300, 420 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 397,
+   "y": 1125,
+   "breite": 55,
+   "tiefe": 55,
+   "drehung": 0,
+   "text": "Stuhl an der Tafel, Loggiaseite",
+   "beleg": "Skizze Seite 2, Messkachel g_sonder.jpg (sketch x 640-800, y 145-300, 420 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 467,
+   "y": 1125,
+   "breite": 55,
+   "tiefe": 55,
+   "drehung": 0,
+   "text": "Stuhl an der Tafel, Loggiaseite",
+   "beleg": "Skizze Seite 2, Messkachel g_sonder.jpg (sketch x 640-800, y 145-300, 420 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 544,
+   "y": 1125,
+   "breite": 55,
+   "tiefe": 55,
+   "drehung": 0,
+   "text": "Stuhl an der Tafel, Loggiaseite",
+   "beleg": "Skizze Seite 2, Messkachel g_sonder.jpg (sketch x 640-800, y 145-300, 420 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 238,
+   "y": 940,
+   "breite": 55,
+   "tiefe": 55,
+   "drehung": 3.142,
+   "text": "Stuhl an der Tafel, Flurseite",
+   "beleg": "Skizze Seite 2, Messkachel g_sonder.jpg (sketch x 640-800, y 145-300, 420 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 310,
+   "y": 940,
+   "breite": 55,
+   "tiefe": 55,
+   "drehung": 3.142,
+   "text": "Stuhl an der Tafel, Flurseite",
+   "beleg": "Skizze Seite 2, Messkachel g_sonder.jpg (sketch x 640-800, y 145-300, 420 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 391,
+   "y": 940,
+   "breite": 55,
+   "tiefe": 55,
+   "drehung": 3.142,
+   "text": "Stuhl an der Tafel, Flurseite",
+   "beleg": "Skizze Seite 2, Messkachel g_sonder.jpg (sketch x 640-800, y 145-300, 420 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 460,
+   "y": 940,
+   "breite": 55,
+   "tiefe": 55,
+   "drehung": 3.142,
+   "text": "Stuhl an der Tafel, Flurseite",
+   "beleg": "Skizze Seite 2, Messkachel g_sonder.jpg (sketch x 640-800, y 145-300, 420 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 536,
+   "y": 940,
+   "breite": 55,
+   "tiefe": 55,
+   "drehung": 3.142,
+   "text": "Stuhl an der Tafel, Flurseite",
+   "beleg": "Skizze Seite 2, Messkachel g_sonder.jpg (sketch x 640-800, y 145-300, 420 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "rundtisch",
+   "x": 950,
+   "y": 1030,
+   "breite": 115,
+   "tiefe": 115,
+   "drehung": 0,
+   "text": "Runder Tisch Sonderzimmer West, 6 Plaetze",
+   "beleg": "Skizze Seite 2, Messkacheln g_rund.jpg + rund2.jpg (sketch x 640-800 / 668-748, y 315-410 / 328-400)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 868,
+   "y": 1024,
+   "breite": 45,
+   "tiefe": 45,
+   "drehung": 1.644,
+   "text": "Stuhl am runden Tisch",
+   "beleg": "Skizze Seite 2, Messkacheln g_rund.jpg + rund2.jpg (sketch x 640-800 / 668-748, y 315-410 / 328-400)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 896,
+   "y": 1112,
+   "breite": 45,
+   "tiefe": 45,
+   "drehung": 0.582,
+   "text": "Stuhl am runden Tisch",
+   "beleg": "Skizze Seite 2, Messkacheln g_rund.jpg + rund2.jpg (sketch x 640-800 / 668-748, y 315-410 / 328-400)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 901,
+   "y": 948,
+   "breite": 45,
+   "tiefe": 45,
+   "drehung": 2.603,
+   "text": "Stuhl am runden Tisch",
+   "beleg": "Skizze Seite 2, Messkacheln g_rund.jpg + rund2.jpg (sketch x 640-800 / 668-748, y 315-410 / 328-400)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 977,
+   "y": 1121,
+   "breite": 45,
+   "tiefe": 45,
+   "drehung": -0.288,
+   "text": "Stuhl am runden Tisch",
+   "beleg": "Skizze Seite 2, Messkacheln g_rund.jpg + rund2.jpg (sketch x 640-800 / 668-748, y 315-410 / 328-400)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 1018,
+   "y": 955,
+   "breite": 45,
+   "tiefe": 45,
+   "drehung": -2.405,
+   "text": "Stuhl am runden Tisch",
+   "beleg": "Skizze Seite 2, Messkacheln g_rund.jpg + rund2.jpg (sketch x 640-800 / 668-748, y 315-410 / 328-400)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 1035,
+   "y": 1040,
+   "breite": 45,
+   "tiefe": 45,
+   "drehung": -1.454,
+   "text": "Stuhl am runden Tisch",
+   "beleg": "Skizze Seite 2, Messkacheln g_rund.jpg + rund2.jpg (sketch x 640-800 / 668-748, y 315-410 / 328-400)"
+  },
+  {
+   "typ": "pflanze",
+   "x": 1089,
+   "y": 1208,
+   "breite": 125,
+   "tiefe": 95,
+   "drehung": 0,
+   "text": "Pflanzsymbol Suedostecke Sonderzimmer",
+   "beleg": "Skizze Seite 2, Blob-Messung Bereich sketch x 640-690, y 375-420"
+  },
+  "--- BACKOFFICE / KUECHE (Nord, Plan-x 500..1180) ---",
+  {
+   "typ": "kochfeld",
+   "x": 739,
+   "y": 469,
+   "breite": 172,
+   "tiefe": 208,
+   "drehung": 0,
+   "text": "Kochblock mit 6 Kochstellen, freistehend",
+   "beleg": "Skizze Seite 2, Messkachel g_kueche.jpg (sketch x 828-975, y 245-405, 430 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "tresen",
+   "x": 1032,
+   "y": 395,
+   "breite": 76,
+   "tiefe": 350,
+   "drehung": 0,
+   "text": "Theke mit Faechern, quer zur Gebaeudeachse",
+   "beleg": "Skizze Seite 2, Messkachel g_tresen.jpg (sketch x 820-1010, y 340-450, 520 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "waschbecken",
+   "x": 1026,
+   "y": 276,
+   "breite": 40,
+   "tiefe": 50,
+   "drehung": 0,
+   "text": "Rundes Becken in der Theke",
+   "beleg": "Skizze Seite 2, Messkachel g_tresen.jpg (sketch x 820-1010, y 340-450, 520 dpi, cm-Gitter)"
+  },
+  "--- EMPFANG (Nord, Plan-x 1280..1940) ---",
+  {
+   "typ": "stuhl",
+   "x": 1332,
+   "y": 481,
+   "breite": 55,
+   "tiefe": 55,
+   "drehung": 0,
+   "text": "Hocker Empfang, Reihe Flurseite",
+   "beleg": "Skizze Seite 2, Messkachel g_empfang.jpg (sketch x 835-935, y 440-640, 520 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 1425,
+   "y": 481,
+   "breite": 55,
+   "tiefe": 55,
+   "drehung": 0,
+   "text": "Hocker Empfang, Reihe Flurseite",
+   "beleg": "Skizze Seite 2, Messkachel g_empfang.jpg (sketch x 835-935, y 440-640, 520 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 1509,
+   "y": 481,
+   "breite": 55,
+   "tiefe": 55,
+   "drehung": 0,
+   "text": "Hocker Empfang, Reihe Flurseite",
+   "beleg": "Skizze Seite 2, Messkachel g_empfang.jpg (sketch x 835-935, y 440-640, 520 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 1593,
+   "y": 481,
+   "breite": 55,
+   "tiefe": 55,
+   "drehung": 0,
+   "text": "Hocker Empfang, Reihe Flurseite",
+   "beleg": "Skizze Seite 2, Messkachel g_empfang.jpg (sketch x 835-935, y 440-640, 520 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 1313,
+   "y": 316,
+   "breite": 55,
+   "tiefe": 55,
+   "drehung": 3.142,
+   "text": "Sessel Empfang, Reihe Nordseite, Lehne nach Norden",
+   "beleg": "Skizze Seite 2, Messkachel g_empfang.jpg (sketch x 835-935, y 440-640, 520 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 1406,
+   "y": 316,
+   "breite": 55,
+   "tiefe": 55,
+   "drehung": 3.142,
+   "text": "Sessel Empfang, Reihe Nordseite, Lehne nach Norden",
+   "beleg": "Skizze Seite 2, Messkachel g_empfang.jpg (sketch x 835-935, y 440-640, 520 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 1499,
+   "y": 316,
+   "breite": 55,
+   "tiefe": 55,
+   "drehung": 3.142,
+   "text": "Sessel Empfang, Reihe Nordseite, Lehne nach Norden",
+   "beleg": "Skizze Seite 2, Messkachel g_empfang.jpg (sketch x 835-935, y 440-640, 520 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 1593,
+   "y": 316,
+   "breite": 55,
+   "tiefe": 55,
+   "drehung": 3.142,
+   "text": "Sessel Empfang, Reihe Nordseite, Lehne nach Norden",
+   "beleg": "Skizze Seite 2, Messkachel g_empfang.jpg (sketch x 835-935, y 440-640, 520 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 1798,
+   "y": 443,
+   "breite": 55,
+   "tiefe": 55,
+   "drehung": 0,
+   "text": "Sessel Empfang, Einzelpaar",
+   "beleg": "Skizze Seite 2, Messkachel g_empfang.jpg (sketch x 835-935, y 440-640, 520 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "stuhl",
+   "x": 1793,
+   "y": 358,
+   "breite": 55,
+   "tiefe": 55,
+   "drehung": 0,
+   "text": "Sessel Empfang, Einzelpaar",
+   "beleg": "Skizze Seite 2, Messkachel g_empfang.jpg (sketch x 835-935, y 440-640, 520 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "tisch",
+   "x": 1893,
+   "y": 400,
+   "breite": 84,
+   "tiefe": 204,
+   "drehung": 0,
+   "text": "Niedriger Tisch Empfang",
+   "beleg": "Skizze Seite 2, Messkachel g_empfang.jpg (sketch x 835-935, y 440-640, 520 dpi, cm-Gitter)"
+  },
+  "--- WASCHRAUM (Nord, Plan-x 2110..2410) ---",
+  {
+   "typ": "tresen",
+   "x": 2159,
+   "y": 312,
+   "breite": 92,
+   "tiefe": 252,
+   "drehung": 0,
+   "text": "Arbeitsplatte Waschraum",
+   "beleg": "Skizze Seite 2, Messkachel g_wasch.jpg (sketch x 850-960, y 670-780, 560 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "waschbecken",
+   "x": 2249,
+   "y": 269,
+   "breite": 60,
+   "tiefe": 60,
+   "drehung": 0,
+   "text": "Rundes Becken suedlich der Arbeitsplatte",
+   "beleg": "Skizze Seite 2, Messkachel g_wasch.jpg (sketch x 850-960, y 670-780, 560 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "geraet",
+   "x": 2374,
+   "y": 425,
+   "breite": 53,
+   "tiefe": 50,
+   "drehung": 0,
+   "text": "Waschmaschine/Trockner 1 von 5",
+   "beleg": "Skizze Seite 2, Messkachel g_wasch2.jpg (sketch x 845-960, y 730-775, 700 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "geraet",
+   "x": 2374,
+   "y": 376,
+   "breite": 53,
+   "tiefe": 50,
+   "drehung": 0,
+   "text": "Waschmaschine/Trockner 2 von 5",
+   "beleg": "Skizze Seite 2, Messkachel g_wasch2.jpg (sketch x 845-960, y 730-775, 700 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "geraet",
+   "x": 2374,
+   "y": 326,
+   "breite": 53,
+   "tiefe": 50,
+   "drehung": 0,
+   "text": "Waschmaschine/Trockner 3 von 5",
+   "beleg": "Skizze Seite 2, Messkachel g_wasch2.jpg (sketch x 845-960, y 730-775, 700 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "geraet",
+   "x": 2374,
+   "y": 276,
+   "breite": 53,
+   "tiefe": 50,
+   "drehung": 0,
+   "text": "Waschmaschine/Trockner 4 von 5",
+   "beleg": "Skizze Seite 2, Messkachel g_wasch2.jpg (sketch x 845-960, y 730-775, 700 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "geraet",
+   "x": 2374,
+   "y": 226,
+   "breite": 53,
+   "tiefe": 50,
+   "drehung": 0,
+   "text": "Waschmaschine/Trockner 5 von 5",
+   "beleg": "Skizze Seite 2, Messkachel g_wasch2.jpg (sketch x 845-960, y 730-775, 700 dpi, cm-Gitter)"
+  },
+  "--- TREPPENHAUS WEST (Nord, Plan-x 0..220) ---",
+  {
+   "typ": "treppe",
+   "x": 51,
+   "y": 382,
+   "breite": 85,
+   "tiefe": 374,
+   "drehung": 0,
+   "text": "Treppenlauf West 1 (nordseitig)",
+   "beleg": "Skizze Seite 2, Messkachel g_treppe_w.jpg (sketch x 825-1010, y 100-245, 480 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "treppe",
+   "x": 169,
+   "y": 362,
+   "breite": 96,
+   "tiefe": 319,
+   "drehung": 0,
+   "text": "Treppenlauf West 2 (suedseitig)",
+   "beleg": "Skizze Seite 2, Messkachel g_treppe_w.jpg (sketch x 825-1010, y 100-245, 480 dpi, cm-Gitter)"
+  },
+  "--- AUFZUG (Anbau VOR der Nordfassade, Plan-x 1790..2155) ---",
+  {
+   "typ": "aufzug",
+   "x": 1968,
+   "y": -145,
+   "breite": 162,
+   "tiefe": 217,
+   "drehung": 0,
+   "text": "Aufzugsschacht (Quadrat mit Diagonalkreuz)",
+   "beleg": "Skizze Seite 2, Messkachel g_aufzug.jpg (sketch x 960-1095, y 575-715, 520 dpi, cm-Gitter)"
+  },
+  {
+   "typ": "flaeche",
+   "x": 1974,
+   "y": -156,
+   "breite": 359,
+   "tiefe": 395,
+   "drehung": 0,
+   "text": "Aufzugsvorbau, umschliessendes Mauerwerk vor der Nordfassade",
+   "beleg": "Skizze Seite 2, Messkachel g_aufzug.jpg (sketch x 960-1095, y 575-715, 520 dpi, cm-Gitter)"
+  }
+ ],
+ "_luecken": [
+  "REGELZIMMER (Typ 1, 19 Stueck sued; Typ 2, 8 Stueck nord): auf Seite 2 ohne jedes Moebel gezeichnet. Gemessen 0,4-1,0 % dunkle Pixel innerhalb der Raumkontur - das ist allein der Tuerschlag zur Loggia. Kein Bett, kein Nachttisch, kein Schrank. Nicht in dieser Datei, weil nicht vorhanden.",
+  "BAEDER: die Kaesten am Flur sind gezeichnet, aber OHNE WC-, Waschtisch- oder Duschsymbol. Der dunkle Klotz auf der gemeinsamen Trennwand zweier Baeder ist als Installationsschacht ODER als Waschbecken lesbar - nicht entscheidbar, deshalb kein Element.",
+  "EMPFANGSTRESEN: im Empfangsraum ist keiner gezeichnet. Der einzige Tresen mit rundem Becken steht bei Plan-x 995..1070, also im Raum zwischen den Planwaenden x 975 und x 1178 - westlich des Backoffice-Ankers (1205/335). Ob er Rezeption, Kuechenzeile oder Sanitaerzeile ist, sagt die Skizze nicht; die Faecherteilung (ca. 90/90/130 cm) plus rundes Becken laesst beides zu. Position und Mass sind gemessen, die Benennung nicht.",
+  "DREI NISCHEN an der Nordwand des Kuechenraums (Plan-x 629..697 und 862..935, Plan-y 96..176) liegen im Loggia-/Fassadenband. Schrankeinbau oder bauliche Nische - nicht entscheidbar, deshalb kein Element.",
+  "ABGEWINKELTES 'Z'-ELEMENT nordwestlich des Kochblocks (ca. Plan-x 530..630, Plan-y 480..580): Theke, Sitzbank oder Tuerblatt - nicht entscheidbar.",
+  "ZICKZACKLINIE quer durch das Sonderzimmer bei Plan-x ca. 760: Faltwand, Trennwand oder zeichnerische Bruchkante. Kein Moebel, deshalb nicht aufgenommen.",
+  "TREPPENHAUS WEST: die beiden Laeufe sind als Stufenscharen gemessen, ein Zwischenpodest ist aber nicht separierbar (zwischen den Scharen liegen nur ca. 28 cm). Die Lauflinie ist als einzelne Diagonale mit Pfeil skizziert; die Steigungsrichtung ist daraus nur grob (nach Westen ansteigend) lesbar. Gegenprobe: data/ausstattung.json (Halle-Aufmass) setzt die Treppenlaeufe bei x 195 und 370 - meine Skizzenwerte liegen bei x 51 und 169, also 1,4-2,0 m weiter westlich. Die Skizze ist hier plan-konform (Planwand x 265 begrenzt das Treppenhaus nach Osten), die Abweichung zum Halle-Aufmass bleibt offen.",
+  "TREPPE OST gehoert nicht zum Westkopf und steht deshalb nicht in 'elemente'. Gemessene Werte, falls gebraucht: Lauf 1 (nord) x 7349, y 1235, breite 185, tiefe 157; Lauf 2 (sued) x 7553, y 1418, breite 169, tiefe 167; Beleg g_treppe_o2.jpg (sketch x 560-720, y 2040-2200).",
+  "LOGGIEN: Punktraster (Belag/Bepflanzung) und Kammschraffur (Gelaender bzw. geschlossenes Fassadenfeld) sind nirgends legendiert. Der Pflanzstreifen vor dem Empfang (Plan-x 1190..1830, Plan-y 33..197) enthaelt 2-4 Pflanzsymbole, deren Einzelmittelpunkte sich im Punktraster nicht sauber trennen lassen - deshalb dort keine pflanze-Elemente.",
+  "ZWEITES SONDERZIMMER: die Legende auf Seite 1 nennt 2 Sonderzimmer. Auf Seite 2 ist nur das westliche auffindbar. Das zweite ist nicht identifiziert.",
+  "VARIANTENKONFLIKT: Seite 1 desselben PDF moebliert DASSELBE Sonderzimmer West anders (2 Sessel + runder Beistelltisch, 1 Bett, 1 runder Tisch mit 2 Stuehlen). Diese Datei gibt ausschliesslich die Fassung von Seite 2 wieder.",
+  "AUFZUG LIEGT BEWUSST AUSSERHALB DER BESTANDSKONTUR: Schacht y -254..-36, Vorbau y -354..42. Das ist kein Messfehler, sondern die Aussage der Skizze - der Aufzug ist ein Anbau VOR der Nordfassade. Wer gegen y >= -100 prueft, muss diese beiden Elemente ausnehmen.",
+  "MASSTOLERANZ: Seite 2 hat weder Masskette noch Massstab noch Nordpfeil. Alle Werte stammen aus der oben dokumentierten Anpassung. Moebelmasse daher +/- 10-20 %, Mittelpunkte +/- 30 cm."
+ ]
+}
