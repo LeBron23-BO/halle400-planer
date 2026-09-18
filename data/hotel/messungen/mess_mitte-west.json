@@ -1,0 +1,1002 @@
+{
+ "abschnitt": "mitte-west",
+ "von_cm": 1200,
+ "bis_cm": 3400,
+ "quelle": "hotel_entzerrt.png (aus data/hotel/hotel-plan-normiert.png); Bezug aus bezug.json: Ursprung (98.89, 665.33) px, 28.1777 px/m, 3.5489 cm/px",
+ "methode": "Wandachse = belegungsgewichtete Mittellinie aus Spalten-/Zeilenprofilen der Tinte (Schwelle 80/255); Ausdehnung aus Laufweiten mit 25 cm Lueckentoleranz. Alle Werte auf 5 cm gerundet.",
+ "beleg": "beleg_mitte-west.png",
+ "laengswaende": [
+  {
+   "y_cm": -5,
+   "x0_cm": 1200,
+   "x1_cm": 1395,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Nordfassade Westteil, Achse -0,04 m; Mauerschraffur nach Sueden",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 15,
+   "x0_cm": 1395,
+   "x1_cm": 1850,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Nordfassade: springt an der Querwand x=1395 um rund 20 cm nach Sueden zurueck; Achse schwankt hier zwischen 10 und 20 cm",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": -5,
+   "x0_cm": 1875,
+   "x1_cm": 2790,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Nordfassade Mittelteil, Achse -0,04 m; Knick an der Querwand x=1865",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 10,
+   "x0_cm": 2905,
+   "x1_cm": 3400,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Nordfassade Ostteil, Achse +0,10 m; ab hier ohne Mauerschraffur",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 50,
+   "x0_cm": 1390,
+   "x1_cm": 2025,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "zweite Linie 50 cm suedlich der Nordfassade; Innenkante der Aussenwand ODER Loggia-Bruestung - nicht entscheidbar",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 50,
+   "x0_cm": 2065,
+   "x1_cm": 2295,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "Fortsetzung derselben Linie nach der Oeffnung 2025..2065",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 45,
+   "x0_cm": 2870,
+   "x1_cm": 3400,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "dieselbe Linie im Ostteil; zwischen 2420 und 2870 fehlt sie ganz",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 220,
+   "x0_cm": 1200,
+   "x1_cm": 2055,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Nord-Laengswand zwischen Nordstreifen und Nordraeumen, Westteil; Achse 2,18 m",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 205,
+   "x0_cm": 2085,
+   "x1_cm": 3400,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "dieselbe Wand oestlich der Oeffnung 2055..2085; Achse 2,03 m - 15 cm Freihand-Drift",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 530,
+   "x0_cm": 1200,
+   "x1_cm": 1405,
+   "art": "flur",
+   "sicherheit": "sicher",
+   "notiz": "Flur-Nordwand, Westteil",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 535,
+   "x0_cm": 2155,
+   "x1_cm": 2855,
+   "art": "flur",
+   "sicherheit": "sicher",
+   "notiz": "Flur-Nordwand, Mittelteil",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 535,
+   "x0_cm": 2895,
+   "x1_cm": 3400,
+   "art": "flur",
+   "sicherheit": "sicher",
+   "notiz": "Flur-Nordwand, Ostteil; Tueroeffnung 2855..2895",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 700,
+   "x0_cm": 1200,
+   "x1_cm": 3400,
+   "art": "flur",
+   "sicherheit": "sicher",
+   "notiz": "Flur-Suedwand, durchgehend; Tueroeffnungen bei 1375-1415, 1635-1665, 2045-2080, 2295-2320, 2720-2770, 2965-3015, 3395-3450",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 940,
+   "x0_cm": 1200,
+   "x1_cm": 1365,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Suedkante der Kaesten am Flur, Zimmer 1",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 925,
+   "x0_cm": 1445,
+   "x1_cm": 1610,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Suedkante der Kaesten, Zimmer 1/2",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 925,
+   "x0_cm": 1720,
+   "x1_cm": 2030,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Suedkante der Kaesten, Zimmer 2/3",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 920,
+   "x0_cm": 2115,
+   "x1_cm": 2275,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Suedkante der Kaesten, Zimmer 3/4",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 920,
+   "x0_cm": 2370,
+   "x1_cm": 2705,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Suedkante der Kaesten, Zimmer 4/5",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 920,
+   "x0_cm": 2810,
+   "x1_cm": 2950,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Suedkante der Kaesten, Zimmer 5/6",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 925,
+   "x0_cm": 3050,
+   "x1_cm": 3390,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Suedkante der Kaesten, Zimmer 6/7",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 1290,
+   "x0_cm": 1200,
+   "x1_cm": 3400,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Nordwand des Suedstreifens, ueber den ganzen Abschnitt ohne Unterbrechung; Achse 12,89 m",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 1555,
+   "x0_cm": 1200,
+   "x1_cm": 1385,
+   "art": "aussen",
+   "sicherheit": "unsicher",
+   "notiz": "Suedfassade Westteil, liegt 40 cm suedlicher als der Rest",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "y_cm": 1515,
+   "x0_cm": 1265,
+   "x1_cm": 3400,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Suedfassade, Hauptlinie; die Enden der Querwaende streuen zwischen 1530 und 1570 cm",
+   "beleg": "beleg_mitte-west.png"
+  }
+ ],
+ "querwaende": [
+  {
+   "x_cm": 1170,
+   "y0_cm": 215,
+   "y1_cm": 550,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "am Westrand des Abschnitts",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 1395,
+   "y0_cm": 0,
+   "y1_cm": 540,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "durchgehend von der Nordfassade bis zur Flur-Nordwand; Tueroeffnung y 275..330",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 1865,
+   "y0_cm": 15,
+   "y1_cm": 240,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "nur im Nordstreifen, endet an der Laengswand y=220",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 2155,
+   "y0_cm": -90,
+   "y1_cm": 550,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Doppelwand mit x=2185, 30 cm Zwischenraum; reicht nach NORDEN ueber die Fassadenlinie hinaus",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 2185,
+   "y0_cm": -90,
+   "y1_cm": 550,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "zweite Schale derselben Doppelwand",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 2560,
+   "y0_cm": 175,
+   "y1_cm": 550,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Ostwand des Erschliessungskerns",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 2760,
+   "y0_cm": 195,
+   "y1_cm": 550,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 2910,
+   "y0_cm": -45,
+   "y1_cm": 220,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "nur im Nordstreifen",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 3220,
+   "y0_cm": 5,
+   "y1_cm": 555,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "durchgehend von der Nordfassade bis zur Flur-Nordwand",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 1180,
+   "y0_cm": 690,
+   "y1_cm": 1300,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Zimmertrennwand, endet an der Wand y=1290",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 1340,
+   "y0_cm": 695,
+   "y1_cm": 955,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Ostwand des Bades, Zimmer 1",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 1370,
+   "y0_cm": 1285,
+   "y1_cm": 1570,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Trennwand im Suedstreifen",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 1455,
+   "y0_cm": 695,
+   "y1_cm": 945,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Westwand des kleinen Kastens, Zimmer 1",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 1530,
+   "y0_cm": 690,
+   "y1_cm": 1520,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Zimmertrennwand, DURCHGEHEND bis zur Suedfassade",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 1595,
+   "y0_cm": 685,
+   "y1_cm": 935,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Ostwand des kleinen Kastens, Zimmer 2",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 1715,
+   "y0_cm": 1265,
+   "y1_cm": 1560,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Trennwand im Suedstreifen",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 1730,
+   "y0_cm": 680,
+   "y1_cm": 945,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Westwand des Bades, Zimmer 2",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 1870,
+   "y0_cm": 680,
+   "y1_cm": 1295,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Zimmertrennwand, endet an der Wand y=1290",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 2015,
+   "y0_cm": 680,
+   "y1_cm": 930,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Ostwand des Bades, Zimmer 3",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 2045,
+   "y0_cm": 1285,
+   "y1_cm": 1565,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Trennwand im Suedstreifen",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 2120,
+   "y0_cm": 680,
+   "y1_cm": 935,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Westwand des kleinen Kastens, Zimmer 3",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 2205,
+   "y0_cm": 685,
+   "y1_cm": 1480,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Zimmertrennwand, DURCHGEHEND bis zur Suedfassade",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 2260,
+   "y0_cm": 685,
+   "y1_cm": 925,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Ostwand des kleinen Kastens, Zimmer 4",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 2375,
+   "y0_cm": 685,
+   "y1_cm": 930,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Westwand des Bades, Zimmer 4",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 2390,
+   "y0_cm": 1285,
+   "y1_cm": 1555,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Trennwand im Suedstreifen",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 2535,
+   "y0_cm": 685,
+   "y1_cm": 1300,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Zimmertrennwand, endet an der Wand y=1290",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 2690,
+   "y0_cm": 685,
+   "y1_cm": 930,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Ostwand des Bades, Zimmer 5",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 2715,
+   "y0_cm": 1285,
+   "y1_cm": 1545,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Trennwand im Suedstreifen",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 2815,
+   "y0_cm": 690,
+   "y1_cm": 925,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Westwand des kleinen Kastens, Zimmer 5",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 2875,
+   "y0_cm": 685,
+   "y1_cm": 1520,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Zimmertrennwand, DURCHGEHEND bis zur Suedfassade",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 2930,
+   "y0_cm": 685,
+   "y1_cm": 925,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Ostwand des kleinen Kastens, Zimmer 6",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 3055,
+   "y0_cm": 685,
+   "y1_cm": 935,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Westwand des Bades, Zimmer 6",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 3055,
+   "y0_cm": 1280,
+   "y1_cm": 1535,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Trennwand im Suedstreifen - zufaellig dieselbe x-Achse wie die Badwand darueber",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 3210,
+   "y0_cm": 685,
+   "y1_cm": 1300,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Zimmertrennwand, endet an der Wand y=1290",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 3365,
+   "y0_cm": 675,
+   "y1_cm": 935,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Ostwand des Bades, Zimmer 7",
+   "beleg": "beleg_mitte-west.png"
+  },
+  {
+   "x_cm": 3370,
+   "y0_cm": 1280,
+   "y1_cm": 1530,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Trennwand im Suedstreifen",
+   "beleg": "beleg_mitte-west.png"
+  }
+ ],
+ "raeume": [
+  {
+   "name": "unklar",
+   "x0_cm": 1200,
+   "y0_cm": 0,
+   "x1_cm": 1395,
+   "y1_cm": 220,
+   "sicherheit": "unsicher",
+   "notiz": "Nordstreifen West: weiss, Aussenwand mit Mauerschraffur, keine Nutzungsangabe lesbar"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 1170,
+   "y0_cm": 220,
+   "x1_cm": 1395,
+   "y1_cm": 530,
+   "sicherheit": "unsicher",
+   "notiz": "Nordraum West, 2,25 x 3,10 m, ein Moebelrechteck gezeichnet"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 1395,
+   "y0_cm": 50,
+   "x1_cm": 1865,
+   "y1_cm": 220,
+   "sicherheit": "unsicher",
+   "notiz": "gesprenkelter Boden, zwei organische Formen (Pflanzen?), Aussenwand OHNE Mauerschraffur"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 1865,
+   "y0_cm": 50,
+   "x1_cm": 2155,
+   "y1_cm": 220,
+   "sicherheit": "unsicher",
+   "notiz": "Nordstreifen zwischen Querwand 1865 und Doppelwand 2155"
+  },
+  {
+   "name": "empfang",
+   "x0_cm": 1395,
+   "y0_cm": 220,
+   "x1_cm": 2155,
+   "y1_cm": 700,
+   "sicherheit": "unsicher",
+   "notiz": "grosser offener Bereich - die Flur-Nordwand FEHLT hier zwischen 1405 und 2155; langes Moebelrechteck (Tresen?) bei x 1440..1790, y 390..460"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 2215,
+   "y0_cm": 0,
+   "x1_cm": 2910,
+   "y1_cm": 205,
+   "sicherheit": "unsicher",
+   "notiz": "Nordstreifen Mitte: durchgehend bis zur Fassade, keine Trennung bei y=50, Mauerschraffur"
+  },
+  {
+   "name": "treppe",
+   "x0_cm": 2220,
+   "y0_cm": 215,
+   "x1_cm": 2560,
+   "y1_cm": 550,
+   "sicherheit": "unsicher",
+   "notiz": "Erschliessungskern: zwei laengliche Rechtecke mit Quersprossen (x 2265..2340 / y 255..425 und x 2395..2475 / y 250..530) - Treppenlaeufe oder Aufzuege, nicht entscheidbar"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 2560,
+   "y0_cm": 205,
+   "x1_cm": 2760,
+   "y1_cm": 535,
+   "sicherheit": "unsicher",
+   "notiz": "Raum 2,00 x 3,30 m"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 2760,
+   "y0_cm": 205,
+   "x1_cm": 3220,
+   "y1_cm": 535,
+   "sicherheit": "unsicher",
+   "notiz": "Raum 4,60 x 3,30 m, keine Trennwand gezeichnet"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 2910,
+   "y0_cm": 45,
+   "x1_cm": 3400,
+   "y1_cm": 200,
+   "sicherheit": "unsicher",
+   "notiz": "gesprenkelter Boden, ovales Objekt bei x 3025..3130, Aussenwand OHNE Mauerschraffur"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 3220,
+   "y0_cm": 205,
+   "x1_cm": 3400,
+   "y1_cm": 535,
+   "sicherheit": "unsicher",
+   "notiz": "Raum, reicht ueber den Abschnittsrand hinaus"
+  },
+  {
+   "name": "flur",
+   "x0_cm": 1200,
+   "y0_cm": 530,
+   "x1_cm": 1405,
+   "y1_cm": 700,
+   "sicherheit": "sicher",
+   "notiz": "Mittelflur, 1,65 m breit"
+  },
+  {
+   "name": "flur",
+   "x0_cm": 2155,
+   "y0_cm": 535,
+   "x1_cm": 3400,
+   "y1_cm": 700,
+   "sicherheit": "sicher",
+   "notiz": "Mittelflur, 1,65 m breit; zwischen 1405 und 2155 geht er in den offenen Bereich ueber"
+  },
+  {
+   "name": "bad",
+   "x0_cm": 1180,
+   "y0_cm": 700,
+   "x1_cm": 1340,
+   "y1_cm": 940,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 1: grosser Kasten am Flur; in den Zimmern 1, 2, 4 und 6 ist darin ein Sanitaerobjekt gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 1455,
+   "y0_cm": 700,
+   "x1_cm": 1530,
+   "y1_cm": 940,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 1: kleiner Kasten am Flur, 55..85 cm breit - Schrank oder Nische, nicht beschriftet"
+  },
+  {
+   "name": "zimmer",
+   "x0_cm": 1180,
+   "y0_cm": 940,
+   "x1_cm": 1530,
+   "y1_cm": 1290,
+   "sicherheit": "sicher",
+   "notiz": "Zimmer 1: Hauptraum, 3.50 x 3.50 m"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 1370,
+   "y0_cm": 1290,
+   "x1_cm": 1530,
+   "y1_cm": 1515,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 1: gesprenkelter Boden, Aussenwand OHNE Mauerschraffur; die Loggien liegen paarweise nebeneinander"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 1180,
+   "y0_cm": 1290,
+   "x1_cm": 1370,
+   "y1_cm": 1515,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 1: weiss, Aussenwand MIT Mauerschraffur; zum Nachbarzimmer NICHT abgetrennt"
+  },
+  {
+   "name": "bad",
+   "x0_cm": 1730,
+   "y0_cm": 700,
+   "x1_cm": 1870,
+   "y1_cm": 930,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 2: grosser Kasten am Flur; in den Zimmern 1, 2, 4 und 6 ist darin ein Sanitaerobjekt gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 1530,
+   "y0_cm": 700,
+   "x1_cm": 1595,
+   "y1_cm": 930,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 2: kleiner Kasten am Flur, 55..85 cm breit - Schrank oder Nische, nicht beschriftet"
+  },
+  {
+   "name": "zimmer",
+   "x0_cm": 1530,
+   "y0_cm": 930,
+   "x1_cm": 1870,
+   "y1_cm": 1290,
+   "sicherheit": "sicher",
+   "notiz": "Zimmer 2: Hauptraum, 3.40 x 3.60 m"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 1530,
+   "y0_cm": 1290,
+   "x1_cm": 1715,
+   "y1_cm": 1515,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 2: gesprenkelter Boden, Aussenwand OHNE Mauerschraffur; die Loggien liegen paarweise nebeneinander"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 1715,
+   "y0_cm": 1290,
+   "x1_cm": 1870,
+   "y1_cm": 1515,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 2: weiss, Aussenwand MIT Mauerschraffur; zum Nachbarzimmer NICHT abgetrennt"
+  },
+  {
+   "name": "bad",
+   "x0_cm": 1870,
+   "y0_cm": 700,
+   "x1_cm": 2015,
+   "y1_cm": 930,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 3: grosser Kasten am Flur; in den Zimmern 1, 2, 4 und 6 ist darin ein Sanitaerobjekt gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 2120,
+   "y0_cm": 700,
+   "x1_cm": 2205,
+   "y1_cm": 930,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 3: kleiner Kasten am Flur, 55..85 cm breit - Schrank oder Nische, nicht beschriftet"
+  },
+  {
+   "name": "zimmer",
+   "x0_cm": 1870,
+   "y0_cm": 930,
+   "x1_cm": 2205,
+   "y1_cm": 1290,
+   "sicherheit": "sicher",
+   "notiz": "Zimmer 3: Hauptraum, 3.35 x 3.60 m"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 2045,
+   "y0_cm": 1290,
+   "x1_cm": 2205,
+   "y1_cm": 1515,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 3: gesprenkelter Boden, Aussenwand OHNE Mauerschraffur; die Loggien liegen paarweise nebeneinander"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 1870,
+   "y0_cm": 1290,
+   "x1_cm": 2045,
+   "y1_cm": 1515,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 3: weiss, Aussenwand MIT Mauerschraffur; zum Nachbarzimmer NICHT abgetrennt"
+  },
+  {
+   "name": "bad",
+   "x0_cm": 2375,
+   "y0_cm": 700,
+   "x1_cm": 2535,
+   "y1_cm": 925,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 4: grosser Kasten am Flur; in den Zimmern 1, 2, 4 und 6 ist darin ein Sanitaerobjekt gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 2205,
+   "y0_cm": 700,
+   "x1_cm": 2260,
+   "y1_cm": 925,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 4: kleiner Kasten am Flur, 55..85 cm breit - Schrank oder Nische, nicht beschriftet"
+  },
+  {
+   "name": "zimmer",
+   "x0_cm": 2205,
+   "y0_cm": 925,
+   "x1_cm": 2535,
+   "y1_cm": 1290,
+   "sicherheit": "sicher",
+   "notiz": "Zimmer 4: Hauptraum, 3.30 x 3.65 m"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 2205,
+   "y0_cm": 1290,
+   "x1_cm": 2390,
+   "y1_cm": 1515,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 4: gesprenkelter Boden, Aussenwand OHNE Mauerschraffur; die Loggien liegen paarweise nebeneinander"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 2390,
+   "y0_cm": 1290,
+   "x1_cm": 2535,
+   "y1_cm": 1515,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 4: weiss, Aussenwand MIT Mauerschraffur; zum Nachbarzimmer NICHT abgetrennt"
+  },
+  {
+   "name": "bad",
+   "x0_cm": 2535,
+   "y0_cm": 700,
+   "x1_cm": 2690,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 5: grosser Kasten am Flur; in den Zimmern 1, 2, 4 und 6 ist darin ein Sanitaerobjekt gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 2815,
+   "y0_cm": 700,
+   "x1_cm": 2875,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 5: kleiner Kasten am Flur, 55..85 cm breit - Schrank oder Nische, nicht beschriftet"
+  },
+  {
+   "name": "zimmer",
+   "x0_cm": 2535,
+   "y0_cm": 920,
+   "x1_cm": 2875,
+   "y1_cm": 1290,
+   "sicherheit": "sicher",
+   "notiz": "Zimmer 5: Hauptraum, 3.40 x 3.70 m"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 2715,
+   "y0_cm": 1290,
+   "x1_cm": 2875,
+   "y1_cm": 1515,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 5: gesprenkelter Boden, Aussenwand OHNE Mauerschraffur; die Loggien liegen paarweise nebeneinander"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 2535,
+   "y0_cm": 1290,
+   "x1_cm": 2715,
+   "y1_cm": 1515,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 5: weiss, Aussenwand MIT Mauerschraffur; zum Nachbarzimmer NICHT abgetrennt"
+  },
+  {
+   "name": "bad",
+   "x0_cm": 3055,
+   "y0_cm": 700,
+   "x1_cm": 3210,
+   "y1_cm": 925,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 6: grosser Kasten am Flur; in den Zimmern 1, 2, 4 und 6 ist darin ein Sanitaerobjekt gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 2875,
+   "y0_cm": 700,
+   "x1_cm": 2930,
+   "y1_cm": 925,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 6: kleiner Kasten am Flur, 55..85 cm breit - Schrank oder Nische, nicht beschriftet"
+  },
+  {
+   "name": "zimmer",
+   "x0_cm": 2875,
+   "y0_cm": 925,
+   "x1_cm": 3210,
+   "y1_cm": 1290,
+   "sicherheit": "sicher",
+   "notiz": "Zimmer 6: Hauptraum, 3.35 x 3.65 m"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 2875,
+   "y0_cm": 1290,
+   "x1_cm": 3055,
+   "y1_cm": 1515,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 6: gesprenkelter Boden, Aussenwand OHNE Mauerschraffur; die Loggien liegen paarweise nebeneinander"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 3055,
+   "y0_cm": 1290,
+   "x1_cm": 3210,
+   "y1_cm": 1515,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 6: weiss, Aussenwand MIT Mauerschraffur; zum Nachbarzimmer NICHT abgetrennt"
+  },
+  {
+   "name": "bad",
+   "x0_cm": 3210,
+   "y0_cm": 700,
+   "x1_cm": 3365,
+   "y1_cm": 930,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 7: grosser Kasten am Flur; in den Zimmern 1, 2, 4 und 6 ist darin ein Sanitaerobjekt gezeichnet"
+  },
+  {
+   "name": "zimmer",
+   "x0_cm": 3210,
+   "y0_cm": 930,
+   "x1_cm": 3400,
+   "y1_cm": 1290,
+   "sicherheit": "sicher",
+   "notiz": "Zimmer 7: Hauptraum, 1.90 x 3.60 m"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 3370,
+   "y0_cm": 1290,
+   "x1_cm": 3400,
+   "y1_cm": 1515,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 7: gesprenkelter Boden, Aussenwand OHNE Mauerschraffur; die Loggien liegen paarweise nebeneinander"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 3210,
+   "y0_cm": 1290,
+   "x1_cm": 3370,
+   "y1_cm": 1515,
+   "sicherheit": "unsicher",
+   "notiz": "Zimmer 7: weiss, Aussenwand MIT Mauerschraffur; zum Nachbarzimmer NICHT abgetrennt"
+  }
+ ],
+ "raster": {
+  "zimmerachsen_sued_cm": [
+   1180,
+   1530,
+   1870,
+   2205,
+   2535,
+   2875,
+   3210
+  ],
+  "einzelabstaende_cm": [
+   350,
+   340,
+   335,
+   330,
+   340,
+   335
+  ],
+  "mittleres_raster_cm": 338,
+  "hinweis": "Freihandzeichnung - kein exaktes Raster; die Einzelabstaende streuen um +-10 cm"
+ },
+ "luecken": [
+  "Nutzung: die PDF hat keine Textebene, und im Abschnitt 12..34 m steht keine lesbare Raumbeschriftung. Alle Raumnamen sind aus Geometrie und Symbolen abgeleitet, nicht abgelesen.",
+  "Das suedliche Aussenfeld jedes Zimmers (weiss, mit Mauerschraffur, 1,5..1,9 x 2,25 m) ist unbenannt und zum Nachbarzimmer NICHT durch eine Wand getrennt - je zwei Zimmer teilen sich ein 3,3 m breites Feld. Entweder hat der Zeichner die Trennwand ausgelassen, oder es ist kein Zimmerraum.",
+  "Loggia oder Bad: die gesprenkelten Felder sind als Loggia gedeutet, weil dort die Mauerschraffur der Aussenwand fehlt. Ein Fliesenmuster im Bad saehe genauso aus. Nicht entscheidbar.",
+  "Der Erschliessungskern (x 2220..2560) enthaelt zwei Rechtecke mit Quersprossen. Treppe oder Aufzug ist nicht zu unterscheiden; Laufrichtung oder Pfeil fehlen.",
+  "Die Doppelwand x=2155/2185 reicht nach Norden ueber die Fassadenlinie hinaus (bis mindestens y=-90 cm). Was dort vorspringt, liegt ausserhalb des angesehenen Ausschnitts und ist nicht vermessen.",
+  "Die 50-cm-Linie im Nordstreifen laeuft nur ueber Teilstrecken (1390-2025, 2065-2295, 2870-3400, dazu kurze Reste bei 1160-1215, 1245-1290 und 2320-2420). Ob Innenkante der Aussenwand oder Bruestung, gibt die Zeichnung nicht her.",
+  "Freihand-Drift: die Nord-Laengswand faellt ueber den Abschnitt von y=220 auf y=205, die Suedfassade schwankt zwischen 1515 und 1570 cm. Die Achsen sind abschnittsweise gemittelt, nicht auf 1 cm genau.",
+  "Der Bereich x 1405..2155 hat KEINE Flur-Nordwand. Ob offene Lobby oder nicht gezeichnete Wand, ist nicht entscheidbar; der Tresen spricht fuer eine offene Lobby.",
+  "Im Norden fehlt zwischen x 2185 und 2560 sowie zwischen 2760 und 3220 jede weitere Querwand. Die Nordraeume sind 2,0 bis 4,6 m breit und folgen KEINEM 3,38-m-Raster wie die Suedzimmer - Zimmer Typ 2 ist im Norden nicht als Raster nachweisbar.",
+  "Zimmer 7 (ab x=3210) ragt ueber den Abschnittsrand hinaus; seine Ostwand liegt jenseits von 3400 cm und ist hier nicht gemessen.",
+  "Die duennen Senkrechten bei x=1270 und x=2385 (7 cm breit, mit Kugel am unteren Ende) sind Beschriftungs-Zeigelinien, KEINE Waende - sie sind bewusst nicht aufgenommen."
+ ]
+}

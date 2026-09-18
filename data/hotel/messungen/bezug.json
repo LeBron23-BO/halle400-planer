@@ -1,0 +1,110 @@
+{
+  "quelle": "data/hotel/hotel-plan-normiert.png",
+  "vorbereitung": "cv2.ROTATE_90_COUNTERCLOCKWISE, danach Entzerrungs-Drehung",
+  "entzerrung": {
+    "drehwinkel_grad": 0.4508,
+    "drehpunkt_px": [
+      1208.5,
+      848.0
+    ],
+    "richtung": "positiv = gegen den Uhrzeigersinn im angezeigten Bild",
+    "bild": "hotel_entzerrt.png",
+    "bildgroesse_px": [
+      2417,
+      1696
+    ],
+    "zeugen_grad": {
+      "nord": 0.643,
+      "sued": 0.249,
+      "west": 0.73,
+      "ost": 1.267
+    },
+    "restneigung_grad": {
+      "nord": 0.206,
+      "sued": -0.209,
+      "west": 0.249,
+      "ost": 0.718
+    }
+  },
+  "ursprung_px": {
+    "x": 98.89,
+    "y": 665.33,
+    "bedeutung": "Schnittpunkt Aussenlinie Westgiebel x Aussenlinie Nordfassade, im entzerrten Bild"
+  },
+  "px_je_meter": 28.1777,
+  "cm_je_px": 3.5489,
+  "bezugslaenge_m": 78.0,
+  "gemessen": {
+    "laenge_px": 2197.86,
+    "tiefe_px": 430.27,
+    "tiefe_m": 15.27,
+    "aufzug_vorsprung_m": 3.25
+  },
+  "gegenprobe_bueroplan": {
+    "datei": "app/public/plaene/halle400.json",
+    "hauptkoerper_tiefe_m": 15.31,
+    "abweichung_m": -0.04,
+    "nordvorsprung_m": 3.52
+  },
+  "unsicherheit": {
+    "streuung_nord_px": 6.05,
+    "streuung_sued_px": 4.81,
+    "hinweis": "Freihandzeichnung: Fassadenlinien schwanken; auf 5 cm runden, nicht auf cm."
+  },
+  "verworfen": {
+    "ursprung_93_566": "y=566 ist die Oberkante des Aufzugsschachts, NICHT die Nordfassade",
+    "tiefe_19_31_m": "war die Bounding-Box inkl. Aufzugsvorsprung, nicht die Gebaeudetiefe"
+  },
+  "umrechnung_alte_messungen": {
+    "alter_bezug": {
+      "ursprung_px": [
+        93.0,
+        566.0
+      ],
+      "px_je_meter": 28.4333,
+      "unentzerrt": true
+    },
+    "naeherung": "m_neu = 1.00907 * m_alt - 0.2094 (plus bis zu 0.07 m aus der Entzerrung)",
+    "querwaende_sued_m": [
+      -0.03,
+      0.75,
+      5.97,
+      6.57,
+      8.34,
+      10.25,
+      11.86,
+      15.37,
+      18.77,
+      22.11,
+      25.45,
+      28.82,
+      32.15,
+      35.63,
+      38.72,
+      42.23,
+      45.53,
+      48.8,
+      52.17,
+      55.47,
+      57.16,
+      58.73,
+      61.93,
+      65.44,
+      68.98,
+      72.29,
+      77.96
+    ],
+    "querwaende_nord_m": [
+      0.73,
+      4.92,
+      13.94,
+      20.96,
+      21.71,
+      32.21,
+      45.44,
+      58.68,
+      72.41,
+      78.02
+    ]
+  }
+}

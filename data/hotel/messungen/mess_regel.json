@@ -1,0 +1,1949 @@
+{
+ "abschnitt": "regel",
+ "von_cm": 3200,
+ "bis_cm": 6000,
+ "bezug": {
+  "quelle": "hotel_entzerrt.png (aus data/hotel/hotel-plan-normiert.png)",
+  "bezugsdatei": "bezug.json",
+  "ursprung": "Nordfassade x Westgiebel, x nach Osten, y nach Sueden",
+  "px_je_meter": 28.1777,
+  "cm_je_px": 3.5489,
+  "rundung": "5 cm",
+  "achse": "belegungsgewichtete Mittellinie des Duktus"
+ },
+ "laengswaende": [
+  {
+   "y_cm": 25,
+   "x0_cm": 3200,
+   "x1_cm": 6000,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Nordfassade, eine durchgehende Linie ueber den ganzen Abschnitt",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": -35,
+   "x0_cm": 3530,
+   "x1_cm": 4225,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "vorgesetzte Aussenkante mit Sprossen-Signatur (Gelaender/franz. Balkon); Deutung offen",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": -20,
+   "x0_cm": 4870,
+   "x1_cm": 5560,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "vorgesetzte Aussenkante mit Sprossen-Signatur; Deutung offen",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 70,
+   "x0_cm": 3210,
+   "x1_cm": 3325,
+   "art": "aussen",
+   "sicherheit": "unsicher",
+   "notiz": "zweite Fassadenlinie, nur abschnittsweise gezeichnet; Innenkante der Aussenwand ODER Rueckwand des vorgesetzten Bands",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 70,
+   "x0_cm": 3395,
+   "x1_cm": 3475,
+   "art": "aussen",
+   "sicherheit": "unsicher",
+   "notiz": "zweite Fassadenlinie, nur abschnittsweise gezeichnet; Innenkante der Aussenwand ODER Rueckwand des vorgesetzten Bands",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 70,
+   "x0_cm": 4200,
+   "x1_cm": 4910,
+   "art": "aussen",
+   "sicherheit": "unsicher",
+   "notiz": "zweite Fassadenlinie, nur abschnittsweise gezeichnet; Innenkante der Aussenwand ODER Rueckwand des vorgesetzten Bands",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 70,
+   "x0_cm": 5540,
+   "x1_cm": 6000,
+   "art": "aussen",
+   "sicherheit": "unsicher",
+   "notiz": "zweite Fassadenlinie, nur abschnittsweise gezeichnet; Innenkante der Aussenwand ODER Rueckwand des vorgesetzten Bands",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 195,
+   "x0_cm": 3200,
+   "x1_cm": 3545,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Nord: Rueckwand der Fassadenzone",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 205,
+   "x0_cm": 3745,
+   "x1_cm": 6000,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Nord: Rueckwand der Fassadenzone",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 535,
+   "x0_cm": 3200,
+   "x1_cm": 3545,
+   "art": "flur",
+   "sicherheit": "sicher",
+   "notiz": "Nord-Flurwand; Luecken sind Tueroeffnungen",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 535,
+   "x0_cm": 3600,
+   "x1_cm": 3945,
+   "art": "flur",
+   "sicherheit": "sicher",
+   "notiz": "Nord-Flurwand; Luecken sind Tueroeffnungen",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 530,
+   "x0_cm": 4040,
+   "x1_cm": 6000,
+   "art": "flur",
+   "sicherheit": "sicher",
+   "notiz": "Nord-Flurwand",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 695,
+   "x0_cm": 3200,
+   "x1_cm": 3400,
+   "art": "flur",
+   "sicherheit": "sicher",
+   "notiz": "Sued-Flurwand; Luecken sind Tueroeffnungen",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 705,
+   "x0_cm": 3450,
+   "x1_cm": 3640,
+   "art": "flur",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 705,
+   "x0_cm": 3690,
+   "x1_cm": 4060,
+   "art": "flur",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 710,
+   "x0_cm": 4115,
+   "x1_cm": 4325,
+   "art": "flur",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 705,
+   "x0_cm": 4375,
+   "x1_cm": 4725,
+   "art": "flur",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 710,
+   "x0_cm": 4780,
+   "x1_cm": 4970,
+   "art": "flur",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 715,
+   "x0_cm": 5035,
+   "x1_cm": 5375,
+   "art": "flur",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 710,
+   "x0_cm": 5450,
+   "x1_cm": 5620,
+   "art": "flur",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 705,
+   "x0_cm": 5695,
+   "x1_cm": 6000,
+   "art": "flur",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 925,
+   "x0_cm": 3200,
+   "x1_cm": 3390,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Sued: Rueckwand der Nassraum-/Vorraumzone",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 920,
+   "x0_cm": 3495,
+   "x1_cm": 3640,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 925,
+   "x0_cm": 3735,
+   "x1_cm": 4030,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 915,
+   "x0_cm": 4150,
+   "x1_cm": 4300,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 930,
+   "x0_cm": 4410,
+   "x1_cm": 4695,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 925,
+   "x0_cm": 4800,
+   "x1_cm": 4950,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 940,
+   "x0_cm": 5055,
+   "x1_cm": 5375,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 930,
+   "x0_cm": 5485,
+   "x1_cm": 5610,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 930,
+   "x0_cm": 5705,
+   "x1_cm": 6000,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 1285,
+   "x0_cm": 3200,
+   "x1_cm": 6000,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "Sued: Rueckwand der Fassadenzone, durchgehend",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 1470,
+   "x0_cm": 3200,
+   "x1_cm": 6000,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Sued: Vorderkante der Fassadenzone (Bruestung), durchgehend",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "y_cm": 1510,
+   "x0_cm": 3200,
+   "x1_cm": 6000,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Suedfassade, durchgehend",
+   "beleg": "beleg_regel.png"
+  }
+ ],
+ "querwaende": [
+  {
+   "x_cm": 3210,
+   "y0_cm": 40,
+   "y1_cm": 555,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3210,
+   "y0_cm": 685,
+   "y1_cm": 1300,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3210,
+   "y0_cm": 1470,
+   "y1_cm": 1530,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3365,
+   "y0_cm": 5,
+   "y1_cm": 50,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3365,
+   "y0_cm": 675,
+   "y1_cm": 935,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3365,
+   "y0_cm": 1280,
+   "y1_cm": 1530,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3500,
+   "y0_cm": 685,
+   "y1_cm": 930,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3500,
+   "y0_cm": 1205,
+   "y1_cm": 1305,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3500,
+   "y0_cm": 1360,
+   "y1_cm": 1520,
+   "art": "aussen",
+   "sicherheit": "unsicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3555,
+   "y0_cm": -45,
+   "y1_cm": 190,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "seitlicher Abschluss des vorgesetzten Nordbands",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3555,
+   "y0_cm": 685,
+   "y1_cm": 1520,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3615,
+   "y0_cm": 685,
+   "y1_cm": 925,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3615,
+   "y0_cm": 1210,
+   "y1_cm": 1300,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3615,
+   "y0_cm": 1430,
+   "y1_cm": 1510,
+   "art": "aussen",
+   "sicherheit": "unsicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3690,
+   "y0_cm": 170,
+   "y1_cm": 560,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3690,
+   "y0_cm": 1465,
+   "y1_cm": 1505,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3735,
+   "y0_cm": 695,
+   "y1_cm": 945,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3735,
+   "y0_cm": 1280,
+   "y1_cm": 1545,
+   "art": "aussen",
+   "sicherheit": "unsicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3780,
+   "y0_cm": 1480,
+   "y1_cm": 1540,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3870,
+   "y0_cm": 175,
+   "y1_cm": 565,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3870,
+   "y0_cm": 690,
+   "y1_cm": 1300,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 3870,
+   "y0_cm": 1480,
+   "y1_cm": 1545,
+   "art": "aussen",
+   "sicherheit": "unsicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4000,
+   "y0_cm": 695,
+   "y1_cm": 935,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4000,
+   "y0_cm": 1480,
+   "y1_cm": 1530,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4035,
+   "y0_cm": 1285,
+   "y1_cm": 1545,
+   "art": "aussen",
+   "sicherheit": "unsicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4090,
+   "y0_cm": 175,
+   "y1_cm": 565,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4090,
+   "y0_cm": 1255,
+   "y1_cm": 1305,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4090,
+   "y0_cm": 1410,
+   "y1_cm": 1520,
+   "art": "aussen",
+   "sicherheit": "unsicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4145,
+   "y0_cm": 700,
+   "y1_cm": 920,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4145,
+   "y0_cm": 1220,
+   "y1_cm": 1300,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4145,
+   "y0_cm": 1425,
+   "y1_cm": 1520,
+   "art": "aussen",
+   "sicherheit": "unsicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4215,
+   "y0_cm": -55,
+   "y1_cm": 215,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "seitlicher Abschluss des vorgesetzten Nordbands",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4215,
+   "y0_cm": 705,
+   "y1_cm": 1515,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4285,
+   "y0_cm": 30,
+   "y1_cm": 75,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4285,
+   "y0_cm": 155,
+   "y1_cm": 285,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4285,
+   "y0_cm": 705,
+   "y1_cm": 925,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4285,
+   "y0_cm": 1215,
+   "y1_cm": 1300,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4285,
+   "y0_cm": 1455,
+   "y1_cm": 1510,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4360,
+   "y0_cm": 30,
+   "y1_cm": 155,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4360,
+   "y0_cm": 1460,
+   "y1_cm": 1510,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4405,
+   "y0_cm": 25,
+   "y1_cm": 150,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4405,
+   "y0_cm": 700,
+   "y1_cm": 945,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4405,
+   "y0_cm": 1270,
+   "y1_cm": 1540,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4545,
+   "y0_cm": 20,
+   "y1_cm": 540,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4545,
+   "y0_cm": 695,
+   "y1_cm": 1285,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4545,
+   "y0_cm": 1480,
+   "y1_cm": 1540,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4695,
+   "y0_cm": 20,
+   "y1_cm": 110,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4695,
+   "y0_cm": 700,
+   "y1_cm": 950,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4695,
+   "y0_cm": 1270,
+   "y1_cm": 1540,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4800,
+   "y0_cm": 25,
+   "y1_cm": 75,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4800,
+   "y0_cm": 195,
+   "y1_cm": 270,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4800,
+   "y0_cm": 700,
+   "y1_cm": 945,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4800,
+   "y0_cm": 1200,
+   "y1_cm": 1285,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4800,
+   "y0_cm": 1450,
+   "y1_cm": 1510,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4875,
+   "y0_cm": -20,
+   "y1_cm": 215,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "seitlicher Abschluss des vorgesetzten Nordbands",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4875,
+   "y0_cm": 700,
+   "y1_cm": 1515,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4940,
+   "y0_cm": 700,
+   "y1_cm": 940,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4940,
+   "y0_cm": 1200,
+   "y1_cm": 1285,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 4940,
+   "y0_cm": 1460,
+   "y1_cm": 1515,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5030,
+   "y0_cm": 205,
+   "y1_cm": 540,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5030,
+   "y0_cm": 1455,
+   "y1_cm": 1515,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5070,
+   "y0_cm": 705,
+   "y1_cm": 955,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5070,
+   "y0_cm": 1275,
+   "y1_cm": 1545,
+   "art": "aussen",
+   "sicherheit": "unsicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5210,
+   "y0_cm": 200,
+   "y1_cm": 540,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5210,
+   "y0_cm": 705,
+   "y1_cm": 1300,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5210,
+   "y0_cm": 1480,
+   "y1_cm": 1545,
+   "art": "aussen",
+   "sicherheit": "unsicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5360,
+   "y0_cm": 200,
+   "y1_cm": 540,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5360,
+   "y0_cm": 700,
+   "y1_cm": 950,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5360,
+   "y0_cm": 1285,
+   "y1_cm": 1540,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5485,
+   "y0_cm": 425,
+   "y1_cm": 545,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5485,
+   "y0_cm": 700,
+   "y1_cm": 955,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5485,
+   "y0_cm": 1205,
+   "y1_cm": 1515,
+   "art": "aussen",
+   "sicherheit": "unsicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5540,
+   "y0_cm": -25,
+   "y1_cm": 255,
+   "art": "aussen",
+   "sicherheit": "unsicher",
+   "notiz": "seitlicher Abschluss des vorgesetzten Nordbands",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5540,
+   "y0_cm": 700,
+   "y1_cm": 1520,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5605,
+   "y0_cm": 25,
+   "y1_cm": 175,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5605,
+   "y0_cm": 700,
+   "y1_cm": 945,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5605,
+   "y0_cm": 1205,
+   "y1_cm": 1520,
+   "art": "aussen",
+   "sicherheit": "unsicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5705,
+   "y0_cm": 70,
+   "y1_cm": 150,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5705,
+   "y0_cm": 210,
+   "y1_cm": 285,
+   "art": "trennwand",
+   "sicherheit": "unsicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5705,
+   "y0_cm": 690,
+   "y1_cm": 940,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5705,
+   "y0_cm": 1270,
+   "y1_cm": 1535,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5865,
+   "y0_cm": 30,
+   "y1_cm": 540,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5865,
+   "y0_cm": 690,
+   "y1_cm": 1305,
+   "art": "trennwand",
+   "sicherheit": "sicher",
+   "notiz": "",
+   "beleg": "beleg_regel.png"
+  },
+  {
+   "x_cm": 5865,
+   "y0_cm": 1475,
+   "y1_cm": 1530,
+   "art": "aussen",
+   "sicherheit": "sicher",
+   "notiz": "Steg zwischen Bruestung und Suedfassade",
+   "beleg": "beleg_regel.png"
+  }
+ ],
+ "raeume": [
+  {
+   "name": "loggia",
+   "x0_cm": 3210,
+   "y0_cm": 25,
+   "x1_cm": 3555,
+   "y1_cm": 200,
+   "sicherheit": "unsicher",
+   "zone": "Z1",
+   "notiz": "Punkt-Signatur wie die Sued-Fassadenzone, gleiche Tiefe 175 cm; nicht beschriftet"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 3555,
+   "y0_cm": 25,
+   "x1_cm": 4215,
+   "y1_cm": 200,
+   "sicherheit": "unsicher",
+   "zone": "Z1",
+   "notiz": "vorgesetztes Band mit Gelaender-Signatur; Punkt-Signatur wie die Sued-Fassadenzone, gleiche Tiefe 175 cm; nicht beschriftet"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 4215,
+   "y0_cm": 25,
+   "x1_cm": 4360,
+   "y1_cm": 200,
+   "sicherheit": "unsicher",
+   "zone": "Z1",
+   "notiz": "Punkt-Signatur wie die Sued-Fassadenzone, gleiche Tiefe 175 cm; nicht beschriftet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 4360,
+   "y0_cm": 25,
+   "x1_cm": 4405,
+   "y1_cm": 200,
+   "sicherheit": "unsicher",
+   "zone": "Z1",
+   "notiz": "schmale Zelle in der Nord-Fassadenzone"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 4405,
+   "y0_cm": 25,
+   "x1_cm": 4545,
+   "y1_cm": 200,
+   "sicherheit": "unsicher",
+   "zone": "Z1",
+   "notiz": "Punkt-Signatur wie die Sued-Fassadenzone, gleiche Tiefe 175 cm; nicht beschriftet"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 4545,
+   "y0_cm": 25,
+   "x1_cm": 4875,
+   "y1_cm": 200,
+   "sicherheit": "unsicher",
+   "zone": "Z1",
+   "notiz": "Punkt-Signatur wie die Sued-Fassadenzone, gleiche Tiefe 175 cm; nicht beschriftet"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 4875,
+   "y0_cm": 25,
+   "x1_cm": 5540,
+   "y1_cm": 200,
+   "sicherheit": "unsicher",
+   "zone": "Z1",
+   "notiz": "vorgesetztes Band mit Gelaender-Signatur; Punkt-Signatur wie die Sued-Fassadenzone, gleiche Tiefe 175 cm; nicht beschriftet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 5540,
+   "y0_cm": 25,
+   "x1_cm": 5605,
+   "y1_cm": 200,
+   "sicherheit": "unsicher",
+   "zone": "Z1",
+   "notiz": "schmale Zelle in der Nord-Fassadenzone"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 5605,
+   "y0_cm": 25,
+   "x1_cm": 5865,
+   "y1_cm": 200,
+   "sicherheit": "unsicher",
+   "zone": "Z1",
+   "notiz": "Punkt-Signatur wie die Sued-Fassadenzone, gleiche Tiefe 175 cm; nicht beschriftet"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 5865,
+   "y0_cm": 25,
+   "x1_cm": 6000,
+   "y1_cm": 200,
+   "sicherheit": "unsicher",
+   "zone": "Z1",
+   "notiz": "Punkt-Signatur wie die Sued-Fassadenzone, gleiche Tiefe 175 cm; nicht beschriftet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 3210,
+   "y0_cm": 205,
+   "x1_cm": 3690,
+   "y1_cm": 530,
+   "sicherheit": "unsicher",
+   "zone": "Z2",
+   "notiz": "Raster 480/180/220/455 cm je 1330-cm-Block - passt NICHT zum angenommenen Zimmerraster 328 cm; nicht beschriftet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 3690,
+   "y0_cm": 205,
+   "x1_cm": 3870,
+   "y1_cm": 530,
+   "sicherheit": "unsicher",
+   "zone": "Z2",
+   "notiz": "Raster 480/180/220/455 cm je 1330-cm-Block - passt NICHT zum angenommenen Zimmerraster 328 cm; nicht beschriftet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 3870,
+   "y0_cm": 205,
+   "x1_cm": 4090,
+   "y1_cm": 530,
+   "sicherheit": "unsicher",
+   "zone": "Z2",
+   "notiz": "Raster 480/180/220/455 cm je 1330-cm-Block - passt NICHT zum angenommenen Zimmerraster 328 cm; nicht beschriftet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 4090,
+   "y0_cm": 205,
+   "x1_cm": 4545,
+   "y1_cm": 530,
+   "sicherheit": "unsicher",
+   "zone": "Z2",
+   "notiz": "Raster 480/180/220/455 cm je 1330-cm-Block - passt NICHT zum angenommenen Zimmerraster 328 cm; nicht beschriftet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 4545,
+   "y0_cm": 205,
+   "x1_cm": 5030,
+   "y1_cm": 530,
+   "sicherheit": "unsicher",
+   "zone": "Z2",
+   "notiz": "Raster 480/180/220/455 cm je 1330-cm-Block - passt NICHT zum angenommenen Zimmerraster 328 cm; nicht beschriftet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 5030,
+   "y0_cm": 205,
+   "x1_cm": 5210,
+   "y1_cm": 530,
+   "sicherheit": "unsicher",
+   "zone": "Z2",
+   "notiz": "Raster 480/180/220/455 cm je 1330-cm-Block - passt NICHT zum angenommenen Zimmerraster 328 cm; nicht beschriftet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 5210,
+   "y0_cm": 205,
+   "x1_cm": 5360,
+   "y1_cm": 530,
+   "sicherheit": "unsicher",
+   "zone": "Z2",
+   "notiz": "Raster 480/180/220/455 cm je 1330-cm-Block - passt NICHT zum angenommenen Zimmerraster 328 cm; nicht beschriftet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 5360,
+   "y0_cm": 205,
+   "x1_cm": 5865,
+   "y1_cm": 530,
+   "sicherheit": "unsicher",
+   "zone": "Z2",
+   "notiz": "Raster 480/180/220/455 cm je 1330-cm-Block - passt NICHT zum angenommenen Zimmerraster 328 cm; nicht beschriftet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 5865,
+   "y0_cm": 205,
+   "x1_cm": 6000,
+   "y1_cm": 530,
+   "sicherheit": "unsicher",
+   "zone": "Z2",
+   "notiz": "Raster 480/180/220/455 cm je 1330-cm-Block - passt NICHT zum angenommenen Zimmerraster 328 cm; nicht beschriftet"
+  },
+  {
+   "name": "flur",
+   "x0_cm": 3200,
+   "y0_cm": 530,
+   "x1_cm": 6000,
+   "y1_cm": 700,
+   "sicherheit": "sicher",
+   "zone": "Z3",
+   "notiz": "leer gezeichnet zwischen den beiden Flurwaenden, keine Querwand im Abschnitt"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 3210,
+   "y0_cm": 705,
+   "x1_cm": 3365,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 3365,
+   "y0_cm": 705,
+   "x1_cm": 3500,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 3500,
+   "y0_cm": 705,
+   "x1_cm": 3555,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 3555,
+   "y0_cm": 705,
+   "x1_cm": 3615,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 3615,
+   "y0_cm": 705,
+   "x1_cm": 3735,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 3735,
+   "y0_cm": 705,
+   "x1_cm": 3870,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 3870,
+   "y0_cm": 705,
+   "x1_cm": 4000,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 4000,
+   "y0_cm": 705,
+   "x1_cm": 4145,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 4145,
+   "y0_cm": 705,
+   "x1_cm": 4215,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 4215,
+   "y0_cm": 705,
+   "x1_cm": 4285,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 4285,
+   "y0_cm": 705,
+   "x1_cm": 4405,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 4405,
+   "y0_cm": 705,
+   "x1_cm": 4545,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 4545,
+   "y0_cm": 705,
+   "x1_cm": 4695,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 4695,
+   "y0_cm": 705,
+   "x1_cm": 4800,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 4800,
+   "y0_cm": 705,
+   "x1_cm": 4875,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 4875,
+   "y0_cm": 705,
+   "x1_cm": 4940,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 4940,
+   "y0_cm": 705,
+   "x1_cm": 5070,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 5070,
+   "y0_cm": 705,
+   "x1_cm": 5210,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 5210,
+   "y0_cm": 705,
+   "x1_cm": 5360,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 5360,
+   "y0_cm": 705,
+   "x1_cm": 5485,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 5485,
+   "y0_cm": 705,
+   "x1_cm": 5540,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 5540,
+   "y0_cm": 705,
+   "x1_cm": 5605,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 5605,
+   "y0_cm": 705,
+   "x1_cm": 5705,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 5705,
+   "y0_cm": 705,
+   "x1_cm": 5865,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 5865,
+   "y0_cm": 705,
+   "x1_cm": 6000,
+   "y1_cm": 920,
+   "sicherheit": "unsicher",
+   "zone": "Z4",
+   "notiz": "Vorraum-/Nassraumzelle; in diesem Abschnitt sind KEINE Sanitaersymbole gezeichnet"
+  },
+  {
+   "name": "zimmer",
+   "x0_cm": 3210,
+   "y0_cm": 925,
+   "x1_cm": 3555,
+   "y1_cm": 1285,
+   "sicherheit": "unsicher",
+   "zone": "Z5",
+   "notiz": "Regelzimmer im Raster 315-345 cm, Tiefe 360 cm; Zuordnung 'Zimmer Typ 1' aus der Legende, nicht aus diesem Abschnitt"
+  },
+  {
+   "name": "zimmer",
+   "x0_cm": 3555,
+   "y0_cm": 925,
+   "x1_cm": 3870,
+   "y1_cm": 1285,
+   "sicherheit": "unsicher",
+   "zone": "Z5",
+   "notiz": "Regelzimmer im Raster 315-345 cm, Tiefe 360 cm; Zuordnung 'Zimmer Typ 1' aus der Legende, nicht aus diesem Abschnitt"
+  },
+  {
+   "name": "zimmer",
+   "x0_cm": 3870,
+   "y0_cm": 925,
+   "x1_cm": 4215,
+   "y1_cm": 1285,
+   "sicherheit": "unsicher",
+   "zone": "Z5",
+   "notiz": "Regelzimmer im Raster 315-345 cm, Tiefe 360 cm; Zuordnung 'Zimmer Typ 1' aus der Legende, nicht aus diesem Abschnitt"
+  },
+  {
+   "name": "zimmer",
+   "x0_cm": 4215,
+   "y0_cm": 925,
+   "x1_cm": 4545,
+   "y1_cm": 1285,
+   "sicherheit": "unsicher",
+   "zone": "Z5",
+   "notiz": "Regelzimmer im Raster 315-345 cm, Tiefe 360 cm; Zuordnung 'Zimmer Typ 1' aus der Legende, nicht aus diesem Abschnitt"
+  },
+  {
+   "name": "zimmer",
+   "x0_cm": 4545,
+   "y0_cm": 925,
+   "x1_cm": 4875,
+   "y1_cm": 1285,
+   "sicherheit": "unsicher",
+   "zone": "Z5",
+   "notiz": "Regelzimmer im Raster 315-345 cm, Tiefe 360 cm; Zuordnung 'Zimmer Typ 1' aus der Legende, nicht aus diesem Abschnitt"
+  },
+  {
+   "name": "zimmer",
+   "x0_cm": 4875,
+   "y0_cm": 925,
+   "x1_cm": 5210,
+   "y1_cm": 1285,
+   "sicherheit": "unsicher",
+   "zone": "Z5",
+   "notiz": "Regelzimmer im Raster 315-345 cm, Tiefe 360 cm; Zuordnung 'Zimmer Typ 1' aus der Legende, nicht aus diesem Abschnitt"
+  },
+  {
+   "name": "zimmer",
+   "x0_cm": 5210,
+   "y0_cm": 925,
+   "x1_cm": 5540,
+   "y1_cm": 1285,
+   "sicherheit": "unsicher",
+   "zone": "Z5",
+   "notiz": "Regelzimmer im Raster 315-345 cm, Tiefe 360 cm; Zuordnung 'Zimmer Typ 1' aus der Legende, nicht aus diesem Abschnitt"
+  },
+  {
+   "name": "zimmer",
+   "x0_cm": 5540,
+   "y0_cm": 925,
+   "x1_cm": 5865,
+   "y1_cm": 1285,
+   "sicherheit": "unsicher",
+   "zone": "Z5",
+   "notiz": "Regelzimmer im Raster 315-345 cm, Tiefe 360 cm; Zuordnung 'Zimmer Typ 1' aus der Legende, nicht aus diesem Abschnitt"
+  },
+  {
+   "name": "zimmer",
+   "x0_cm": 5865,
+   "y0_cm": 925,
+   "x1_cm": 6000,
+   "y1_cm": 1285,
+   "sicherheit": "unsicher",
+   "zone": "Z5",
+   "notiz": "am Abschnittsrand angeschnitten"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 3200,
+   "y0_cm": 1290,
+   "x1_cm": 3365,
+   "y1_cm": 1465,
+   "sicherheit": "unsicher",
+   "zone": "Z6",
+   "notiz": "Punkt-Signatur (Bodenbelag) und Bruestungslinie bei y=1470; nicht beschriftet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 3365,
+   "y0_cm": 1290,
+   "x1_cm": 3500,
+   "y1_cm": 1465,
+   "sicherheit": "unsicher",
+   "zone": "Z6",
+   "notiz": "schmale Zelle in der Sued-Fassadenzone"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 3500,
+   "y0_cm": 1290,
+   "x1_cm": 3555,
+   "y1_cm": 1465,
+   "sicherheit": "unsicher",
+   "zone": "Z6",
+   "notiz": "schmale Zelle in der Sued-Fassadenzone"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 3555,
+   "y0_cm": 1290,
+   "x1_cm": 3735,
+   "y1_cm": 1465,
+   "sicherheit": "unsicher",
+   "zone": "Z6",
+   "notiz": "Punkt-Signatur (Bodenbelag) und Bruestungslinie bei y=1470; nicht beschriftet"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 3735,
+   "y0_cm": 1290,
+   "x1_cm": 4035,
+   "y1_cm": 1465,
+   "sicherheit": "unsicher",
+   "zone": "Z6",
+   "notiz": "Punkt-Signatur (Bodenbelag) und Bruestungslinie bei y=1470; nicht beschriftet"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 4035,
+   "y0_cm": 1290,
+   "x1_cm": 4215,
+   "y1_cm": 1465,
+   "sicherheit": "unsicher",
+   "zone": "Z6",
+   "notiz": "Punkt-Signatur (Bodenbelag) und Bruestungslinie bei y=1470; nicht beschriftet"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 4215,
+   "y0_cm": 1290,
+   "x1_cm": 4405,
+   "y1_cm": 1465,
+   "sicherheit": "unsicher",
+   "zone": "Z6",
+   "notiz": "Punkt-Signatur (Bodenbelag) und Bruestungslinie bei y=1470; nicht beschriftet"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 4405,
+   "y0_cm": 1290,
+   "x1_cm": 4695,
+   "y1_cm": 1465,
+   "sicherheit": "unsicher",
+   "zone": "Z6",
+   "notiz": "Punkt-Signatur (Bodenbelag) und Bruestungslinie bei y=1470; nicht beschriftet"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 4695,
+   "y0_cm": 1290,
+   "x1_cm": 4875,
+   "y1_cm": 1465,
+   "sicherheit": "unsicher",
+   "zone": "Z6",
+   "notiz": "Punkt-Signatur (Bodenbelag) und Bruestungslinie bei y=1470; nicht beschriftet"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 4875,
+   "y0_cm": 1290,
+   "x1_cm": 5070,
+   "y1_cm": 1465,
+   "sicherheit": "unsicher",
+   "zone": "Z6",
+   "notiz": "Punkt-Signatur (Bodenbelag) und Bruestungslinie bei y=1470; nicht beschriftet"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 5070,
+   "y0_cm": 1290,
+   "x1_cm": 5360,
+   "y1_cm": 1465,
+   "sicherheit": "unsicher",
+   "zone": "Z6",
+   "notiz": "Punkt-Signatur (Bodenbelag) und Bruestungslinie bei y=1470; nicht beschriftet"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 5360,
+   "y0_cm": 1290,
+   "x1_cm": 5485,
+   "y1_cm": 1465,
+   "sicherheit": "unsicher",
+   "zone": "Z6",
+   "notiz": "schmale Zelle in der Sued-Fassadenzone"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 5485,
+   "y0_cm": 1290,
+   "x1_cm": 5540,
+   "y1_cm": 1465,
+   "sicherheit": "unsicher",
+   "zone": "Z6",
+   "notiz": "schmale Zelle in der Sued-Fassadenzone"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 5540,
+   "y0_cm": 1290,
+   "x1_cm": 5605,
+   "y1_cm": 1465,
+   "sicherheit": "unsicher",
+   "zone": "Z6",
+   "notiz": "schmale Zelle in der Sued-Fassadenzone"
+  },
+  {
+   "name": "unklar",
+   "x0_cm": 5605,
+   "y0_cm": 1290,
+   "x1_cm": 5705,
+   "y1_cm": 1465,
+   "sicherheit": "unsicher",
+   "zone": "Z6",
+   "notiz": "schmale Zelle in der Sued-Fassadenzone"
+  },
+  {
+   "name": "loggia",
+   "x0_cm": 5705,
+   "y0_cm": 1290,
+   "x1_cm": 6000,
+   "y1_cm": 1465,
+   "sicherheit": "unsicher",
+   "zone": "Z6",
+   "notiz": "Punkt-Signatur (Bodenbelag) und Bruestungslinie bei y=1470; nicht beschriftet"
+  }
+ ],
+ "verworfene_linien": [
+  {
+   "grund": "Fassaden-Sprosse (Gelaender-Signatur)",
+   "x_m": 35.02,
+   "y0_m": 0.02,
+   "y1_m": 0.49
+  },
+  {
+   "grund": "Tuerblatt (Viertelkreis am Flur)",
+   "x_m": 35.53,
+   "y0_m": 4.64,
+   "y1_m": 5.17
+  },
+  {
+   "grund": "Fassaden-Sprosse (Gelaender-Signatur)",
+   "x_m": 36.14,
+   "y0_m": -0.4,
+   "y1_m": 0.41
+  },
+  {
+   "grund": "Tuerblatt (Viertelkreis am Flur)",
+   "x_m": 36.14,
+   "y0_m": 4.39,
+   "y1_m": 5.56
+  },
+  {
+   "grund": "Fassaden-Sprosse (Gelaender-Signatur)",
+   "x_m": 36.89,
+   "y0_m": -0.4,
+   "y1_m": 0.38
+  },
+  {
+   "grund": "Tuerblatt (Viertelkreis am Flur)",
+   "x_m": 36.89,
+   "y0_m": 7.09,
+   "y1_m": 7.76
+  },
+  {
+   "grund": "Fassaden-Sprosse (Gelaender-Signatur)",
+   "x_m": 37.35,
+   "y0_m": -0.4,
+   "y1_m": 0.38
+  },
+  {
+   "grund": "Schnitt-/Hilfslinie (ragt in den leeren Flur)",
+   "x_m": 37.82,
+   "y0_m": -0.33,
+   "y1_m": 6.34
+  },
+  {
+   "grund": "Fassaden-Sprosse (Gelaender-Signatur)",
+   "x_m": 38.68,
+   "y0_m": -0.4,
+   "y1_m": 0.2
+  },
+  {
+   "grund": "Fassaden-Sprosse (Gelaender-Signatur)",
+   "x_m": 39.99,
+   "y0_m": -0.44,
+   "y1_m": 0.31
+  },
+  {
+   "grund": "Fassaden-Sprosse (Gelaender-Signatur)",
+   "x_m": 40.33,
+   "y0_m": -0.47,
+   "y1_m": 0.31
+  },
+  {
+   "grund": "Tuerblatt (Viertelkreis am Flur)",
+   "x_m": 40.33,
+   "y0_m": 6.94,
+   "y1_m": 7.65
+  },
+  {
+   "grund": "Fassaden-Sprosse (Gelaender-Signatur)",
+   "x_m": 40.9,
+   "y0_m": -0.47,
+   "y1_m": 0.34
+  },
+  {
+   "grund": "Tuerblatt (Viertelkreis am Flur)",
+   "x_m": 40.9,
+   "y0_m": 7.44,
+   "y1_m": 7.94
+  },
+  {
+   "grund": "Fassaden-Sprosse (Gelaender-Signatur)",
+   "x_m": 41.47,
+   "y0_m": -0.51,
+   "y1_m": 0.27
+  },
+  {
+   "grund": "Tuerblatt (Viertelkreis am Flur)",
+   "x_m": 42.16,
+   "y0_m": 4.5,
+   "y1_m": 4.99
+  },
+  {
+   "grund": "Tuerblatt (Viertelkreis am Flur)",
+   "x_m": 43.62,
+   "y0_m": 7.23,
+   "y1_m": 7.76
+  },
+  {
+   "grund": "Stummel < 42 cm",
+   "x_m": 48.01,
+   "y0_m": 5.21,
+   "y1_m": 5.56
+  },
+  {
+   "grund": "Tuerblatt (Viertelkreis am Flur)",
+   "x_m": 48.74,
+   "y0_m": 4.42,
+   "y1_m": 4.96
+  },
+  {
+   "grund": "Fassaden-Sprosse (Gelaender-Signatur)",
+   "x_m": 49.42,
+   "y0_m": -0.22,
+   "y1_m": 0.49
+  },
+  {
+   "grund": "Fassaden-Sprosse (Gelaender-Signatur)",
+   "x_m": 50.28,
+   "y0_m": -0.19,
+   "y1_m": 0.49
+  },
+  {
+   "grund": "Tuerblatt (Viertelkreis am Flur)",
+   "x_m": 50.28,
+   "y0_m": 7.16,
+   "y1_m": 7.69
+  },
+  {
+   "grund": "Fassaden-Sprosse (Gelaender-Signatur)",
+   "x_m": 50.71,
+   "y0_m": -0.15,
+   "y1_m": 0.41
+  },
+  {
+   "grund": "Fassaden-Sprosse (Gelaender-Signatur)",
+   "x_m": 52.11,
+   "y0_m": -0.19,
+   "y1_m": 0.45
+  },
+  {
+   "grund": "Fassaden-Sprosse (Gelaender-Signatur)",
+   "x_m": 53.58,
+   "y0_m": -0.22,
+   "y1_m": 0.41
+  },
+  {
+   "grund": "Fassaden-Sprosse (Gelaender-Signatur)",
+   "x_m": 54.86,
+   "y0_m": -0.22,
+   "y1_m": 0.38
+  },
+  {
+   "grund": "Tuerblatt (Viertelkreis am Flur)",
+   "x_m": 55.42,
+   "y0_m": 4.67,
+   "y1_m": 5.17
+  }
+ ],
+ "luecken": [
+  "Der Abschnitt x=32..60 m traegt KEINE Beschriftung. Die Legende (Zimmer Typ 1/2, Bad, Loggia, Flur ...) steht anderswo im Plan; jede Nutzungszuordnung hier ist daher abgeleitet, nicht abgelesen. Alle Raumnamen ausser 'flur' stehen auf sicherheit=unsicher.",
+  "Die Vorgabe 'Zimmer Typ 2 im Norden, Raster 3,28 m' wird durch die Messung NICHT bestaetigt. Gemessen: zwei gleich aufgebaute Bloecke von 1335 bzw. 1320 cm (Achsen 3210 / 4545 / 5865) mit je vier Raeumen 480/180/220/455 bzw. 485/180/150/505 cm. Kein 328-cm-Raster in der Nord-Zimmerzone.",
+  "Nur die SUED-Zimmerzone zeigt ein sauberes Raster: 8 Achsen 3210/3560/3865/4215/4545/4875/5210/5540/5865, Abstaende 315-345 cm (Mittel 332 cm, Streuung 12 cm).",
+  "Die Schichtung der Nordfassade ist nicht eindeutig: eine durchgehende Linie bei y=25, eine nur abschnittsweise gezeichnete zweite bei y=70, und ueber x=3530..4225 sowie x=4870..5560 eine vorgesetzte Kante bei y=-35/-20 mit Sprossen-Signatur. Ob das Wandstaerke, Bruestung oder franzoesischer Balkon ist, gibt die Zeichnung nicht her.",
+  "Die Sued-Fassadenzone hat DREI Linien (1285 / 1470 / 1510). Welche davon die Gebaeudeaussenkante ist, ist nicht beschriftet; bezug.json nennt 1527 cm Gebaeudetiefe, die gemessene aeusserste Linie liegt bei 1510.",
+  "In der Sued-Vorraum-/Nassraumzone (y 705..920) sind in diesem Abschnitt keine Sanitaersymbole gezeichnet. Die 25 Zellen sind als 'unklar' gefuehrt, nicht als 'bad'.",
+  "Der Flur (y 530..700, 170 cm breit) ist im ganzen Abschnitt leer gezeichnet - keine Treppe, kein Aufzug, keine Querwand. Aufzug/Treppe liegen ausserhalb x=32..60 m.",
+  "Tueroeffnungen sind nur als Luecken in den Flurwand-Segmenten erfasst; die Tuerblaetter (Viertelkreise) wurden als eigene Linien verworfen und stehen unter verworfene_linien.",
+  "Die zweite Bleistiftskizze (hotel-skizze-registriert.png) zeigt in diesem Abschnitt dieselbe Geometrie und KEINE Moeblierung - sie liefert keinen zusaetzlichen Nutzungs-Hinweis.",
+  "Freihandzeichnung: die Fassadenlinien schwanken (bezug.json nennt 5-6 px Streuung, rund 20 cm). Alle Werte sind auf 5 cm gerundet; eine Genauigkeit unter etwa 15 cm ist durch das Original nicht gedeckt."
+ ]
+}

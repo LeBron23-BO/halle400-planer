@@ -1,0 +1,463 @@
+{
+  "abschnitt": "kopf-west",
+  "von_cm": 0,
+  "bis_cm": 1400,
+  "bezug": {
+    "datei": "bezug.json",
+    "bild": "hotel_entzerrt.png",
+    "cm_je_px": 3.5489,
+    "ursprung": "Aussenlinie Westgiebel x Aussenlinie Nordfassade",
+    "y_richtung": "positiv = nach Sueden, ab Nordkante"
+  },
+  "methode": "Wandachse = belegungsgewichteter Schwerpunkt des Duktus; Aussenwaende streifenweise (0,5 m) gemittelt, Innenwaende ueber morphologisch getrennte Segmente. Kandidaten eingezeichnet und am Bild geprueft.",
+  "laengswaende": [
+    {
+      "y_cm": 10,
+      "x0_cm": 0,
+      "x1_cm": 1400,
+      "art": "aussen",
+      "sicherheit": "sicher",
+      "notiz": "Nordfassade, Doppellinie ca. -15/+35 cm; Achse = Median aus 28 Streifen (11 cm)",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "y_cm": 60,
+      "x0_cm": 510,
+      "x1_cm": 850,
+      "art": "aussen",
+      "sicherheit": "unsicher",
+      "notiz": "dritte Fassadenlinie, evtl. Nische oder Fensterbank",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "y_cm": 220,
+      "x0_cm": 60,
+      "x1_cm": 1400,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "durchgehende Laengswand; Freihand zwei Linien 215/225",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "y_cm": 535,
+      "x0_cm": 510,
+      "x1_cm": 805,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "Luecke 805..880 = Durchgang",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "y_cm": 535,
+      "x0_cm": 880,
+      "x1_cm": 1400,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "y_cm": 590,
+      "x0_cm": 70,
+      "x1_cm": 495,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "Suedwand Treppenhaus",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "y_cm": 790,
+      "x0_cm": 0,
+      "x1_cm": 715,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "Doppellinie 775/805 bis x=505, danach einzeln",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "y_cm": 980,
+      "x0_cm": 295,
+      "x1_cm": 655,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "Suedwand des Nebenraums im Sonderzimmer",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "y_cm": 1330,
+      "x0_cm": 80,
+      "x1_cm": 680,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "y_cm": 1295,
+      "x0_cm": 655,
+      "x1_cm": 1400,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "y_cm": 1510,
+      "x0_cm": 660,
+      "x1_cm": 1025,
+      "art": "trennwand",
+      "sicherheit": "unsicher",
+      "notiz": "Doppellinie 1490/1530",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "y_cm": 1545,
+      "x0_cm": 0,
+      "x1_cm": 1400,
+      "art": "aussen",
+      "sicherheit": "sicher",
+      "notiz": "Suedfassade, durchgehend; Streifenmedian 1543 cm, Streuung 11 cm",
+      "beleg": "beleg_kopf-west.png"
+    }
+  ],
+  "querwaende": [
+    {
+      "x_cm": 35,
+      "y0_cm": 0,
+      "y1_cm": 1560,
+      "art": "aussen",
+      "sicherheit": "sicher",
+      "notiz": "Westgiebel; Achse aus 32 Streifen, Staerke ca. 75 cm",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "x_cm": 265,
+      "y0_cm": 210,
+      "y1_cm": 615,
+      "art": "trennwand",
+      "sicherheit": "unsicher",
+      "notiz": "Treppenauge zwischen den Laeufen, keine raumtrennende Wand",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "x_cm": 495,
+      "y0_cm": 0,
+      "y1_cm": 655,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "Doppellinie 476/515; Ostwand Treppenhaus",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "x_cm": 835,
+      "y0_cm": 0,
+      "y1_cm": 245,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "x_cm": 975,
+      "y0_cm": 225,
+      "y1_cm": 560,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "x_cm": 1175,
+      "y0_cm": 225,
+      "y1_cm": 550,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "x_cm": 1385,
+      "y0_cm": 345,
+      "y1_cm": 550,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "x_cm": 1400,
+      "y0_cm": 0,
+      "y1_cm": 245,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "zugleich Abschnittsgrenze",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "x_cm": 825,
+      "y0_cm": 710,
+      "y1_cm": 1520,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "dick gezeichnet (35 cm)",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "x_cm": 895,
+      "y0_cm": 710,
+      "y1_cm": 955,
+      "art": "trennwand",
+      "sicherheit": "unsicher",
+      "notiz": "",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "x_cm": 1015,
+      "y0_cm": 700,
+      "y1_cm": 970,
+      "art": "trennwand",
+      "sicherheit": "unsicher",
+      "notiz": "koennte Kante des Bettblocks sein",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "x_cm": 590,
+      "y0_cm": 795,
+      "y1_cm": 1195,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "x_cm": 295,
+      "y0_cm": 810,
+      "y1_cm": 1000,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "x_cm": 655,
+      "y0_cm": 805,
+      "y1_cm": 980,
+      "art": "trennwand",
+      "sicherheit": "unsicher",
+      "notiz": "Ostkante eines 65 cm schmalen Schachts/Schranks",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "x_cm": 1180,
+      "y0_cm": 970,
+      "y1_cm": 1305,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "x_cm": 80,
+      "y0_cm": 1165,
+      "y1_cm": 1500,
+      "art": "trennwand",
+      "sicherheit": "unsicher",
+      "notiz": "innere Linie neben dem Westgiebel",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "x_cm": 660,
+      "y0_cm": 1305,
+      "y1_cm": 1580,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "x_cm": 1025,
+      "y0_cm": 1275,
+      "y1_cm": 1590,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "",
+      "beleg": "beleg_kopf-west.png"
+    },
+    {
+      "x_cm": 1370,
+      "y0_cm": 1295,
+      "y1_cm": 1580,
+      "art": "trennwand",
+      "sicherheit": "sicher",
+      "notiz": "",
+      "beleg": "beleg_kopf-west.png"
+    }
+  ],
+  "raeume": [
+    {
+      "name": "unklar (Nordstreifen West)",
+      "x0_cm": 35,
+      "y0_cm": 10,
+      "x1_cm": 495,
+      "y1_cm": 220,
+      "sicherheit": "unsicher",
+      "notiz": "keine Beschriftung; 4,60 x 2,10 m"
+    },
+    {
+      "name": "Treppenhaus",
+      "x0_cm": 35,
+      "y0_cm": 220,
+      "x1_cm": 495,
+      "y1_cm": 590,
+      "sicherheit": "sicher",
+      "notiz": "zwei Laeufe mit Treppenauge und Steigungspfeil eindeutig gezeichnet"
+    },
+    {
+      "name": "unklar (Vorzone suedlich der Treppe)",
+      "x0_cm": 35,
+      "y0_cm": 590,
+      "x1_cm": 495,
+      "y1_cm": 790,
+      "sicherheit": "unsicher",
+      "notiz": "vermutlich Flur; Ostseite schraeg (nicht erfasst)"
+    },
+    {
+      "name": "unklar (Nordstreifen x5..8)",
+      "x0_cm": 495,
+      "y0_cm": 10,
+      "x1_cm": 835,
+      "y1_cm": 220,
+      "sicherheit": "unsicher",
+      "notiz": "drei Fassadenlinien, Nutzung nicht beschriftet"
+    },
+    {
+      "name": "Zimmer Typ 2",
+      "x0_cm": 495,
+      "y0_cm": 220,
+      "x1_cm": 835,
+      "y1_cm": 535,
+      "sicherheit": "sicher",
+      "notiz": "Beschriftungs-Leitlinie endet im Punkt x=650 y=405"
+    },
+    {
+      "name": "unklar (Nordstreifen x8..14, Kamm)",
+      "x0_cm": 835,
+      "y0_cm": 10,
+      "x1_cm": 1400,
+      "y1_cm": 220,
+      "sicherheit": "unsicher",
+      "notiz": "Kammschraffur an der Nordfassade, nicht deutbar"
+    },
+    {
+      "name": "unklar",
+      "x0_cm": 835,
+      "y0_cm": 220,
+      "x1_cm": 975,
+      "y1_cm": 535,
+      "sicherheit": "unsicher",
+      "notiz": ""
+    },
+    {
+      "name": "unklar",
+      "x0_cm": 975,
+      "y0_cm": 220,
+      "x1_cm": 1175,
+      "y1_cm": 535,
+      "sicherheit": "unsicher",
+      "notiz": ""
+    },
+    {
+      "name": "Backoffice",
+      "x0_cm": 1175,
+      "y0_cm": 220,
+      "x1_cm": 1400,
+      "y1_cm": 535,
+      "sicherheit": "sicher",
+      "notiz": "Leitlinie endet im Punkt x=1205 y=335; Raum reicht ostwaerts ueber x=1400 hinaus"
+    },
+    {
+      "name": "unklar (wahrscheinlich Flur)",
+      "x0_cm": 495,
+      "y0_cm": 535,
+      "x1_cm": 1400,
+      "y1_cm": 705,
+      "sicherheit": "unsicher",
+      "notiz": "durchgehende Zone ohne Querwand zwischen den Zimmerreihen"
+    },
+    {
+      "name": "Sonderzimmer",
+      "x0_cm": 35,
+      "y0_cm": 790,
+      "x1_cm": 590,
+      "y1_cm": 1330,
+      "sicherheit": "sicher",
+      "notiz": "Leitlinie endet im Punkt x=355 y=1110; moebliert mit Bett und Sitzgruppe"
+    },
+    {
+      "name": "unklar (Nebenraum im Sonderzimmer)",
+      "x0_cm": 295,
+      "y0_cm": 790,
+      "x1_cm": 590,
+      "y1_cm": 980,
+      "sicherheit": "unsicher",
+      "notiz": "vermutlich Bad, keine Sanitaerobjekte gezeichnet"
+    },
+    {
+      "name": "unklar (Schacht oder Schrank)",
+      "x0_cm": 590,
+      "y0_cm": 805,
+      "x1_cm": 655,
+      "y1_cm": 980,
+      "sicherheit": "unsicher",
+      "notiz": "65 cm breit"
+    },
+    {
+      "name": "Zimmer (Typ nicht lesbar)",
+      "x0_cm": 825,
+      "y0_cm": 705,
+      "x1_cm": 1400,
+      "y1_cm": 1295,
+      "sicherheit": "unsicher",
+      "notiz": "Leitlinie endet im Punkt x=1275 y=1110, der Text steht ausserhalb; Raum reicht bis x=1530"
+    },
+    {
+      "name": "unklar (Symbolreihe an der Suedfassade)",
+      "x0_cm": 35,
+      "y0_cm": 1330,
+      "x1_cm": 660,
+      "y1_cm": 1545,
+      "sicherheit": "unsicher",
+      "notiz": "Reihe von H-/T-foermigen Symbolen bei y 1490..1545; koennte Sanitaerzellen (Waschraum) ODER eine Fassadendarstellung sein - siehe Luecken"
+    },
+    {
+      "name": "unklar",
+      "x0_cm": 660,
+      "y0_cm": 1295,
+      "x1_cm": 1025,
+      "y1_cm": 1545,
+      "sicherheit": "unsicher",
+      "notiz": "Punktschraffur, evtl. Bodenbelag"
+    },
+    {
+      "name": "unklar",
+      "x0_cm": 1025,
+      "y0_cm": 1295,
+      "x1_cm": 1370,
+      "y1_cm": 1545,
+      "sicherheit": "unsicher",
+      "notiz": ""
+    }
+  ],
+  "luecken": [
+    "Nutzung ist nur fuer vier Raeume belegt (Beschriftungs-Leitlinien mit Endpunkt): 'Zimmer Typ 2' (650/405), 'Backoffice' (1205/335), 'Sonderzimmer' (355/1110), 'Zimmer Typ ...' (1275/1110, Typ-Ziffer steht ausserhalb des Ausschnitts). Alle uebrigen Nutzungen sind im Plan NICHT beschriftet und hier als 'unklar' gefuehrt.",
+    "Empfang, Aufzug und Waschraum sind im Abschnitt x 0..1400 cm nirgends beschriftet. Gemessen: noerdlich von y = -100 cm liegt zwischen x 0 und 1650 cm keine Tinte ausser den Beschriftungs-Leitlinien - der Aufzugsvorsprung (bezug.json: 3,25 m) liegt also NICHT im Kopfbau West, sondern weiter oestlich.",
+    "Schraege Wandstuecke sind nicht erfasst (nur orthogonale Achsen): Zickzack x 310..515 / y 650..780, Knick x 830..960 / y 440..540, Knick x 1385..1460 / y 300..450.",
+    "Die Kammschraffur an der Nordfassade (x 840..1390, y 35..120) ist nicht deutbar - Gelaender, Stufen oder Wandschraffur.",
+    "Treppenhaus: Laufbreiten, Stufenzahl und Podestlage sind nicht ausgewertet. x=265 ist das Treppenauge, keine raumtrennende Wand.",
+    "Zwischen x 1015 und 1460 / y 700..970 sind Moebelkanten (Bettblock mit Nachttisch) und Wandkanten nicht sicher trennbar; x=1015 ist deshalb als unsicher gefuehrt.",
+    "Die Nordfassade ist bei x 510..850 mit drei statt zwei Linien gezeichnet; welche davon die Innenkante ist, gibt die Zeichnung nicht her.",
+    "Im Bereich x 660..1025 liegt die Suedfassaden-Streifenmessung 20 cm noerdlicher als links und rechts. Das liegt innerhalb der gemessenen Freihand-Streuung (11 cm) und wird durch die Innenwand y=1510 verzerrt - ein echter Ruecksprung ist daraus NICHT belegbar.",
+    "Die H-/T-Symbolreihe bei x 180..820 / y 1490..1545 sah zunaechst nach Sanitaerzellen aus (Waschraum). Dagegen spricht: an der Suedfassade x 1030..1390 und an der Nordfassade x 840..1390 steht eine aehnliche Strichreihe DIREKT in der Wandzone. Die Deutung 'Waschraum' ist damit nicht belegt und wurde zurueckgenommen.",
+    "Alle Werte auf 5 cm gerundet. Gemessene Freihand-Streuung der Fassadenachsen: Nord 11 cm, Sued 11 cm, West 13 cm. Zwei Nachkommastellen in Metern waeren erfunden."
+  ]
+}

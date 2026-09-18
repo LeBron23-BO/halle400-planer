@@ -485,8 +485,59 @@ export class Floorplan {
    */
   public versoehnungAn = true
 
+  /**
+   * Tiefe einer SAMMEL-BEARBEITUNG — wie viele `stapel()`-Klammern gerade offen
+   * sind. Solange sie grösser 0 ist, rechnet `update()` NICHT, sondern merkt
+   * sich nur, dass gerechnet werden muss (`stapelOffen`).
+   *
+   * WARUM ES SIE BRAUCHT — GEMESSEN, nicht vermutet:
+   * `newWall()` ruft `update()`, und `update()` verfolgt über `findRooms()` den
+   * GANZEN Wandgraphen neu (für jede Ecke, für jede Nachbarecke eine
+   * Zyklensuche). Beim Laden eines Plans mit n Wänden lief das also n mal über
+   * n Ecken — und n-1 dieser Läufe arbeiteten auf einem HALB aufgebauten
+   * Grundriss, dessen Räume die nächste Wand sofort wieder ungültig machte.
+   * Weggeworfene Arbeit, und zwar überproportional viel:
+   *
+   *   Wände   100    200    300    450    636
+   *   laden   0,16 s 0,94 s 3,8 s  10,7 s 57,2 s     (57,15 s davon in update)
+   *
+   * Der 636-Wand-Plan (Hotel) war damit unbenutzbar. Mit EINER Rechnung am Ende
+   * bleibt genau der Lauf übrig, der das Ergebnis bestimmt — das Ergebnis
+   * selbst ändert sich dadurch nicht: `update()` leitet Räume und Halbkanten
+   * jedes Mal VOLLSTÄNDIG aus Wänden und Ecken ab (`resetFrontBack()` zuerst),
+   * es gibt keinen Zustand, der sich über mehrere Läufe aufbaut.
+   *
+   * Kein Zwischenspeicher und keine gelockerte Schwelle: die Rechnung selbst
+   * bleibt unangetastet, sie läuft nur nicht mehr 636 mal umsonst.
+   */
+  private stapelTiefe = 0
+
+  /** Wurde `update()` während einer Sammel-Bearbeitung verlangt? */
+  private stapelOffen = false
+
   /** Constructs a floorplan. */
   constructor() {}
+
+  /**
+   * Führt `arbeit` aus, ohne dass jede einzelne Wand den ganzen Grundriss neu
+   * rechnet — und holt die EINE Rechnung danach garantiert nach.
+   *
+   * Das Nachholen steht im `finally` und nicht hinter dem Aufruf: bricht
+   * `arbeit` mit einem Fehler ab, stünde der Grundriss sonst für immer in der
+   * Sammel-Bearbeitung und jede spätere Änderung wäre still ohne Wirkung.
+   */
+  private stapel(arbeit: () => void): void {
+    this.stapelTiefe++
+    try {
+      arbeit()
+    } finally {
+      this.stapelTiefe--
+      if (this.stapelTiefe === 0 && this.stapelOffen) {
+        this.stapelOffen = false
+        this.update()
+      }
+    }
+  }
 
   // hack
   public wallEdges(): HalfEdge[] {
@@ -711,66 +762,89 @@ export class Floorplan {
       )
     }
 
-    this.reset()
+    // ALLES, was Wände anfasst, in EINE Sammel-Bearbeitung: `reset()` löscht n
+    // Wände (jede rief `update()`) und die Schleife weiter unten setzt n neue
+    // (jede rief `update()` ein zweites Mal). Das waren beim Hotel-Plan 636 +
+    // 636 vollständige Raum-Verfolgungen für EIN Laden — 57 s, davon 57,15 s in
+    // `update()` (gemessen, siehe `stapelTiefe`). Gerechnet wird jetzt genau
+    // einmal, am Ende, auf dem fertigen Grundriss.
+    let vollstaendig = false
+    this.stapel(() => {
+      this.reset()
 
-    const corners: Record<string, Corner> = {}
-    if (floorplan == null || !('corners' in floorplan) || !('walls' in floorplan)) {
-      return
-    }
-    for (const id in floorplan.corners) {
-      const corner = floorplan.corners[id]
-      corners[id] = this.newCorner(corner.x, corner.y, id)
-    }
-    const scope = this
-    // Vergebene Kennungen für Wände und Ausstattung getrennt: sie leben in
-    // getrennten Listen, und eine Wand namens wie ein Stuhl stört niemanden.
-    const wandKennungen = new Set<string>()
-    floorplan.walls.forEach((wall) => {
-      // Eine Wand, deren Ecke im Plan fehlt, ueberspringen statt daran zu
-      // zerbrechen: `new Wall(undefined, …)` warf einen TypeError und liess die
-      // Anwendung mit halb geladenem Grundriss stehen. Die Ursache solcher
-      // Plaene ist behoben (Corner.removeAll), aber ein VORHER gespeicherter
-      // Stand liegt weiterhin in der Datenbank des Nutzers — der muss sich
-      // oeffnen lassen, wenn auch ohne diese eine Wand.
-      if (!corners[wall.corner1] || !corners[wall.corner2]) {
-        console.warn(
-          `[Floorplan] Wand ohne gueltige Ecke uebersprungen (${wall.corner1} -> ${wall.corner2})`
-        )
+      const corners: Record<string, Corner> = {}
+      if (floorplan == null || !('corners' in floorplan) || !('walls' in floorplan)) {
+        // KEIN Nachrechnen für eine unbrauchbare Datei — genau wie vor der
+        // Sammel-Bearbeitung, als dieses `return` das `update()` am Ende
+        // übersprang. Ohne diese Zeile holte `stapel()` die aufgeschobene
+        // Rechnung nach und dieser Zweig verhielte sich anders als vorher.
+        this.stapelOffen = false
         return
       }
-      const kennung = eindeutigeKennung(
-        wall.id || kennungAusWand(wall.corner1, wall.corner2),
-        wandKennungen
-      )
-      const newWall = scope.newWall(
-        corners[wall.corner1],
-        corners[wall.corner2],
-        kennung,
-        // Fehlt die Angabe, ist die Wand gemessen (M2) — nicht andersherum.
-        wall.quelle === 'gesetzt' ? 'gesetzt' : 'gemessen'
-      )
-      if (wall.frontTexture) {
-        newWall.frontTexture = wall.frontTexture
+      for (const id in floorplan.corners) {
+        const corner = floorplan.corners[id]
+        corners[id] = this.newCorner(corner.x, corner.y, id)
       }
-      if (wall.backTexture) {
-        newWall.backTexture = wall.backTexture
+      const scope = this
+      // Vergebene Kennungen für Wände und Ausstattung getrennt: sie leben in
+      // getrennten Listen, und eine Wand namens wie ein Stuhl stört niemanden.
+      const wandKennungen = new Set<string>()
+      floorplan.walls.forEach((wall) => {
+        // Eine Wand, deren Ecke im Plan fehlt, ueberspringen statt daran zu
+        // zerbrechen: `new Wall(undefined, …)` warf einen TypeError und liess die
+        // Anwendung mit halb geladenem Grundriss stehen. Die Ursache solcher
+        // Plaene ist behoben (Corner.removeAll), aber ein VORHER gespeicherter
+        // Stand liegt weiterhin in der Datenbank des Nutzers — der muss sich
+        // oeffnen lassen, wenn auch ohne diese eine Wand.
+        if (!corners[wall.corner1] || !corners[wall.corner2]) {
+          console.warn(
+            `[Floorplan] Wand ohne gueltige Ecke uebersprungen (${wall.corner1} -> ${wall.corner2})`
+          )
+          return
+        }
+        const kennung = eindeutigeKennung(
+          wall.id || kennungAusWand(wall.corner1, wall.corner2),
+          wandKennungen
+        )
+        const newWall = scope.newWall(
+          corners[wall.corner1],
+          corners[wall.corner2],
+          kennung,
+          // Fehlt die Angabe, ist die Wand gemessen (M2) — nicht andersherum.
+          wall.quelle === 'gesetzt' ? 'gesetzt' : 'gemessen'
+        )
+        if (wall.frontTexture) {
+          newWall.frontTexture = wall.frontTexture
+        }
+        if (wall.backTexture) {
+          newWall.backTexture = wall.backTexture
+        }
+      })
+
+      if (floorplan.newFloorTextures) {
+        this.floorTextures = floorplan.newFloorTextures
       }
+      this.roomMeta = floorplan.roomMeta ?? {}
+      this.ausstattung = this.uebernehmeAusstattung(floorplan.ausstattung ?? [])
+      // ERST HIER, nachdem ALLE Wände stehen: die Versöhnung läuft in
+      // `update()`. Wären die Öffnungen schon vorher gesetzt, prüfte die
+      // Versöhnung sie gegen einen halb aufgebauten Grundriss und schriebe sie
+      // auf die falsche Wand um — oder erklärte sie für verwaist, weil ihre
+      // Wand erst drei Zeilen später entsteht. `reset()` hat die alte Liste
+      // geleert. Die Sammel-Bearbeitung macht diese Reihenfolge nicht
+      // überflüssig, sondern erst wirklich dicht: es gibt jetzt GAR keinen
+      // Zwischenstand mehr, gegen den versöhnt werden könnte.
+      this.oeffnungen = this.uebernehmeOeffnungen(floorplan.oeffnungen ?? [])
+
+      // Aufgeschoben — `stapel()` holt genau diese eine Rechnung im `finally`
+      // nach, auf dem fertigen Grundriss.
+      this.update()
+      vollstaendig = true
     })
 
-    if (floorplan.newFloorTextures) {
-      this.floorTextures = floorplan.newFloorTextures
+    if (vollstaendig) {
+      this.roomLoadedCallbacks.fire()
     }
-    this.roomMeta = floorplan.roomMeta ?? {}
-    this.ausstattung = this.uebernehmeAusstattung(floorplan.ausstattung ?? [])
-    // ERST HIER, nachdem ALLE Wände stehen: `newWall` ruft `update()` und damit
-    // die Versöhnung. Wären die Öffnungen schon vorher gesetzt, prüfte die
-    // Versöhnung sie gegen einen halb aufgebauten Grundriss und schriebe sie auf
-    // die falsche Wand um — oder erklärte sie für verwaist, weil ihre Wand erst
-    // drei Zeilen später entsteht. `reset()` hat die alte Liste geleert.
-    this.oeffnungen = this.uebernehmeOeffnungen(floorplan.oeffnungen ?? [])
-
-    this.update()
-    this.roomLoadedCallbacks.fire()
   }
 
   public getFloorTexture(uuid: string): FloorTexture | null {
@@ -1473,6 +1547,13 @@ export class Floorplan {
    * Update rooms
    */
   public update(): void {
+    // Läuft eine Sammel-Bearbeitung (`stapel()`), wird hier NICHT gerechnet.
+    // Das Ergebnis dieses Laufs würde die nächste Wand sofort wieder
+    // wegwerfen; die eine gültige Rechnung holt `stapel()` im `finally` nach.
+    if (this.stapelTiefe > 0) {
+      this.stapelOffen = true
+      return
+    }
     this.walls.forEach((wall) => {
       wall.resetFrontBack()
     })

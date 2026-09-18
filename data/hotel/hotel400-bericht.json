@@ -1,0 +1,950 @@
+{
+ "quelle": {
+  "pdf": "data/hotel/Hotel400-Grundriss.pdf",
+  "datum": "06.05.2026",
+  "bezug": "scratchpad/hotel400/bezug.json (Ursprung Nordfassade x Westgiebel, 28,1777 px/m)",
+  "abschnittsdateien": [
+   "mess_kopf-west.json",
+   "mess_mitte-west.json",
+   "mess_regel.json",
+   "mess_ost.json"
+  ]
+ },
+ "methode": {
+  "besitzgrenzen_cm": [
+   0,
+   1300,
+   3300,
+   5900,
+   7800
+  ],
+  "dedup": "Die Abschnitte ueberlappen absichtlich. In der Ueberlappung entscheidet die Besitzgrenze (Mitte der Zone), welcher Abschnitt die Geometrie liefert; die Messung des Nachbarn wird NICHT gemittelt, sondern steht unter \"konflikte\".",
+  "toleranzen_cm": {
+   "gleiche_wand": 15,
+   "konflikt_partner": 80,
+   "ecken_zusammenfuehren": 10,
+   "querwand_laeuft_auf_laengswand": 30,
+   "laengswand_laeuft_auf_querwand": 12
+  },
+  "rundung": "Eingang 5 cm (Messung). Ausgang ganze cm, weil das Zusammenfuehren von Ecken Mittelwerte erzeugt."
+ },
+ "zahlen": {
+  "ecken": 505,
+  "waende": 636,
+  "labels": 74,
+  "segmente_vor_dem_schnitt": 232,
+  "ecken_verschmolzen": 362,
+  "wandenden_gefangen": 255,
+  "fang_weite_cm": {
+   "max": 30.0,
+   "mittel": 12.5
+  },
+  "segmente_zu_kurz_verworfen": 3,
+  "lose_ecken_grad_1": 143,
+  "waende_je_art": {
+   "aussen": 218,
+   "flur": 85,
+   "trennwand": 333
+  }
+ },
+ "zimmer_bilanz": {
+  "soll_tabelle_pdf": {
+   "Typ 1": 19,
+   "Typ 2": 8,
+   "Sonderzimmer": 2,
+   "gesamt": 29
+  },
+  "ist_gezaehlt": {
+   "gesamt": 23,
+   "als Typ 1 beschriftet": 1,
+   "als Typ 2 beschriftet": 1,
+   "als Sonderzimmer beschriftet": 1,
+   "Typ unbelegt": 20
+  },
+  "verteilung": {
+   "Suedreihe": 19,
+   "Nordreihe": 4
+  },
+  "befund": "23 Zimmer gezeichnet gefunden, die Tabelle des Plans nennt 29. Differenz 6 - NICHT von Hand aufgefuellt. Wo sie NICHT liegen: die Nordreihe zwischen x 33 und 59 m ist leer gezeichnet (keine Moeblierung, kein Zimmerraster, Zellenbreiten 180..480 cm) - dort ist kein Zimmer. Offen bleibt, ob die Tabelle mehr als dieses eine Geschoss zaehlt."
+ },
+ "konflikte": [
+  {
+   "art": "Wandart widerspricht",
+   "lage": "laengswand",
+   "zone_cm": [
+    1200,
+    1400
+   ],
+   "versatz_cm": 5,
+   "a": {
+    "abschnitt": "kopf-west",
+    "y_cm": 535,
+    "wandart": "trennwand"
+   },
+   "b": {
+    "abschnitt": "mitte-west",
+    "y_cm": 530,
+    "wandart": "flur"
+   },
+   "hinweis": "gleiche Lage, verschieden gedeutet"
+  },
+  {
+   "art": "nur in einem Abschnitt gemessen",
+   "lage": "laengswand",
+   "zone_cm": [
+    1200,
+    1400
+   ],
+   "a": null,
+   "b": {
+    "abschnitt": "mitte-west",
+    "y_cm": 700,
+    "x_cm": [
+     1200,
+     3400
+    ],
+    "wandart": "flur",
+    "sicherheit": "sicher"
+   },
+   "hinweis": "in kopf-west ist an dieser Stelle keine Laengswand innerhalb 80 cm gemessen"
+  },
+  {
+   "art": "nur in einem Abschnitt gemessen",
+   "lage": "laengswand",
+   "zone_cm": [
+    1200,
+    1400
+   ],
+   "a": null,
+   "b": {
+    "abschnitt": "mitte-west",
+    "y_cm": 940,
+    "x_cm": [
+     1200,
+     1365
+    ],
+    "wandart": "trennwand",
+    "sicherheit": "sicher"
+   },
+   "hinweis": "in kopf-west ist an dieser Stelle keine Laengswand innerhalb 80 cm gemessen"
+  },
+  {
+   "art": "mehrdeutig",
+   "lage": "querwand",
+   "zone_cm": [
+    1200,
+    1400
+   ],
+   "a": {
+    "abschnitt": "kopf-west",
+    "x_cm": 1385,
+    "y_cm": [
+     345,
+     550
+    ],
+    "wandart": "trennwand",
+    "sicherheit": "sicher"
+   },
+   "b": {
+    "abschnitt": "mitte-west",
+    "x_cm": 1395,
+    "y_cm": [
+     0,
+     540
+    ],
+    "wandart": "trennwand",
+    "sicherheit": "sicher"
+   },
+   "hinweis": "in kopf-west liegen hier mehr Querwaende als in mitte-west. Beide Messungen behalten."
+  },
+  {
+   "art": "Ausdehnung widerspricht",
+   "lage": "querwand",
+   "zone_cm": [
+    1200,
+    1400
+   ],
+   "a": {
+    "abschnitt": "kopf-west",
+    "x_cm": 1400,
+    "y_cm": [
+     0,
+     245
+    ]
+   },
+   "b": {
+    "abschnitt": "mitte-west",
+    "x_cm": 1395,
+    "y_cm": [
+     0,
+     540
+    ]
+   },
+   "hinweis": "gleiche Achse, verschieden weit gemessen"
+  },
+  {
+   "art": "nur in einem Abschnitt gemessen",
+   "lage": "querwand",
+   "zone_cm": [
+    1200,
+    1400
+   ],
+   "a": null,
+   "b": {
+    "abschnitt": "mitte-west",
+    "x_cm": 1340,
+    "y_cm": [
+     695,
+     955
+    ],
+    "wandart": "trennwand",
+    "sicherheit": "sicher"
+   },
+   "hinweis": "in kopf-west ist an dieser Stelle keine Querwand innerhalb 80 cm gemessen"
+  },
+  {
+   "art": "mehrdeutig",
+   "lage": "laengswand",
+   "zone_cm": [
+    3200,
+    3400
+   ],
+   "a": {
+    "abschnitt": "mitte-west",
+    "y_cm": 45,
+    "x_cm": [
+     2870,
+     3400
+    ],
+    "wandart": "trennwand",
+    "sicherheit": "unsicher",
+    "notiz": "dieselbe Linie im Ostteil; zwischen 2420 und 2870 fehlt sie ganz"
+   },
+   "b": {
+    "abschnitt": "regel",
+    "y_cm": 25,
+    "x_cm": [
+     3200,
+     6000
+    ],
+    "wandart": "aussen",
+    "sicherheit": "sicher"
+   },
+   "hinweis": "in mitte-west liegen hier mehr Linien als in regel; die naechste Linie des Nachbarn gehoert einer anderen. Beide Messungen behalten."
+  },
+  {
+   "art": "nur in einem Abschnitt gemessen",
+   "lage": "querwand",
+   "zone_cm": [
+    3200,
+    3400
+   ],
+   "a": null,
+   "b": {
+    "abschnitt": "regel",
+    "x_cm": 3210,
+    "y_cm": [
+     1470,
+     1530
+    ],
+    "wandart": "aussen",
+    "sicherheit": "sicher"
+   },
+   "hinweis": "in mitte-west ist an dieser Stelle keine Querwand innerhalb 80 cm gemessen"
+  },
+  {
+   "art": "nur in einem Abschnitt gemessen",
+   "lage": "querwand",
+   "zone_cm": [
+    3200,
+    3400
+   ],
+   "a": null,
+   "b": {
+    "abschnitt": "regel",
+    "x_cm": 3365,
+    "y_cm": [
+     5,
+     50
+    ],
+    "wandart": "trennwand",
+    "sicherheit": "sicher"
+   },
+   "hinweis": "in mitte-west ist an dieser Stelle keine Querwand innerhalb 80 cm gemessen"
+  },
+  {
+   "art": "mehrdeutig",
+   "lage": "laengswand",
+   "zone_cm": [
+    5800,
+    6000
+   ],
+   "a": {
+    "abschnitt": "regel",
+    "y_cm": 25,
+    "x_cm": [
+     3200,
+     6000
+    ],
+    "wandart": "aussen",
+    "sicherheit": "sicher",
+    "notiz": "Nordfassade, eine durchgehende Linie ueber den ganzen Abschnitt"
+   },
+   "b": {
+    "abschnitt": "ost",
+    "y_cm": 50,
+    "x_cm": [
+     5800,
+     6185
+    ],
+    "wandart": "aussen",
+    "sicherheit": "sicher"
+   },
+   "hinweis": "in regel liegen hier mehr Linien als in ost; die naechste Linie des Nachbarn gehoert einer anderen. Beide Messungen behalten."
+  },
+  {
+   "art": "Versatz",
+   "lage": "laengswand",
+   "zone_cm": [
+    5800,
+    6000
+   ],
+   "versatz_cm": 20,
+   "a": {
+    "abschnitt": "regel",
+    "y_cm": 70,
+    "x_cm": [
+     5540,
+     6000
+    ],
+    "wandart": "aussen",
+    "sicherheit": "unsicher",
+    "notiz": "zweite Fassadenlinie, nur abschnittsweise gezeichnet; Innenkante der Aussenwand ODER Rueckwand des vorgesetzten Bands"
+   },
+   "b": {
+    "abschnitt": "ost",
+    "y_cm": 50,
+    "x_cm": [
+     5800,
+     6185
+    ],
+    "wandart": "aussen",
+    "sicherheit": "sicher",
+    "notiz": "Loggia-Bruestung nord, Doppellinie y=35/70"
+   },
+   "hinweis": "beide Werte behalten; die Geometrie folgt dem Abschnitt, dem der Bereich gehoert"
+  },
+  {
+   "art": "mehrdeutig",
+   "lage": "laengswand",
+   "zone_cm": [
+    5800,
+    6000
+   ],
+   "a": {
+    "abschnitt": "regel",
+    "y_cm": 930,
+    "x_cm": [
+     5705,
+     6000
+    ],
+    "wandart": "trennwand",
+    "sicherheit": "sicher",
+    "notiz": ""
+   },
+   "b": {
+    "abschnitt": "ost",
+    "y_cm": 705,
+    "x_cm": [
+     5790,
+     6050
+    ],
+    "wandart": "flur",
+    "sicherheit": "sicher"
+   },
+   "hinweis": "in regel liegen hier mehr Linien als in ost; die naechste Linie des Nachbarn gehoert einer anderen. Beide Messungen behalten."
+  },
+  {
+   "art": "mehrdeutig",
+   "lage": "laengswand",
+   "zone_cm": [
+    5800,
+    6000
+   ],
+   "a": {
+    "abschnitt": "regel",
+    "y_cm": 1470,
+    "x_cm": [
+     3200,
+     6000
+    ],
+    "wandart": "aussen",
+    "sicherheit": "sicher",
+    "notiz": "Sued: Vorderkante der Fassadenzone (Bruestung), durchgehend"
+   },
+   "b": {
+    "abschnitt": "ost",
+    "y_cm": 1520,
+    "x_cm": [
+     5800,
+     7820
+    ],
+    "wandart": "aussen",
+    "sicherheit": "sicher"
+   },
+   "hinweis": "in regel liegen hier mehr Linien als in ost; die naechste Linie des Nachbarn gehoert einer anderen. Beide Messungen behalten."
+  },
+  {
+   "art": "nur in einem Abschnitt gemessen",
+   "lage": "querwand",
+   "zone_cm": [
+    5800,
+    6000
+   ],
+   "a": {
+    "abschnitt": "regel",
+    "x_cm": 5865,
+    "y_cm": [
+     1475,
+     1530
+    ],
+    "wandart": "aussen",
+    "sicherheit": "sicher"
+   },
+   "b": null,
+   "hinweis": "in ost ist an dieser Stelle keine Querwand innerhalb 80 cm gemessen"
+  }
+ ],
+ "plan_beschriftungen": [
+  {
+   "plan_text": "Zimmer Typ 2",
+   "anker_cm": [
+    650,
+    405
+   ],
+   "beleg": "Leitlinienende, mess_kopf-west",
+   "raum_vorher": "Zimmer Typ 2",
+   "abschnitt": "kopf-west",
+   "x_cm": [
+    495,
+    835
+   ],
+   "y_cm": [
+    220,
+    535
+   ],
+   "wirkung": "bestaetigt"
+  },
+  {
+   "plan_text": "Backoffice",
+   "anker_cm": [
+    1205,
+    335
+   ],
+   "beleg": "Leitlinienende, mess_kopf-west",
+   "raum_vorher": "Backoffice",
+   "abschnitt": "kopf-west",
+   "x_cm": [
+    1175,
+    1400
+   ],
+   "y_cm": [
+    220,
+    535
+   ],
+   "wirkung": "bestaetigt"
+  },
+  {
+   "plan_text": "Sonderzimmer",
+   "anker_cm": [
+    355,
+    1110
+   ],
+   "beleg": "Leitlinienende, mess_kopf-west",
+   "raum_vorher": "Sonderzimmer",
+   "abschnitt": "kopf-west",
+   "x_cm": [
+    35,
+    590
+   ],
+   "y_cm": [
+    790,
+    1330
+   ],
+   "wirkung": "bestaetigt"
+  },
+  {
+   "plan_text": "Zimmer Typ 1",
+   "anker_cm": [
+    1275,
+    1110
+   ],
+   "beleg": "Leitlinienende, mess_kopf-west (Text steht unter dem Plan)",
+   "raum_vorher": "Zimmer (Typ nicht lesbar)",
+   "abschnitt": "kopf-west",
+   "x_cm": [
+    825,
+    1400
+   ],
+   "y_cm": [
+    705,
+    1295
+   ],
+   "wirkung": "bestaetigt"
+  },
+  {
+   "plan_text": "Empfang",
+   "anker_cm": [
+    1665,
+    286
+   ],
+   "beleg": "Leitlinienende, hotel_entzerrt.png",
+   "raum_vorher": "empfang",
+   "abschnitt": "mitte-west",
+   "x_cm": [
+    1395,
+    2155
+   ],
+   "y_cm": [
+    220,
+    700
+   ],
+   "wirkung": "bestaetigt"
+  },
+  {
+   "plan_text": "Waschraum",
+   "anker_cm": [
+    2364,
+    293
+   ],
+   "beleg": "Leitlinienende, hotel_entzerrt.png",
+   "raum_vorher": "treppe",
+   "abschnitt": "mitte-west",
+   "x_cm": [
+    2220,
+    2560
+   ],
+   "y_cm": [
+    215,
+    550
+   ],
+   "wirkung": "Plan-Beschriftung ersetzt die abgeleitete Deutung"
+  },
+  {
+   "plan_text": "Flur",
+   "anker_cm": [
+    3780,
+    620
+   ],
+   "beleg": "Leitlinienende, hotel_entzerrt.png",
+   "raum_vorher": "flur",
+   "abschnitt": "regel",
+   "x_cm": [
+    3200,
+    6000
+   ],
+   "y_cm": [
+    530,
+    700
+   ],
+   "wirkung": "bestaetigt"
+  },
+  {
+   "plan_text": "Loggia",
+   "anker_cm": [
+    5632,
+    70
+   ],
+   "beleg": "Leitlinienende, hotel_entzerrt.png",
+   "raum_vorher": "loggia",
+   "abschnitt": "regel",
+   "x_cm": [
+    5605,
+    5865
+   ],
+   "y_cm": [
+    25,
+    200
+   ],
+   "wirkung": "bestaetigt"
+  },
+  {
+   "plan_text": "Bad",
+   "anker_cm": [
+    6441,
+    329
+   ],
+   "beleg": "Leitlinienende, hotel_entzerrt.png",
+   "raum_vorher": "bad",
+   "abschnitt": "ost",
+   "x_cm": [
+    6370,
+    6540
+   ],
+   "y_cm": [
+    205,
+    530
+   ],
+   "wirkung": "bestaetigt"
+  }
+ ],
+ "raum_dedup": [
+  {
+   "weg": {
+    "abschnitt": "mitte-west",
+    "name": "bad",
+    "x_cm": [
+     1180,
+     1340
+    ],
+    "y_cm": [
+     700,
+     940
+    ]
+   },
+   "bleibt": {
+    "abschnitt": "kopf-west",
+    "name": "Zimmer (Typ nicht lesbar)",
+    "x_cm": [
+     825,
+     1400
+    ],
+    "y_cm": [
+     705,
+     1295
+    ]
+   }
+  },
+  {
+   "weg": {
+    "abschnitt": "mitte-west",
+    "name": "zimmer",
+    "x_cm": [
+     1180,
+     1530
+    ],
+    "y_cm": [
+     940,
+     1290
+    ]
+   },
+   "bleibt": {
+    "abschnitt": "kopf-west",
+    "name": "Zimmer (Typ nicht lesbar)",
+    "x_cm": [
+     825,
+     1400
+    ],
+    "y_cm": [
+     705,
+     1295
+    ]
+   }
+  },
+  {
+   "weg": {
+    "abschnitt": "mitte-west",
+    "name": "zimmer",
+    "x_cm": [
+     3210,
+     3400
+    ],
+    "y_cm": [
+     930,
+     1290
+    ]
+   },
+   "bleibt": {
+    "abschnitt": "regel",
+    "name": "zimmer",
+    "x_cm": [
+     3210,
+     3555
+    ],
+    "y_cm": [
+     925,
+     1285
+    ]
+   }
+  },
+  {
+   "weg": {
+    "abschnitt": "regel",
+    "name": "loggia",
+    "x_cm": [
+     5865,
+     6000
+    ],
+    "y_cm": [
+     25,
+     200
+    ]
+   },
+   "bleibt": {
+    "abschnitt": "ost",
+    "name": "loggia",
+    "x_cm": [
+     5870,
+     6175
+    ],
+    "y_cm": [
+     50,
+     205
+    ]
+   }
+  },
+  {
+   "weg": {
+    "abschnitt": "regel",
+    "name": "zimmer",
+    "x_cm": [
+     5865,
+     6000
+    ],
+    "y_cm": [
+     925,
+     1285
+    ]
+   },
+   "bleibt": {
+    "abschnitt": "ost",
+    "name": "zimmer",
+    "x_cm": [
+     5865,
+     6190
+    ],
+    "y_cm": [
+     705,
+     1290
+    ]
+   }
+  },
+  {
+   "weg": {
+    "abschnitt": "ost",
+    "name": "bad",
+    "x_cm": [
+     5800,
+     6030
+    ],
+    "y_cm": [
+     1290,
+     1510
+    ]
+   },
+   "bleibt": {
+    "abschnitt": "regel",
+    "name": "loggia",
+    "x_cm": [
+     5705,
+     6000
+    ],
+    "y_cm": [
+     1290,
+     1465
+    ]
+   }
+  }
+ ],
+ "raum_randstuecke_verworfen": [
+  {
+   "abschnitt": "mitte-west",
+   "name": "loggia",
+   "x_cm": [
+    3370,
+    3400
+   ],
+   "y_cm": [
+    1290,
+    1515
+   ],
+   "flaeche_m2": 0.68,
+   "grund": "Randstueck am Abschnittsende, unter 2 m2 - kein eigener Raum"
+  }
+ ],
+ "pruefung": {
+  "json_laedt": true,
+  "waende_mit_gueltigen_ecken": 636,
+  "befunde": [
+   "keine"
+  ]
+ },
+ "luecken": [
+  {
+   "abschnitt": "kopf-west",
+   "luecke": "Nutzung ist nur fuer vier Raeume belegt (Beschriftungs-Leitlinien mit Endpunkt): 'Zimmer Typ 2' (650/405), 'Backoffice' (1205/335), 'Sonderzimmer' (355/1110), 'Zimmer Typ ...' (1275/1110, Typ-Ziffer steht ausserhalb des Ausschnitts). Alle uebrigen Nutzungen sind im Plan NICHT beschriftet und hier als 'unklar' gefuehrt."
+  },
+  {
+   "abschnitt": "kopf-west",
+   "luecke": "Empfang, Aufzug und Waschraum sind im Abschnitt x 0..1400 cm nirgends beschriftet. Gemessen: noerdlich von y = -100 cm liegt zwischen x 0 und 1650 cm keine Tinte ausser den Beschriftungs-Leitlinien - der Aufzugsvorsprung (bezug.json: 3,25 m) liegt also NICHT im Kopfbau West, sondern weiter oestlich."
+  },
+  {
+   "abschnitt": "kopf-west",
+   "luecke": "Schraege Wandstuecke sind nicht erfasst (nur orthogonale Achsen): Zickzack x 310..515 / y 650..780, Knick x 830..960 / y 440..540, Knick x 1385..1460 / y 300..450."
+  },
+  {
+   "abschnitt": "kopf-west",
+   "luecke": "Die Kammschraffur an der Nordfassade (x 840..1390, y 35..120) ist nicht deutbar - Gelaender, Stufen oder Wandschraffur."
+  },
+  {
+   "abschnitt": "kopf-west",
+   "luecke": "Treppenhaus: Laufbreiten, Stufenzahl und Podestlage sind nicht ausgewertet. x=265 ist das Treppenauge, keine raumtrennende Wand."
+  },
+  {
+   "abschnitt": "kopf-west",
+   "luecke": "Zwischen x 1015 und 1460 / y 700..970 sind Moebelkanten (Bettblock mit Nachttisch) und Wandkanten nicht sicher trennbar; x=1015 ist deshalb als unsicher gefuehrt."
+  },
+  {
+   "abschnitt": "kopf-west",
+   "luecke": "Die Nordfassade ist bei x 510..850 mit drei statt zwei Linien gezeichnet; welche davon die Innenkante ist, gibt die Zeichnung nicht her."
+  },
+  {
+   "abschnitt": "kopf-west",
+   "luecke": "Im Bereich x 660..1025 liegt die Suedfassaden-Streifenmessung 20 cm noerdlicher als links und rechts. Das liegt innerhalb der gemessenen Freihand-Streuung (11 cm) und wird durch die Innenwand y=1510 verzerrt - ein echter Ruecksprung ist daraus NICHT belegbar."
+  },
+  {
+   "abschnitt": "kopf-west",
+   "luecke": "Die H-/T-Symbolreihe bei x 180..820 / y 1490..1545 sah zunaechst nach Sanitaerzellen aus (Waschraum). Dagegen spricht: an der Suedfassade x 1030..1390 und an der Nordfassade x 840..1390 steht eine aehnliche Strichreihe DIREKT in der Wandzone. Die Deutung 'Waschraum' ist damit nicht belegt und wurde zurueckgenommen."
+  },
+  {
+   "abschnitt": "kopf-west",
+   "luecke": "Alle Werte auf 5 cm gerundet. Gemessene Freihand-Streuung der Fassadenachsen: Nord 11 cm, Sued 11 cm, West 13 cm. Zwei Nachkommastellen in Metern waeren erfunden."
+  },
+  {
+   "abschnitt": "mitte-west",
+   "luecke": "Nutzung: die PDF hat keine Textebene, und im Abschnitt 12..34 m steht keine lesbare Raumbeschriftung. Alle Raumnamen sind aus Geometrie und Symbolen abgeleitet, nicht abgelesen."
+  },
+  {
+   "abschnitt": "mitte-west",
+   "luecke": "Das suedliche Aussenfeld jedes Zimmers (weiss, mit Mauerschraffur, 1,5..1,9 x 2,25 m) ist unbenannt und zum Nachbarzimmer NICHT durch eine Wand getrennt - je zwei Zimmer teilen sich ein 3,3 m breites Feld. Entweder hat der Zeichner die Trennwand ausgelassen, oder es ist kein Zimmerraum."
+  },
+  {
+   "abschnitt": "mitte-west",
+   "luecke": "Loggia oder Bad: die gesprenkelten Felder sind als Loggia gedeutet, weil dort die Mauerschraffur der Aussenwand fehlt. Ein Fliesenmuster im Bad saehe genauso aus. Nicht entscheidbar."
+  },
+  {
+   "abschnitt": "mitte-west",
+   "luecke": "Der Erschliessungskern (x 2220..2560) enthaelt zwei Rechtecke mit Quersprossen. Treppe oder Aufzug ist nicht zu unterscheiden; Laufrichtung oder Pfeil fehlen."
+  },
+  {
+   "abschnitt": "mitte-west",
+   "luecke": "Die Doppelwand x=2155/2185 reicht nach Norden ueber die Fassadenlinie hinaus (bis mindestens y=-90 cm). Was dort vorspringt, liegt ausserhalb des angesehenen Ausschnitts und ist nicht vermessen."
+  },
+  {
+   "abschnitt": "mitte-west",
+   "luecke": "Die 50-cm-Linie im Nordstreifen laeuft nur ueber Teilstrecken (1390-2025, 2065-2295, 2870-3400, dazu kurze Reste bei 1160-1215, 1245-1290 und 2320-2420). Ob Innenkante der Aussenwand oder Bruestung, gibt die Zeichnung nicht her."
+  },
+  {
+   "abschnitt": "mitte-west",
+   "luecke": "Freihand-Drift: die Nord-Laengswand faellt ueber den Abschnitt von y=220 auf y=205, die Suedfassade schwankt zwischen 1515 und 1570 cm. Die Achsen sind abschnittsweise gemittelt, nicht auf 1 cm genau."
+  },
+  {
+   "abschnitt": "mitte-west",
+   "luecke": "Der Bereich x 1405..2155 hat KEINE Flur-Nordwand. Ob offene Lobby oder nicht gezeichnete Wand, ist nicht entscheidbar; der Tresen spricht fuer eine offene Lobby."
+  },
+  {
+   "abschnitt": "mitte-west",
+   "luecke": "Im Norden fehlt zwischen x 2185 und 2560 sowie zwischen 2760 und 3220 jede weitere Querwand. Die Nordraeume sind 2,0 bis 4,6 m breit und folgen KEINEM 3,38-m-Raster wie die Suedzimmer - Zimmer Typ 2 ist im Norden nicht als Raster nachweisbar."
+  },
+  {
+   "abschnitt": "mitte-west",
+   "luecke": "Zimmer 7 (ab x=3210) ragt ueber den Abschnittsrand hinaus; seine Ostwand liegt jenseits von 3400 cm und ist hier nicht gemessen."
+  },
+  {
+   "abschnitt": "mitte-west",
+   "luecke": "Die duennen Senkrechten bei x=1270 und x=2385 (7 cm breit, mit Kugel am unteren Ende) sind Beschriftungs-Zeigelinien, KEINE Waende - sie sind bewusst nicht aufgenommen."
+  },
+  {
+   "abschnitt": "regel",
+   "luecke": "Der Abschnitt x=32..60 m traegt KEINE Beschriftung. Die Legende (Zimmer Typ 1/2, Bad, Loggia, Flur ...) steht anderswo im Plan; jede Nutzungszuordnung hier ist daher abgeleitet, nicht abgelesen. Alle Raumnamen ausser 'flur' stehen auf sicherheit=unsicher."
+  },
+  {
+   "abschnitt": "regel",
+   "luecke": "Die Vorgabe 'Zimmer Typ 2 im Norden, Raster 3,28 m' wird durch die Messung NICHT bestaetigt. Gemessen: zwei gleich aufgebaute Bloecke von 1335 bzw. 1320 cm (Achsen 3210 / 4545 / 5865) mit je vier Raeumen 480/180/220/455 bzw. 485/180/150/505 cm. Kein 328-cm-Raster in der Nord-Zimmerzone."
+  },
+  {
+   "abschnitt": "regel",
+   "luecke": "Nur die SUED-Zimmerzone zeigt ein sauberes Raster: 8 Achsen 3210/3560/3865/4215/4545/4875/5210/5540/5865, Abstaende 315-345 cm (Mittel 332 cm, Streuung 12 cm)."
+  },
+  {
+   "abschnitt": "regel",
+   "luecke": "Die Schichtung der Nordfassade ist nicht eindeutig: eine durchgehende Linie bei y=25, eine nur abschnittsweise gezeichnete zweite bei y=70, und ueber x=3530..4225 sowie x=4870..5560 eine vorgesetzte Kante bei y=-35/-20 mit Sprossen-Signatur. Ob das Wandstaerke, Bruestung oder franzoesischer Balkon ist, gibt die Zeichnung nicht her."
+  },
+  {
+   "abschnitt": "regel",
+   "luecke": "Die Sued-Fassadenzone hat DREI Linien (1285 / 1470 / 1510). Welche davon die Gebaeudeaussenkante ist, ist nicht beschriftet; bezug.json nennt 1527 cm Gebaeudetiefe, die gemessene aeusserste Linie liegt bei 1510."
+  },
+  {
+   "abschnitt": "regel",
+   "luecke": "In der Sued-Vorraum-/Nassraumzone (y 705..920) sind in diesem Abschnitt keine Sanitaersymbole gezeichnet. Die 25 Zellen sind als 'unklar' gefuehrt, nicht als 'bad'."
+  },
+  {
+   "abschnitt": "regel",
+   "luecke": "Der Flur (y 530..700, 170 cm breit) ist im ganzen Abschnitt leer gezeichnet - keine Treppe, kein Aufzug, keine Querwand. Aufzug/Treppe liegen ausserhalb x=32..60 m."
+  },
+  {
+   "abschnitt": "regel",
+   "luecke": "Tueroeffnungen sind nur als Luecken in den Flurwand-Segmenten erfasst; die Tuerblaetter (Viertelkreise) wurden als eigene Linien verworfen und stehen unter verworfene_linien."
+  },
+  {
+   "abschnitt": "regel",
+   "luecke": "Die zweite Bleistiftskizze (hotel-skizze-registriert.png) zeigt in diesem Abschnitt dieselbe Geometrie und KEINE Moeblierung - sie liefert keinen zusaetzlichen Nutzungs-Hinweis."
+  },
+  {
+   "abschnitt": "regel",
+   "luecke": "Freihandzeichnung: die Fassadenlinien schwanken (bezug.json nennt 5-6 px Streuung, rund 20 cm). Alle Werte sind auf 5 cm gerundet; eine Genauigkeit unter etwa 15 cm ist durch das Original nicht gedeckt."
+  },
+  {
+   "abschnitt": "ost",
+   "luecke": "Tueren der Nordzimmer/Baeder: nur zwei Tuerschwenke in der Flur-Nordwand gezeichnet (bei x 6215..6265 und 6855..6905). Die beiden 'Bad'-Zellen 6370..6540 und 6540..6715 haben keine gezeichnete Tuer."
+  },
+  {
+   "abschnitt": "ost",
+   "luecke": "Die geschlossenen Zellen im Suedband (5800..6030, 6360..6725, 7070..7225) enthalten keine Sanitaerobjekte. 'Bad' ist aus dem Wechsel Loggia/geschlossene Zelle und aus der Legende erschlossen, NICHT gezeichnet."
+  },
+  {
+   "abschnitt": "ost",
+   "luecke": "Die Zimmertrennwaende 5865 und 6535 enden an der Laengswand y=1290; die geschlossenen Zellen 5800..6030 und 6360..6725 liegen daher ungeteilt unter ZWEI Zimmern. Die Zeichnung gibt nicht her, wo die Trennung liegt."
+  },
+  {
+   "abschnitt": "ost",
+   "luecke": "Das geschlossene Nordband 6175..6905 (7,30 m lang, 1,55 m tief) ist nicht unterteilt gezeichnet. Nutzung unbekannt."
+  },
+  {
+   "abschnitt": "ost",
+   "luecke": "Ostteil x 7230..7800, y 800..1145 (5,70 x 3,45 m): leer, keine Moeblierung, keine Beschriftung. Vermutlich Treppenvorraum, nicht belegt."
+  },
+  {
+   "abschnitt": "ost",
+   "luecke": "Raum 7430..7805, y 575..745 (3,60 x 1,70 m): leer. Aufzug oder Waschraum moeglich, in der Zeichnung nicht benannt."
+  },
+  {
+   "abschnitt": "ost",
+   "luecke": "Raum 7240..7430, y 205..530 (1,90 x 3,25 m): leer, keine Tuer erkennbar."
+  },
+  {
+   "abschnitt": "ost",
+   "luecke": "Die Ostfassade ist freihaendig deutlich schiefer als die uebrigen Kanten (Restneigung 0,72 Grad laut bezug.json); die x-Werte ab 7700 tragen bis +/-10 cm Unsicherheit."
+  },
+  {
+   "abschnitt": "ost",
+   "luecke": "Genaue Stufenzahl und Laufrichtung der Treppe 7230..7810 / 1145..1500 sind nicht ablesbar; drei Laeufe und ein Podest sind erkennbar."
+  },
+  {
+   "abschnitt": "ost",
+   "luecke": "Wandstaerken sind nicht massstaeblich gezeichnet (Strichbreite 4..12 cm); alle Werte sind Achsmasse der belegungsgewichteten Mittellinie."
+  },
+  {
+   "abschnitt": "zusammenfuehrung",
+   "luecke": "Die Beschriftung 'Aufzug' des Plans (Leitlinienende 2000/-170 cm) trifft keinen gemessenen Raum - dort fehlt die Messung."
+  },
+  {
+   "abschnitt": "zusammenfuehrung",
+   "luecke": "Der Aufzugs-Vorsprung noerdlich der Nordfassade (Beschriftung \"Aufzug\", Leitlinienende rund 2000/-170 cm) ist nur zur HAELFTE erfasst: die Doppelwand x=2155/2185 reicht als Ostflanke bis y=-90, seine Nordkante und seine Westflanke fehlen. Grob aus hotel_entzerrt.png abgelesen liegt der Kasten bei x 1835..2170, y -330..25 (Spalten-/Zeilenprofil, NICHT nach der Abschnittsmethode gemessen) - darum steht er NICHT in der Datei. Er ist die groesste bekannte Luecke."
+  }
+ ],
+ "notizen": [
+  "4 gemessene Kanten liegen bis zu 20 cm oestlich von x=7800 (Freihand-Streuung der Ostfassade). Auf x=7800 beschnitten, weil 78,00 m die Bezugslaenge ist."
+ ],
+ "unklare_zellen_ohne_label": 80
+}

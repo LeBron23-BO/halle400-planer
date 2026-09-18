@@ -4,6 +4,21 @@
 //   node tools/baue-planer-datei.mjs        # -> Halle400-Modell.html
 //   node tools/pruefe-planer-datei.mjs      # prueft sie unter file:// + gesperrtem Netz
 //
+// SCHALTER
+//   --plan <name>        Plan aus app/public/plaene/<name>.json   (Vorgabe halle400)
+//   --ziel <pfad>        Zieldatei                                (Vorgabe Halle400-Modell.html)
+//   --titel <text>       Fenstertitel        (Vorgabe "Halle 400 — Büro, Planer")
+//   --kopf <text>        sichtbare Kopfzeile (Vorgabe "Halle&nbsp;400 &middot; Büro")
+//   --unterzeile <text>  Zeile unter dem Titel; Platzhalter {waende} {ecken}
+//                        {raumnamen} {breite} {tiefe} werden zur Laufzeit gefuellt.
+//                        Ohne den Schalter bleibt die gerechnete Buero-Zeile.
+//   --namen <stellung>   Anfangsstellung der Namensschicht: alle|wichtige|aus
+//                        (Vorgabe alle = bisheriges Verhalten)
+//   --ohne-saeulen       laesst die Neun-Saeulen-Tafel und ihre Schalter WEG
+//                        (Vorgabe: Tafel bleibt — die Buero-Datei aendert sich nicht)
+//   --nur-ansicht        die Fassung fuer die Bank (Werkstatt ENTFERNT, kein Schloss)
+//   --ohne-siegel        Bau ohne Unterschrift (die Datei sagt es dann selbst)
+//
 // WAS SICH GEGENUEBER DER BANK-ANSICHT AENDERT
 // Bisher trug die Datei nur die vier Axonometrie-Module: ein Blatt zum Ansehen,
 // mehr nicht. Jetzt kommt der 2D-KERN dazu (Modell + Zeichner, aus derselben
@@ -48,6 +63,53 @@ const arg = (name, standard) => {
 const PLAN_NAME = arg('--plan', 'halle400')
 const ZIEL = path.resolve(WURZEL, arg('--ziel', 'Halle400-Modell.html'))
 
+/* ── DIE BESCHRIFTUNG (Fenstertitel, Blattkopf, Unterzeile) ───────────
+   Dieselbe Huelle traegt inzwischen mehr als einen Plan: neben dem Buero in
+   Halle 400 auch das Zimmergeschoss von Hotel 400 (`--plan hotel400`). Stand die
+   Beschriftung fest im Quelltext, hiess JEDE Fassung „Halle 400 — Büro, Planer" —
+   der Leser haelt dann die falsche Datei fuer die richtige, und das ist im
+   Bankgespraech genau der Fehler, den niemand bemerkt. Nachtraeglich in die
+   fertige HTML zu greifen waere die schlechtere Loesung: der naechste Bau
+   ueberschriebe den Eingriff still.
+
+   DIE VORGABEWERTE SIND GENAU DER BISHERIGE WORTLAUT. Ein Bau ohne diese drei
+   Schalter liefert darum Byte fuer Byte dieselbe Datei wie vorher; die
+   Buero-Auslieferung bleibt unangetastet (gemessen ueber die Pruefsumme).
+
+   ES WIRD GEPRUEFT, NICHT GEMASKIERT. Beide Texte landen als HTML in der Huelle,
+   und der Vorgabewert des Blattkopfes enthaelt mit `&nbsp;` und `&middot;` selbst
+   Entitaeten — ein blindes Escapen machte sie zu sichtbarem Text. Spitze
+   Klammern, ein Gravis und eine Dollar-Klammer brechen den Bau deshalb ab, statt
+   still ein Tag in den Kopf oder eine Einsetzung in diese Vorlage zu schreiben.
+
+   --unterzeile ersetzt die zweizeilige Angabe unter dem Titel. Ohne den Schalter
+   bleibt die gerechnete Buero-Zeile („Axonometrie · B × T m / N Räume nach den
+   Säulen benannt") — die Saeulen-Zaehlung ist eine BUERO-Eigenschaft und in einem
+   Hotel ohne Aussage. Die Platzhalter {waende} {ecken} {raumnamen} {breite}
+   {tiefe} fuellt die Datei zur LAUFZEIT aus dem eingebauten Plan und der
+   gemessenen Szene: eine abgeschriebene Zahl waere beim naechsten Plan-Stand
+   still falsch (Projekt-DNA Punkt 1). */
+const TITEL = arg('--titel', 'Halle 400 — Büro, Planer')
+const KOPF = arg('--kopf', 'Halle&nbsp;400 &middot; Büro')
+const UNTERZEILE = arg('--unterzeile', null)
+const beschriftungPruefen = (name, wert, brErlaubt) => {
+  if (wert == null) return
+  const probe = brErlaubt ? wert.replace(/<br\s*\/?>/gi, '') : wert
+  const grund =
+    /[<>]/.test(probe) ? 'spitze Klammern' :
+    wert.includes('`') ? 'einen Gravis (`)' :
+    wert.includes('${') ? 'eine Dollar-Klammer (Vorlagen-Einsetzung)' : null
+  if (!grund) return
+  console.error(`Abbruch: ${name} enthaelt ${grund}.`)
+  console.error('  Die Beschriftung wird in die Huelle GESCHRIEBEN, nicht gemaskiert —')
+  console.error('  sonst waeren &nbsp; und &middot; sichtbarer Text. Erlaubt sind Text und')
+  console.error(`  HTML-Entitaeten${brErlaubt ? ' sowie <br>' : ''}, kein Markup.`)
+  process.exit(1)
+}
+beschriftungPruefen('--titel', TITEL, false)
+beschriftungPruefen('--kopf', KOPF, false)
+beschriftungPruefen('--unterzeile', UNTERZEILE, true)
+
 const planPfad = path.join(WURZEL, 'app/public/plaene', `${PLAN_NAME}.json`)
 if (!fs.existsSync(planPfad)) {
   console.error(`Plan nicht gefunden: ${planPfad}`)
@@ -76,6 +138,48 @@ const BAU_STEMPEL = new Date().toISOString().slice(0, 16).replace('T', ' ')
    Leser, auf ein Zeichen zu vertrauen, das mal da ist und mal nicht. */
 const NUR_ANSICHT = process.argv.includes('--nur-ansicht')
 const OHNE_SIEGEL = process.argv.includes('--ohne-siegel')
+
+/* ── DIE NAMENSSCHICHT UND DIE SAEULEN-TAFEL ──────────────────────
+   Zwei Dinge, die im Buero richtig sind und in einem anderen Plan falsch:
+
+   (1) --namen <alle|wichtige|aus>. Die Huelle startete fest mit „alle". Im Buero
+   sind das 18 Raumnamen; im Zimmergeschoss von Hotel 400 sind es 74 — daraus
+   wird ein Textband ueber und unter dem Modell, in dem der Riegel selbst
+   untergeht (am Standbild gemessen). Die Vorgabe ist `alle` und damit GENAU das
+   bisherige Verhalten: ein Bau ohne den Schalter liefert dieselben Bytes.
+     `wichtige` ist innen die Stellung „saeulen" — nur die Raeume, die eine der
+   neun Saeulen tragen. Sie ist nur dort sinnvoll, wo es Saeulen GIBT; zusammen
+   mit --ohne-saeulen waere sie eine Schicht, die nie etwas zeigt, und der Bau
+   bricht deshalb unten ab statt ein leeres Blatt auszuliefern.
+
+   (2) --ohne-saeulen. Die Tafel „Die neun Säulen" mit ihrem Zaehler, ihrem
+   Fusstext ueber Workspace/Einzelbuero/Doppelbuero und den zwei Schaltern
+   (`9 Säulen`, `Legende`) ist eine BUERO-Eigenschaft. In einem Hotelplan traegt
+   kein Raum eine Saeule: die Tafel meldet dort „0/9 verortet" und redet von
+   Raeumen, die es nicht gibt — und der Namen-Knopf „Säulen" filtert auf eine
+   leere Liste, ist also ein Schalter, der die Beschriftung loescht. Mit dem
+   Schalter fallen Tafel, beide Tafel-Schalter UND dieser Namen-Knopf weg.
+
+   Beides wird in die VORLAGE eingesetzt und nicht nachtraeglich aus der fertigen
+   HTML geschnitten: der naechste Bau ueberschriebe einen Nachpatch still. Ohne
+   die Schalter setzt die Einsetzung Zeichen fuer Zeichen das ein, was vorher
+   fest dastand — gemessen ueber die Pruefsumme der Buero-Datei. */
+const NAMEN_STELLUNGEN = { alle: 'alle', wichtige: 'saeulen', aus: 'aus' }
+const NAMEN_WAHL = arg('--namen', 'alle')
+const NAMEN_START = NAMEN_STELLUNGEN[NAMEN_WAHL]
+if (!NAMEN_START) {
+  console.error(`Abbruch: --namen ${NAMEN_WAHL} kennt die Datei nicht.`)
+  console.error(`  Erlaubt: ${Object.keys(NAMEN_STELLUNGEN).join(' | ')} (Vorgabe alle).`)
+  process.exit(1)
+}
+const OHNE_SAEULEN = process.argv.includes('--ohne-saeulen')
+if (OHNE_SAEULEN && NAMEN_START === 'saeulen') {
+  console.error('Abbruch: --namen wichtige zusammen mit --ohne-saeulen.')
+  console.error('  „wichtige" heisst „die Raeume, die eine der neun Saeulen tragen". Ohne die')
+  console.error('  Saeulen ist die Menge leer — das Blatt startete ohne einen einzigen Namen,')
+  console.error('  und der Grund dafuer stuende nirgends. Gemeint ist dann --namen aus.')
+  process.exit(1)
+}
 if (NUR_ANSICHT && !process.argv.includes('--ziel')) {
   console.error('Abbruch: --nur-ansicht ohne --ziel wuerde die Werkstatt-Datei ueberschreiben.')
   console.error('  Gemessen (Gegner-Fund M1): der Speicherschluessel haengt am Pfad — ein liegen')
@@ -155,7 +259,7 @@ let html = `<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Halle 400 — Büro, Planer</title>
+<title>${TITEL}</title>
 <style>
   :root{
     --paper:#F2ECDE; --paper-deep:#DED5C0; --ink:#1E2A25; --ink-dim:#46514A;
@@ -713,9 +817,12 @@ let html = `<!DOCTYPE html>
   <canvas id="axo-canvas"></canvas>
 
   <header class="kopf">
-    <h1>Halle&nbsp;400 &middot; Büro</h1>
+    <h1>${KOPF}</h1>
     <div class="strich"></div>
-    <div class="sub" id="unterzeile">Axonometrie</div>
+    <!-- Der Anfangstext ist nur das erste Bild, bis zeigeTafel() rechnet. Wo eine
+         eigene Unterzeile gesetzt ist, steht hier NICHTS: „Axonometrie" waere ein
+         kurz aufblitzender Wortlaut, den die Datei danach widerruft. -->
+    <div class="sub" id="unterzeile">${UNTERZEILE == null ? 'Axonometrie' : ''}</div>
     <!-- Nur auf dem Papier (M5): Datum und die Maßstabs-Aussage. Auf dem
          Bildschirm wäre beides Rauschen — dort sieht man ja, dass man dreht.
          Auf einem Ausdruck ohne Datum weiss in drei Wochen niemand mehr, ob
@@ -762,13 +869,13 @@ let html = `<!DOCTYPE html>
     </div>
   </header>
 
-  <aside class="tafel" id="tafel">
+${OHNE_SAEULEN ? '' : `  <aside class="tafel" id="tafel">
     <div class="tafel-kopf"><b>Die neun Säulen</b><span id="zaehler"></span></div>
     <div class="tafel-leib" id="tafelLeib"></div>
     <div class="tafel-fuss" id="tafelFuss"></div>
   </aside>
 
-  <div class="leiste" role="toolbar" aria-label="Ansicht steuern">
+`}  <div class="leiste" role="toolbar" aria-label="Ansicht steuern">
     <div class="grp">
       <span class="lbl">Blick</span>
       <button type="button" data-blick="0">Nord</button>
@@ -779,14 +886,14 @@ let html = `<!DOCTYPE html>
     <div class="grp">
       <span class="lbl">Namen</span>
       <button type="button" data-namen="alle">Alle</button>
-      <button type="button" data-namen="saeulen">Säulen</button>
-      <button type="button" data-namen="aus">Aus</button>
+${OHNE_SAEULEN ? '' : `      <button type="button" data-namen="saeulen">Säulen</button>
+`}      <button type="button" data-namen="aus">Aus</button>
     </div>
-    <div class="grp">
+${OHNE_SAEULEN ? '' : `    <div class="grp">
       <button type="button" id="btnAusbau" aria-pressed="false">9&nbsp;Säulen</button>
       <button type="button" id="btnTafel" aria-pressed="true">Legende</button>
     </div>
-  </div>
+`}  </div>
 
   <div class="hinweis">
     <!-- Bedienhinweise gehören auf den Bildschirm, nicht aufs Papier (M5).
@@ -1111,6 +1218,19 @@ const SCHLOSS_HASH = ${JSON.stringify(PBKDF2_HASH)};
    Werkstatt — sie darf keine bekommen, auch nicht durch einen alten Wert. */
 const NUR_ANSICHT = ${JSON.stringify(NUR_ANSICHT)};
 
+/* Die eigene Unterzeile (--unterzeile), oder null fuer die gerechnete
+   Buero-Zeile. Die Platzhalter werden hier unten gefuellt, nicht beim Bau: das
+   Gebaeudemass kommt aus der GEMESSENEN Szene, die Zahlen aus dem eingebauten
+   Plan — abgeschrieben waeren sie beim naechsten Plan-Stand still falsch. */
+const UNTERZEILE_VORLAGE = ${JSON.stringify(UNTERZEILE)};
+
+/* Traegt dieser Plan die neun Saeulen (--ohne-saeulen)? Die Tafel, ihre zwei
+   Schalter und der Namen-Knopf „Säulen" stehen dann gar nicht in der Huelle;
+   dieser Wert haelt das Skript davon ab, nach ihnen zu greifen. Die Neun-Saeulen-
+   RECHNUNG bleibt trotzdem stehen (\`verortete()\`) — sie kostet nichts und
+   speist die gerechnete Buero-Unterzeile, die es ohne --unterzeile weiter gibt. */
+const OHNE_SAEULEN = ${JSON.stringify(OHNE_SAEULEN)};
+
 /* Hoehen aus src/three/ausstattung.ts, zur Bauzeit GELESEN statt abgeschrieben. */
 const HOEHEN = ${JSON.stringify(HOEHEN)};
 
@@ -1240,7 +1360,7 @@ const planEl = el('plan');
 const werkzeuge = el('werkzeuge');
 const palette = el('palette');
 const arbeitshinweis = el('arbeitshinweis');
-const tafel = el('tafel');
+const tafel = OHNE_SAEULEN ? null : el('tafel');
 const rueckfrage = el('rueckfrage');
 const zurueckFrage = el('zurueckFrage');
 const standleiste = el('standleiste');
@@ -1252,8 +1372,8 @@ const btnRedo = el('btnRedo');
 let ansicht = 'axo';
 let bearbeiten = false;
 let vollausbau = false;
-let tafelAn = true;
-let namenModus = 'alle';
+let tafelAn = !OHNE_SAEULEN;
+let namenModus = ${JSON.stringify(NAMEN_START)};
 /* W7: \`const\`, seit das Canvas nicht mehr getauscht wird (s. \`axoNeuBauen\`).
    Ein \`let\` hier hiesse, dass irgendwo doch noch ein Tausch lauert. */
 const axoCanvas = el('axo-canvas');
@@ -1759,29 +1879,41 @@ function verortete(){
 function tafelZeichnen(){
   const belegt = verortete();
   const anzahl = Object.keys(belegt).length;
-  const leib = el('tafelLeib');
-  leib.innerHTML = '';
-  SAEULEN.forEach(function(s, i){
-    const raum = belegt[i];
-    const zeile = document.createElement('div');
-    zeile.className = 'zeile' + (raum ? ' an' : '');
-    zeile.innerHTML = '<div class="n">' + s.n + '</div><div>' +
-      '<div class="nm"></div>' + (raum ? '<div class="rm"></div>' : '') +
-      '<div class="src"></div></div>';
-    zeile.querySelector('.nm').textContent = s.rolle;
-    if (raum) zeile.querySelector('.rm').textContent = raum;
-    zeile.querySelector('.src').textContent = s.name;
-    leib.appendChild(zeile);
-  });
-  el('zaehler').textContent = anzahl + '/9 verortet';
-  el('tafelFuss').textContent = vollausbau
-    ? 'Vollausbau — auch Teamtable, Konferenz, Workshop, Videokonf und Break out tragen eine Säule.'
-    : 'Die vier Räume, die im Plan Workspace, Einzelbüro oder Doppelbüro heißen.';
+  /* Die Funktion macht ZWEI Dinge: sie fuellt die Saeulen-Tafel und sie schreibt
+     die Unterzeile im Blattkopf. Ohne Saeulen fehlt nur das ERSTE — die
+     Unterzeile unten muss weiter laufen, sonst stuende im Kopf des Hotelblattes
+     dauerhaft nichts. */
+  if (!OHNE_SAEULEN) {
+    const leib = el('tafelLeib');
+    leib.innerHTML = '';
+    SAEULEN.forEach(function(s, i){
+      const raum = belegt[i];
+      const zeile = document.createElement('div');
+      zeile.className = 'zeile' + (raum ? ' an' : '');
+      zeile.innerHTML = '<div class="n">' + s.n + '</div><div>' +
+        '<div class="nm"></div>' + (raum ? '<div class="rm"></div>' : '') +
+        '<div class="src"></div></div>';
+      zeile.querySelector('.nm').textContent = s.rolle;
+      if (raum) zeile.querySelector('.rm').textContent = raum;
+      zeile.querySelector('.src').textContent = s.name;
+      leib.appendChild(zeile);
+    });
+    el('zaehler').textContent = anzahl + '/9 verortet';
+    el('tafelFuss').textContent = vollausbau
+      ? 'Vollausbau — auch Teamtable, Konferenz, Workshop, Videokonf und Break out tragen eine Säule.'
+      : 'Die vier Räume, die im Plan Workspace, Einzelbüro oder Doppelbüro heißen.';
+  }
   const b = (szene.grenzen.x1 - szene.grenzen.x0).toFixed(0);
   const t = (szene.grenzen.z1 - szene.grenzen.z0).toFixed(0);
-  el('unterzeile').innerHTML =
-    'Axonometrie &middot; ' + b + ' &times; ' + t + ' m<br>' +
-    anzahl + ' Räume nach den Säulen benannt';
+  el('unterzeile').innerHTML = UNTERZEILE_VORLAGE == null
+    ? ('Axonometrie &middot; ' + b + ' &times; ' + t + ' m<br>' +
+       anzahl + ' Räume nach den Säulen benannt')
+    : UNTERZEILE_VORLAGE
+        .replace(/\\{waende\\}/g, String(PLAN.floorplan.walls.length))
+        .replace(/\\{ecken\\}/g, String(Object.keys(PLAN.floorplan.corners).length))
+        .replace(/\\{raumnamen\\}/g, String((PLAN.labels || []).length))
+        .replace(/\\{breite\\}/g, (szene.grenzen.x1 - szene.grenzen.x0).toFixed(1).replace('.', ','))
+        .replace(/\\{tiefe\\}/g, (szene.grenzen.z1 - szene.grenzen.z0).toFixed(1).replace('.', ','));
 }
 
 /* ── Ansicht umschalten ─────────────────────────────────────────────
@@ -3560,17 +3692,22 @@ document.querySelectorAll('[data-namen]').forEach(function(b){
     markiere('[data-namen]', namenModus);
   });
 });
-el('btnAusbau').addEventListener('click', function(){
-  vollausbau = !vollausbau;
-  el('btnAusbau').setAttribute('aria-pressed', String(vollausbau));
-  axoNeuBauen();
-});
-el('btnTafel').addEventListener('click', function(){
-  tafelAn = !tafelAn;
-  tafel.classList.toggle('weg', !tafelAn);
-  el('btnTafel').setAttribute('aria-pressed', String(tafelAn));
-  axoAnsicht.setzeRandRechts(tafelRand());
-});
+/* Die beiden Schalter GIBT es nur, wo es die Tafel gibt (--ohne-saeulen schnitt
+   sie samt ihrer Gruppe aus der Huelle). Ein \`addEventListener\` auf nichts waere
+   ein Fehler in der Konsole beim Aufschlagen des Blattes. */
+if (!OHNE_SAEULEN) {
+  el('btnAusbau').addEventListener('click', function(){
+    vollausbau = !vollausbau;
+    el('btnAusbau').setAttribute('aria-pressed', String(vollausbau));
+    axoNeuBauen();
+  });
+  el('btnTafel').addEventListener('click', function(){
+    tafelAn = !tafelAn;
+    tafel.classList.toggle('weg', !tafelAn);
+    el('btnTafel').setAttribute('aria-pressed', String(tafelAn));
+    axoAnsicht.setzeRandRechts(tafelRand());
+  });
+}
 
 /* ── Bedienung: Umschalter + Bearbeiten ────────────────────────────── */
 el('btnAnsichtAxo').addEventListener('click', function(){ zeigeAnsicht('axo', true); });
@@ -3856,10 +3993,15 @@ addEventListener('resize', function(){
 let startBlick = '0';
 if (innerWidth < 900) {
   startBlick = '1';
-  tafelAn = false;
-  tafel.classList.add('weg');
-  el('btnTafel').setAttribute('aria-pressed', 'false');
-  namenModus = 'saeulen';
+  if (!OHNE_SAEULEN) {
+    tafelAn = false;
+    tafel.classList.add('weg');
+    el('btnTafel').setAttribute('aria-pressed', 'false');
+  }
+  /* Der schmale Start DAEMPFT die Namensschicht, er hebt sie nicht an: wer
+     \`--namen aus\` gebaut hat, bekommt am Telefon nicht ploetzlich Namen — und
+     ohne Saeulen waere \`saeulen\` eine leere Schicht, die trotzdem Rand frisst. */
+  if (namenModus === 'alle' && !OHNE_SAEULEN) namenModus = 'saeulen';
 }
 axoNeuBauen();
 if (startBlick === '1') axoAnsicht.setzeBlick(BLICKE[1].az, 0.54);
