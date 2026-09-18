@@ -583,6 +583,28 @@
 
      QUER, weil der Riegel 78 m lang und 15 m tief ist: hochkant blieben zwei
      Drittel des Blattes leer. */
+  /* ── DIE SICHTLEISTE (H3) ─────────────────────────────────────────────
+     Sie ERBT `.leiste` und setzt nur, was anders sein muss. Absicht: Schrift,
+     Farben, Kanten (das Haus rundet nichts ab — 0 `border-radius` in der
+     ganzen Datei) und der aktive Zustand (`aria-pressed`) kommen dadurch aus
+     genau einer Quelle. Eine eigene Knopf-Optik waere eine zweite Vorlage, und
+     die erste, die beim naechsten Farbwechsel stehen bleibt.
+
+     Diese Regeln stehen NACH der 900-px-Abfrage weiter oben, damit sie deren
+     `.leiste`-Werte ueberschreiben duerfen — Reihenfolge statt `!important`. */
+  .sichtleiste{z-index:40}
+  @media (max-width:900px){
+    /* 44 px ist kein gerundeter Wunsch, sondern das Mass, unter dem eine
+       Fingerkuppe danebengreift. GEMESSEN wird es im Gate, Knopf fuer Knopf.
+       `gap` grosszuegiger als am Rechner: zwei Knoepfe, die sich beruehren,
+       sind am Telefon ein Knopf mit zwei Bedeutungen. */
+    .sichtleiste{gap:6px;padding:7px;bottom:12px}
+    .sichtleiste .grp{gap:6px}
+    .sichtleiste button{min-height:44px;min-width:44px;padding:12px 13px}
+    /* Der Trennstrich zwischen den Gruppen braucht bei 6 px Abstand mehr Luft,
+       sonst klebt er am linken Nachbarknopf. */
+    .sichtleiste .grp + .grp{padding-left:7px;margin-left:1px}
+  }
   .nurDruck{display:none}
   @media print{
     @page{size:A4 landscape;margin:10mm}
@@ -798,6 +820,41 @@
        ein Teil von `.hinweis`: dieser Block traegt die Herkunfts-Fussnote,
        die auf 390 px keinen Platz hat und aufs Papier MUSS. -->
   <div class="fingerhinweis" id="fingerhinweis">Ein Finger schiebt &middot; Zwei Finger zoomen und drehen</div>
+
+  <!-- ══ DIE SICHTLEISTE (H3) — NUR in der Weitergabe-Fassung ══════════════
+       Betreiber-Auftrag: "mit Auswahl visuellen Buttons alles auch zusaetzlich
+       einstellen koennen um es aus allen Sichtweisen zu betrachten."
+
+       KEIN Widerspruch zu "nichts zum Klicken": dort ging es um nichts zum
+       VERSTELLEN. Diese Leiste aendert am Plan NICHTS — sie richtet nur die
+       Kamera. Jeder Knopf hier hat ein Gegenstueck in der Werkstatt-Fassung
+       oder im Renderer; es wird keine zweite Bedienidee eingefuehrt.
+
+       WARUM SIE NUR HIER STEHT: die Werkstatt-Fassung hat ihre eigene
+       Ansichtsleiste mit denselben vier Blicken. Beide zugleich waeren zwei
+       Leisten, die dasselbe tun und auseinanderlaufen koennen.
+
+       `data-blick` ist ABSICHTLICH derselbe Name wie in der Werkstatt: der
+       vorhandene Zuhoerer unten findet diese Knoepfe von selbst, samt
+       `markiere` fuer den aktiven Blick. Nichts daran ist neu geschrieben. -->
+  <div class="leiste sichtleiste" id="sichtleiste" role="toolbar" aria-label="Ansicht wählen">
+    <div class="grp">
+      <span class="lbl">Blick</span>
+      <button type="button" data-blick="0">Nord</button>
+      <button type="button" data-blick="1">West</button>
+      <button type="button" data-blick="2">Süd</button>
+      <button type="button" data-blick="3">Plan</button>
+    </div>
+    <div class="grp">
+      <button type="button" data-sicht="gesamt">Gesamt</button>
+    </div>
+    <div class="grp">
+      <!-- Aufschrift und Vorlesetext getrennt: "+" allein ist fuer einen
+           Bildschirmleser kein Wort. -->
+      <button type="button" data-sicht="naeher" aria-label="Näher heranzoomen">+</button>
+      <button type="button" data-sicht="weiter" aria-label="Weiter wegzoomen">−</button>
+    </div>
+  </div>
 </div>
 
 <!-- ── Grundriss: hier wird bearbeitet. ─────────────────────────────── -->
@@ -960,7 +1017,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "baa23946eff6";
-const BAU_STEMPEL = "2026-09-18 16:52";
+const BAU_STEMPEL = "2026-09-18 17:07";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -10193,6 +10250,13 @@ const DARSTELLUNG = {
      Unterschied. */
   zoomMax: 24,
   zoomSchritt: 1.11,
+  /* ── EIN KNOPFDRUCK IST KEIN RADKLICK (H3) ───────────────────────────
+     Das Rad rastet fein (1,11), weil man es rollt — zwanzig Rasten kosten
+     eine Handbewegung. Ein Knopf wird GEDRUECKT, und zwanzig Druecke sind
+     zwanzig Handbewegungen. Zurueckgerechnet: mit 1,11 braeuchte der Weg von
+     der Gesamtansicht bis an die Zoomgrenze (24) rund 30 Druecke, mit 1,6
+     genau 7. Sieben ist eine Bedienung, dreissig ist eine Zumutung. */
+  zoomKnopfSchritt: 1.6,
   drehProPixel: 0.006,
   neigeProPixel: 0.0042,
   neigeMin: 0.1,
@@ -11861,6 +11925,13 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
      koennen, ob darauf alle Namen stehen. Darum eine Zahl statt eines Gefuehls. */
   let namenBilanz = { gemalt: 0, ausgelassen: 0 }
   let randRechts = opt.randRechts || 0
+  /* ZUSAETZLICHER Platz am unteren Blattrand (H3), den die Huelle anmeldet.
+     Grund: die Ansichts-Leiste der reinen Fassung steht unten und ist am
+     Telefon zweireihig. Ohne diesen Wert rechnet die Einpassung mit ihren 96
+     Bildpunkten Fuss weiter — und das Modell liegt zur Haelfte UNTER den
+     Knoepfen. Der Renderer darf die Leiste nicht kennen; er bekommt nur ihre
+     HOEHE gesagt, genau wie bei `randRechts` und der Legenden-Tafel. */
+  let randUntenZusatz = opt.randUnten || 0
   let schnell = false
   let farben = dunkel ? PALETTE.dunkel : PALETTE.hell
 
@@ -11945,7 +12016,11 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     const reihen = namenModus === 'saeulen' ? BESCHRIFTUNG.reihenSaeulen : BESCHRIFTUNG.reihenVoll
     const abstand = weit ? BESCHRIFTUNG.reiheBreit : BESCHRIFTUNG.reiheSchmal
     const randOben = namenModus === 'aus' ? 70 : weit ? 150 : 52 + reihen * abstand
-    const randUnten = namenModus === 'aus' ? 96 : weit ? 168 : 86 + reihen * abstand
+    /* Das GROESSERE von beiden, nicht die Summe (H3). Die Grundzahl ist ein
+       MINDESTABSTAND zum unteren Blattrand, kein Sockel, auf den man stapelt.
+       Gemessen mit Addition: das Modell stand 181 px ueber der Leiste und war
+       dadurch ohne Not kleiner — auf einem Telefon ist Hoehe das Knappe. */
+    const randUnten = Math.max(namenModus === 'aus' ? 96 : weit ? 168 : 86 + reihen * abstand, randUntenZusatz)
     const platzB = Math.max(120, breite - 2 * randX - (weit ? randRechts : 0))
     const platzH = Math.max(120, hoehe - randOben - randUnten)
     const grund = Math.min(platzB / Math.max(0.001, ux1 - ux0), platzH / Math.max(0.001, uy1 - uy0))
@@ -12824,6 +12899,32 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     },
     setzeRandRechts(px) {
       randRechts = px
+      zeichne()
+    },
+    /** Wie viel Platz die Huelle am unteren Rand fuer sich braucht (H3). */
+    setzeRandUnten(px) {
+      randUntenZusatz = px || 0
+      zeichne()
+    },
+    /**
+     * ZOOMEN PER KNOPF (H3) — `richtung` ist +1 (naeher) oder -1 (weiter).
+     *
+     * Der Schritt steht im Kontrakt und nicht hier: die Huelle soll sagen,
+     * WOHIN, nicht WIE WEIT. Sonst stuende dieselbe Zahl in zwei Dateien, und
+     * die zweite waere die, die beim naechsten Umbau vergessen wird.
+     *
+     * Gezoomt wird auf die BILDMITTE, und zwar ueber genau denselben
+     * `haltePunkt` wie bei der Zwei-Finger-Zange. Das ist kein Zierat: waere es
+     * eine zweite Rechnung, dann wanderte das Modell beim Knopfdruck anders als
+     * beim Aufziehen — und der Nutzer lernte zwei Verhaltensweisen fuer eine
+     * Sache. Wer bei Zoom 12 auf einen Raum blickt, blickt danach auf
+     * denselben Raum.
+     */
+    zoomeUm(richtung) {
+      const f = richtung >= 0 ? DARSTELLUNG.zoomKnopfSchritt : 1 / DARSTELLUNG.zoomKnopfSchritt
+      haltePunkt(breite / 2, hoehe / 2, () => {
+        blick.zoom = klemmeZoom(blick.zoom * f)
+      })
       zeichne()
     },
     get blick() {
@@ -15270,6 +15371,40 @@ document.querySelectorAll('[data-blick]').forEach(function(b){
     markiere('[data-blick]', b.dataset.blick);
   });
 });
+/* ── DIE SICHTLEISTE (H3): Gesamtansicht und Zoom ───────────────────
+   Nur die zwei Dinge, die die vier Blick-Knoepfe NICHT koennen. Alles andere
+   laeuft ueber den Zuhoerer darueber — es gibt keine zweite Blick-Logik.
+   In der Werkstatt-Fassung findet diese Schleife nichts; sie kostet dort eine
+   leere Abfrage und keinen Fehler. */
+document.querySelectorAll('[data-sicht]').forEach(function(b){
+  b.addEventListener('click', function(){
+    const was = b.dataset.sicht;
+    if (was === 'gesamt') {
+      /* `setzeBlick` setzt AUCH den Zoom auf 1 und die Verschiebung auf 0 —
+         genau das macht diesen Knopf zum Rueckweg aus JEDER Lage, und nicht
+         nur zu einer anderen Blickrichtung. Der aktive Blick wird
+         mitgezogen, sonst leuchtete danach der falsche Knopf. */
+      axoAnsicht.setzeBlick(START_AZ, START_EL);
+      markiere('[data-blick]', startBlick);
+      return;
+    }
+    axoAnsicht.zoomeUm(was === 'naeher' ? 1 : -1);
+  });
+});
+
+/* ── WIE VIEL BLATT DIE SICHTLEISTE VERDECKT (H3) ───────────────────
+   GEMESSEN am Element, nicht geschaetzt: am Rechner steht die Leiste in EINER
+   Reihe, am Telefon bricht sie in zwei. Eine feste Zahl waere auf einer der
+   beiden Anzeigen falsch — und falsch heisst hier: das Modell liegt unter den
+   Knoepfen. Die 12 px sind Luft, damit es die Leiste nicht beruehrt. */
+function sichtRandPflegen(){
+  if (!axoAnsicht) return;
+  const leiste = document.getElementById('sichtleiste');
+  if (!leiste) { axoAnsicht.setzeRandUnten(0); return; }
+  const r = leiste.getBoundingClientRect();
+  axoAnsicht.setzeRandUnten(Math.max(0, Math.round(innerHeight - r.top) + 12));
+}
+
 document.querySelectorAll('[data-namen]').forEach(function(b){
   b.addEventListener('click', function(){
     namenModus = b.dataset.namen;
@@ -15377,6 +15512,10 @@ addEventListener('beforeunload', function(e){
 });
 
 addEventListener('resize', function(){
+  /* ZUERST der Rand, dann das Einpassen: die Leiste bricht beim Drehen des
+     Telefons von zwei Reihen auf eine um. Umgekehrte Reihenfolge hiesse, dass
+     das Blatt einmal mit dem ALTEN Fuss gerechnet wird — sichtbar als Sprung. */
+  sichtRandPflegen();
   if (axoAnsicht && ansicht === 'axo') axoAnsicht.passeAn();
   /* Der Arbeitshinweis haengt seit der Handy-Welle an der BREITE (die Tasten
      Q/E/Entf gibt es dort nicht). Wer das Fenster ueber die 900-px-Grenze
@@ -15401,10 +15540,20 @@ if (innerWidth < 900) {
      ohne Saeulen waere `saeulen` eine leere Schicht, die trotzdem Rand frisst. */
   if (namenModus === 'alle' && !OHNE_SAEULEN) namenModus = 'saeulen';
 }
+/* ── DAS ANFANGSBILD, EINMAL FESTGEHALTEN (H3) ───────────────────────
+   Der Knopf "Gesamt" soll zurueck zum ANFANGSBILD, nicht zu irgendeiner
+   Nordansicht. Beides ist am Rechner dasselbe, am Telefon aber nicht: dort
+   startet das Blatt laengs (Blick 1) und mit einer flacheren Neigung (0,54),
+   damit der 78-m-Riegel in die Tiefe laeuft. Wer die Zahl nicht hier
+   festhaelt, muss sie im Knopf NOCHMAL herleiten — und die zweite Herleitung
+   ist die, die beim naechsten Umbau vergessen wird. */
+const START_AZ = startBlick === '1' ? BLICKE[1].az : BLICKE[0].az;
+const START_EL = startBlick === '1' ? 0.54 : BLICKE[0].el;
 axoNeuBauen();
-if (startBlick === '1') axoAnsicht.setzeBlick(BLICKE[1].az, 0.54);
+axoAnsicht.setzeBlick(START_AZ, START_EL);
 markiere('[data-blick]', startBlick);
 markiere('[data-namen]', namenModus);
+sichtRandPflegen();
 
 standZeigen();
 gesetztZeigen();

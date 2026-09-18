@@ -18,10 +18,13 @@
 //
 //   1) Die Datei oeffnet unter file:// mit HART gesperrtem Netz (alles ausser
 //      file:/data:/blob: wird abgebrochen) und meldet keinen einzigen Fehler.
-//   2) Es gibt NICHTS zum Anklicken. Gezaehlt wird nicht die Absicht, sondern
-//      das Ergebnis: 0 Schaltflaechen, 0 Eingabefelder, 0 Leisten, 0 Menues —
-//      und danach zwoelf ECHTE Klicks ueber die ganze Flaeche, nach denen der
-//      DOM derselbe ist.
+//   2) Es gibt nichts zum VERSTELLEN. Gezaehlt wird nicht die Absicht, sondern
+//      das Ergebnis: genau die sieben Ansichts-Knoepfe der Sichtleiste (H3),
+//      namentlich geprueft, 0 Eingabefelder, 0 Werkstatt-Leisten, 0 Menues —
+//      und danach zwoelf ECHTE Klicks ueber die Zeichenflaeche, nach denen der
+//      DOM derselbe ist. Jeder andere Knopf faellt als FREMD durch.
+//   5) Und die sieben Knoepfe WIRKEN — an Blickwinkel und Massstab gemessen,
+//      samt "Gesamt", das aus einer verirrten Lage exakt zurueckholt.
 //   3) Das Modell laesst sich weiter DREHEN und ZOOMEN. Ein 3D-Modell, das man
 //      nicht drehen kann, ist ein Bild — gemessen am Blickwinkel UND an der
 //      Zahl geaenderter Bildpunkte, nicht per Augenschein.
@@ -135,8 +138,19 @@ await page.screenshot({ path: path.join(AUS, 'start.png') })
 // ── Bestandsaufnahme: was steht ueberhaupt noch da? ───────────────────────
 const bestand = await page.evaluate(() => ({
   knoepfe: document.querySelectorAll('button').length,
+  /* JEDER Knopf mit seinem KENNZEICHEN, nicht nur gezaehlt. Eine Zahl sagt
+     nicht, WELCHE Knoepfe dastehen — und genau das ist seit H3 die Frage:
+     sieben erlaubte Ansichts-Knoepfe ja, ein achter oder ein anderer nein. */
+  knopfKennungen: [...document.querySelectorAll('button')].map((b) =>
+    b.dataset.blick !== undefined ? 'blick=' + b.dataset.blick
+      : b.dataset.sicht !== undefined ? 'sicht=' + b.dataset.sicht
+        : 'FREMD:' + (b.id || b.textContent.replace(/\s+/g, ' ').trim().slice(0, 30))
+  ).sort(),
   felder: document.querySelectorAll('input,select,textarea').length,
-  leisten: document.querySelectorAll('.leiste,.kopfleiste,.standleiste,.palette,.tafel').length,
+  /* Die Sichtleiste ist die EINZIGE erlaubte Leiste. Kopfleiste, Standleiste,
+     Palette und Tafel bleiben bei null — das sind die Werkstatt-Moebel. */
+  sichtleisten: document.querySelectorAll('#sichtleiste.leiste').length,
+  leisten: document.querySelectorAll('.leiste:not(#sichtleiste),.kopfleiste,.standleiste,.palette,.tafel').length,
   dialoge: document.querySelectorAll('.frage,.objektmenue').length,
   sichtbar: [...document.querySelectorAll('body > *, #blatt > *, header.kopf > *')]
     .filter((e) => e.checkVisibility && e.checkVisibility({ opacityProperty: true, visibilityProperty: true }))
@@ -150,9 +164,32 @@ const bestand = await page.evaluate(() => ({
 }))
 console.log('\n── Bestand ──')
 console.log(JSON.stringify(bestand, null, 1))
-pruefe(bestand.knoepfe === 0, `2) KEINE Schaltflaeche im Dokument (${bestand.knoepfe})`)
+/* ── WAS SICH MIT H3 GEAENDERT HAT, UND WAS NICHT ────────────────────────
+   Bis hierher galt „0 Schaltflaechen". Der Betreiber hat seither ausdruecklich
+   Knoepfe bestellt, mit denen man das Modell aus allen Richtungen ansehen kann
+   — ANSEHEN, nicht verstellen. Die Pruefung wird dadurch nicht weicher: aus
+   einer Zahl wird eine NAMENTLICHE Liste, und sie wird auf GLEICHHEIT geprueft.
+
+   Was damit weiterhin durchfaellt: ein Bearbeiten-Knopf, ein Namen-Schalter,
+   ein Werkzeug, ein zweiter Nord-Knopf, eine Eingabe. Alles, was nicht
+   woertlich auf dieser Liste steht, wird als FREMD gemeldet — samt seiner
+   Kennung oder Aufschrift, damit man weiss, wo man suchen muss. */
+const ERLAUBTE_KNOEPFE = [
+  'blick=0', 'blick=1', 'blick=2', 'blick=3',
+  'sicht=gesamt', 'sicht=naeher', 'sicht=weiter'
+].sort()
+const fremdeKnoepfe = bestand.knopfKennungen.filter((k) => !ERLAUBTE_KNOEPFE.includes(k))
+pruefe(
+  fremdeKnoepfe.length === 0,
+  `2) KEIN fremder Knopf im Dokument${fremdeKnoepfe.length ? ' :: ' + fremdeKnoepfe.join(' | ') : ''}`
+)
+pruefe(
+  JSON.stringify(bestand.knopfKennungen) === JSON.stringify(ERLAUBTE_KNOEPFE),
+  `2) GENAU die sieben Ansichts-Knoepfe, keiner doppelt, keiner fehlt (${bestand.knopfKennungen.join(' ')})`
+)
 pruefe(bestand.felder === 0, `2) KEIN Eingabefeld im Dokument (${bestand.felder})`)
-pruefe(bestand.leisten === 0, `2) KEINE Bedienleiste im Dokument (${bestand.leisten})`)
+pruefe(bestand.sichtleisten === 1, `2) genau EINE Sichtleiste (${bestand.sichtleisten})`)
+pruefe(bestand.leisten === 0, `2) KEINE weitere Bedienleiste im Dokument (${bestand.leisten})`)
 pruefe(bestand.dialoge === 0, `2) KEIN Menue und keine Rueckfrage im Dokument (${bestand.dialoge})`)
 pruefe(bestand.planWeg.startsWith('hidden/none/false'), `2) der Grundriss-Zeichner ist unerreichbar (${bestand.planWeg})`)
 
@@ -265,6 +302,82 @@ const zweiFinger = await page.evaluate(({ mx, my }) => {
 console.log(`  zwei Finger: zoom ${blickNachZoom.zoom.toFixed(4)} -> ${zweiFinger.zoom.toFixed(4)}`)
 pruefe(zweiFinger.zoom > blickNachZoom.zoom * 1.05, `3) zwei Finger zoomen (${blickNachZoom.zoom.toFixed(3)} -> ${zweiFinger.zoom.toFixed(3)})`)
 await page.screenshot({ path: path.join(AUS, 'nach-zoom.png') })
+
+// ── 5) DIE SICHTLEISTE WIRKT (H3) ────────────────────────────────────────
+// Gemessen an der SZENE — Blickwinkel, Zoom, Massstab — und nicht am Bild.
+// Ein Knopf, der nur aufleuchtet, hat nichts getan; das ist die haeufigste
+// Art, wie eine Leiste kaputtgeht, ohne dass es jemand bemerkt.
+const lage = () =>
+  page.evaluate(() => {
+    const b = window.__planerDatei.axoBlick()
+    const k = window.__planerDatei.axoKamera()
+    return {
+      az: +b.az.toFixed(4), el: +b.el.toFixed(4), zoom: +b.zoom.toFixed(4),
+      schiebX: +b.schiebX.toFixed(1), schiebY: +b.schiebY.toFixed(1), massstab: +k.massstab.toFixed(2)
+    }
+  })
+const druecke = async (w) => { await page.click(w); await page.waitForTimeout(220) }
+
+await druecke('[data-sicht="gesamt"]')
+const anfang = await lage()
+console.log('\n── Sichtleiste ──')
+console.log(`  Anfangsbild: az=${anfang.az} el=${anfang.el} zoom=${anfang.zoom} Massstab=${anfang.massstab} px/m`)
+
+/* Reihenfolge bewusst NICHT mit Nord zuerst: am Rechner IST Nord das
+   Anfangsbild, ein Druck darauf haette also nichts zu tun und die Messung
+   waere ein leerer Beweis. Jeder Knopf wird aus einer anderen Lage gedrueckt. */
+for (const [name, i] of [['West', '1'], ['Sued', '2'], ['Plan', '3'], ['Nord', '0']]) {
+  const wahl = `[data-blick="${i}"]`
+  const v = await lage()
+  await druecke(wahl)
+  const n = await lage()
+  const gedreht = Math.abs(n.az - v.az) + Math.abs(n.el - v.el)
+  const aktiv = await page.evaluate((w) => document.querySelector(w).getAttribute('aria-pressed'), wahl)
+  const allein = await page.evaluate(
+    () => [...document.querySelectorAll('[data-blick]')].filter((b) => b.getAttribute('aria-pressed') === 'true').length
+  )
+  console.log(`  ${name}: az ${v.az} -> ${n.az}, el ${v.el} -> ${n.el}, aktiv=${aktiv}`)
+  pruefe(gedreht > 0.05, `5) "${name}" richtet die Kamera neu (${gedreht.toFixed(3)} rad Summe)`)
+  pruefe(aktiv === 'true' && allein === 1, `5) "${name}" ist danach der EINZIGE aktive Blick (aktiv=${aktiv}, gleichzeitig ${allein})`)
+}
+
+// Die Zoom-Knoepfe am MASSSTAB, nicht nur an der Zoomzahl: der Massstab ist
+// das, was der Betrachter sieht (Bildpunkte je Meter).
+const zv = await lage()
+await druecke('[data-sicht="naeher"]')
+const zn = await lage()
+await druecke('[data-sicht="weiter"]')
+const zw = await lage()
+console.log(`  Zoom: ${zv.massstab} -> ${zn.massstab} -> ${zw.massstab} px/m`)
+pruefe(zn.massstab > zv.massstab * 1.3, `5) "+" vergroessert den Massstab (${zv.massstab} -> ${zn.massstab} px/m)`)
+pruefe(Math.abs(zw.massstab - zv.massstab) < 0.02, `5) "-" nimmt es genau zurueck (${zn.massstab} -> ${zw.massstab} px/m)`)
+
+/* "Gesamt" ist der Rueckweg aus JEDER Lage — also wird vorher absichtlich eine
+   verirrte erzeugt: andere Blickrichtung, weit hineingezoomt UND verschoben.
+   Ein Knopf, der nur den Blickwinkel zuruecksetzt, faellt hier durch. */
+await druecke('[data-blick="3"]')
+for (let i = 0; i < 6; i++) await druecke('[data-sicht="naeher"]')
+await page.keyboard.down('Shift')
+await page.mouse.move(mx, my)
+await page.mouse.down()
+for (let i = 1; i <= 8; i++) { await page.mouse.move(mx + i * 20, my + i * 12); await page.waitForTimeout(14) }
+await page.mouse.up()
+await page.keyboard.up('Shift')
+await page.waitForTimeout(250)
+const verirrt = await lage()
+await druecke('[data-sicht="gesamt"]')
+const zurueck = await lage()
+console.log(`  verirrt: az=${verirrt.az} zoom=${verirrt.zoom} schieb=${verirrt.schiebX}/${verirrt.schiebY}`)
+console.log(`  danach:  az=${zurueck.az} zoom=${zurueck.zoom} schieb=${zurueck.schiebX}/${zurueck.schiebY}`)
+pruefe(
+  verirrt.zoom > 5 && Math.abs(verirrt.schiebX) + Math.abs(verirrt.schiebY) > 50,
+  `5) GEGENPROBE: die Lage war vorher wirklich verirrt (zoom ${verirrt.zoom}, schieb ${verirrt.schiebX}/${verirrt.schiebY})`
+)
+pruefe(
+  JSON.stringify(zurueck) === JSON.stringify(anfang),
+  `5) "Gesamt" stellt das Anfangsbild EXAKT wieder her (${JSON.stringify(zurueck)})`
+)
+await page.screenshot({ path: path.join(AUS, 'sichtleiste.png') })
 
 pruefe(konsole.length === 0, `3) bis zum Ende kein Konsolenfehler (${konsole.length})${konsole.length ? ' :: ' + konsole.join(' | ') : ''}`)
 

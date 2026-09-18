@@ -96,6 +96,13 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
      koennen, ob darauf alle Namen stehen. Darum eine Zahl statt eines Gefuehls. */
   let namenBilanz = { gemalt: 0, ausgelassen: 0 }
   let randRechts = opt.randRechts || 0
+  /* ZUSAETZLICHER Platz am unteren Blattrand (H3), den die Huelle anmeldet.
+     Grund: die Ansichts-Leiste der reinen Fassung steht unten und ist am
+     Telefon zweireihig. Ohne diesen Wert rechnet die Einpassung mit ihren 96
+     Bildpunkten Fuss weiter — und das Modell liegt zur Haelfte UNTER den
+     Knoepfen. Der Renderer darf die Leiste nicht kennen; er bekommt nur ihre
+     HOEHE gesagt, genau wie bei `randRechts` und der Legenden-Tafel. */
+  let randUntenZusatz = opt.randUnten || 0
   let schnell = false
   let farben = dunkel ? PALETTE.dunkel : PALETTE.hell
 
@@ -180,7 +187,11 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     const reihen = namenModus === 'saeulen' ? BESCHRIFTUNG.reihenSaeulen : BESCHRIFTUNG.reihenVoll
     const abstand = weit ? BESCHRIFTUNG.reiheBreit : BESCHRIFTUNG.reiheSchmal
     const randOben = namenModus === 'aus' ? 70 : weit ? 150 : 52 + reihen * abstand
-    const randUnten = namenModus === 'aus' ? 96 : weit ? 168 : 86 + reihen * abstand
+    /* Das GROESSERE von beiden, nicht die Summe (H3). Die Grundzahl ist ein
+       MINDESTABSTAND zum unteren Blattrand, kein Sockel, auf den man stapelt.
+       Gemessen mit Addition: das Modell stand 181 px ueber der Leiste und war
+       dadurch ohne Not kleiner — auf einem Telefon ist Hoehe das Knappe. */
+    const randUnten = Math.max(namenModus === 'aus' ? 96 : weit ? 168 : 86 + reihen * abstand, randUntenZusatz)
     const platzB = Math.max(120, breite - 2 * randX - (weit ? randRechts : 0))
     const platzH = Math.max(120, hoehe - randOben - randUnten)
     const grund = Math.min(platzB / Math.max(0.001, ux1 - ux0), platzH / Math.max(0.001, uy1 - uy0))
@@ -1059,6 +1070,32 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     },
     setzeRandRechts(px) {
       randRechts = px
+      zeichne()
+    },
+    /** Wie viel Platz die Huelle am unteren Rand fuer sich braucht (H3). */
+    setzeRandUnten(px) {
+      randUntenZusatz = px || 0
+      zeichne()
+    },
+    /**
+     * ZOOMEN PER KNOPF (H3) — `richtung` ist +1 (naeher) oder -1 (weiter).
+     *
+     * Der Schritt steht im Kontrakt und nicht hier: die Huelle soll sagen,
+     * WOHIN, nicht WIE WEIT. Sonst stuende dieselbe Zahl in zwei Dateien, und
+     * die zweite waere die, die beim naechsten Umbau vergessen wird.
+     *
+     * Gezoomt wird auf die BILDMITTE, und zwar ueber genau denselben
+     * `haltePunkt` wie bei der Zwei-Finger-Zange. Das ist kein Zierat: waere es
+     * eine zweite Rechnung, dann wanderte das Modell beim Knopfdruck anders als
+     * beim Aufziehen — und der Nutzer lernte zwei Verhaltensweisen fuer eine
+     * Sache. Wer bei Zoom 12 auf einen Raum blickt, blickt danach auf
+     * denselben Raum.
+     */
+    zoomeUm(richtung) {
+      const f = richtung >= 0 ? DARSTELLUNG.zoomKnopfSchritt : 1 / DARSTELLUNG.zoomKnopfSchritt
+      haltePunkt(breite / 2, hoehe / 2, () => {
+        blick.zoom = klemmeZoom(blick.zoom * f)
+      })
       zeichne()
     },
     get blick() {

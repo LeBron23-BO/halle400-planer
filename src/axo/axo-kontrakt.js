@@ -261,6 +261,13 @@ export const DARSTELLUNG = {
      Unterschied. */
   zoomMax: 24,
   zoomSchritt: 1.11,
+  /* ── EIN KNOPFDRUCK IST KEIN RADKLICK (H3) ───────────────────────────
+     Das Rad rastet fein (1,11), weil man es rollt — zwanzig Rasten kosten
+     eine Handbewegung. Ein Knopf wird GEDRUECKT, und zwanzig Druecke sind
+     zwanzig Handbewegungen. Zurueckgerechnet: mit 1,11 braeuchte der Weg von
+     der Gesamtansicht bis an die Zoomgrenze (24) rund 30 Druecke, mit 1,6
+     genau 7. Sieben ist eine Bedienung, dreissig ist eine Zumutung. */
+  zoomKnopfSchritt: 1.6,
   drehProPixel: 0.006,
   neigeProPixel: 0.0042,
   neigeMin: 0.1,

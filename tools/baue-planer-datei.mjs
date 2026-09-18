@@ -915,6 +915,28 @@ let html = `<!DOCTYPE html>
 
      QUER, weil der Riegel 78 m lang und 15 m tief ist: hochkant blieben zwei
      Drittel des Blattes leer. */
+  /* ── DIE SICHTLEISTE (H3) ─────────────────────────────────────────────
+     Sie ERBT \`.leiste\` und setzt nur, was anders sein muss. Absicht: Schrift,
+     Farben, Kanten (das Haus rundet nichts ab — 0 \`border-radius\` in der
+     ganzen Datei) und der aktive Zustand (\`aria-pressed\`) kommen dadurch aus
+     genau einer Quelle. Eine eigene Knopf-Optik waere eine zweite Vorlage, und
+     die erste, die beim naechsten Farbwechsel stehen bleibt.
+
+     Diese Regeln stehen NACH der 900-px-Abfrage weiter oben, damit sie deren
+     \`.leiste\`-Werte ueberschreiben duerfen — Reihenfolge statt \`!important\`. */
+  .sichtleiste{z-index:40}
+  @media (max-width:900px){
+    /* 44 px ist kein gerundeter Wunsch, sondern das Mass, unter dem eine
+       Fingerkuppe danebengreift. GEMESSEN wird es im Gate, Knopf fuer Knopf.
+       \`gap\` grosszuegiger als am Rechner: zwei Knoepfe, die sich beruehren,
+       sind am Telefon ein Knopf mit zwei Bedeutungen. */
+    .sichtleiste{gap:6px;padding:7px;bottom:12px}
+    .sichtleiste .grp{gap:6px}
+    .sichtleiste button{min-height:44px;min-width:44px;padding:12px 13px}
+    /* Der Trennstrich zwischen den Gruppen braucht bei 6 px Abstand mehr Luft,
+       sonst klebt er am linken Nachbarknopf. */
+    .sichtleiste .grp + .grp{padding-left:7px;margin-left:1px}
+  }
   .nurDruck{display:none}
   ${AB_JS}.siegelDruck.warnt{color:var(--rot);font-weight:700}${ZU_JS}
   @media print{
@@ -1187,7 +1209,46 @@ ${OHNE_SAEULEN ? '' : `    <div class="grp">
        ein Teil von \`.hinweis\`: dieser Block traegt die Herkunfts-Fussnote,
        die auf 390 px keinen Platz hat und aufs Papier MUSS. -->
   <div class="fingerhinweis" id="fingerhinweis">Ein Finger schiebt &middot; Zwei Finger zoomen und drehen</div>
-</div>
+${
+  !NUR_MODELL
+    ? ''
+    : `
+  <!-- ══ DIE SICHTLEISTE (H3) — NUR in der Weitergabe-Fassung ══════════════
+       Betreiber-Auftrag: "mit Auswahl visuellen Buttons alles auch zusaetzlich
+       einstellen koennen um es aus allen Sichtweisen zu betrachten."
+
+       KEIN Widerspruch zu "nichts zum Klicken": dort ging es um nichts zum
+       VERSTELLEN. Diese Leiste aendert am Plan NICHTS — sie richtet nur die
+       Kamera. Jeder Knopf hier hat ein Gegenstueck in der Werkstatt-Fassung
+       oder im Renderer; es wird keine zweite Bedienidee eingefuehrt.
+
+       WARUM SIE NUR HIER STEHT: die Werkstatt-Fassung hat ihre eigene
+       Ansichtsleiste mit denselben vier Blicken. Beide zugleich waeren zwei
+       Leisten, die dasselbe tun und auseinanderlaufen koennen.
+
+       \`data-blick\` ist ABSICHTLICH derselbe Name wie in der Werkstatt: der
+       vorhandene Zuhoerer unten findet diese Knoepfe von selbst, samt
+       \`markiere\` fuer den aktiven Blick. Nichts daran ist neu geschrieben. -->
+  <div class="leiste sichtleiste" id="sichtleiste" role="toolbar" aria-label="Ansicht wählen">
+    <div class="grp">
+      <span class="lbl">Blick</span>
+      <button type="button" data-blick="0">Nord</button>
+      <button type="button" data-blick="1">West</button>
+      <button type="button" data-blick="2">Süd</button>
+      <button type="button" data-blick="3">Plan</button>
+    </div>
+    <div class="grp">
+      <button type="button" data-sicht="gesamt">Gesamt</button>
+    </div>
+    <div class="grp">
+      <!-- Aufschrift und Vorlesetext getrennt: "+" allein ist fuer einen
+           Bildschirmleser kein Wort. -->
+      <button type="button" data-sicht="naeher" aria-label="Näher heranzoomen">+</button>
+      <button type="button" data-sicht="weiter" aria-label="Weiter wegzoomen">−</button>
+    </div>
+  </div>
+`
+}</div>
 
 <!-- ── Grundriss: hier wird bearbeitet. ─────────────────────────────── -->
 <div class="ansicht weg" id="plan">
@@ -3993,6 +4054,40 @@ document.querySelectorAll('[data-blick]').forEach(function(b){
     markiere('[data-blick]', b.dataset.blick);
   });
 });
+/* ── DIE SICHTLEISTE (H3): Gesamtansicht und Zoom ───────────────────
+   Nur die zwei Dinge, die die vier Blick-Knoepfe NICHT koennen. Alles andere
+   laeuft ueber den Zuhoerer darueber — es gibt keine zweite Blick-Logik.
+   In der Werkstatt-Fassung findet diese Schleife nichts; sie kostet dort eine
+   leere Abfrage und keinen Fehler. */
+document.querySelectorAll('[data-sicht]').forEach(function(b){
+  b.addEventListener('click', function(){
+    const was = b.dataset.sicht;
+    if (was === 'gesamt') {
+      /* \`setzeBlick\` setzt AUCH den Zoom auf 1 und die Verschiebung auf 0 —
+         genau das macht diesen Knopf zum Rueckweg aus JEDER Lage, und nicht
+         nur zu einer anderen Blickrichtung. Der aktive Blick wird
+         mitgezogen, sonst leuchtete danach der falsche Knopf. */
+      axoAnsicht.setzeBlick(START_AZ, START_EL);
+      markiere('[data-blick]', startBlick);
+      return;
+    }
+    axoAnsicht.zoomeUm(was === 'naeher' ? 1 : -1);
+  });
+});
+
+/* ── WIE VIEL BLATT DIE SICHTLEISTE VERDECKT (H3) ───────────────────
+   GEMESSEN am Element, nicht geschaetzt: am Rechner steht die Leiste in EINER
+   Reihe, am Telefon bricht sie in zwei. Eine feste Zahl waere auf einer der
+   beiden Anzeigen falsch — und falsch heisst hier: das Modell liegt unter den
+   Knoepfen. Die 12 px sind Luft, damit es die Leiste nicht beruehrt. */
+function sichtRandPflegen(){
+  if (!axoAnsicht) return;
+  const leiste = document.getElementById('sichtleiste');
+  if (!leiste) { axoAnsicht.setzeRandUnten(0); return; }
+  const r = leiste.getBoundingClientRect();
+  axoAnsicht.setzeRandUnten(Math.max(0, Math.round(innerHeight - r.top) + 12));
+}
+
 document.querySelectorAll('[data-namen]').forEach(function(b){
   b.addEventListener('click', function(){
     namenModus = b.dataset.namen;
@@ -4287,6 +4382,10 @@ addEventListener('beforeunload', function(e){
 });
 
 addEventListener('resize', function(){
+  /* ZUERST der Rand, dann das Einpassen: die Leiste bricht beim Drehen des
+     Telefons von zwei Reihen auf eine um. Umgekehrte Reihenfolge hiesse, dass
+     das Blatt einmal mit dem ALTEN Fuss gerechnet wird — sichtbar als Sprung. */
+  sichtRandPflegen();
   if (axoAnsicht && ansicht === 'axo') axoAnsicht.passeAn();
   /* Der Arbeitshinweis haengt seit der Handy-Welle an der BREITE (die Tasten
      Q/E/Entf gibt es dort nicht). Wer das Fenster ueber die 900-px-Grenze
@@ -4311,10 +4410,20 @@ if (innerWidth < 900) {
      ohne Saeulen waere \`saeulen\` eine leere Schicht, die trotzdem Rand frisst. */
   if (namenModus === 'alle' && !OHNE_SAEULEN) namenModus = 'saeulen';
 }
+/* ── DAS ANFANGSBILD, EINMAL FESTGEHALTEN (H3) ───────────────────────
+   Der Knopf "Gesamt" soll zurueck zum ANFANGSBILD, nicht zu irgendeiner
+   Nordansicht. Beides ist am Rechner dasselbe, am Telefon aber nicht: dort
+   startet das Blatt laengs (Blick 1) und mit einer flacheren Neigung (0,54),
+   damit der 78-m-Riegel in die Tiefe laeuft. Wer die Zahl nicht hier
+   festhaelt, muss sie im Knopf NOCHMAL herleiten — und die zweite Herleitung
+   ist die, die beim naechsten Umbau vergessen wird. */
+const START_AZ = startBlick === '1' ? BLICKE[1].az : BLICKE[0].az;
+const START_EL = startBlick === '1' ? 0.54 : BLICKE[0].el;
 axoNeuBauen();
-if (startBlick === '1') axoAnsicht.setzeBlick(BLICKE[1].az, 0.54);
+axoAnsicht.setzeBlick(START_AZ, START_EL);
 markiere('[data-blick]', startBlick);
 markiere('[data-namen]', namenModus);
+sichtRandPflegen();
 
 standZeigen();
 gesetztZeigen();
@@ -5272,19 +5381,46 @@ if (NUR_ANSICHT) {
   ANSICHT_BERICHT.kennungen = geschnitten.length
 }
 
-/* Die LETZTE Gegenprobe der zweiten Stufe: in der fertigen Datei darf kein
-   `<button>` mehr stehen. Sie ist absichtlich nicht auf die Schnittliste
-   gestuetzt, sondern auf das ERGEBNIS — wer morgen einen Knopf an eine Stelle
-   haengt, die auf keiner Liste steht, faellt hier auf, und nicht erst der
-   Bankberaterin. Dasselbe fuer `<input>`: ein Eingabefeld ist in einem Blatt
-   zum Ansehen ebenso wenig zu erklaeren. */
+/* Die LETZTE Gegenprobe der zweiten Stufe, auf das ERGEBNIS gestuetzt und
+   nicht auf die Schnittliste: wer morgen einen Knopf an eine Stelle haengt,
+   die auf keiner Liste steht, faellt hier auf und nicht erst der
+   Bankberaterin.
+
+   ── WAS SICH MIT H3 GEAENDERT HAT, UND WAS NICHT ────────────────────────
+   Bis hierher galt: NULL Schaltflaechen. Seit dem Betreiber-Auftrag
+   ("mit Auswahl visuellen Buttons ... aus allen Sichtweisen betrachten")
+   gibt es die Sichtleiste — sieben Knoepfe, die ausschliesslich die KAMERA
+   richten. Am Plan aendert keiner von ihnen etwas.
+
+   Die Pruefung wird dadurch NICHT weicher, sondern schaerfer: statt einer
+   Zahl ("0") steht jetzt eine NAMENTLICHE Liste, und sie wird auf GLEICHHEIT
+   geprueft. Ein wieder hereingerutschter Bearbeiten-Knopf faellt genauso auf
+   wie vorher, ein doppelt eingebauter Nord-Knopf zusaetzlich — den haette die
+   alte Zaehlung auch nicht gefunden, wenn sie je etwas erlaubt haette.
+   `<input>` bleibt bei null: ein Eingabefeld ist in einem Blatt zum Ansehen
+   nach wie vor nicht zu erklaeren. */
+const ERLAUBTE_KNOEPFE = [
+  'data-blick="0"', 'data-blick="1"', 'data-blick="2"', 'data-blick="3"',
+  'data-sicht="gesamt"', 'data-sicht="naeher"', 'data-sicht="weiter"'
+]
 if (NUR_MODELL) {
-  const knoepfe = (html.match(/<button[\s>]/g) || []).length
   const felder = (html.match(/<input[\s>]/g) || []).length
-  if (knoepfe || felder) {
-    console.error(`Abbruch: --nur-modell, aber die Datei traegt noch ${knoepfe} Schaltflaeche(n) und ${felder} Eingabefeld(er).`)
-    console.error('  In dieser Fassung darf es NICHTS zum Anklicken geben. Steht ein neuer Knopf')
-    console.error('  in einem Block, der nicht auf MODELL_BLOECKE steht, gehoert er dort hinein.')
+  const knoepfe = html.match(/<button[^>]*>/g) || []
+  /* Jeder Knopf wird ueber sein Kennzeichen identifiziert, nicht ueber seine
+     Aufschrift: die Aufschrift ist Text fuer Menschen und darf sich aendern,
+     das Kennzeichen ist der Vertrag mit dem Zuhoerer. */
+  const gefunden = knoepfe.map((t) => ERLAUBTE_KNOEPFE.find((k) => t.includes(k)) || t.trim())
+  const fremde = gefunden.filter((g) => !ERLAUBTE_KNOEPFE.includes(g))
+  const fehlende = ERLAUBTE_KNOEPFE.filter((k) => !gefunden.includes(k))
+  const doppelte = ERLAUBTE_KNOEPFE.filter((k) => gefunden.filter((g) => g === k).length > 1)
+  if (felder || fremde.length || fehlende.length || doppelte.length) {
+    console.error(`Abbruch: --nur-modell, aber die Knopf-Liste stimmt nicht (${knoepfe.length} Knoepfe, ${felder} Eingabefeld(er)).`)
+    if (fremde.length) console.error(`  FREMD (gehoert hier nicht hin): ${fremde.join(' · ')}`)
+    if (fehlende.length) console.error(`  FEHLT (die Sichtleiste ist unvollstaendig): ${fehlende.join(' · ')}`)
+    if (doppelte.length) console.error(`  DOPPELT: ${doppelte.join(' · ')}`)
+    if (felder) console.error('  In dieser Fassung darf es KEIN Eingabefeld geben.')
+    console.error('  Erlaubt sind genau die sieben Knoepfe der Sichtleiste — sie richten die')
+    console.error('  Kamera und aendern nichts am Plan. Alles andere gehoert in MODELL_BLOECKE.')
     process.exit(1)
   }
 }
@@ -5329,7 +5465,11 @@ console.log(`  Axonometrie:  ${teilKb(axo)} KB (${AXO_MODULE.join(', ')})`)
 console.log(`  Plan:         ${(Buffer.byteLength(planRoh, 'utf8') / 1024).toFixed(0)} KB — ${Object.keys(plan.floorplan.corners).length} Ecken, ${plan.floorplan.walls.length} Waende, ${(plan.floorplan.ausstattung || []).length} Ausstattung, ${(plan.labels || []).length} Namen`)
 console.log(`  Hoehen aus:   src/three/ausstattung.ts (${Object.keys(HOEHEN.oberkante).length} Typen, gelesen statt abgeschrieben)`)
 console.log(`  Namen:        ${namen.size} Bezeichner geprueft, keine Kollision`)
-if (NUR_ANSICHT) console.log(`  Schnitt:      ${ANSICHT_BERICHT.bloecke} ${NUR_MODELL ? 'Bedien-Bloecke' : 'Werkstatt-Bloecke'} entfernt, ${ANSICHT_BERICHT.kennungen} Kennungen verschwunden (${NUR_MODELL ? 'NUR MODELL — 0 Schaltflaechen, 0 Eingabefelder' : 'reine ANSICHT'})`)
+/* Die Meldung sagt seit H3, was WIRKLICH dasteht. Sie hat vorher „0
+   Schaltflaechen" behauptet, und genau so eine Zeile bleibt nach einem Umbau
+   stehen und wird zur Luege, der niemand widerspricht — der Bauer ist die
+   einzige Stelle, an der der Betreiber diese Zahl je zu Gesicht bekommt. */
+if (NUR_ANSICHT) console.log(`  Schnitt:      ${ANSICHT_BERICHT.bloecke} ${NUR_MODELL ? 'Bedien-Bloecke' : 'Werkstatt-Bloecke'} entfernt, ${ANSICHT_BERICHT.kennungen} Kennungen verschwunden (${NUR_MODELL ? `NUR MODELL — ${ERLAUBTE_KNOEPFE.length} Ansichts-Knoepfe (Kamera), 0 Eingabefelder, nichts zum Verstellen` : 'reine ANSICHT'})`)
 if (SIEGEL_WEG) console.log(`  Ohne Namen:   ${SIEGEL_BERICHT.abschnitte} Siegel-Abschnitte entfernt — 0× der Name, 0× das Wort „Siegel" (gemessen am Ergebnis)`)
 console.log(`  Plan-Abdruck: ${PLAN_ABDRUCK} (Speicher-Schluessel je Plan UND Ablageort)`)
 console.log(`  Bau-Stempel:  ${BAU_STEMPEL}`)
