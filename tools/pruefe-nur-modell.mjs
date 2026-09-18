@@ -5,7 +5,16 @@
 //   node tools/pruefe-nur-modell.mjs [--datei <name>] [--bilder <ordner>]
 // Exit 0 = alle Pruefungen bestanden, 1 = mindestens eine durchgefallen.
 //
-// VIER BEHAUPTUNGEN, die hier bewiesen werden:
+// FUENF BEHAUPTUNGEN, die hier bewiesen werden:
+//
+//   0) GANZ ODER GAR NICHT bei der Unterschrift. Mit `--ohne-siegel` kommt der
+//      Siegel-Baustein in dieser Fassung ueberhaupt nicht mehr in die Datei
+//      (Betreiber-Ansage: „kein signieren. denn ich bin kein architekt.") —
+//      dann darf im Quelltext WEDER das Wort noch ein Inhabername stehen, und
+//      auch keine Schnitt-Marke uebrig sein. Traegt die Datei das Siegel, muss
+//      sie es GANZ tragen: Schluessel, Unterschrift und Pruefroutine. Was hier
+//      gemessen wird, ist genau der halbe Zustand, den man nicht sehen kann:
+//      auf dem Bildschirm ist beides unsichtbar, im Texteditor nicht.
 //
 //   1) Die Datei oeffnet unter file:// mit HART gesperrtem Netz (alles ausser
 //      file:/data:/blob: wird abgebrochen) und meldet keinen einzigen Fehler.
@@ -51,6 +60,46 @@ if (!fs.existsSync(DATEI)) {
 
 const fehler = []
 const pruefe = (b, t) => { console.log(`${b ? 'OK  ' : 'FEHL'} ${t}`); if (!b) fehler.push(t) }
+
+/* ── 0) GANZ ODER GAR NICHT: die Unterschrift im QUELLTEXT ────────────────
+   Am Bildschirm ist der Unterschied nicht zu sehen — ein Siegel ohne Marke
+   und gar kein Siegel sehen gleich aus. Gemessen wird deshalb am Text der
+   Datei, und die Inhabernamen werden nicht geraten, sondern aus den
+   vorhandenen Siegeln gelesen (`data/siegel-*.json`). Ein abgeschriebener
+   Name ginge beim naechsten Siegel still daneben. */
+const dateiText = fs.readFileSync(DATEI, 'utf8')
+const inhaberNamen = (() => {
+  const ordner = path.join(WURZEL, 'data')
+  if (!fs.existsSync(ordner)) return []
+  const aus = new Set()
+  for (const n of fs.readdirSync(ordner)) {
+    if (!/^siegel.*\.json$/i.test(n)) continue
+    try {
+      const j = JSON.parse(fs.readFileSync(path.join(ordner, n), 'utf8'))
+      if (j && j.inhaber) aus.add(String(j.inhaber))
+    } catch (e) { /* kein Siegel, kein Name */ }
+  }
+  return [...aus]
+})()
+const wieOft = (nadel) => dateiText.split(nadel).length - 1
+const wortDrin = (dateiText.match(/siegel/gi) || []).length
+const nameDrin = inhaberNamen.reduce((s, n) => s + wieOft(n), 0)
+const markenRest = (dateiText.match(/OHNE-NAMEN-(AB|ZU)/g) || []).length
+const werkDrin = ['const SIEGEL =', 'const SIEGEL_SCHLUESSEL =', 'function siegelPruefen()']
+  .filter((s) => dateiText.includes(s))
+console.log(`\n── Unterschrift im Quelltext ── Wort „Siegel" ${wortDrin}× · Inhabername ${nameDrin}× ` +
+  `(gesucht: ${inhaberNamen.length ? inhaberNamen.map((n) => `„${n}"`).join(', ') : 'kein Siegel abgelegt'}) · ` +
+  `Baustein-Teile ${werkDrin.length}/3 · Marken-Reste ${markenRest}`)
+pruefe(markenRest === 0, `0) keine Schnitt-Marke uebrig geblieben (${markenRest})`)
+if (werkDrin.length === 0) {
+  // Gebaut mit --ohne-siegel: dann muss die Spur VOLLSTAENDIG fehlen.
+  pruefe(wortDrin === 0, `0) ohne Unterschrift gebaut — das Wort „Siegel" steht ${wortDrin}× im Quelltext (soll 0)`)
+  pruefe(nameDrin === 0, `0) ohne Unterschrift gebaut — ein Inhabername steht ${nameDrin}× im Quelltext (soll 0)`)
+} else {
+  // Mit Siegel gebaut: dann muss es GANZ da sein, nicht halb.
+  pruefe(werkDrin.length === 3, `0) mit Unterschrift gebaut — der Baustein ist vollstaendig (${werkDrin.length}/3)`)
+  pruefe(nameDrin > 0, `0) mit Unterschrift gebaut — der Inhaber steht dabei (${nameDrin}×)`)
+}
 
 const browser = await chromium.launch()
 const ctx = await browser.newContext({ viewport: { width: 1600, height: 1000 } })

@@ -155,6 +155,37 @@ const NUR_MODELL = process.argv.includes('--nur-modell')
 const NUR_ANSICHT = NUR_MODELL || process.argv.includes('--nur-ansicht')
 const OHNE_SIEGEL = process.argv.includes('--ohne-siegel')
 
+/* ── DIE FASSUNG OHNE UNTERSCHRIFT (--nur-modell ZUSAMMEN MIT --ohne-siegel) ──
+   Betreiber-Ansage, woertlich: „kein signieren. denn ich bin kein architekt."
+   Eine Unterschrift behauptet Urheberschaft — die will er nicht fuehren.
+
+   `--ohne-siegel` allein baut bisher OHNE Pruefung, aber MIT Baustein: der
+   oeffentliche Schluessel, die Pruefroutine und der Name des Inhabers stehen
+   weiter im Quelltext. Auf dem Bildschirm ist davon nichts zu sehen — wer die
+   Datei aber in einem Texteditor oeffnet, liest den Namen. „Unsichtbar" ist
+   keine Antwort auf „soll nicht drinstehen".
+
+   In DIESER Kombination kommt der Baustein deshalb gar nicht erst hinein.
+   NUR hier: `--nur-modell` OHNE `--ohne-siegel` baut und prueft weiter ein
+   gueltiges Siegel, `--nur-ansicht` und der Vollbau bleiben unberuehrt.
+
+   WIE: dieselbe Mechanik wie bei den Bedien-Bloecken — ein mechanischer
+   Schnitt mit Gegenprobe am ERGEBNIS, nur an einer anderen Marke. Die
+   Bedien-Bloecke haengen an `id="..."`; die Unterschrift liegt in CSS, in
+   Auszeichnung UND in Skript, also traegt sie eine eigene Marke, die in allen
+   dreien schreibbar ist. Die Marken werden NUR ausgegeben, wenn wirklich
+   geschnitten wird — sonst stuenden sie als Kommentar-Rest in den anderen
+   beiden Fassungen. */
+const SIEGEL_WEG = NUR_MODELL && OHNE_SIEGEL
+const AB_HTML = SIEGEL_WEG ? '<!--OHNE-NAMEN-AB-->' : ''
+const ZU_HTML = SIEGEL_WEG ? '<!--OHNE-NAMEN-ZU-->' : ''
+const AB_JS = SIEGEL_WEG ? '/*OHNE-NAMEN-AB*/' : ''
+const ZU_JS = SIEGEL_WEG ? '/*OHNE-NAMEN-ZU*/' : ''
+// Fuer Stellen, die schon IN einem Kommentar liegen — dort waere ein zweites
+// `/* */` ein Syntaxfehler, die nackte Marke ist blosser Text.
+const AB_TXT = SIEGEL_WEG ? 'OHNE-NAMEN-AB ' : ''
+const ZU_TXT = SIEGEL_WEG ? ' OHNE-NAMEN-ZU' : ''
+
 /* ── DIE NAMENSSCHICHT UND DIE SAEULEN-TAFEL ──────────────────────
    Zwei Dinge, die im Buero richtig sind und in einem anderen Plan falsch:
 
@@ -410,7 +441,7 @@ let html = `<!DOCTYPE html>
   #btnBearbeiten[aria-pressed="true"]{color:var(--paper)}
   #btnBearbeiten .schloss{opacity:.85;margin-right:3px}
 
-  /* ── Die Siegel-Marke ────────────────────────────────────────────────
+  ${AB_JS}/* ── Die Siegel-Marke ────────────────────────────────────────────────
      Sie gehoert weder ins Blatt noch in den Grundriss, sondern zu BEIDEN —
      also in die Kopfleiste, die schon beiden gehoert. (Dieselbe Ueberlegung
      wie bei der Loesch-Rueckfrage seit W7: eine Aussage ueber die ganze
@@ -430,7 +461,7 @@ let html = `<!DOCTYPE html>
   /* Am Handy ist in der Kopfleiste kein Platz fuer den Satz — das ZEICHEN
      bleibt, das Wort geht. Gemessen bei 390 px: mit Wort bricht die Leiste um
      und schiebt den Umschalter aus dem Bild. */
-  @media (max-width:560px){ .siegel .wort{display:none} .siegel{padding:0 6px} }
+  @media (max-width:560px){ .siegel .wort{display:none} .siegel{padding:0 6px} }${ZU_JS}
 
   .standleiste{position:fixed;top:60px;left:50%;transform:translateX(-50%);
        display:flex;align-items:center;gap:8px;padding:5px 6px 5px 12px;
@@ -794,7 +825,7 @@ let html = `<!DOCTYPE html>
      QUER, weil der Riegel 78 m lang und 15 m tief ist: hochkant blieben zwei
      Drittel des Blattes leer. */
   .nurDruck{display:none}
-  .siegelDruck.warnt{color:var(--rot);font-weight:700}
+  ${AB_JS}.siegelDruck.warnt{color:var(--rot);font-weight:700}${ZU_JS}
   @media print{
     @page{size:A4 landscape;margin:10mm}
     /* Der warme Papierton bleibt — er ist die Bildidee, nicht Zierat. Wer ihn
@@ -832,7 +863,7 @@ let html = `<!DOCTYPE html>
     .kopf .gesetzt{color:#A33A2A}
     .nurDruck{display:block}
   }
-${!NUR_MODELL ? '' : `
+${(!NUR_MODELL || SIEGEL_WEG) ? '' : `
   /* Auch der AUSDRUCK dieser Fassung traegt keinen Namen. Der Siegel-Satz ist
      der Echtheitshinweis fuer ein Blatt, das der Betreiber selbst weitergibt —
      diese Datei gibt er aber aus der Hand, und dann steht ein fremder Name
@@ -846,13 +877,14 @@ ${!NUR_MODELL ? '' : `
 
      (1) \`top:52px\` liess Platz fuer die Kopfleiste. Die gibt es hier nicht
          mehr; der Abstand waere jetzt eine Luecke ohne Grund.
-     (2) Die Siegel-Aussage stand bisher nur auf dem PAPIER, wo der Blattkopf
-         ueber die volle Breite laeuft. Auf dem Bildschirm brach sie in
-         46 Zeichen Breite auf SECHS Zeilen um und machte aus dem Titelblock
+     ${AB_TXT}(2) Die Siegel-Aussage stand bisher nur auf dem PAPIER, wo der
+         Blattkopf ueber die volle Breite laeuft. Auf dem Bildschirm brach sie
+         in 46 Zeichen Breite auf SECHS Zeilen um und machte aus dem Titelblock
          einen Textblock — das Gegenteil von „sparsam". Etwas mehr Breite und
-         ein Absatz davor: derselbe Satz, drei Zeilen, ein eigener Gedanke. */
+         ein Absatz davor: derselbe Satz, drei Zeilen, ein eigener Gedanke.${ZU_TXT}
+  */
   .kopf{top:18px;max-width:min(66ch,74vw)}
-  .kopf .siegelDruck{margin-top:8px}
+  ${AB_JS}.kopf .siegelDruck{margin-top:8px}${ZU_JS}
   /* Aus demselben Grund: „ZIEHEN DREHT · RAD ZOOMT · ZWEI FINGER / ZOOMEN"
      brach die einzige Bedienanleitung dieser Datei mitten im Satz um. */
   .hinweis{max-width:min(62ch,74vw)}
@@ -876,7 +908,7 @@ ${!NUR_MODELL ? '' : `
          Auf einem Ausdruck ohne Datum weiss in drei Wochen niemand mehr, ob
          er den aktuellen Stand in der Hand hält. -->
     <div class="sub nurDruck" id="druckZeile"></div>
-    <!-- Das Siegel auf dem PAPIER. Es steht bewusst als Satz da und nicht als
+    ${AB_HTML}<!-- Das Siegel auf dem PAPIER. Es steht bewusst als Satz da und nicht als
          Haken: einen Haken kann jeder hinmalen, einen Namen mit Datum prüft
          man nach. -->
     <!-- In --nur-modell OHNE \`nurDruck\`: dort ist die Siegel-Marke der Kopfleiste
@@ -890,7 +922,7 @@ ${!NUR_MODELL ? '' : `
          auf dem Bildschirm des Empfaengers ist es ein fremder Name ueber einem
          Grundriss. Betreiber-Ansage: "keinen namen raufschreiben. keinen satz."
          Das Siegel selbst bleibt in der Datei und laesst sich jederzeit pruefen. -->
-    <div class="sub nurDruck siegelDruck" id="siegelDruck"></div>
+    <div class="sub nurDruck siegelDruck" id="siegelDruck"></div>${ZU_HTML}
     <div class="gesetzt" id="gesetztZaehler" hidden></div>
     <!-- M2: was der Nutzer an den WÄNDEN verändert hat. Bis hierher sagte das
          Blatt „Der Grundriss ist gemessen", auch nachdem eine gemessene Wand
@@ -1160,10 +1192,10 @@ ${OHNE_SAEULEN ? '' : `    <div class="grp">
   <span class="fuss"><span class="lang">Rückgängig mit Strg+Z &middot; Abbrechen mit Esc</span><span class="kurz">Rückgängig geht auch danach noch.</span></span>
 </div>
 
-<!-- Eigene Kennung aus demselben Grund wie bei \`ansichtsleiste\`: --nur-modell
+${AB_HTML}<!-- Eigene Kennung aus demselben Grund wie bei \`ansichtsleiste\`: --nur-modell
      schneidet die ganze Kopfleiste (Umschalter, Bearbeiten, Siegel-Marke). Das
      Siegel bleibt in dieser Fassung trotzdem sichtbar — es wandert als SATZ in
-     den Blattkopf (s. \`siegelDruck\`), wo es kein Bedienelement mehr ist. -->
+     den Blattkopf (s. \`siegelDruck\`), wo es kein Bedienelement mehr ist. -->${ZU_HTML}
 <div class="kopfleiste" id="kopfleiste" role="toolbar" aria-label="Ansicht wählen">
   <div class="grp">
     <button type="button" id="btnAnsichtPlan" aria-pressed="false">Grundriss</button>
@@ -1174,14 +1206,14 @@ ${OHNE_SAEULEN ? '' : `    <div class="grp">
   <div class="grp" id="grpBearbeiten">
     <button type="button" id="btnBearbeiten" aria-pressed="false" title="Werkzeuge zum Bearbeiten einblenden — verlangt das Passwort"><span class="schloss" aria-hidden="true">&#128274;</span>Bearbeiten</button>
   </div>
-  <!-- Das Siegel. Es steht hier und nicht im Blattkopf, weil es eine Aussage
+  ${AB_HTML}<!-- Das Siegel. Es steht hier und nicht im Blattkopf, weil es eine Aussage
        ueber die GANZE Datei ist und nicht ueber eine ihrer beiden Ansichten.
        \`aria-live="polite"\`: die Pruefung braucht einen Augenblick, und wenn sie
        fertig ist, soll ein Screenreader es beilaeufig sagen — nicht den Nutzer
        aus dem unterbrechen, was er gerade liest. -->
   <div class="siegel pruefend" id="siegelMarke" role="status" aria-live="polite" title="Wird geprüft…">
     <span class="zeichen" id="siegelZeichen" aria-hidden="true">&hellip;</span><span class="wort" id="siegelWort">wird geprüft</span>
-  </div>
+  </div>${ZU_HTML}
 </div>
 
 <div class="standleiste" id="standleiste" hidden>
@@ -1252,21 +1284,21 @@ ${OHNE_SAEULEN ? '' : `    <div class="grp">
    Er bleibt in dieser Datei IMMER unveraendert: er ist die Grundwahrheit aus
    der PDF. Was der Nutzer aendert, liegt daneben.
    ══════════════════════════════════════════════════════════════════ */
-/* Der Plan steht als TEXT da und wird daraus gelesen — nicht als Objektliteral.
+${AB_JS}/* Der Plan steht als TEXT da und wird daraus gelesen — nicht als Objektliteral.
    Der Grund ist das Siegel: unterschrieben ist der Roh-Text der Plan-Datei,
    Zeichen fuer Zeichen. Stuende hier ein Objekt, muesste die Pruefung es vor
    dem Vergleich in eine kanonische Form zurueckbringen, und jede Abweichung
    zwischen den beiden Kanonisierungen waere ein stiller Fehlalarm. So gibt es
    nichts zu kanonisieren: geprueft wird genau das, was dasteht. Und wer den
-   Plan aendern will, muss DIESE Zeile anfassen — womit die Unterschrift bricht. */
+   Plan aendern will, muss DIESE Zeile anfassen — womit die Unterschrift bricht. */${ZU_JS}
 const PLAN_TEXT = ${JSON.stringify(planRoh)};
 const PLAN = JSON.parse(PLAN_TEXT);
 
-/* Die Unterschrift und der oeffentliche Schluessel, mit dem man sie nachprueft.
+${AB_JS}/* Die Unterschrift und der oeffentliche Schluessel, mit dem man sie nachprueft.
    Aus einem oeffentlichen Schluessel laesst sich keine gueltige Unterschrift
    herstellen — er darf darum offen in der Datei stehen. */
 const SIEGEL = ${JSON.stringify(siegel ? { inhaber: siegel.inhaber, signiertAm: siegel.signiertAm, verfahren: siegel.verfahren, signatur: siegel.signatur } : null)};
-const SIEGEL_SCHLUESSEL = ${JSON.stringify(siegelSchluessel ? siegelSchluessel.jwk : null)};
+const SIEGEL_SCHLUESSEL = ${JSON.stringify(siegelSchluessel ? siegelSchluessel.jwk : null)};${ZU_JS}
 
 /* Das Schloss vor der Werkstatt: ein Paket, dessen Klartext bekannt ist und das
    sich nur mit dem richtigen Passwort oeffnen laesst. Hier steht KEIN Passwort
@@ -1627,10 +1659,10 @@ function gesetztZeigen(){
     : (grundrissSatz || 'Der Grundriss ist gemessen') + '; ' + n +
       ' Stück der Ausstattung sind frei gesetzt (im Grundriss gestrichelt).';
   oeffnungenZeigen();
-  /* Erst NACH oeffnungenZeigen(): die Marke liest die drei Zaehler ab, und der
+  ${AB_JS}/* Erst NACH oeffnungenZeigen(): die Marke liest die drei Zaehler ab, und der
      dritte wird genau dort gesetzt. Davor gestellt saehe sie den vorletzten
      Stand und haenkte dem Blatt um einen Zug hinterher. */
-  siegelMarkePflegen();
+  siegelMarkePflegen();${ZU_JS}
 }
 
 /* ── Die Öffnungs-Legende (W4) ──────────────────────────────────────
@@ -1666,7 +1698,7 @@ grundriss.fireOnUpdatedRooms(bemerkeAenderung);
    aeltere Kopie dieser Datei geoeffnet). Der Kern lehnt ihn dann ab — was hier
    keine weisse Seite ergeben darf: lieber der gemessene Plan und eine ehrliche
    Meldung. Der Stand bleibt liegen, damit die neuere Kopie ihn wiederfindet. */
-/* W11-NACHTRAG (Gegner-Fund F3): DER AUSLIEFERUNGSABDRUCK.
+${AB_JS}/* W11-NACHTRAG (Gegner-Fund F3): DER AUSLIEFERUNGSABDRUCK.
 
    Die Siegel-Marke muss fragen koennen „ist das hier noch der unterschriebene
    Plan?" — und dafuer braucht sie den unterschriebenen Plan in genau der Form,
@@ -1683,7 +1715,7 @@ grundriss.fireOnUpdatedRooms(bemerkeAenderung);
    auskommt. */
 grundriss.loadFloorplan(abschrift(PLAN.floorplan));
 const AUSLIEFERUNG_ABDRUCK = JSON.stringify(grundriss.saveFloorplan());
-const AUSLIEFERUNG_LABELS = JSON.stringify(PLAN.labels || []);
+const AUSLIEFERUNG_LABELS = JSON.stringify(PLAN.labels || []);${ZU_JS}
 
 let standFehler = null;
 try {
@@ -2049,8 +2081,9 @@ function zeigeAnsicht(name, merken){
    Browsers bedient. Das ist hinnehmbar, und zwar nicht aus Bequemlichkeit,
    sondern weil eine Bearbeitung die DATEI ohnehin nicht veraendern kann — der
    eingebaute Plan bleibt unangetastet, der Arbeitsstand liegt daneben im
-   Browser-Speicher und reist mit keiner Kopie mit. Wer den Plan wirklich
-   veraendern will, braucht einen Texteditor, und dann bricht das Siegel.
+   Browser-Speicher und reist mit keiner Kopie mit.
+   ${AB_TXT}Wer den Plan wirklich veraendern will, braucht einen Texteditor,
+   und dann bricht das Siegel.${ZU_TXT}
 
    ECHTE VERSCHLUESSELUNG, KEIN ABGLEICH. Es gibt in dieser Datei kein
    Passwort und keinen Abdruck eines Passworts. Es gibt ein Paket, das sich mit
@@ -2065,9 +2098,9 @@ function ausB64(s){
   return b;
 }
 
-/* In der reinen ANSICHT gibt es keine Werkstatt — dort ist sie ZU und bleibt es
+${AB_JS}/* In der reinen ANSICHT gibt es keine Werkstatt — dort ist sie ZU und bleibt es
    (Gegner-Fund M1). Ohne Schloss in der vollen Fassung (--ohne-siegel, ein
-   ausdruecklicher Bau) steht sie offen; dort gibt es nichts aufzuschliessen. */
+   ausdruecklicher Bau) steht sie offen; dort gibt es nichts aufzuschliessen. */${ZU_JS}
 let werkstattOffen = NUR_ANSICHT ? false : !SCHLOSS;
 
 async function schlossOeffnen(wort){
@@ -3827,7 +3860,7 @@ el('btnVorschauNein').addEventListener('click', function(){
 el('btnFremdLaden').addEventListener('click', function(){ location.reload(); });
 el('btnFremdUebergehen').addEventListener('click', fremdUebergehen);
 
-/* ══════════════════════════════════════════════════════════════════
+${AB_JS}/* ══════════════════════════════════════════════════════════════════
    DAS SIEGEL — ist der Plan in dieser Datei noch der unterschriebene?
 
    WAS ES LEISTET UND WAS NICHT. Wer diese Datei besitzt, hat einen
@@ -3987,7 +4020,7 @@ siegelPruefen();
 // man nichts ansieht — und genau in Papierform wandert dieser Plan zur Bank.
 if (el('siegelMarke')) el('siegelMarke').addEventListener('click', function(){
   meldung(siegelStand.satz, siegelStand.echt === false);
-});
+});${ZU_JS}
 
 /* ── Das Papier beschriften (M5) ────────────────────────────────────
    Datum und Massstabs-Aussage entstehen erst beim Drucken. Auf dem Bildschirm
@@ -3998,7 +4031,7 @@ function druckZeileSetzen(){
   const heute = new Date();
   el('druckZeile').textContent = 'Gedruckt am ' + heute.toLocaleDateString('de-DE') +
     ' · Axonometrie, nicht maßstäblich — die Maße oben sind gemessen · Plan vom ' + BAU_STEMPEL;
-  // Das Siegel aufs Blatt. Nicht als Haken — auf Papier sagt ein Haken nichts,
+  ${AB_JS}// Das Siegel aufs Blatt. Nicht als Haken — auf Papier sagt ein Haken nichts,
   // weil man ihn hinmalen kann. Als SATZ mit Namen und Datum, und im schlechten
   // Fall als Warnung, die man nicht ueberliest.
   const dz = el('siegelDruck');
@@ -4023,7 +4056,7 @@ function druckZeileSetzen(){
         : 'Das Siegel war beim Drucken noch nicht geprüft.';
       dz.classList.add('warnt');
     }
-  }
+  }${ZU_JS}
 }
 addEventListener('beforeprint', druckZeileSetzen);
 // Ohne diese Zeile bliebe die Zeile leer, wenn der Druck aus einem Werkzeug
@@ -4235,8 +4268,9 @@ if (speicher) {
      selbst aufsperren. Er wird gelesen und ABGERAEUMT — beim Oeffnen ist immer
      zu, und wer bearbeiten will, sagt es einmal. Das ist die einzige Fassung,
      bei der man dem Schloss-Symbol im Knopf glauben kann, ohne nachzudenken.
-     (Ohne Schloss — reine Ansicht oder --ohne-siegel — bleibt es beim alten
-     Verhalten; dort gibt es nichts zu sperren.) */
+     ${AB_TXT}(Ohne Schloss — reine Ansicht oder --ohne-siegel — bleibt es beim
+     alten Verhalten; dort gibt es nichts zu sperren.)${ZU_TXT}
+  */
   try {
     if (speicher.getItem(SCHLUESSEL_BEARBEITEN) === '1') {
       if (SCHLOSS) speicher.removeItem(SCHLUESSEL_BEARBEITEN);
@@ -4911,6 +4945,67 @@ const MODELL_BLOECKE = [
 ]
 const SCHNITT_BLOECKE = NUR_MODELL ? [...WERKSTATT_BLOECKE, ...MODELL_BLOECKE] : WERKSTATT_BLOECKE
 
+/* ══════════════════════════════════════════════════════════════════════
+   DIE UNTERSCHRIFT GAR NICHT ERST EINBAUEN (--nur-modell --ohne-siegel)
+
+   Dieselbe Mechanik wie eine Zeile hoeher, an einer anderen Marke. Die
+   Bedien-Bloecke haengen an `id="..."` und werden ueber eine LISTE geschnitten;
+   die Unterschrift liegt in CSS, in Auszeichnung UND in Skript, also traegt sie
+   ein Marken-PAAR, das der Bauer nur in dieser Kombination ueberhaupt ausgibt.
+   Geschnitten wird ZEILENWEISE von der Anfangs- bis zur Endmarke — dadurch
+   verschwindet die Marke mit ihrem Abschnitt, egal ob sie in einem
+   Auszeichnungs-Kommentar, in einem Schraegstrich-Stern-Kommentar oder blank
+   in einem schon laufenden Kommentar steht.
+
+   VOR dem Bedien-Schnitt, und das ist kein Zufall: `siegelMarke`, `siegelWort`,
+   `siegelZeichen` und `siegelDruck` sind Kennungen. Liefe der Siegel-Schnitt
+   danach, stuenden sie in der Schnittliste, die die Datei ueber sich selbst
+   fuehrt (`ENTFERNT`) — und damit staende das Wort doch wieder drin. */
+function schneideMarkiertes(text, ab, zu) {
+  let anzahl = 0
+  for (;;) {
+    const i = text.indexOf(ab)
+    if (i < 0) return { text, anzahl, offen: false }
+    const j = text.indexOf(zu, i)
+    if (j < 0) return { text, anzahl, offen: true }
+    const anfang = text.lastIndexOf('\n', i) + 1
+    const nl = text.indexOf('\n', j)
+    text = text.slice(0, anfang) + text.slice(nl < 0 ? text.length : nl + 1)
+    anzahl++
+  }
+}
+
+const SIEGEL_BERICHT = { abschnitte: 0 }
+if (SIEGEL_WEG) {
+  const r = schneideMarkiertes(html, 'OHNE-NAMEN-AB', 'OHNE-NAMEN-ZU')
+  if (r.offen) {
+    console.error('Abbruch: eine Siegel-Marke ohne Gegenstueck — der Schnitt liefe bis zum Dateiende.')
+    process.exit(1)
+  }
+  if (r.anzahl === 0) {
+    console.error('Abbruch: --nur-modell --ohne-siegel, aber keine einzige Siegel-Marke gefunden.')
+    console.error('  Wurden die Marken aus der Vorlage entfernt? Dann kaeme der Name wieder mit.')
+    process.exit(1)
+  }
+  html = r.text
+  SIEGEL_BERICHT.abschnitte = r.anzahl
+
+  /* DIE GEGENPROBE AM ERGEBNIS, nicht an der Marken-Liste. Genau wie beim
+     Knopf-Zaehler unten: wer morgen einen Satz mit dem Namen an eine Stelle
+     schreibt, die keine Marke traegt, faellt HIER auf — und nicht erst dem
+     Betreiber, der seine Datei in einem Texteditor oeffnet. */
+  const inhaber = siegel && siegel.inhaber ? String(siegel.inhaber) : null
+  const nameDrin = inhaber ? html.split(inhaber).length - 1 : 0
+  const wortDrin = (html.match(/siegel/gi) || []).length
+  const restMarken = (html.match(/OHNE-NAMEN-(AB|ZU)/g) || []).length
+  if (nameDrin || wortDrin || restMarken) {
+    console.error('Abbruch: --nur-modell --ohne-siegel, aber die Datei traegt noch Spuren der Unterschrift.')
+    console.error(`  Name „${inhaber}": ${nameDrin}× · Wort „Siegel": ${wortDrin}× · Marken-Reste: ${restMarken}`)
+    console.error('  Die fehlende Stelle braucht ein Marken-Paar (OHNE-NAMEN-AB / OHNE-NAMEN-ZU).')
+    process.exit(1)
+  }
+}
+
 const kennungenVon = (t) => new Set([...t.matchAll(/id="([^"]+)"/g)].map((m) => m[1]))
 const ANSICHT_BERICHT = { bloecke: 0, kennungen: 0 }
 if (NUR_ANSICHT) {
@@ -5009,5 +5104,6 @@ console.log(`  Plan:         ${(Buffer.byteLength(planRoh, 'utf8') / 1024).toFix
 console.log(`  Hoehen aus:   src/three/ausstattung.ts (${Object.keys(HOEHEN.oberkante).length} Typen, gelesen statt abgeschrieben)`)
 console.log(`  Namen:        ${namen.size} Bezeichner geprueft, keine Kollision`)
 if (NUR_ANSICHT) console.log(`  Schnitt:      ${ANSICHT_BERICHT.bloecke} ${NUR_MODELL ? 'Bedien-Bloecke' : 'Werkstatt-Bloecke'} entfernt, ${ANSICHT_BERICHT.kennungen} Kennungen verschwunden (${NUR_MODELL ? 'NUR MODELL — 0 Schaltflaechen, 0 Eingabefelder' : 'reine ANSICHT'})`)
+if (SIEGEL_WEG) console.log(`  Ohne Namen:   ${SIEGEL_BERICHT.abschnitte} Siegel-Abschnitte entfernt — 0× der Name, 0× das Wort „Siegel" (gemessen am Ergebnis)`)
 console.log(`  Plan-Abdruck: ${PLAN_ABDRUCK} (Speicher-Schluessel je Plan UND Ablageort)`)
 console.log(`  Bau-Stempel:  ${BAU_STEMPEL}`)
