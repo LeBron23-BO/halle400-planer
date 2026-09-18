@@ -32,7 +32,11 @@ import { erzeugeAxonometrie } from '@blueprint3d/axo/axo-zeichnen.js'
 import { BLICKE, SAEULEN } from '@blueprint3d/axo/axo-kontrakt.js'
 import { OBERKANTE_CM, KOERPER_CM } from '@blueprint3d/three/ausstattung'
 
-type NamenModus = 'alle' | 'saeulen' | 'aus'
+/**
+ * `knapp` laesst keinen Raum weg, sondern jedem Raum seine Zusatzzeile — die
+ * Stellung fuer einen Ausdruck, an dem niemand heranzoomen kann.
+ */
+type NamenModus = 'alle' | 'knapp' | 'saeulen' | 'aus'
 
 interface Props {
   /** Die lebende blueprint3d-Instanz. */
@@ -368,6 +372,7 @@ export function AxonometrieAnsicht({ blueprint3d, labels, aktiv }: Props) {
         {(
           [
             ['alle', 'Alle'],
+            ['knapp', 'Knapp'],
             ['saeulen', 'Säulen'],
             ['aus', 'Aus']
           ] as [NamenModus, string][]

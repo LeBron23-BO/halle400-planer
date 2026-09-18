@@ -12,8 +12,9 @@
 //   --unterzeile <text>  Zeile unter dem Titel; Platzhalter {waende} {ecken}
 //                        {raumnamen} {breite} {tiefe} werden zur Laufzeit gefuellt.
 //                        Ohne den Schalter bleibt die gerechnete Buero-Zeile.
-//   --namen <stellung>   Anfangsstellung der Namensschicht: alle|wichtige|aus
-//                        (Vorgabe alle = bisheriges Verhalten)
+//   --namen <stellung>   Anfangsstellung der Namensschicht: alle|knapp|wichtige|aus
+//                        (Vorgabe alle = bisheriges Verhalten; knapp = jeder Raum,
+//                        aber ohne Zusatzzeile — die Stellung fuer Papier)
 //   --ohne-saeulen       laesst die Neun-Saeulen-Tafel und ihre Schalter WEG
 //                        (Vorgabe: Tafel bleibt — die Buero-Datei aendert sich nicht)
 //   --nur-ansicht        die Fassung fuer die Bank (Werkstatt ENTFERNT, kein Schloss)
@@ -142,7 +143,7 @@ const OHNE_SIEGEL = process.argv.includes('--ohne-siegel')
 /* ── DIE NAMENSSCHICHT UND DIE SAEULEN-TAFEL ──────────────────────
    Zwei Dinge, die im Buero richtig sind und in einem anderen Plan falsch:
 
-   (1) --namen <alle|wichtige|aus>. Die Huelle startete fest mit „alle". Im Buero
+   (1) --namen <alle|knapp|wichtige|aus>. Die Huelle startete fest mit „alle". Im Buero
    sind das 18 Raumnamen; im Zimmergeschoss von Hotel 400 sind es 74 — daraus
    wird ein Textband ueber und unter dem Modell, in dem der Riegel selbst
    untergeht (am Standbild gemessen). Die Vorgabe ist `alle` und damit GENAU das
@@ -151,6 +152,14 @@ const OHNE_SIEGEL = process.argv.includes('--ohne-siegel')
    neun Saeulen tragen. Sie ist nur dort sinnvoll, wo es Saeulen GIBT; zusammen
    mit --ohne-saeulen waere sie eine Schicht, die nie etwas zeigt, und der Bau
    bricht deshalb unten ab statt ein leeres Blatt auszuliefern.
+     `knapp` laesst KEINEN Raum weg, sondern jedem Raum seine Zusatzzeile. Das
+   ist die Stellung fuer PAPIER: die Zusatzzeile („Typ unbelegt - der Plan
+   beschriftet dieses Zimmer nicht") ist die breiteste Zeile des Etiketts, und
+   sie wegzulassen verschmaelert jedes Etikett so weit, dass am dichten Ende des
+   Riegels wieder alle Namen nebeneinander passen. Am Bildschirm zoomt man
+   heran und will die Zusatzzeile; auf einem Ausdruck kann man das nicht, und
+   dort ist sie der Grund, warum der Name daneben unlesbar wird. Sie braucht
+   keine Saeulen und vertraegt sich deshalb mit --ohne-saeulen.
 
    (2) --ohne-saeulen. Die Tafel „Die neun Säulen" mit ihrem Zaehler, ihrem
    Fusstext ueber Workspace/Einzelbuero/Doppelbuero und den zwei Schaltern
@@ -164,7 +173,7 @@ const OHNE_SIEGEL = process.argv.includes('--ohne-siegel')
    HTML geschnitten: der naechste Bau ueberschriebe einen Nachpatch still. Ohne
    die Schalter setzt die Einsetzung Zeichen fuer Zeichen das ein, was vorher
    fest dastand — gemessen ueber die Pruefsumme der Buero-Datei. */
-const NAMEN_STELLUNGEN = { alle: 'alle', wichtige: 'saeulen', aus: 'aus' }
+const NAMEN_STELLUNGEN = { alle: 'alle', knapp: 'knapp', wichtige: 'saeulen', aus: 'aus' }
 const NAMEN_WAHL = arg('--namen', 'alle')
 const NAMEN_START = NAMEN_STELLUNGEN[NAMEN_WAHL]
 if (!NAMEN_START) {
@@ -886,6 +895,7 @@ ${OHNE_SAEULEN ? '' : `  <aside class="tafel" id="tafel">
     <div class="grp">
       <span class="lbl">Namen</span>
       <button type="button" data-namen="alle">Alle</button>
+      <button type="button" data-namen="knapp">Knapp</button>
 ${OHNE_SAEULEN ? '' : `      <button type="button" data-namen="saeulen">Säulen</button>
 `}      <button type="button" data-namen="aus">Aus</button>
     </div>

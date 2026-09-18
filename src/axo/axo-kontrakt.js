@@ -257,7 +257,14 @@ export const DARSTELLUNG = {
    Die Namen stehen NICHT im Bild, sondern ausserhalb des Baukoerpers und
    greifen mit einer geknickten Fuehrungslinie hinein — wie auf dem
    Originalblatt. Die Etiketten belegen bis zu drei Reihen und weichen
-   einander seitlich aus, statt sich zu ueberlagern. */
+   einander seitlich aus, statt sich zu ueberlagern.
+
+   Das Ausweichen hat eine GRENZE, und die stand bis dahin nirgends: sind alle
+   Reihen bis zum Blattrand voll, gibt es keinen freien Platz mehr. Wer dann
+   trotzdem malt, legt Namen uebereinander — auf dem Bildschirm zoomt man
+   heran, auf einem Ausdruck bleibt ein unlesbarer Klumpen. `ankerMaxWeg`
+   zieht die zweite Grenze: ein Etikett darf zur Seite ausweichen, solange
+   seine Fuehrungslinie noch erkennbar zum eigenen Anker zeigt. */
 
 export const BESCHRIFTUNG = {
   schriftBreit: 13, // Name, Serifenschrift, breites Fenster
@@ -269,6 +276,11 @@ export const BESCHRIFTUNG = {
   reihenVoll: 3, // alle Namen
   reihenSaeulen: 2, // nur die neun Saeulen
   lueckeMin: 13, // Mindestabstand zweier Etiketten in einer Reihe
+  /* Wie weit ein Etikett seitlich von seinem Anker wegruecken darf. Rund eine
+     Etikettenbreite: die Fuehrungslinie bleibt kurz genug, dass das Auge ihr
+     folgt. Weiter geschoben stuende der Name ueber dem NACHBARRAUM und wuerde
+     ihm zugeordnet — eine falsche Angabe ist schlimmer als eine fehlende. */
+  ankerMaxWeg: 120,
   abstandOben: 32, // Abstand Silhouette -> erste Reihe
   abstandUnten: 42,
   knickWeg: 26, // Laenge des senkrechten Stuecks der Fuehrungslinie

@@ -57,7 +57,7 @@ function toenen(hex, n, zurueck) {
  *
  * @param {HTMLCanvasElement} canvas
  * @param {object} szeneEingang Ergebnis von `baueSzene`
- * @param {{dunkel?:boolean, namen?:'alle'|'saeulen'|'aus', randRechts?:number,
+ * @param {{dunkel?:boolean, namen?:'alle'|'knapp'|'saeulen'|'aus', randRechts?:number,
  *          randOben?:number, bearbeitung?:{
  *            aktiv:()=>boolean,
  *            greife:(id:string,weltX:number,weltY:number)=>boolean,
@@ -90,6 +90,11 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
   let hoehe = 0
   let dunkel = !!opt.dunkel
   let namenModus = opt.namen || 'alle'
+  /* Was aus der Namensschicht des LETZTEN Bildes geworden ist. Ein Name, fuer
+     den kein lesbarer Platz blieb, wird weggelassen — und darf dabei nicht
+     still verschwinden: wer das Blatt einer Bank vorlegt, muss beantworten
+     koennen, ob darauf alle Namen stehen. Darum eine Zahl statt eines Gefuehls. */
+  let namenBilanz = { gemalt: 0, ausgelassen: 0 }
   let randRechts = opt.randRechts || 0
   let schnell = false
   let farben = dunkel ? PALETTE.dunkel : PALETTE.hell
@@ -316,11 +321,28 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
    * Die Etiketten stehen AUSSERHALB des Baukoerpers, weichen einander in bis
    * zu drei Reihen aus und greifen mit einer geknickten Linie zum Anker.
    *                                                  [uebersicht.html:648]
+   *
+   * DREI STUFEN, ZWEI HEBEL. Die Schicht kann auf zwei voneinander
+   * unabhaengige Arten schrumpfen, und beide werden gebraucht:
+   *   `saeulen` nimmt ETIKETTEN weg (nur die hervorgehobenen Raeume),
+   *   `knapp`   nimmt ZEILEN weg (jeder Raum, aber ohne seine Zusatzzeile).
+   * Die Zusatzzeile ist die breiteste Zeile des Etiketts — „Typ unbelegt - der
+   * Plan beschriftet dieses Zimmer nicht" ist dreimal so lang wie „Zimmer 23".
+   * Sie wegzulassen halbiert nicht nur die Textmenge, sondern verschmaelert
+   * jedes einzelne Etikett, und erst dadurch passen am dichten Gebaeudeende
+   * wieder alle Namen nebeneinander. Auf einem Ausdruck, an dem niemand zoomen
+   * kann, ist das der Unterschied zwischen lesbar und nicht.
    */
   function maleNamen() {
     let liste = szene.marken
     if (namenModus === 'saeulen') liste = liste.filter((m) => m.hervor)
-    if (!liste.length) return
+    // Zaehlt IMMER neu: die Bilanz gehoert zum aktuellen Bild, nicht zur Sitzung.
+    let gemalt = 0
+    let ausgelassen = 0
+    if (!liste.length) {
+      namenBilanz = { gemalt: 0, ausgelassen: 0 }
+      return
+    }
 
     const weit = breite > 900
     const fs = weit ? BESCHRIFTUNG.schriftBreit : BESCHRIFTUNG.schriftSchmal
@@ -329,6 +351,7 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     const anzahl = namenModus === 'saeulen' ? BESCHRIFTUNG.reihenSaeulen : BESCHRIFTUNG.reihenVoll
     const maxX = breite - (weit ? randRechts + 6 : 12)
 
+    const mitZusatz = namenModus !== 'knapp'
     const posten = liste.map((m) => {
       const a = projiziere(m.x, 1.1, m.z)
       // Oben oder unten? Gegen die Gebaeudeachse an DERSELBEN Stelle pruefen,
@@ -342,7 +365,11 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
         a,
         oben: a.y < achse.y,
         name: m.hervor && s ? s.rolle.replace(/^(Der|Die|Das)\s+/, '') : m.text,
-        zusatz: m.hervor && s ? `${s.n} · ${s.name}` : m.zusatz
+        // Ein leerer Zusatz ist unten schon der bekannte Fall „dieser Raum hat
+        // keine zweite Zeile" — Breite, Linienansatz und Malen pruefen ihn
+        // laengst. `knapp` braucht deshalb genau diese eine Stelle und keine
+        // zweite Sonderbehandlung weiter unten.
+        zusatz: mitZusatz ? (m.hervor && s ? `${s.n} · ${s.name}` : m.zusatz) : ''
       }
     })
 
@@ -362,6 +389,7 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
       // seiner Hoehe liegen, sonst zerrt es die Linien unnoetig in die Laenge.
       const minX = richtung === 'oben' && weit && Math.min(...reihen) < 118 ? 352 : 14
       const belegt = reihen.map(() => -1e9)
+      const gesetzt = []
 
       for (const o of menge) {
         ctx.font = `500 ${fs}px ${SCHRIFT.serif}`
@@ -369,28 +397,40 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
         ctx.font = `${ss}px ${SCHRIFT.mono}`
         o.breite = Math.max(wName, o.zusatz ? ctx.measureText(o.zusatz).width : 0)
         const wunsch = Math.max(minX + o.breite / 2, Math.min(maxX - o.breite / 2, o.a.x))
-        let reihe = 0
-        let bestes = 1e9
+        /* AUSWEICHEN STATT UEBEREINANDER.
+           Hier stand frueher am Ende `Math.min(maxX - breite/2, wunsch + schub)`.
+           Genau diese Klammer war der unlesbare Klumpen am dichten Ende des
+           Riegels: sind alle Reihen bis zum Blattrand voll, hat sie JEDES
+           weitere Etikett auf dieselbe Stelle gesetzt — drei Namen und drei
+           Zusatzzeilen uebereinander. Sie hat also nicht ausweichen lassen,
+           sondern nur so getan.
+           Jetzt zaehlt ein Platz erst, wenn er wirklich FREI ist. Gibt es
+           keinen, faellt der Name weg und wird gezaehlt: ein fehlender Name
+           ist eine Luecke, zwei uebereinander sind eine Falschaussage — und auf
+           einem Blatt fuer eine Bank ist die Luecke die ehrlichere. */
+        let platz = null
         for (let i = 0; i < reihen.length; i++) {
-          if (wunsch - o.breite / 2 >= belegt[i] + BESCHRIFTUNG.lueckeMin) {
-            reihe = i
-            bestes = 0
-            break
-          }
-          const schub = belegt[i] + BESCHRIFTUNG.lueckeMin + o.breite / 2 - wunsch
-          if (schub < bestes) {
-            bestes = schub
-            reihe = i
-          }
+          const x = Math.max(wunsch, belegt[i] + BESCHRIFTUNG.lueckeMin + o.breite / 2)
+          if (x + o.breite / 2 > maxX) continue
+          if (x - wunsch > BESCHRIFTUNG.ankerMaxWeg) continue
+          if (!platz || x - wunsch < platz.weg) platz = { reihe: i, x, weg: x - wunsch }
+          // Die naechstgelegene Reihe ohne jedes Ausweichen schlaegt alles
+          // Weitere — genau die Vorliebe, die diese Suche immer schon hatte.
+          if (platz.weg === 0) break
         }
-        const x = bestes === 0 ? wunsch : Math.min(maxX - o.breite / 2, wunsch + bestes)
-        belegt[reihe] = x + o.breite / 2
-        o.tx = x
-        o.ty = reihen[reihe]
+        if (!platz) {
+          ausgelassen++
+          continue
+        }
+        belegt[platz.reihe] = platz.x + o.breite / 2
+        o.tx = platz.x
+        o.ty = reihen[platz.reihe]
         o.linieY = richtung === 'oben' ? o.ty + (o.zusatz ? 16 : 6) : o.ty - 16
+        gesetzt.push(o)
       }
+      gemalt += gesetzt.length
 
-      for (const o of menge) {
+      for (const o of gesetzt) {
         const knick =
           richtung === 'oben'
             ? Math.min(o.a.y - 10, o.linieY + BESCHRIFTUNG.knickWeg)
@@ -424,6 +464,17 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
       }
     }
     ctx.restore()
+    /* Die einzige Konsolen-Zeile dieses Zeichners, und sie ist ihr Papier wert:
+       ohne sie waere „weglassen" ein stiller Datenverlust. Nur bei AENDERUNG
+       der Zahl und nicht waehrend eines Zuges — sonst schriebe ein Drehen
+       hundert gleiche Zeilen und machte die Konsole unbrauchbar. Wer die Zahl
+       jederzeit will, fragt `axo.namenBilanz`. */
+    if (!schnell && ausgelassen !== namenBilanz.ausgelassen && ausgelassen > 0) {
+      console.info(
+        `Raumnamen: ${gemalt} gemalt, ${ausgelassen} ausgelassen — fuer sie blieb kein Platz, an dem sie lesbar stuenden.`
+      )
+    }
+    namenBilanz = { gemalt, ausgelassen }
   }
 
   /** Amber-Rahmen um die Boeden der Saeulen-Raeume.  [uebersicht.html:635] */
@@ -489,6 +540,7 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
 
     maleSaeulenRahmen()
     if (namenModus !== 'aus') maleNamen()
+    else namenBilanz = { gemalt: 0, ausgelassen: 0 }
   }
 
   /**
@@ -788,6 +840,15 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     setzeNamen(modus) {
       namenModus = modus
       zeichne()
+    },
+    /**
+     * Was aus der Namensschicht des letzten Bildes geworden ist:
+     * `{gemalt, ausgelassen}`. Die Huelle kann damit sagen, wie viele Namen auf
+     * dem Blatt WIRKLICH stehen — eine Angabe, die man weder zaehlen noch
+     * schaetzen sollte, wenn das Blatt zu einer Bank geht.
+     */
+    get namenBilanz() {
+      return { ...namenBilanz }
     },
     setzeDunkel(an) {
       dunkel = an

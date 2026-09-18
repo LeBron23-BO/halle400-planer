@@ -212,6 +212,7 @@ const html = `<!DOCTYPE html>
   <div class="grp">
     <span class="lbl">Namen</span>
     <button type="button" data-namen="alle">Alle</button>
+    <button type="button" data-namen="knapp">Knapp</button>
     <button type="button" data-namen="saeulen">Säulen</button>
     <button type="button" data-namen="aus">Aus</button>
   </div>
