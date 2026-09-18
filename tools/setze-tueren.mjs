@@ -177,8 +177,16 @@ const gewuenscht = zeilen.map(ausVormessung)
 
 /* ── Den Plan lesen und den KERN fragen ────────────────────────────────── */
 const planPfad = path.resolve(planDatei)
-const roh = JSON.parse(fs.readFileSync(planPfad, 'utf8'))
+const planRoh = fs.readFileSync(planPfad, 'utf8')
+const roh = JSON.parse(planRoh)
 const fp = roh.floorplan || roh
+
+/* ZEILENENDEN DES ORIGINALS BEIBEHALTEN. GEMESSEN: `hotel400.json` liegt mit
+   CRLF vor (die Python-Werkzeuge schreiben im Textmodus unter Windows). Wer
+   hier mit `\n` zurueckschreibt, aendert JEDE der 30 000 Zeilen — der Unterschied
+   zwischen „54 Tueren dazu" und „ganze Datei neu" ist dann in keinem `git diff`
+   mehr zu sehen, und genau daran prueft dieses Projekt seine Exporte. */
+const ZEILENENDE = planRoh.includes('\r\n') ? '\r\n' : '\n'
 
 const KERN = new Function(
   `${buendleThree()}\n${buendleKern(uebersetzeKern())}\nreturn { Floorplan, Configuration, configWallThickness };`
@@ -319,15 +327,98 @@ const waendeNeu = fp.walls.map((w) => {
   return { ...w, id: kennung }
 })
 
-/* Sonst wird NUR der Abschnitt `oeffnungen` ersetzt. Alles andere bleibt, wie
-   es war — siehe den Kopf dieser Datei. */
+/* ── GESCHRIEBEN WIRD IM TEXT, NICHT ÜBER `JSON.stringify` ─────────────────
+   GEMESSEN: den ganzen Plan neu zu serialisieren ergab 2145 geänderte und 1188
+   entfernte Zeilen für 54 Türen — `JSON.stringify` schreibt `0` wo `0.0` stand.
+   Numerisch dasselbe, für einen Menschen aber der Unterschied zwischen einer
+   prüfbaren Änderung und „ganze Datei neu". Dieses Projekt prüft seine Exporte
+   auf Byte-Gleichheit (W5); ein Werkzeug, das bei jedem Lauf jede Koordinate
+   anfasst, macht genau diese Prüfung wertlos.
+
+   Also: der Originaltext bleibt stehen, und es werden nur zwei Dinge
+   eingefügt — die Wand-Kennungen und der Abschnitt `oeffnungen`. */
+
+/** Die Grenzen des Werts zu `schluessel` im Text: von der öffnenden bis zur
+ *  zugehörigen schliessenden Klammer. Klammern in Zeichenketten zählen nicht
+ *  mit — eine `herkunft` wie „Doppellinie [..]" gäbe es sonst falsch. */
+function wertGrenzen(text, schluessel, auf, zu) {
+  const start = text.indexOf(`"${schluessel}":`)
+  if (start < 0) return null
+  const von = text.indexOf(auf, start)
+  let tiefe = 0
+  let inText = false
+  for (let i = von; i < text.length; i++) {
+    const c = text[i]
+    if (inText) {
+      if (c === '\\') i++
+      else if (c === '"') inText = false
+      continue
+    }
+    if (c === '"') inText = true
+    else if (c === auf) tiefe++
+    else if (c === zu && --tiefe === 0) return { von, bis: i + 1 }
+  }
+  return null
+}
+
 const ziel = path.resolve(zielDatei)
-const ausgabe = roh.floorplan ? roh : { floorplan: roh }
-ausgabe.floorplan = { ...fp, walls: waendeNeu, oeffnungen: fertig.map((o) => ({ ...o })) }
+const wandBereich = wertGrenzen(planRoh, 'walls', '[', ']')
+if (!wandBereich) {
+  console.error('Abbruch: im Plan ist kein Abschnitt `walls` zu finden.')
+  process.exit(2)
+}
+
+/* Die Wand-Kennungen: jedes Wand-Objekt im Text aufsuchen und, wenn es eine
+   Öffnung trägt, eine `id`-Zeile davor setzen. Gesucht wird über das
+   Eckenpaar — dieselbe Identität, über die auch der Kern die Kennung bildet. */
+let waendeText = planRoh.slice(wandBereich.von, wandBereich.bis)
+let benanntText = 0
+for (const [paar, kennung] of kennungJeEckenpaar) {
+  if (!tragend.has(kennung)) continue
+  const [c1, c2] = paar.split('|')
+  const muster = new RegExp(
+    `(\\{(\\r?\\n)(\\s*))("corner1": "${c1}",(\\r?\\n)\\s*"corner2": "${c2}")`,
+    'g'
+  )
+  const treffer = waendeText.match(muster)
+  if (!treffer || treffer.length !== 1) {
+    // Kein eindeutiger Treffer: lieber die Kennung weglassen als sie an die
+    // falsche Wand schreiben. Die Öffnung wird dann im Blatt nicht gezeichnet
+    // — sichtbar fehlend ist besser als unsichtbar falsch.
+    console.error(`  ! Wand ${kennung}: kein eindeutiger Fundort im Text (${treffer ? treffer.length : 0}×)`)
+    continue
+  }
+  waendeText = waendeText.replace(muster, `$1"id": "${kennung}",$2$3$4`)
+  benanntText++
+}
+
+const einzug = '  '
+const nl = ZEILENENDE
+const oeffnungenText =
+  `${nl}${einzug}"oeffnungen": ` +
+  JSON.stringify(fertig.map((o) => ({ ...o })), null, 1)
+    .split('\n')
+    .join(`${nl}${einzug}`)
+
+const text =
+  planRoh.slice(0, wandBereich.von) +
+  waendeText +
+  ',' +
+  oeffnungenText +
+  planRoh.slice(wandBereich.bis)
+fs.writeFileSync(ziel, text, 'utf8')
+// Die Probe aufs Exempel: was geschrieben wurde, muss sich lesen lassen und
+// dieselben Zahlen enthalten. Ein Texteingriff, der eine kaputte Datei
+// hinterlässt, wäre der schlechteste aller Fehler.
+const gegen = JSON.parse(fs.readFileSync(ziel, 'utf8'))
+const gfp = gegen.floorplan || gegen
+if (gfp.walls.length !== fp.walls.length || (gfp.oeffnungen || []).length !== fertig.length) {
+  console.error('Abbruch: die geschriebene Datei stimmt nicht mit dem Gerechneten ueberein.')
+  process.exit(2)
+}
 console.log('')
-console.log(`  ${benannt} Wand/Waende haben eine Kennung bekommen (ohne sie bliebe die`)
+console.log(`  ${benanntText} Wand/Waende haben eine Kennung bekommen (ohne sie bliebe die`)
 console.log('  Oeffnung in der raeumlichen Ansicht unsichtbar — im Grundriss waere sie da).')
-fs.writeFileSync(ziel, JSON.stringify(ausgabe, null, 1) + '\n', 'utf8')
-console.log('')
-console.log(`Geschrieben: ${path.relative(WURZEL, ziel)} (${fertig.length} Oeffnungen)`)
+console.log(`Geschrieben: ${path.relative(WURZEL, ziel)} (${fertig.length} Oeffnungen, ` +
+  `${gfp.walls.length} Waende unveraendert)`)
 process.exit(0)
