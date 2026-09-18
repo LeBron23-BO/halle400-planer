@@ -146,11 +146,25 @@ export class Corner implements Point {
   /** Moves corner to new position.
    * @param newX The new x position.
    * @param newY The new y position.
+   * @param verschmelzen Darf die Ecke unterwegs mit einer fremden Ecke oder
+   *   Wand VERSCHMELZEN? Standard ja — beim Zeichnen und beim Ziehen einer
+   *   einzelnen Ecke ist genau das gemeint („hier schliesst der Zug an").
+   *
+   *   Beim Ziehen einer ganzen WAND ist es das Gegenteil (W14). Die beiden
+   *   Endecken GLEITEN dort auf den Nachbarwänden entlang und kommen dabei
+   *   zwangsläufig anderen Ecken nahe. `combineWithCorner` zieht die Ecke dann
+   *   auf die fremde Lage, und beides geht verloren: der Weg (die Wand springt
+   *   auf die fremde Ecke) und die Bausubstanz (die Wände der verschluckten
+   *   Ecke fallen weg).
+   *
+   *   GEMESSEN an der Hotelwand w-14b7597f: ein Zug über 50 cm legte 65 cm
+   *   zurück und kostete 2 Ecken und 2 Wände (517/650 auf 515/648) — ohne eine
+   *   einzige Meldung. Mit `verschmelzen = false` sind es 50 cm und 517/650.
    */
-  public move(newX: number, newY: number): void {
+  public move(newX: number, newY: number, verschmelzen = true): void {
     this.x = newX
     this.y = newY
-    this.mergeWithIntersected()
+    if (verschmelzen) this.mergeWithIntersected()
     this.moved_callbacks.fire(this.x, this.y)
 
     this.wallStarts.forEach((wall) => {

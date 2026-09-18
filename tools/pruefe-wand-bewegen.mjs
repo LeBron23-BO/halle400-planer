@@ -331,6 +331,14 @@ if (K) {
   zeichner.view = { draw() {} }
   zeichner.undoManager = { anzahl: 0, snapshot() { this.anzahl++ } }
   zeichner.zeigerStilSetzen = () => {}
+  // Der RAUM-WAECHTER (W14) meldet nach jedem beendeten Zug, was er bewirkt
+  // hat. Die Liste gehoert sonst dem Konstruktor — der hier nicht laeuft, weil
+  // dieser Zeichner keine Leinwand hat. Sie wird darum von Hand gesetzt, und
+  // zwar nicht als Zierat: OHNE sie maesse dieser Pruefer den Zug, aber nicht
+  // die Meldung darueber, und genau die ist der Unterschied zwischen einem
+  // Raum, der still verschwindet, und einem, von dem der Nutzer erfaehrt.
+  const berichte = []
+  zeichner.zugWandBerichtCallbacks = [(b) => berichte.push(b)]
 
   const flaechenVorher = fp.getRooms().map((r) =>
     Math.round(G_flaeche(r.corners) / 10000)
@@ -370,6 +378,18 @@ if (K) {
 
   zeichner.zugBeenden()
   pruefe(zeichner.wandZugLaeuft() === null, 'f) nach dem Loslassen laeuft kein Zug mehr')
+  /* Der Waechter meldet sich — und zwar auch im GUTEN Fall (W14). Ein Rueckruf,
+     der nur bei Schaden feuert, liesse sich nicht gegenpruefen: man saehe nie,
+     ob er ueberhaupt verdrahtet ist. */
+  const letzter = berichte[berichte.length - 1]
+  pruefe(
+    berichte.length === 1 && letzter && letzter.wandId === trennwand.id,
+    `f) der Zug meldet sich genau EINMAL, mit der richtigen Wand (${berichte.length} Bericht(e))`
+  )
+  pruefe(
+    letzter && letzter.raeumeVerloren === 0 && letzter.waendeVerloren === 0 && letzter.warnt === false,
+    `f) und er meldet KEINEN Schaden — kein Raum weg, keine Wand weg (Raeume ${letzter?.raeumeVorher} -> ${letzter?.raeumeNachher}, Waende ${letzter?.waendeVorher} -> ${letzter?.waendeNachher})`
+  )
   pruefe(
     fp.getRooms().length === 2,
     `f) es sind noch ZWEI Raeume — die Wand ist verschoben, nicht entfernt (${fp.getRooms().length})`

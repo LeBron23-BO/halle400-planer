@@ -328,6 +328,34 @@ export class HalfEdge {
     const vx = v2dx * cs - v2dy * sn
     const vy = v2dx * sn + v2dy * cs
 
+    // --- KOLLINEARE NACHBARN: hier hört die Halbwinkel-Rechnung auf (W14)
+    //
+    // `desiredMag = offset / sn` teilt durch den Sinus des halben Winkels. Der
+    // ist NULL, sobald die beiden Kanten an dieser Ecke in DIESELBE Richtung
+    // zeigen — der Ring läuft dort hin und wieder zurück (ein Wandstumpf).
+    // Dann wird `desiredMag` unendlich, und wo `vx`/`vy` zugleich null sind,
+    // steht `0 * Infinity` da: NaN. Das NaN wandert in `interiorStart/End`,
+    // von dort in die Geometrie, und three meldet bei jedem Bild „Computed
+    // min/max have NaN values".
+    //
+    // Unerreichbar war das nur, solange keine Wand bewegt wurde: der gemessene
+    // Plan hat keine solche Ecke. Mit dem Wand-Zug (W14) entstehen sie —
+    // gemessen 15 Meldungen aus EINEM Zug über 50 cm.
+    //
+    // Für diesen Fall gibt es keine Halbierende, aber sehr wohl eine richtige
+    // Antwort: laufen beide Kanten parallel, ist die Innenkante schlicht die um
+    // `offset` PARALLEL verschobene Achse. Das ist gerechnet und nicht geraten
+    // — der Grenzwert der Halbwinkel-Formel für sn gegen null ist genau das.
+    if (Math.abs(sn) < 1e-9) {
+      const d = Utils.distance(0, 0, v2dx, v2dy)
+      if (d < 1e-9) {
+        return { x: 0, y: 0 }
+      }
+      // Linke Normale auf v2 — dieselbe Seite, auf der die Halbierende bei
+      // einem noch so kleinen Winkel läge.
+      return { x: (-v2dy / d) * this.offset, y: (v2dx / d) * this.offset }
+    }
+
     // normalize
     const mag = Utils.distance(0, 0, vx, vy)
     const desiredMag = this.offset / sn

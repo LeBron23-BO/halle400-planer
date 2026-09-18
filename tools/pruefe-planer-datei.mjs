@@ -813,6 +813,154 @@ if (wand) {
   )
 }
 
+/* ══ G11 — eine WAND ZIEHEN (W14) ═════════════════════════════════════
+   Der Betreiber wollte Waende ziehen koennen „genau wie es auch mit den
+   Moebeln moeglich ist". Das Werkzeug dafuer gab es seit W10 — es WIRKTE nur
+   nicht: `mousemove` schob die Wand um die Zeiger-Differenz und rastete danach
+   ein, und weil eine echte Hand in vielen kleinen Schritten zieht, zog
+   `snapToAxis` (25 cm Toleranz) sie nach JEDEM Schritt auf die Nachbarecke
+   zurueck. Gemessen: ein Zug ueber 50 cm bewegte sie 0 cm, einer ueber 200 cm
+   bewegte sie 45 cm. Sichtbar war davon nichts — kein Fehler, keine Meldung,
+   die Wand klebte einfach.
+
+   Dieses Gate misst darum GENAU DAS, was damals durchgerutscht waere: einen
+   Zug in ZWOELF Schritten. Ein Gate mit EINEM grossen Sprung waere schon vor
+   dem Fehler gruen gewesen (203 von 200 cm) und haette nichts bewiesen.
+
+   Vier Dinge werden gezaehlt, nicht angesehen:
+     a) die Wand liegt nachher dort, wo sie hingezogen wurde (+-3 cm),
+     b) beide Endecken haengen an denselben Nachbarwaenden wie vorher,
+     c) keine Wand und keine Ecke ist dabei verschwunden,
+     d) Rueckgaengig stellt die Ausgangskoordinaten wieder her.
+   Dazu die Gegenprobe: ein Druck OHNE Bewegung darf die Historie nicht fuellen. */
+await klick(seiteB, 'wzWand')
+await seiteB.waitForTimeout(300)
+
+/** Alles, was sich an EINER Wand messen laesst — Lage, Nachbarn, Zahlen. */
+const wandUmfeld = (p, id) =>
+  p.evaluate((wid) => {
+    const alle = window.__planerDatei.waende()
+    const w = alle.find((v) => v.id === wid)
+    if (!w) return null
+    const dran = (v, x, y) =>
+      (Math.abs(v.wax - x) < 0.6 && Math.abs(v.way - y) < 0.6) ||
+      (Math.abs(v.wbx - x) < 0.6 && Math.abs(v.wby - y) < 0.6)
+    return {
+      a: { x: Math.round(w.wax * 10) / 10, y: Math.round(w.way * 10) / 10 },
+      b: { x: Math.round(w.wbx * 10) / 10, y: Math.round(w.wby * 10) / 10 },
+      nachbarnA: alle.filter((v) => v.id !== wid && dran(v, w.wax, w.way)).map((v) => v.id).sort(),
+      nachbarnB: alle.filter((v) => v.id !== wid && dran(v, w.wbx, w.wby)).map((v) => v.id).sort(),
+      zahlen: window.__planerDatei.zahlen()
+    }
+  }, id)
+
+/* Das Ziel wird GERECHNET, nicht gesucht: eine lange Wand mitten im Bild, weit
+   weg von jeder Ecke — sonst griffe der Zeiger die Ecke (sie hat Vorrang) und
+   das Gate maesse einen Ecken-Zug, waehrend es Wand-Zug draufschreibt. */
+const zugZiel = await seiteB.evaluate(() => {
+  const e = window.__planerDatei.ecken()
+  const k = window.__planerDatei.waende()
+    .map((v) => ({
+      id: v.id, mx: (v.ax + v.bx) / 2, my: (v.ay + v.by) / 2,
+      bild: Math.hypot(v.bx - v.ax, v.by - v.ay),
+      dx: v.wbx - v.wax, dy: v.wby - v.way
+    }))
+    .filter((m) =>
+      m.bild > 40 && m.mx > 300 && m.mx < 1300 && m.my > 200 && m.my < 800 &&
+      !e.some((c) => Math.hypot(c.bx - m.mx, c.by - m.my) < 30)
+    )
+  k.sort((a, b) => b.bild - a.bild)
+  return k[0] || null
+})
+pruefe(zugZiel !== null, 'G11: eine Wand zum Ziehen gefunden')
+
+if (zugZiel) {
+  const proCm = await seiteB.evaluate(() => window.__planerDatei.proCm())
+  const laenge = Math.hypot(zugZiel.dx, zugZiel.dy)
+  // QUER zur Wand — laengs bewegt sie sich bauartbedingt nicht, und ein Gate,
+  // das in Laengsrichtung zieht, misst "0 cm" und haelt es fuer einen Fehler.
+  const nx = -zugZiel.dy / laenge
+  const ny = zugZiel.dx / laenge
+  const SOLL_CM = 50
+  const vorher = await wandUmfeld(seiteB, zugZiel.id)
+
+  // Schweben: was hat der Zeiger in der Hand, und zeigt er es?
+  await seiteB.evaluate((q) => window.__planerDatei.maus('mousemove', q.x, q.y), { x: zugZiel.mx, y: zugZiel.my })
+  await seiteB.waitForTimeout(200)
+  const griff = await seiteB.evaluate(() => ({
+    treffer: window.__planerDatei.treffer(),
+    stil: window.__planerDatei.zeigerStil()
+  }))
+  pruefe(
+    griff.treffer.wand === zugZiel.id && griff.stil === 'grab',
+    `G11: der Zeiger fasst die Wand an und zeigt es (${griff.treffer.wand === zugZiel.id ? 'getroffen' : 'daneben'}, Zeiger "${griff.stil}")`
+  )
+
+  // DER ZUG — zwoelf Schritte, wie eine echte Hand.
+  await seiteB.evaluate((q) => window.__planerDatei.maus('mousedown', q.x, q.y), { x: zugZiel.mx, y: zugZiel.my })
+  for (let i = 1; i <= 12; i++) {
+    await seiteB.evaluate(
+      (q) => window.__planerDatei.maus('mousemove', q.x, q.y),
+      { x: zugZiel.mx + (nx * SOLL_CM * proCm * i) / 12, y: zugZiel.my + (ny * SOLL_CM * proCm * i) / 12 }
+    )
+    await seiteB.waitForTimeout(16)
+  }
+  await seiteB.evaluate(
+    (q) => window.__planerDatei.maus('mouseup', q.x, q.y),
+    { x: zugZiel.mx + nx * SOLL_CM * proCm, y: zugZiel.my + ny * SOLL_CM * proCm }
+  )
+  await seiteB.waitForTimeout(500)
+
+  const nachher = await wandUmfeld(seiteB, zugZiel.id)
+  const bericht = await seiteB.evaluate(() => window.__planerDatei.wandZugBericht())
+  const weit = Math.hypot(nachher.a.x - vorher.a.x, nachher.a.y - vorher.a.y)
+  pruefe(
+    Math.abs(weit - SOLL_CM) <= 3,
+    `G11: 50 cm gezogen, ${Math.round(weit)} cm angekommen (${JSON.stringify(vorher.a)} -> ${JSON.stringify(nachher.a)})`
+  )
+  pruefe(
+    JSON.stringify(vorher.nachbarnA) === JSON.stringify(nachher.nachbarnA) &&
+      JSON.stringify(vorher.nachbarnB) === JSON.stringify(nachher.nachbarnB),
+    `G11: beide Endecken haengen noch an denselben Nachbarwaenden (${nachher.nachbarnA.length} + ${nachher.nachbarnB.length})`
+  )
+  pruefe(
+    nachher.zahlen.waende === vorher.zahlen.waende && nachher.zahlen.ecken === vorher.zahlen.ecken,
+    `G11: der Zug hat KEINE Bausubstanz gekostet (${vorher.zahlen.ecken}/${vorher.zahlen.waende} -> ${nachher.zahlen.ecken}/${nachher.zahlen.waende} Ecken/Waende)`
+  )
+  pruefe(
+    bericht && bericht.raeumeVerloren <= 0 && bericht.warnt === false,
+    `G11: der Waechter meldet keinen Schaden (Raeume ${bericht?.raeumeVorher} -> ${bericht?.raeumeNachher}, Strecke ${bericht?.strecke} cm)`
+  )
+
+  // RUECKGAENGIG — derselbe Knopf wie ueberall, kein zweiter daneben.
+  await klick(seiteB, 'btnUndo')
+  await seiteB.waitForTimeout(500)
+  const zurueck = await wandUmfeld(seiteB, zugZiel.id)
+  pruefe(
+    JSON.stringify(zurueck.a) === JSON.stringify(vorher.a) &&
+      JSON.stringify(zurueck.b) === JSON.stringify(vorher.b),
+    `G11: Rueckgaengig stellt genau diesen Zug zurueck (${JSON.stringify(zurueck.a)})`
+  )
+
+  /* GEGENPROBE: ein Druck ohne Bewegung darf die Historie NICHT fuellen.
+     Vorher zog der Zeichner den Schnappschuss schon beim Druecken — ein
+     Fehlgriff auf eine Wand kostete damit einen Rueckgaengig-Schritt, ohne
+     dass sich etwas bewegt haette. */
+  const zurueckVor = await seiteB.evaluate(() => window.__planerDatei.kannZurueck())
+  await seiteB.evaluate((q) => {
+    const m = window.__planerDatei.maus
+    m('mousemove', q.x, q.y); m('mousedown', q.x, q.y); m('mouseup', q.x, q.y)
+  }, { x: zugZiel.mx, y: zugZiel.my })
+  await seiteB.waitForTimeout(400)
+  const zurueckNach = await seiteB.evaluate(() => window.__planerDatei.kannZurueck())
+  const unbewegt = await wandUmfeld(seiteB, zugZiel.id)
+  pruefe(
+    zurueckVor === zurueckNach && JSON.stringify(unbewegt.a) === JSON.stringify(vorher.a),
+    `G11: GEGENPROBE — ein Druck ohne Bewegung aendert nichts und fuellt die Historie nicht (kannZurueck ${zurueckVor} -> ${zurueckNach})`
+  )
+  await seiteB.screenshot({ path: path.join(DIR, 'F_wand_gezogen.png') })
+}
+
 pruefe(
   konsolenFehler.length === 0,
   `G1: auch nach allen Zuegen keine Konsolenfehler (${konsolenFehler.length}${konsolenFehler.length ? ': ' + konsolenFehler.slice(0, 3).join(' | ') : ''})`

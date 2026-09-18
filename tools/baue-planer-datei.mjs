@@ -3031,6 +3031,26 @@ zeichner.addModeResetCallback(function(m){
   arten.setAttribute('aria-hidden', String(!artenAn));
 });
 
+/* ── Der WAND-Zug meldet sich (W14) ──────────────────────────────────
+   Bis hierher rechnete der Kern die Begrenzung einer Wand-Bewegung aus und
+   legte den Grund in \`wandZugHinweis\` ab — und NIEMAND las ihn. Der Nutzer zog
+   eine Wand an die Grenze, sie blieb stehen, und es stand nirgends warum. Eine
+   Auskunft, die nur im Speicher liegt, ist keine.
+
+   Zwei Faelle, und nur der zweite warnt:
+     - BEGRENZT: die Wand ist so weit gegangen, wie sie durfte. Ein Hinweis,
+       keine Warnung — es ist nichts kaputt.
+     - RAUM VERLOREN: der Zug hat einen Raum aufgeloest. Das ist der Schaden,
+       vor dem der ganze Aufwand schuetzen soll; er wird GEMESSEN (Raumzahl vor
+       und nach dem Zug) und nicht vermutet.
+   Der letzte Bericht bleibt liegen, damit ein Gate ihn lesen kann, ohne den
+   deutschen Meldungstext auseinandernehmen zu muessen. */
+let letzterWandZug = null;
+zeichner.addWandZugBerichtCallback(function(b){
+  letzterWandZug = b;
+  if (b.meldung) meldung(b.meldung, b.warnt);
+});
+
 /* ── Öffnungen: Art wählen (W4) ─────────────────────────────────────
    Der Knopf haelt seinen Zustand NIE selbst fuer wahr, sondern folgt dem Kern
    — dieselbe Regel wie bei Werkzeug und Einrasten. Die Breiten stehen NICHT
@@ -4956,6 +4976,11 @@ window.__planerDatei = {
     w.relativeMove(dx, dy);
     return true;
   },
+  /* Was der letzte WAND-Zug bewirkt hat (W14) — Zahlen, nicht Fliesstext:
+     Strecke in cm, Raeume vorher/nachher, Grund einer Begrenzung. Ein Gate,
+     das stattdessen die Meldung durchsuchte, waere beim naechsten
+     Formulierungs-Feilen still gruen geworden. */
+  wandZugBericht: function(){ return letzterWandZug; },
   wandLoeschen: function(id){
     const w = grundriss.getWalls().find(function(v){ return v.id === id; });
     if (!w) return false;

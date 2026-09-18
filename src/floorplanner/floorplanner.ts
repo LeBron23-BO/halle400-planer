@@ -84,6 +84,34 @@ export type LoeschZiel =
   | { art: 'oeffnung'; kennung: string; beschreibung: string }
 
 /**
+ * Was ein beendeter WAND-Zug bewirkt hat (W14).
+ *
+ * Er trägt ZAHLEN und nicht nur einen Satz: die Oberfläche braucht den Satz,
+ * ein Prüfer braucht die Zahlen. Stünde hier nur `meldung`, müsste jedes Gate
+ * deutschen Fliesstext mit einem regulären Ausdruck auseinandernehmen — und
+ * eine geänderte Formulierung machte den Wächter still rot oder, schlimmer,
+ * still grün.
+ */
+export type WandZugBericht = {
+  wandId: string | null
+  /** Wie weit die Wand insgesamt gegangen ist, in cm. */
+  strecke: number
+  raeumeVorher: number
+  raeumeNachher: number
+  /** Positiv = der Zug hat Räume gekostet. Das ist der Schadensfall. */
+  raeumeVerloren: number
+  waendeVorher: number
+  waendeNachher: number
+  /** Positiv = der Zug hat Bausubstanz gekostet. Auch das ist einer. */
+  waendeVerloren: number
+  /** Warum die Bewegung begrenzt wurde — oder null. */
+  grund: string | null
+  /** Was dem Nutzer zu sagen ist — oder null, wenn nichts zu sagen ist. */
+  meldung: string | null
+  warnt: boolean
+}
+
+/**
  * Ein Menü zu einem angetippten Ding (W13) — samt der Stelle, an der es stehen
  * soll.
  *
@@ -194,6 +222,24 @@ const snapTolerance = 25
  * richtig: bei Zoom 1 entspricht das rund 16 cm, also etwa dem alten Wert.
  */
 const GREIF_TOLERANZ_PX = 8
+
+/**
+ * Dasselbe für die FINGERKUPPE (W14) — 22 Bildschirm-Pixel, also eine
+ * Trefferfläche von 44 px im Durchmesser.
+ *
+ * 44 px ist keine gegriffene Zahl, sondern das Mindestmass für berührbare
+ * Ziele (Apple HIG, WCAG 2.5.5). Eine Wand ist im Bild eine LINIE: mit den 8
+ * px der Maus ist sie 16 px breit zu treffen, und eine Kuppe deckt gemessen
+ * rund 45 px ab. Der Nutzer zielt dann auf etwas, das er selbst verdeckt, und
+ * trifft daneben — am Telefon der Normalfall, nicht der Ausnahmefall.
+ *
+ * Warum nicht einfach GREIF_TOLERANZ_PX hochsetzen: bei der Maus wäre dieselbe
+ * Zone schädlich. Sie greift dann im Detail die NACHBARWAND, und beim Zeichnen
+ * nähme die Zone dem Ecken-Fang die Sicht. Zwei Eingabearten mit verschiedenen
+ * Genauigkeiten brauchen verschiedene Zonen — eine gemeinsame wäre für beide
+ * die falsche.
+ */
+const GREIF_TOLERANZ_FINGER_PX = 22
 
 /**
  * Wie weit der Zeiger zwischen Drücken und Loslassen wandern darf, damit es noch
@@ -1071,6 +1117,32 @@ export class Floorplanner {
         this.activeAusstattung = null
       }
     }
+    // --- Eine WAND greifen (W14) — über DENSELBEN Weg wie der Finger.
+    //
+    // Bis hierher nahm die Maus einen eigenen: `mousemove` schob die Wand mit
+    // `relativeMove` um die Zeiger-Differenz und rastete danach ein. Das ist
+    // GEMESSEN unbrauchbar, und zwar genau bei einer echten Hand: eine Hand
+    // bewegt sich in vielen kleinen Schritten, jeder einzelne bleibt unter der
+    // Fang-Toleranz von 25 cm — und `snapToAxis` zieht die Ecke auf die
+    // Nachbarecke ZURÜCK. Gemessen an der Hotelwand w-14b7597f: ein Zug über
+    // 200 cm in zwölf Schritten bewegte sie 45 cm, derselbe Zug über 50 cm
+    // bewegte sie 0 cm. Die Wand klebte, und niemand sah warum.
+    //
+    // Der Finger benutzt seit W8 `zugBeginnen`/`zugSchritt` und damit die
+    // Rechnung in `src/raum/wand-bewegen.js`: ABSOLUT vom Anfasspunkt aus, nur
+    // quer zur Wand, mit gleitenden Endecken. Dort kann kein Weg verloren
+    // gehen, weil jeder Schritt vom Aufsetzpunkt aus neu rechnet statt zu
+    // addieren. Zwei Wege für dieselbe Handlung waren zwei Wahrheiten — und
+    // die schlechtere war die, die der Rechner benutzte.
+    if (this.mode == floorplannerModes.WAND && this.activeWall) {
+      if (!this.zugBeginnen(this.activeWall.id, this.mouseX, this.mouseY)) {
+        // Die Wand gibt es nicht mehr (gelöscht, zurückgespielt). Die Merkung
+        // MUSS weg — sonst sperrte sie über die Schwenk-Bedingung in
+        // `mousemove` die Ansicht an dieser Stelle.
+        this.activeWall = null
+      }
+    }
+
     // --- Eine vorhandene Öffnung greifen (W4). Der Griff-Versatz wird HIER
     // festgehalten, aus demselben Grund wie beim Möbel: sonst spränge eine
     // 1,75 m breite Doppeltür mit ihrer Mitte unter den Zeiger.
@@ -1129,10 +1201,11 @@ export class Floorplanner {
    * und meldet, ob sich dabei etwas geaendert hat (E3, aus `mousemove`
    * herausgezogen — der Finger braucht dieselbe Trefferlogik).
    */
-  private trefferBestimmen(): boolean {
+  private trefferBestimmen(toleranzPx: number = GREIF_TOLERANZ_PX): boolean {
     // Greifzone in Weltkoordinaten umrechnen, damit sie auf dem Bildschirm
-    // bei jedem Zoom gleich gross bleibt (T7).
-    const toleranz = GREIF_TOLERANZ_PX * this.cmPerPixel
+    // bei jedem Zoom gleich gross bleibt (T7). Wie gross sie IN Pixeln ist,
+    // sagt der Aufrufer: die Maus zielt genau, die Fingerkuppe nicht (W14).
+    const toleranz = toleranzPx * this.cmPerPixel
 
     // Ausstattung ist greifbar, solange sie auch GEZEICHNET wird (sonst liesse
     // sich Unsichtbares anfassen) — im Löschen-Werkzeug (E1) und seit W2 auch
@@ -1359,23 +1432,30 @@ export class Floorplanner {
       // Erst hier sichern, nicht schon bei mousedown: ein Druck auf eine Wand
       // ohne Bewegung (oder ein Schwenk der Ansicht) aendert nichts und soll
       // die Historie nicht mit Leerschritten fuellen.
-      if ((this.activeCorner || this.activeWall) && !this.zugGesichert) {
-        this.undoManager?.snapshot()
-        this.zugGesichert = true
-      }
       if (this.activeCorner) {
+        if (!this.zugGesichert) {
+          this.undoManager?.snapshot()
+          this.zugGesichert = true
+        }
+        // Die ECKE wird ABSOLUT auf den Zeiger gesetzt. Deshalb hat sie das
+        // Fang-Problem der Wand nie gehabt: was der Fang zurückzieht, setzt der
+        // nächste Schritt wieder auf die Zeigerlage. Hier bleibt alles, wie es
+        // war — gemessen bewegt ein Zug über 40 cm sie um 38 cm.
         this.activeCorner.move(this.mouseX, this.mouseY)
         this.activeCorner.snapToAxis(snapTolerance)
-      } else if (this.activeWall) {
-        this.activeWall.relativeMove(
-          (this.rawMouseX - this.lastX) * this.cmPerPixel,
-          (this.rawMouseY - this.lastY) * this.cmPerPixel
-        )
-        this.activeWall.snapToAxis(snapTolerance)
-        this.lastX = this.rawMouseX
-        this.lastY = this.rawMouseY
+        this.view.draw()
+      } else if (this.zugWandId) {
+        // Die WAND über denselben Weg wie der Finger (W14, s. `mousedown`).
+        // Den Schnappschuss zieht `wandZugSchritt` selbst, und zwar erst beim
+        // ersten Schritt, der WIRKLICH etwas ändert — ein Druck ohne Wirkung
+        // soll die Historie nicht mit Leerschritten füllen. Vorher stand er
+        // hier oben und feuerte auch bei einem Zug, der nachweislich nichts
+        // bewegte: „Rückgängig" nahm dann einen Schritt zurück, den der Nutzer
+        // gar nicht gemacht hatte.
+        if (this.zugSchritt(this.mouseX, this.mouseY)) {
+          this.view.draw()
+        }
       }
-      this.view.draw()
     }
   }
 
@@ -1609,9 +1689,69 @@ export class Floorplanner {
       // gegen 4 ms ohne). Bei einer Wand ist es zwingender als bei einem Möbel:
       // `update()` leitet die RÄUME ab, und die ändern sich hier wirklich.
       this.floorplan.update()
+
+      // --- Der RAUM-WÄCHTER schlägt hier zu, nach `update()` und nur hier:
+      // vorher sind die Räume noch die alten, und mitten im Zug wäre jede
+      // Zwischenlage ein Fehlalarm.
+      const wand = this.floorplan.getWalls().find((w) => w.id === this.zugWandId)
+      const anker = this.zugWandAnker
+      const strecke =
+        wand && anker ? Math.hypot(wand.getStartX() - anker.x, wand.getStartY() - anker.y) : 0
+      const raeumeNachher = this.floorplan.getRooms().length
+      const waendeNachher = this.floorplan.getWalls().length
+      const verloren = this.zugWandRaeumeVorher - raeumeNachher
+      // WÄNDE werden mitgezählt, nicht nur Räume. Ein Zug kann Bausubstanz
+      // kosten, ohne dass ein Raum aufgeht: verschmilzt eine Endecke mit einer
+      // fremden, fallen deren Wände weg und die Ringe schliessen trotzdem.
+      // Gemessen war genau das der Fall — 650 Wände auf 648, Raumzahl
+      // unverändert 140. Ein Wächter, der nur Räume zählt, hätte das
+      // durchgewinkt.
+      const waendeWeg = this.zugWandWaendeVorher - waendeNachher
+      const saetze: string[] = []
+      if (verloren > 0) {
+        saetze.push(
+          `Dieser Zug hat ${verloren === 1 ? 'einen Raum' : verloren + ' Räume'} aufgelöst — ` +
+            'der Grundriss schliesst dort nicht mehr.'
+        )
+      }
+      if (waendeWeg > 0) {
+        saetze.push(
+          `Dabei ${waendeWeg === 1 ? 'ist eine Wand' : 'sind ' + waendeWeg + ' Wände'} ` +
+            'mit einer anderen Ecke verschmolzen und damit verschwunden.'
+        )
+      }
+      if (saetze.length > 0) {
+        saetze.push('Mit „Rückgängig" ist der Stand von davor sofort wieder da.')
+      }
+      const bericht: WandZugBericht = {
+        wandId: this.zugWandId,
+        strecke: Math.round(strecke),
+        raeumeVorher: this.zugWandRaeumeVorher,
+        raeumeNachher,
+        raeumeVerloren: verloren,
+        waendeVorher: this.zugWandWaendeVorher,
+        waendeNachher,
+        waendeVerloren: waendeWeg,
+        grund: this.zugWandGrundVorher,
+        meldung: saetze.length > 0 ? saetze.join(' ') : this.zugWandGrundVorher,
+        warnt: saetze.length > 0
+      }
       this.zugWandId = null
       this.zugWandStart = null
       this.zugWandHinweis = null
+      this.zugWandAnker = null
+      this.zugWandGrundVorher = null
+      // Der Bericht geht IMMER raus, auch bei einem Zug ohne Wirkung: die
+      // Oberfläche entscheidet, was davon sie zeigt. Ein Rückruf, der nur im
+      // Schadensfall feuert, liesse sich nicht gegenprüfen — und ein Wächter,
+      // der nie im Guten misst, ist keiner.
+      // `?.` und nicht blind: der Kern wird auch OHNE Konstruktor benutzt
+      // (`Object.create(Floorplanner.prototype)` in `pruefe-wand-bewegen.mjs`
+      // — der Zug rechnet, er malt nicht, und eine Leinwand gäbe es dort gar
+      // nicht). Dann existiert die Rückruf-Liste nicht. Ohne diese Frage bräche
+      // dort jeder Zug mit „Cannot read properties of undefined" ab, und der
+      // reine Rechen-Prüfer wäre rot für einen Fehler, den es nicht gibt.
+      this.zugWandBerichtCallbacks?.forEach((cb) => cb(bericht))
     }
     this.zugKennung = null
     this.zugGesichert = false
@@ -1636,12 +1776,38 @@ export class Floorplanner {
   /** Der letzte Grund, warum eine Bewegung begrenzt wurde — die Oberfläche liest ihn. */
   private zugWandHinweis: string | null = null
 
+  /* ── Der RAUM-WÄCHTER (W14) ──────────────────────────────────────────
+     Die Rechnung in `wand-bewegen.js` lässt die Endecken GLEITEN und begrenzt
+     den Zug, bevor ein Raum zum Spalt wird. Das ist die Vorsorge. Sie ersetzt
+     aber keine MESSUNG: ob ein Raum noch schliesst, entscheidet `findRooms`
+     über die Ring-Verfolgung, und die kennt Fälle, die keine Gleitwand vorher
+     sieht (eine Ecke, die beim Verschieben auf eine andere fällt und mit ihr
+     verschmilzt, nimmt einen Ring mit). Ohne diese Zählung verschwände ein
+     Raum STILL: der Name fiele weg, die Fläche im Businessplan würde null,
+     und es gäbe keine einzige Meldung. Genau das ist der Schaden, vor dem der
+     ganze W12b-Aufwand schützen soll — also wird er auch gemessen. */
+  private zugWandRaeumeVorher = 0
+  private zugWandWaendeVorher = 0
+  private zugWandGrundVorher: string | null = null
+  /** Lage der Start-Ecke beim AUFSETZEN — der Bezug für „wie weit ist sie gegangen?". */
+  private zugWandAnker: { x: number; y: number } | null = null
+  private zugWandBerichtCallbacks: Array<(b: WandZugBericht) => void> = []
+
+  /** Meldet nach jedem beendeten Wand-Zug, was er bewirkt hat. */
+  public addWandZugBerichtCallback(callback: (b: WandZugBericht) => void): void {
+    this.zugWandBerichtCallbacks.push(callback)
+  }
+
   private wandZugBeginnen(id: string, weltX: number, weltY: number): boolean {
     const wand = this.floorplan.getWalls().find((w) => w.id === id)
     if (!wand) {
       return false
     }
     this.zugWandId = id
+    this.zugWandRaeumeVorher = this.floorplan.getRooms().length
+    this.zugWandWaendeVorher = this.floorplan.getWalls().length
+    this.zugWandGrundVorher = null
+    this.zugWandAnker = { x: wand.getStartX(), y: wand.getStartY() }
     // Der ANFASSPUNKT, nicht die Wandmitte: gezogen wird relativ dazu, damit die
     // Wand nicht unter dem Zeiger wegspringt (dieselbe Begründung wie der
     // Griff-Versatz bei Möbeln, W2 Punkt 2).
@@ -1692,7 +1858,12 @@ export class Floorplanner {
       const ecke = ecken.find((c) => c.id === neu.id)
       // `Corner.move` benachrichtigt seine Wände; die Räume kommen erst beim
       // `update()` in `zugBeenden` (s. dort).
-      if (ecke) ecke.move(neu.x, neu.y)
+      //
+      // OHNE Verschmelzen (W14): die gleitenden Endecken kommen auf ihrem Weg
+      // zwangsläufig anderen Ecken nahe, und ein Verschmelzen dort frässe
+      // Bausubstanz und liesse die Wand springen. Die Begründung samt Messung
+      // steht bei `Corner.move`.
+      if (ecke) ecke.move(neu.x, neu.y, false)
     }
     // Eine verschobene GEMESSENE Wand ist ein UMBAU und keine Messung mehr. Ohne
     // diese Zeile behauptete der Plan weiter, die Wand sei aufgemessen — und das
@@ -1701,6 +1872,13 @@ export class Floorplanner {
     if (echteWand) echteWand.quelle = 'gesetzt'
     this.zugWandStart = { x: weltX, y: weltY }
     this.zugWandHinweis = ergebnis.begrenzt ? ergebnis.grund ?? null : null
+    // Über den GANZEN Zug festhalten, nicht nur über den letzten Schritt: wer
+    // an die Grenze stösst und dann zurückzieht, hat die Grenze trotzdem
+    // erlebt. Stünde am Ende nur der letzte Schritt da, bekäme genau der
+    // Nutzer keine Auskunft, der sie am nötigsten braucht.
+    if (ergebnis.begrenzt && ergebnis.grund) {
+      this.zugWandGrundVorher = ergebnis.grund
+    }
     return true
   }
 
@@ -2671,7 +2849,7 @@ export class Floorplanner {
       // Kuppe zu verschieben bliebe auch mit Werkzeugwahl ein blinder Griff.
       if (this.mode == floorplannerModes.MOVE || this.mode == floorplannerModes.WAND) {
         this.zeigerSetzen(this.fingerX, this.fingerY)
-        this.trefferBestimmen()
+        this.trefferBestimmen(GREIF_TOLERANZ_FINGER_PX)
         // Im Verschieben-Werkzeug greift der Finger MÖBEL, im Wand-Werkzeug
         // WÄNDE — dieselbe Trennung, die die Maus seit W10 hat, jetzt auch für
         // die Kuppe.
