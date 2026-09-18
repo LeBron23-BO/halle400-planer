@@ -553,6 +553,14 @@
     .nurDruck{display:block}
   }
 
+  /* Auch der AUSDRUCK dieser Fassung traegt keinen Namen. Der Siegel-Satz ist
+     der Echtheitshinweis fuer ein Blatt, das der Betreiber selbst weitergibt —
+     diese Datei gibt er aber aus der Hand, und dann steht ein fremder Name
+     ueber dem Grundriss. Betreiber-Ansage: auch im Ausdruck weg. Das Siegel
+     selbst bleibt in der Datei; wer es pruefen will, kann es jederzeit. */
+  @media print { .siegelDruck { display: none !important } }
+
+
   /* ── NUR DAS MODELL (--nur-modell) ─────────────────────────────────
      Zwei Zeilen Ausgleich fuer zwei Schnitte, beide am Standbild gemessen:
 
@@ -832,7 +840,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "1bfe5de9b161";
-const BAU_STEMPEL = "2026-09-18 12:14";
+const BAU_STEMPEL = "2026-09-18 12:16";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */

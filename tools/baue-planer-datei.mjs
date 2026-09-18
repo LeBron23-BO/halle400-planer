@@ -833,6 +833,14 @@ let html = `<!DOCTYPE html>
     .nurDruck{display:block}
   }
 ${!NUR_MODELL ? '' : `
+  /* Auch der AUSDRUCK dieser Fassung traegt keinen Namen. Der Siegel-Satz ist
+     der Echtheitshinweis fuer ein Blatt, das der Betreiber selbst weitergibt —
+     diese Datei gibt er aber aus der Hand, und dann steht ein fremder Name
+     ueber dem Grundriss. Betreiber-Ansage: auch im Ausdruck weg. Das Siegel
+     selbst bleibt in der Datei; wer es pruefen will, kann es jederzeit. */
+  @media print { .siegelDruck { display: none !important } }
+`}
+${!NUR_MODELL ? '' : `
   /* ── NUR DAS MODELL (--nur-modell) ─────────────────────────────────
      Zwei Zeilen Ausgleich fuer zwei Schnitte, beide am Standbild gemessen:
 
