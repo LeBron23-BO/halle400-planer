@@ -237,6 +237,15 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     // gestrichelte Kontur. Der Ton kommt aus der GELADENEN Palette, nicht aus
     // einer Konstanten — sonst haette das dunkle Thema einen hellen Fleck.
     const zurueck = k.gesetzt ? zahlen(farben.buehneOben) : null
+    /* EIN Kanal fuer EINE Aussage (H4): "diese Angabe ist nicht gesichert".
+       `gesetzt` sagt es ueber die Herkunft (von Hand gesetzt statt gemessen),
+       `unsicher` ueber die Erkennung (eine Tuer, die im Plan nur mit
+       Sicherheit "mittel" oder "schwach" gefunden wurde). Fuer den Betrachter
+       ist es dieselbe Warnung, und sie gehoert darum auf dieselbe gestrichelte
+       Kante — zwei verschiedene Strichelungen waeren eine Unterscheidung, die
+       niemand lesen koennte. Die beiden FELDER bleiben getrennt, damit keine
+       Zaehlung die eine Sorte fuer die andere haelt. */
+    const ungesichert = !!k.gesetzt || !!k.unsicher
     const p = k.punkte
     const n = p.length
 
@@ -249,7 +258,7 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
       // wer eine Flaechenliste in der Hand hat, kann seither sagen, zu WELCHEM
       // Stueck sie gehoert. Kostet ein Feld je Flaeche und macht den Malvorgang
       // nachpruefbar.
-      raus.push({ id: k.id, pts: oben, col: toenen(farbe, [0, 1, 0], zurueck), depth: tiefe / n, gesetzt: !!k.gesetzt })
+      raus.push({ id: k.id, pts: oben, col: toenen(farbe, [0, 1, 0], zurueck), depth: tiefe / n, gesetzt: !!k.gesetzt, ungesichert })
     }
 
     if (k.istBoden) return // Boeden sind flach; ihre Kanten lohnen nicht
@@ -288,7 +297,8 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
         pts: q,
         col: toenen(farbe, [nx, 0, nz], zurueck),
         depth: (q[0].p + q[1].p + q[2].p + q[3].p) / 4,
-        gesetzt: !!k.gesetzt
+        gesetzt: !!k.gesetzt,
+        ungesichert
       })
     }
   }
@@ -326,7 +336,7 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
         ctx.globalAlpha = 1
         ctx.lineWidth = DARSTELLUNG.griffKanteBreite
         ctx.stroke()
-      } else if (f.gesetzt) {
+      } else if (f.ungesichert) {
         ctx.setLineDash(DARSTELLUNG.gesetztStrich)
         ctx.strokeStyle = farben.tinteMatt
         ctx.globalAlpha = DARSTELLUNG.gesetztKanteDeckkraft
@@ -562,6 +572,13 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
 
     const oben = []
     for (const k of szene.waende) flaechenVon(k, richtung, oben)
+    /* Tueren im GLEICHEN Durchgang wie die Waende (H4) und nicht danach: ein
+       Tuerblatt steht quer in seiner Wandoeffnung, es muss also mit ihr
+       zusammen nach Tiefe sortiert werden. Und ANDERS als die Moebel auch im
+       schnellen Bild — waehrend des Ziehens verschwaenden sonst genau die
+       Teile, an denen man sich beim Drehen orientiert. 54 Blaetter kosten
+       neben 526 Wandkacheln nichts. */
+    for (const k of szene.tueren || []) flaechenVon(k, richtung, oben)
     if (!schnell) for (const k of szene.moebel) flaechenVon(k, richtung, oben)
     oben.sort((a, b) => a.depth - b.depth)
     maleFlaechen(oben)

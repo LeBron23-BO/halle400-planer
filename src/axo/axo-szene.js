@@ -332,11 +332,139 @@ export function baueSzene(plan, opt = {}) {
          eine Tuer hat einen Sturz, ein Durchgang auch. Fehlt die Angabe — eine
          Plandatei aus der Zeit vor H1, oder eine, die nie durch das Modell
          gelaufen ist —, bleibt sie 0 und die Luecke geht durch. */
-      sturz: Number.isFinite(o.hoehe) && o.hoehe > 0 ? o.hoehe * CM : 0
+      sturz: Number.isFinite(o.hoehe) && o.hoehe > 0 ? o.hoehe * CM : 0,
+      /* ── WAS EINE TUER ZUR TUER MACHT (H4) ───────────────────────────
+         Bis hierher nahm die Axonometrie von einer Oeffnung nur ihre LUECKE
+         mit. Der Plan weiss aber mehr, und zwar genau das, was ein Betrachter
+         braucht, um eine Tuer als Tuer zu lesen: an welcher Laibung sie
+         haengt (`anschlag`), in welche Richtung sie aufschlaegt (`seite`) und
+         wie sicher sie ueberhaupt erkannt wurde (`sicherheit`). Diese drei
+         Felder sind seit `tools/setze-tueren.mjs` gepflegt; sie hier
+         wegzulassen hiess, eine vorhandene Aussage zu verschweigen. */
+      art: o.art || 'durchgang',
+      anschlag: o.anschlag === 'anfang' ? 'anfang' : 'ende',
+      seite: o.seite === -1 ? -1 : 1,
+      sicherheit: o.sicherheit || 'sicher',
+      kennung: o.id || null
     })
   }
 
+  /* ══ TUEREN, DIE MAN ALS TUEREN ERKENNT (H4) ═══════════════════════════
+     BEFUND: in der Axonometrie war eine Tuer bis hierher NUR eine Luecke in
+     der Wandscheibe (plus Sturz, wo einer sichtbar wird). Das sieht aus wie
+     ein Loch — und 54 Loecher in einem Hotelgeschoss sehen aus wie ein
+     unfertiger Plan, nicht wie 54 Zimmertueren.
+
+     KEINE NEUE BILDSPRACHE, sondern die des Grundrisses, ins Raeumliche
+     uebersetzt. Dort besteht eine Tuer aus Laibungen, Band an einer Laibung,
+     Blatt senkrecht in den Raum und Aufschlagbogen
+     (`floorplanner_view.ts:zeichneBlattUndBogen`). Uebernommen werden davon
+     ZWEI Teile, und die Auslassung ist so begruendet wie die Auswahl:
+
+       · SCHWELLE — ein flaches Plaettchen im Durchgang, 3 cm hoch. Es ist der
+         Teil, der von OBEN traegt, und diese Ansicht schaut von oben: der
+         Blick springt sofort auf die Reihe heller Striche in der Flurwand.
+         Zugleich schliesst es die Bodenfuge, die eine Luecke sonst offen
+         laesst.
+       · BLATT — eine duenne, aufrecht stehende Scheibe, am Band angeschlagen,
+         quer aus der Wand heraus auf die Seite, zu der die Tuer aufschlaegt.
+         Das ist der Teil, der RAEUMLICH traegt: er steht als einziger
+         Koerper quer zu seiner Wand und ist darum aus jeder Blickrichtung als
+         Tuer zu lesen. Er sagt zugleich Anschlag UND Aufschlagrichtung.
+       · KEIN BOGEN. Im Grundriss ist der Viertelkreis die halbe Auskunft, im
+         Raum waere er ein flacher Streifen auf dem Fussboden — ein
+         Plansymbol, das in einer raeumlichen Ansicht wie eine Markierung im
+         Belag aussieht. 54 davon waeren 54 Streifen. Das Blatt sagt dasselbe
+         ohne diesen Preis.
+
+     KEINE SIGNALFARBE: Blatt in `holz`, Schwelle in `stufe` — beide stehen
+     seit der Vorlage in der Palette. Die Erkennungs-SICHERHEIT laeuft nicht
+     ueber Farbe, sondern ueber die KANTE: gestrichelt heisst in diesem Blatt
+     wie im Grundriss „nicht gesichert" (`axo-zeichnen.js`, Herkunfts-
+     Strichelung). Eine unsichere Tuer traegt sie, eine sichere nicht.
+
+     Das Blatt wird auf die SCHNITTHOEHE seiner Wand gestutzt. Ein Blatt, das
+     ueber die aufgeschnittene Wand hinausragte, waere der einzige Koerper im
+     Bild, der die Schnittebene durchstoesst — und saehe nach Fehler aus. */
+  const TUER_BLATT_DICKE = 0.045
+  const TUER_SCHWELLE_HOCH = 0.03
+
+  /** Schwelle und Blatt einer Oeffnung. Masse in METERN, wie die ganze Szene. */
+  function tuerKoerper(pa, ex, ez, dicke, o, hoehe) {
+    // Nur Tueren haben ein Blatt. Ein Durchgang hat keines, ein Fenster auch
+    // nicht — ihm eines zu geben waere eine Bauaussage, die niemand getroffen
+    // hat (dieselbe Regel wie im Grundriss).
+    if (o.art !== 'tuer' && o.art !== 'doppeltuer') return []
+    const breite = o.bis - o.von
+    if (!(breite > 0.05)) return []
+    const nx = -ez
+    const nz = ex
+    const punktAuf = (laengs, quer) => ({
+      x: pa.x + ex * laengs + nx * quer,
+      z: pa.z + ez * laengs + nz * quer
+    })
+    const unsicher = o.sicherheit === 'mittel' || o.sicherheit === 'schwach'
+    const halbe = dicke / 2
+    const stuecke = [
+      {
+        punkte: [
+          punktAuf(o.von, -halbe), punktAuf(o.bis, -halbe),
+          punktAuf(o.bis, halbe), punktAuf(o.von, halbe)
+        ],
+        y0: 0,
+        y1: TUER_SCHWELLE_HOCH,
+        material: 'stufe',
+        id: o.kennung ? o.kennung + '-schwelle' : undefined,
+        typ: 'tuerSchwelle',
+        unsicher
+      }
+    ]
+
+    /* Das Band sitzt an der Laibung, die `anschlag` nennt; das Blatt steht
+       quer dazu auf der Seite, die `seite` nennt. BEIDE Konventionen sind die
+       des Modells (`floorplan.ts:oeffnungsGeometrie` — linke Normale, und
+       `anschlag` als 'anfang'/'ende' entlang der Wand). Hier wird nichts neu
+       ausgelegt; waere es anders, schlueg dieselbe Tuer im Grundriss nach
+       links und im Blatt nach rechts auf. */
+    const band = o.anschlag === 'anfang' ? o.von : o.bis
+    const nachInnen = o.anschlag === 'anfang' ? 1 : -1
+    const fluegel = o.art === 'doppeltuer' ? breite / 2 : breite
+    const q = o.seite * fluegel
+    stuecke.push({
+      punkte: [
+        punktAuf(band, 0), punktAuf(band, q),
+        punktAuf(band + nachInnen * TUER_BLATT_DICKE, q),
+        punktAuf(band + nachInnen * TUER_BLATT_DICKE, 0)
+      ],
+      y0: 0,
+      y1: hoehe,
+      material: 'holz',
+      id: o.kennung ? o.kennung + '-blatt' : undefined,
+      typ: 'tuerBlatt',
+      unsicher
+    })
+    // Eine Doppeltuer hat ZWEI Fluegel, an beiden Laibungen angeschlagen —
+    // `anschlag` hat dort keine Wirkung, genau wie im Grundriss.
+    if (o.art === 'doppeltuer') {
+      stuecke.push({
+        punkte: [
+          punktAuf(o.bis, 0), punktAuf(o.bis, q),
+          punktAuf(o.bis - TUER_BLATT_DICKE, q),
+          punktAuf(o.bis - TUER_BLATT_DICKE, 0)
+        ],
+        y0: 0,
+        y1: hoehe,
+        material: 'holz',
+        id: o.kennung ? o.kennung + '-blatt2' : undefined,
+        typ: 'tuerBlatt',
+        unsicher
+      })
+    }
+    return stuecke
+  }
+
   const waende = []
+  const tueren = []
   for (const w of fp.walls) {
     const a = fp.corners[w.corner1]
     const b = fp.corners[w.corner2]
@@ -373,6 +501,15 @@ export function baueSzene(plan, opt = {}) {
         w.id
       )
     )
+
+    /* Die Tuerkoerper derselben Wand (H4). `ex`/`ez` sind hier die ROHE
+       Differenz und nicht die Einheitsrichtung — normiert wird an dieser
+       einen Stelle, nicht in `tuerKoerper`: dort haette es eine zweite,
+       stillschweigende Annahme ueber die Aufrufer gegeben. */
+    const hoeheHier = aussen ? DARSTELLUNGSHOEHE.wandAussen : DARSTELLUNGSHOEHE.wandInnen
+    for (const o of oeffnungenJeWand.get(w.id) || []) {
+      tueren.push(...tuerKoerper(pa, ex / laenge, ez / laenge, dicke, o, hoeheHier))
+    }
   }
 
   const hoehen = opt.hoehen || { oberkante: {}, koerper: {} }
@@ -395,6 +532,13 @@ export function baueSzene(plan, opt = {}) {
   return {
     boeden,
     waende,
+    /* EIGENE Liste und nicht zu `waende` oder `moebel` geschlagen (H4).
+       `moebel` waere falsch gezaehlt: `axoMoebel()` meldet ihre Zahl an die
+       Gates, und 54 Tuerblaetter haetten die Ausstattungs-Bilanz 292/292 ueber
+       Nacht auf 400 gehoben. `waende` waere falsch gemessen: die Kennzahlen
+       lesen dort Wandflaechen. Eine dritte Liste kostet in `zeichne()` eine
+       Zeile und laesst beide Zaehlungen in Ruhe. */
+    tueren,
     moebel,
     marken,
     raeume,

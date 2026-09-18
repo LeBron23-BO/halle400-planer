@@ -1209,11 +1209,21 @@ ${OHNE_SAEULEN ? '' : `    <div class="grp">
        ein Teil von \`.hinweis\`: dieser Block traegt die Herkunfts-Fussnote,
        die auf 390 px keinen Platz hat und aufs Papier MUSS. -->
   <div class="fingerhinweis" id="fingerhinweis">Ein Finger schiebt &middot; Zwei Finger zoomen und drehen</div>
+</div>
+
 ${
   !NUR_MODELL
     ? ''
     : `
-  <!-- ══ DIE SICHTLEISTE (H3) — NUR in der Weitergabe-Fassung ══════════════
+  <!-- WARUM DIESE LEISTE AUSSERHALB BEIDER ANSICHTEN STEHT (H4, gemessen):
+       sie lag zuerst im Blatt-Umschlag. Beim Umschalten auf den Grundriss
+       bekommt dieser die Klasse \`weg\` (\`visibility:hidden\`), und
+       Sichtbarkeit VERERBT sich — die ganze Leiste war weg, samt des Knopfes,
+       mit dem man zurueckgekommen waere. Gemessen als "element is not visible"
+       beim Klick auf "+". Es ist dieselbe Regel, die seit W7 fuer die
+       Loesch-Rueckfrage gilt: was zu BEIDEN Ansichten gehoert, gehoert in
+       KEINE von beiden. -->
+  <!-- ══ DIE SICHTLEISTE (H3/H4) — NUR in der Weitergabe-Fassung ══════════════
        Betreiber-Auftrag: "mit Auswahl visuellen Buttons alles auch zusaetzlich
        einstellen koennen um es aus allen Sichtweisen zu betrachten."
 
@@ -1230,7 +1240,24 @@ ${
        vorhandene Zuhoerer unten findet diese Knoepfe von selbst, samt
        \`markiere\` fuer den aktiven Blick. Nichts daran ist neu geschrieben. -->
   <div class="leiste sichtleiste" id="sichtleiste" role="toolbar" aria-label="Ansicht wählen">
+    <!-- H4: die beiden Ansichten. DIESELBEN Kennungen wie in der Kopfleiste der
+         Werkstatt-Fassung — und das ist der ganze Trick: \`zeigeAnsicht\` und die
+         zwei Zuhoerer weiter unten greifen ueber \`el(...)\` auf genau diese
+         Kennungen zu und finden sie jetzt hier. Es wird keine zweite
+         Umschalt-Logik gebaut; der Schnitt nimmt nur die Kopfleiste mit, und
+         diese Leiste stellt die Knoepfe an einem anderen Ort wieder hin. -->
     <div class="grp">
+      <button type="button" id="btnAnsichtPlan" aria-pressed="false">Grundriss</button>
+      <button type="button" id="btnAnsichtAxo" aria-pressed="true">Axonometrie</button>
+    </div>
+    <!-- Die Blickrichtungen gehoeren zum raeumlichen Modell und NUR dorthin:
+         ein Grundriss hat genau eine Blickrichtung, senkrecht von oben. Vier
+         Knoepfe, die dort nichts taeten, waeren vier tote Knoepfe — und ein
+         toter Knopf ist schlimmer als ein fehlender, weil man ihn sucht.
+         Zoom und "Gesamt" bleiben stehen: beide haben in BEIDEN Ansichten eine
+         Bedeutung, und eine Leiste, die bei jedem Wechsel ganz anders aussieht,
+         muesste jedes Mal neu gelesen werden. -->
+    <div class="grp" id="grpBlick">
       <span class="lbl">Blick</span>
       <button type="button" data-blick="0">Nord</button>
       <button type="button" data-blick="1">West</button>
@@ -1248,7 +1275,7 @@ ${
     </div>
   </div>
 `
-}</div>
+}
 
 <!-- ── Grundriss: hier wird bearbeitet. ─────────────────────────────── -->
 <div class="ansicht weg" id="plan">
@@ -1976,6 +2003,20 @@ try {
 letzterStand = JSON.stringify(grundriss.saveFloorplan());
 
 const zeichner = new Floorplanner('grundriss-canvas', grundriss);
+${
+  !NUR_MODELL
+    ? ''
+    : `/* H4 — KEINE MASSZAHLEN IM GRUNDRISS DIESER FASSUNG.
+   Betreiber-Ansage woertlich: "bitte keine meterzahlen dazuschreiben bei
+   grundriss." Der Empfaenger soll einen ruhigen Plan sehen, kein Aufmass —
+   \`drawEdgeLabel\` schrieb an jede Wand ueber 60 cm eine Zahl.
+
+   Die Werkstatt-Fassung behaelt sie: dort sind sie das Werkzeug, mit dem man
+   eine Wand zieht und eine Tuer setzt. Darum ein Schalter am Zeichner und kein
+   Eingriff in den Kern — beide Fassungen tragen DENSELBEN uebersetzten Kern
+   (\\\`buendel-kern.mjs\\\`), eine Bau-Weiche gaebe es hier gar nicht. */
+zeichner.masseZeigen = false;`
+}
 
 /* Historie anschliessen — GENAU wie im Planer (src/blueprint3d.ts:57-58).
    \`setUndoManager\` meldet dem UndoManager zugleich, wie die Ansicht ueber ein
@@ -2293,6 +2334,19 @@ function zeigeAnsicht(name, merken){
   planEl.classList.toggle('weg', name !== 'plan');
   el('btnAnsichtAxo').setAttribute('aria-pressed', String(name === 'axo'));
   el('btnAnsichtPlan').setAttribute('aria-pressed', String(name === 'plan'));
+  /* H4: die Blickrichtungen gehoeren zum Modell. Im Grundriss werden sie
+     WEGGENOMMEN und nicht nur blass geschaltet — sie kosten am Telefon eine
+     ganze Leistenreihe, und eine Reihe, die nichts tut, ist verlorene
+     Bildhoehe. \`hidden\` statt \`.platzhalter\`: dort ging es darum, dass die
+     Leiste nicht SPRINGT (V7), hier darum, dass sie schrumpft. */
+  const grpBlick = document.getElementById('grpBlick');
+  if (grpBlick) grpBlick.hidden = name !== 'axo';
+  /* ZUERST den Fuss der Leiste nachziehen, DANN einpassen: mit der Blick-Gruppe
+     faellt eine ganze Leistenreihe weg bzw. kommt zurueck, das Blatt hat also
+     nach dem Wechsel einen anderen Fuss. Umgekehrte Reihenfolge rechnete das
+     Bild einmal mit dem alten — sichtbar als Sprung (dieselbe Falle wie beim
+     Drehen des Telefons, H3). */
+  if (name === 'axo') sichtRandPflegen();
   if (name === 'plan') {
     zeichner.resizeView();
   } else if (axoVeraltet) {
@@ -4082,6 +4136,22 @@ document.querySelectorAll('[data-blick]').forEach(function(b){
 document.querySelectorAll('[data-sicht]').forEach(function(b){
   b.addEventListener('click', function(){
     const was = b.dataset.sicht;
+    /* H4: derselbe Knopf, zwei Ansichten. Welche gemeint ist, sagt \`ansicht\`
+       und nicht der Knopf — sonst braeuchte es zwei Leisten, die sich
+       gegenseitig verdecken. Die AUSFUEHRUNG ist jeweils die vorhandene:
+       im Blatt \`setzeBlick\`/\`zoomeUm\`, im Grundriss \`resizeView\` und
+       \`zoomeAufPunkt\` — genau die zwei Griffe, die auch Rad und zwei Finger
+       dort benutzen (die Lese-Navigation, K3). */
+    if (ansicht === 'plan') {
+      if (was === 'gesamt') { zeichner.resizeView(); return; }
+      const k = el('grundriss-canvas').getBoundingClientRect();
+      zeichner.zoomeAufPunkt(
+        zeichner.getZoom() * (was === 'naeher' ? ZOOM_KNOPF_2D : 1 / ZOOM_KNOPF_2D),
+        k.width / 2,
+        k.height / 2
+      );
+      return;
+    }
     if (was === 'gesamt') {
       /* \`setzeBlick\` setzt AUCH den Zoom auf 1 und die Verschiebung auf 0 —
          genau das macht diesen Knopf zum Rueckweg aus JEDER Lage, und nicht
@@ -4094,6 +4164,12 @@ document.querySelectorAll('[data-sicht]').forEach(function(b){
     axoAnsicht.zoomeUm(was === 'naeher' ? 1 : -1);
   });
 });
+
+/* Derselbe Schritt wie im Blatt (DARSTELLUNG.zoomKnopfSchritt), hier als Zahl:
+   der uebersetzte 2D-Kern kennt den Axonometrie-Kontrakt nicht, und ihn dafuer
+   quer zu verdrahten waere eine Abhaengigkeit fuer eine Konstante. Dass beide
+   1,6 sind, ist Absicht und steht darum an beiden Stellen im Klartext. */
+const ZOOM_KNOPF_2D = 1.6;
 
 /* ── WIE VIEL BLATT DIE SICHTLEISTE VERDECKT (H3) ───────────────────
    GEMESSEN am Element, nicht geschaetzt: am Rechner steht die Leiste in EINER
@@ -5163,6 +5239,17 @@ window.__planerDatei = {
     const p = axoAnsicht.umkehre(bildX, bildY, hoeheM);
     return p ? { x: p.x / CM, y: p.z / CM } : null;
   },
+  /* H4: die TUERKOERPER des Blattes — Schwelle und Blatt je Oeffnung.
+     Read-only, wie der ganze Messzugang. Ohne ihn muesste ein Gate aus
+     Bildpunkten raten, ob eine Tuer als Tuer gezeichnet wurde, und genau
+     daran ist schon einmal fuenf Wellen lang vorbeigemessen worden (K3). */
+  axoTueren: function(){
+    if (!axoAnsicht || !axoAnsicht.szene || !axoAnsicht.szene.tueren) return [];
+    return axoAnsicht.szene.tueren.map(function(k){
+      return { id: k.id || null, typ: k.typ, unsicher: !!k.unsicher,
+               material: k.material, y0: k.y0, y1: k.y1, ecken: k.punkte.length };
+    });
+  },
   axoMoebel: function(){
     if (!szene) return null;
     return szene.moebel.map(function(k){
@@ -5425,6 +5512,10 @@ if (NUR_ANSICHT) {
    `<input>` bleibt bei null: ein Eingabefeld ist in einem Blatt zum Ansehen
    nach wie vor nicht zu erklaeren. */
 const ERLAUBTE_KNOEPFE = [
+  // H4: die beiden Ansichten. Sie tragen KEIN `data-`, sondern die Kennungen
+  // der Werkstatt-Kopfleiste — genau daran haengt der vorhandene Umschalter,
+  // und ein zweites Merkmal nur fuer diese Pruefung waere eine zweite Wahrheit.
+  'id="btnAnsichtPlan"', 'id="btnAnsichtAxo"',
   'data-blick="0"', 'data-blick="1"', 'data-blick="2"', 'data-blick="3"',
   'data-sicht="gesamt"', 'data-sicht="naeher"', 'data-sicht="weiter"'
 ]
@@ -5494,7 +5585,7 @@ console.log(`  Namen:        ${namen.size} Bezeichner geprueft, keine Kollision`
    Schaltflaechen" behauptet, und genau so eine Zeile bleibt nach einem Umbau
    stehen und wird zur Luege, der niemand widerspricht — der Bauer ist die
    einzige Stelle, an der der Betreiber diese Zahl je zu Gesicht bekommt. */
-if (NUR_ANSICHT) console.log(`  Schnitt:      ${ANSICHT_BERICHT.bloecke} ${NUR_MODELL ? 'Bedien-Bloecke' : 'Werkstatt-Bloecke'} entfernt, ${ANSICHT_BERICHT.kennungen} Kennungen verschwunden (${NUR_MODELL ? `NUR MODELL — ${ERLAUBTE_KNOEPFE.length} Ansichts-Knoepfe (Kamera), 0 Eingabefelder, nichts zum Verstellen` : 'reine ANSICHT'})`)
+if (NUR_ANSICHT) console.log(`  Schnitt:      ${ANSICHT_BERICHT.bloecke} ${NUR_MODELL ? 'Bedien-Bloecke' : 'Werkstatt-Bloecke'} entfernt, ${ANSICHT_BERICHT.kennungen} Kennungen verschwunden (${NUR_MODELL ? `NUR MODELL — ${ERLAUBTE_KNOEPFE.length} Knoepfe zum ANSEHEN (2 Ansichten, 4 Blicke, Gesamt, Zoom), 0 Eingabefelder, nichts zum Verstellen` : 'reine ANSICHT'})`)
 if (SIEGEL_WEG) console.log(`  Ohne Namen:   ${SIEGEL_BERICHT.abschnitte} Siegel-Abschnitte entfernt — 0× der Name, 0× das Wort „Siegel" (gemessen am Ergebnis)`)
 console.log(`  Plan-Abdruck: ${PLAN_ABDRUCK} (Speicher-Schluessel je Plan UND Ablageort)`)
 console.log(`  Bau-Stempel:  ${BAU_STEMPEL}`)

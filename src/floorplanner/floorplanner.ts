@@ -464,6 +464,24 @@ export class Floorplanner {
    */
   public einrasten = true
 
+  /**
+   * Schreibt der Grundriss seine WANDMASSE an die Wände? (H4)
+   *
+   * Standard `true` — in der Werkstatt sind die Zahlen das Werkzeug: wer eine
+   * Wand zieht oder eine Tür setzt, liest an ihnen ab, was er tut. Ohne sie
+   * wäre der Planer blind.
+   *
+   * Betreiber-Ansage für die WEITERGABE-Fassung, wörtlich: „bitte keine
+   * meterzahlen dazuschreiben bei grundriss." Dort ist der Plan kein Werkzeug
+   * mehr, sondern ein Blatt, das jemand ansieht — und über hundert Maßzahlen
+   * sind auf einem Blatt kein Aufmaß, sondern Rauschen.
+   *
+   * Ein FELD und kein Baubefehl: derselbe übersetzte Kern steckt in beiden
+   * Fassungen (`buendel-kern.mjs`), ein `#if` gäbe es hier gar nicht. Die
+   * Hülle sagt beim Start, was sie ist; der Kern bleibt einer.
+   */
+  public masseZeigen = true
+
   /** Meldet der Oberfläche, dass sich `einrasten` geändert hat (Knopfzustand). */
   private einrastCallbacks: Array<(an: boolean) => void> = []
 

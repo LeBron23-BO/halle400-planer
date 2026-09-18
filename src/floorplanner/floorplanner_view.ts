@@ -292,6 +292,14 @@ export class FloorplannerView {
 
   /** */
   private drawWallLabels(wall: Wall) {
+    /* H4 — die WEITERGABE-Fassung zeigt keine Maßzahlen. Die Bremse sitzt hier
+       und nicht in `draw()`: hier ist die EINZIGE Stelle, an der eine Maßzahl
+       entsteht, und eine Abfrage weiter oben hätte dieselbe Wirkung an einem
+       Ort, der morgen noch etwas anderes malt. Gemessen wird die Wirkung an
+       `strokeText`/`fillText` der ausgelieferten Datei — nicht an dieser Zeile. */
+    if (!this.viewmodel.masseZeigen) {
+      return
+    }
     // we'll just draw the shorter label... idk
     if (wall.backEdge && wall.frontEdge) {
       if (wall.backEdge.interiorDistance < wall.frontEdge.interiorDistance) {

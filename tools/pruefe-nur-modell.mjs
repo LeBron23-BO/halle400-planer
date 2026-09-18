@@ -122,6 +122,20 @@ page.on('console', (m) => { if (m.type() === 'error') konsole.push(m.text().slic
 page.on('pageerror', (e) => konsole.push('PAGE-ERR: ' + String(e).slice(0, 200)))
 page.on('requestfailed', (r) => { if (!r.url().startsWith('file://')) konsole.push('NETZ: ' + r.url().slice(0, 120)) })
 
+/* H4 — DER MASSZAHL-ZAEHLER, eingehaengt VOR jedem Skript der Datei.
+   Gezaehlt wird am echten Canvas-Befehl `fillText` und nicht an einer Zeile
+   Quelltext: eine Zeile, die vielleicht gar nicht laeuft, beweist nichts, und
+   ein Bildvergleich saehe eine Maßzahl neben einer Wandkante nicht. Rein
+   lesend — der urspruengliche Befehl wird unveraendert weitergereicht. */
+await page.addInitScript(() => {
+  window.__masse = []
+  const echt = CanvasRenderingContext2D.prototype.fillText
+  CanvasRenderingContext2D.prototype.fillText = function (t) {
+    window.__masse.push(String(t))
+    return echt.apply(this, arguments)
+  }
+})
+
 await page.goto(pathToFileURL(DATEI).href)
 await page.waitForFunction(() => window.__bereit === true, { timeout: 30000 })
 // Das Siegel wird ASYNCHRON geprueft und schreibt danach in den Blattkopf.
@@ -144,7 +158,11 @@ const bestand = await page.evaluate(() => ({
   knopfKennungen: [...document.querySelectorAll('button')].map((b) =>
     b.dataset.blick !== undefined ? 'blick=' + b.dataset.blick
       : b.dataset.sicht !== undefined ? 'sicht=' + b.dataset.sicht
-        : 'FREMD:' + (b.id || b.textContent.replace(/\s+/g, ' ').trim().slice(0, 30))
+        // H4: die zwei Ansichts-Knoepfe tragen die Kennungen der
+        // Werkstatt-Kopfleiste — daran haengt der vorhandene Umschalter.
+        : b.id === 'btnAnsichtPlan' ? 'ansicht=plan'
+          : b.id === 'btnAnsichtAxo' ? 'ansicht=axo'
+            : 'FREMD:' + (b.id || b.textContent.replace(/\s+/g, ' ').trim().slice(0, 30))
   ).sort(),
   felder: document.querySelectorAll('input,select,textarea').length,
   /* Die Sichtleiste ist die EINZIGE erlaubte Leiste. Kopfleiste, Standleiste,
@@ -175,6 +193,11 @@ console.log(JSON.stringify(bestand, null, 1))
    woertlich auf dieser Liste steht, wird als FREMD gemeldet — samt seiner
    Kennung oder Aufschrift, damit man weiss, wo man suchen muss. */
 const ERLAUBTE_KNOEPFE = [
+  // H4: Betreiber-Ansage "der kunde soll grundriss und axonometrie sehen
+  // koennen. alles andere soll nicht zu sehen sein, nur diese beiden
+  // versionen." Die Liste WAECHST um genau diese zwei — sie wird nicht weicher:
+  // geprueft wird weiterhin auf GLEICHHEIT, ein neunter Knopf faellt durch.
+  'ansicht=plan', 'ansicht=axo',
   'blick=0', 'blick=1', 'blick=2', 'blick=3',
   'sicht=gesamt', 'sicht=naeher', 'sicht=weiter'
 ].sort()
@@ -191,7 +214,15 @@ pruefe(bestand.felder === 0, `2) KEIN Eingabefeld im Dokument (${bestand.felder}
 pruefe(bestand.sichtleisten === 1, `2) genau EINE Sichtleiste (${bestand.sichtleisten})`)
 pruefe(bestand.leisten === 0, `2) KEINE weitere Bedienleiste im Dokument (${bestand.leisten})`)
 pruefe(bestand.dialoge === 0, `2) KEIN Menue und keine Rueckfrage im Dokument (${bestand.dialoge})`)
-pruefe(bestand.planWeg.startsWith('hidden/none/false'), `2) der Grundriss-Zeichner ist unerreichbar (${bestand.planWeg})`)
+/* H4 — DIESE PRUEFUNG HAT IHREN SINN GEWECHSELT, NICHT IHRE SCHAERFE.
+   Bis hierher hiess sie "der Grundriss-Zeichner ist UNERREICHBAR": es gab
+   keinen Umschalter, also durfte er nie nach vorn kommen. Seit dem
+   Betreiber-Auftrag ist er ausdruecklich eine der zwei Ansichten. Geprueft
+   wird darum jetzt der ZUSTAND BEIM AUFSCHLAGEN — vorn liegt das Modell, der
+   Grundriss ruht und nimmt keinen Zeiger an. Das ist dieselbe Aussage wie
+   vorher fuer den Augenblick, in dem die Datei geoeffnet wird; dass man ihn
+   holen KANN, wird gleich unten eigens gemessen. */
+pruefe(bestand.planWeg.startsWith('hidden/none/false'), `2) beim Aufschlagen ruht der Grundriss (${bestand.planWeg})`)
 
 // ── 2) KLICK-PROBE ────────────────────────────────────────────────────────
 // Der Abdruck traegt JEDES Element mit allen Attributen, seinem hidden-Zustand
@@ -378,6 +409,102 @@ pruefe(
   `5) "Gesamt" stellt das Anfangsbild EXAKT wieder her (${JSON.stringify(zurueck)})`
 )
 await page.screenshot({ path: path.join(AUS, 'sichtleiste.png') })
+
+// ── 6) BEIDE ANSICHTEN, KEINE MASSZAHLEN, ERKENNBARE TUEREN (H4) ─────────
+const sichtbar = (id) =>
+  page.evaluate(
+    (i) => document.getElementById(i).checkVisibility({ opacityProperty: true, visibilityProperty: true }),
+    id
+  )
+const stand = async () => ({
+  ansicht: await page.evaluate(() => window.__planerDatei.ansicht()),
+  blatt: await sichtbar('blatt'),
+  plan: await sichtbar('plan'),
+  leiste: await sichtbar('sichtleiste'),
+  blick: await sichtbar('grpBlick')
+})
+console.log('\n── Beide Ansichten ──')
+const vorUmschalten = await stand()
+await druecke('#btnAnsichtPlan')
+const imGrundriss = await stand()
+await druecke('#btnAnsichtAxo')
+const zurueckImBlatt = await stand()
+console.log(`  Start:     ${JSON.stringify(vorUmschalten)}`)
+console.log(`  Grundriss: ${JSON.stringify(imGrundriss)}`)
+console.log(`  zurueck:   ${JSON.stringify(zurueckImBlatt)}`)
+pruefe(
+  imGrundriss.ansicht === 'plan' && imGrundriss.plan === true && imGrundriss.blatt === false,
+  `6) "Grundriss" holt den Grundriss nach vorn (${JSON.stringify(imGrundriss)})`
+)
+/* Die Leiste MUSS in beiden Ansichten stehen — sie lag erst im Blatt-Umschlag
+   und verschwand beim Wechsel mit ihm, samt des Knopfes zurueck. Ein Gate, das
+   nur die Ansicht misst, haette genau das durchgelassen. */
+pruefe(imGrundriss.leiste === true, `6) und die Sichtleiste bleibt dabei stehen (${imGrundriss.leiste})`)
+pruefe(
+  imGrundriss.blick === false && zurueckImBlatt.blick === true,
+  `6) die Blickrichtungen gibt es nur im Modell (Grundriss ${imGrundriss.blick}, Blatt ${zurueckImBlatt.blick})`
+)
+pruefe(
+  zurueckImBlatt.ansicht === 'axo' && zurueckImBlatt.blatt === true && zurueckImBlatt.plan === false,
+  `6) "Axonometrie" holt das Modell zurueck (${JSON.stringify(zurueckImBlatt)})`
+)
+
+/* KEINE MASSZAHLEN — gemessen am echten Canvas-Befehl und nicht an einer Zeile
+   Quelltext: der Zaehler haengt vor dem ersten Skript an `fillText`, zaehlt
+   also jeden Text, den der Grundriss WIRKLICH malt. Betreiber-Ansage:
+   "bitte keine meterzahlen dazuschreiben bei grundriss." */
+await druecke('#btnAnsichtPlan')
+await page.evaluate(() => { window.__masse = [] })
+await page.evaluate(() => window.__planerDatei.neuZeichnen())
+await page.waitForTimeout(400)
+const masse = await page.evaluate(() => ({
+  gesamt: window.__masse.length,
+  meter: window.__masse.filter((t) => /^-?[\d.,]+\s*m$/.test(String(t).trim())).length,
+  beispiele: window.__masse.slice(0, 5)
+}))
+console.log(`  Texte im Grundriss: ${masse.gesamt}, davon Meterzahlen: ${masse.meter}`)
+pruefe(masse.meter === 0, `6) KEINE Meterzahl im Grundriss (${masse.meter} von ${masse.gesamt} Texten)`)
+await page.screenshot({ path: path.join(AUS, 'grundriss-ohne-masse.png') })
+await druecke('#btnAnsichtAxo')
+
+/* TUEREN als Tueren. Gemessen an den KOERPERN der Szene: je Tuer eine Schwelle
+   und ein Blatt. Und die Erkennungs-Sicherheit muss ankommen — eine Tuer, die
+   der Plan nur mit "mittel"/"schwach" gefunden hat, traegt im Blatt dieselbe
+   gestrichelte Kante wie alles Ungesicherte. */
+const tueren = await page.evaluate(() => {
+  const t = window.__planerDatei.axoTueren()
+  const o = window.__planerDatei.oeffnungen().filter((x) => x.art === 'tuer' && !x.verwaist)
+  return {
+    koerper: t.length,
+    blaetter: t.filter((k) => k.typ === 'tuerBlatt').length,
+    schwellen: t.filter((k) => k.typ === 'tuerSchwelle').length,
+    unsicher: t.filter((k) => k.unsicher).length,
+    materialien: [...new Set(t.map((k) => k.material))].sort(),
+    tuerenImPlan: o.length,
+    unsicherImPlan: o.filter((x) => x.sicherheit === 'mittel' || x.sicherheit === 'schwach').length
+  }
+})
+console.log(`  Tueren: ${tueren.tuerenImPlan} im Plan -> ${tueren.blaetter} Blaetter + ${tueren.schwellen} Schwellen`)
+console.log(`  davon unsicher: ${tueren.unsicherImPlan} im Plan -> ${tueren.unsicher} Koerper mit Strichel-Kante`)
+pruefe(
+  tueren.blaetter === tueren.tuerenImPlan && tueren.schwellen === tueren.tuerenImPlan,
+  `6) JEDE Tuer bekommt Blatt und Schwelle (${tueren.tuerenImPlan} Tueren -> ${tueren.blaetter}/${tueren.schwellen})`
+)
+pruefe(
+  tueren.unsicher === tueren.unsicherImPlan * 2,
+  `6) und jede UNSICHERE traegt es weiter (${tueren.unsicherImPlan} x 2 = ${tueren.unsicherImPlan * 2}, gefunden ${tueren.unsicher})`
+)
+/* GEGENPROBE zur Zahl: waeren alle gleich, sagte die Zahl nichts. Es muss
+   BEIDE Sorten geben, sonst prueft dieser Satz eine Unterscheidung, die im
+   Bild gar nicht vorkommt. */
+pruefe(
+  tueren.unsicher > 0 && tueren.unsicher < tueren.koerper,
+  `6) GEGENPROBE: sichere UND unsichere Tueren im selben Bild (${tueren.koerper - tueren.unsicher} sicher, ${tueren.unsicher} unsicher)`
+)
+pruefe(
+  JSON.stringify(tueren.materialien) === JSON.stringify(['holz', 'stufe']),
+  `6) keine Signalfarbe — Blatt in Holz, Schwelle in Stufe (${tueren.materialien.join(', ')})`
+)
 
 pruefe(konsole.length === 0, `3) bis zum Ende kein Konsolenfehler (${konsole.length})${konsole.length ? ' :: ' + konsole.join(' | ') : ''}`)
 
