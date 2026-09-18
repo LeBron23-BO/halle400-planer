@@ -2220,6 +2220,7 @@
     "art": "trennwand"
    },
    {
+    "id": "w-013f19d7-52f184e3",
     "corner1": "013f19d7-36da-4519-44b3-c72577ddc733",
     "corner2": "52f184e3-2e9c-2f7e-d2de-d4168eac5018",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt kopf-west, beleg_kopf-west.png - Luecke 805..880 = Durchgang",
@@ -2400,6 +2401,7 @@
     "art": "trennwand"
    },
    {
+    "id": "w-a5e8c33e-417d1cd1",
     "corner1": "a5e8c33e-9551-a2d2-b94b-945982961f03",
     "corner2": "417d1cd1-b493-b35a-e625-b81998c77f2d",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt kopf-west, beleg_kopf-west.png - Doppellinie 476/515; Ostwand Treppenhaus",
@@ -2622,6 +2624,7 @@
     "art": "trennwand"
    },
    {
+    "id": "w-cfdd209e-30083a4a",
     "corner1": "cfdd209e-36a7-93f9-6020-3afe9646fd7c",
     "corner2": "30083a4a-fc8d-f043-e972-43d7e17935ec",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Nord-Laengswand zwischen Nordstreifen und Nordraeumen, Westteil; Achse 2,18 m",
@@ -2634,6 +2637,7 @@
     "art": "trennwand"
    },
    {
+    "id": "w-8417beb1-11a24b98",
     "corner1": "8417beb1-4cba-9d4e-f0b2-79504e6971e2",
     "corner2": "11a24b98-46fc-d7c4-bdb4-fd2abf281fe8",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - dieselbe Wand oestlich der Oeffnung 2055..2085; Achse 2,03 m - 15 cm Freihand-Drift",
@@ -2664,6 +2668,7 @@
     "art": "trennwand"
    },
    {
+    "id": "w-aeba82f1-ad9e56f3",
     "corner1": "aeba82f1-1400-8037-c8ef-3438688db6b4",
     "corner2": "ad9e56f3-5473-19c9-7884-7c8bc5795e94",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - dieselbe Wand oestlich der Oeffnung 2055..2085; Achse 2,03 m - 15 cm Freihand-Drift",
@@ -2706,6 +2711,7 @@
     "art": "flur"
    },
    {
+    "id": "w-a2e26d5c-945e0f7c",
     "corner1": "a2e26d5c-90a0-1a25-6df9-8cf5dd04c965",
     "corner2": "945e0f7c-55dd-837b-0af9-397c6d3954ee",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Flur-Nordwand, Ostteil; Tueroeffnung 2855..2895",
@@ -2724,6 +2730,7 @@
     "art": "flur"
    },
    {
+    "id": "w-be9c6279-e50376ec",
     "corner1": "be9c6279-e727-bae4-27bd-64eccfe2ae5f",
     "corner2": "e50376ec-9e9c-d085-0153-291d578de33e",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Flur-Suedwand, durchgehend; Tueroeffnungen bei 1375-1415, 1635-1665, 2045-2080, 2295-2320, 2720-2770, 2965-3015, 3395-3450",
@@ -2748,6 +2755,7 @@
     "art": "flur"
    },
    {
+    "id": "w-6da2e929-37d53a3f",
     "corner1": "6da2e929-d7c2-526f-7b6f-ba06eaf14f65",
     "corner2": "37d53a3f-65e8-9b29-6aa2-6606f8c24e59",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Flur-Suedwand, durchgehend; Tueroeffnungen bei 1375-1415, 1635-1665, 2045-2080, 2295-2320, 2720-2770, 2965-3015, 3395-3450",
@@ -2784,6 +2792,7 @@
     "art": "flur"
    },
    {
+    "id": "w-939eae92-2ecf1c11",
     "corner1": "939eae92-2cb0-c720-47a8-b68fa0bd8bdb",
     "corner2": "2ecf1c11-b4a2-9423-68bc-11498252a78d",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Flur-Suedwand, durchgehend; Tueroeffnungen bei 1375-1415, 1635-1665, 2045-2080, 2295-2320, 2720-2770, 2965-3015, 3395-3450",
@@ -2796,6 +2805,7 @@
     "art": "flur"
    },
    {
+    "id": "w-d6fe6f6f-0e93eacd",
     "corner1": "d6fe6f6f-ed18-d2cb-f757-5ae3da0d1dc4",
     "corner2": "0e93eacd-96f2-cfde-2f08-79e422ed2f9a",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Flur-Suedwand, durchgehend; Tueroeffnungen bei 1375-1415, 1635-1665, 2045-2080, 2295-2320, 2720-2770, 2965-3015, 3395-3450",
@@ -2814,6 +2824,7 @@
     "art": "flur"
    },
    {
+    "id": "w-d57b645c-63f1df83",
     "corner1": "d57b645c-8054-2218-d6d0-aa9bdc2408bf",
     "corner2": "63f1df83-96d2-fec2-9522-81cc5abff8b3",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Flur-Suedwand, durchgehend; Tueroeffnungen bei 1375-1415, 1635-1665, 2045-2080, 2295-2320, 2720-2770, 2965-3015, 3395-3450",
@@ -2922,12 +2933,14 @@
     "art": "trennwand"
    },
    {
+    "id": "w-06bf0a98-3a60bafd",
     "corner1": "06bf0a98-5493-1fa2-4ab4-64c955e01e85",
     "corner2": "3a60bafd-4a5b-b54c-a7e3-b5f45358dd32",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Nordwand des Suedstreifens, ueber den ganzen Abschnitt ohne Unterbrechung; Achse 12,89 m",
     "art": "trennwand"
    },
    {
+    "id": "w-3a60bafd-20fc5d7d",
     "corner1": "3a60bafd-4a5b-b54c-a7e3-b5f45358dd32",
     "corner2": "20fc5d7d-0ed3-0cff-8164-c743683aa4fb",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt mitte-west, beleg_mitte-west.png - Nordwand des Suedstreifens, ueber den ganzen Abschnitt ohne Unterbrechung; Achse 12,89 m",
@@ -3486,6 +3499,7 @@
     "art": "aussen"
    },
    {
+    "id": "w-f125449f-8f80799a",
     "corner1": "f125449f-4ce4-a9c0-27db-6812a29e959d",
     "corner2": "8f80799a-a305-3f18-2b2a-8e3000c91da8",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Nord: Rueckwand der Fassadenzone",
@@ -3516,6 +3530,7 @@
     "art": "trennwand"
    },
    {
+    "id": "w-f68137c2-790e02d6",
     "corner1": "f68137c2-8746-ea72-5a0a-cb23ca84c9f4",
     "corner2": "790e02d6-a12e-79ad-aa3d-446ba35eb790",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Nord: Rueckwand der Fassadenzone",
@@ -3528,6 +3543,7 @@
     "art": "trennwand"
    },
    {
+    "id": "w-7fcc5c9f-e9b8e44f",
     "corner1": "7fcc5c9f-16b7-17ed-ab93-64f1c1da524f",
     "corner2": "e9b8e44f-b758-38c5-a49a-18112cf0a136",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Nord: Rueckwand der Fassadenzone",
@@ -3582,6 +3598,7 @@
     "art": "trennwand"
    },
    {
+    "id": "w-f4d8c7d2-48d7fb87",
     "corner1": "f4d8c7d2-61a6-e691-4f34-e14de17e5ec3",
     "corner2": "48d7fb87-5e12-727a-d904-3607154e56b6",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Nord-Flurwand; Luecken sind Tueroeffnungen",
@@ -3618,6 +3635,7 @@
     "art": "flur"
    },
    {
+    "id": "w-7fd485d5-fd1b27ff",
     "corner1": "7fd485d5-dd0d-92bf-1fd4-4e8c3211fa12",
     "corner2": "fd1b27ff-5433-85aa-c4a4-d5a1e189bd66",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Nord-Flurwand",
@@ -3642,6 +3660,7 @@
     "art": "flur"
    },
    {
+    "id": "w-a9acc314-af53b58d",
     "corner1": "a9acc314-7fe1-00cf-0d6c-7edb4b0101d3",
     "corner2": "af53b58d-ec4d-2a43-887c-67c8ac2810c3",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Nord-Flurwand",
@@ -3990,6 +4009,7 @@
     "art": "trennwand"
    },
    {
+    "id": "w-77f19bac-306d2acf",
     "corner1": "77f19bac-cd45-77e7-e69b-6ef7f9d44c58",
     "corner2": "306d2acf-df01-e565-93b5-cdcd9016875e",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Rueckwand der Fassadenzone, durchgehend",
@@ -4008,6 +4028,7 @@
     "art": "trennwand"
    },
    {
+    "id": "w-428ff527-17064109",
     "corner1": "428ff527-7593-1fba-115d-6c268e004bf0",
     "corner2": "17064109-5a9a-da26-6f83-88086d6bb64c",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Rueckwand der Fassadenzone, durchgehend",
@@ -4026,6 +4047,7 @@
     "art": "trennwand"
    },
    {
+    "id": "w-8e10dd4c-461310ce",
     "corner1": "8e10dd4c-4b12-55fc-d9ce-03a9ce6b593f",
     "corner2": "461310ce-7639-7033-7a3f-331f53fd8667",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Rueckwand der Fassadenzone, durchgehend",
@@ -4044,6 +4066,7 @@
     "art": "trennwand"
    },
    {
+    "id": "w-dd74d48b-9cbbf6e4",
     "corner1": "dd74d48b-4201-6ede-0c71-2b36b1c9f056",
     "corner2": "9cbbf6e4-d8b0-bb6a-e359-6cfc9483912d",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Rueckwand der Fassadenzone, durchgehend",
@@ -4062,6 +4085,7 @@
     "art": "trennwand"
    },
    {
+    "id": "w-d2873f0a-99076f0a",
     "corner1": "d2873f0a-5c4f-d5e5-06f2-6bfa22950639",
     "corner2": "99076f0a-0eeb-0923-e8d2-ef50f4dae74f",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Rueckwand der Fassadenzone, durchgehend",
@@ -4080,6 +4104,7 @@
     "art": "trennwand"
    },
    {
+    "id": "w-0f14bf61-b8f78422",
     "corner1": "0f14bf61-8850-1424-d3d6-25c29918c50c",
     "corner2": "b8f78422-f928-57e2-53b8-e0d0ca643e83",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Rueckwand der Fassadenzone, durchgehend",
@@ -4098,6 +4123,7 @@
     "art": "trennwand"
    },
    {
+    "id": "w-6258ecb1-4678d296",
     "corner1": "6258ecb1-90ad-6400-d4a4-ade579850240",
     "corner2": "4678d296-0e7a-830f-d9c6-09c6f236d3cb",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Rueckwand der Fassadenzone, durchgehend",
@@ -4116,6 +4142,7 @@
     "art": "trennwand"
    },
    {
+    "id": "w-31a044a3-349b12ca",
     "corner1": "31a044a3-c4ef-63fe-7259-5c3a8d2a4c65",
     "corner2": "349b12ca-c667-ea11-d383-a0acd78c1326",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Sued: Rueckwand der Fassadenzone, durchgehend",
@@ -5190,6 +5217,7 @@
     "art": "trennwand"
    },
    {
+    "id": "w-0fcbc077-212b1460",
     "corner1": "0fcbc077-1321-28b8-bfb4-69e5ac01a4e0",
     "corner2": "212b1460-e263-3bc0-ddad-20f5899c9878",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png (unsicher)",
@@ -5334,6 +5362,7 @@
     "art": "trennwand"
    },
    {
+    "id": "w-3a30792e-74a04f8a",
     "corner1": "3a30792e-eb5b-aad2-b482-873024b66e3f",
     "corner2": "74a04f8a-469c-efec-1cb4-9fb90291620f",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt ost, beleg_ost.png - Flur-Nordwand",
@@ -5364,12 +5393,14 @@
     "art": "flur"
    },
    {
+    "id": "w-5d2d8a5b-310c4c5f",
     "corner1": "5d2d8a5b-61ac-e28c-e517-65b10e8bff07",
     "corner2": "310c4c5f-8213-46b5-bf74-a144e85bcf75",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt ost, beleg_ost.png - Flur-Nordwand, Tueroeffnung 6855..6905",
     "art": "flur"
    },
    {
+    "id": "w-310c4c5f-8b2aa59e",
     "corner1": "310c4c5f-8213-46b5-bf74-a144e85bcf75",
     "corner2": "8b2aa59e-7d79-090c-05c5-91c5db426599",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt ost, beleg_ost.png - Flur-Nordwand, Tueroeffnung 6855..6905",
@@ -5448,12 +5479,14 @@
     "art": "trennwand"
    },
    {
+    "id": "w-cbd2641b-bd49286d",
     "corner1": "cbd2641b-7a65-c715-6282-1cc8b083a946",
     "corner2": "bd49286d-2b06-b370-a5d5-8f62add7fa61",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt ost, beleg_ost.png - durchgehende Laengswand vor dem Suedband",
     "art": "trennwand"
    },
    {
+    "id": "w-bd49286d-acb2e52e",
     "corner1": "bd49286d-2b06-b370-a5d5-8f62add7fa61",
     "corner2": "acb2e52e-da49-e26a-9fee-41f254eb6619",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt ost, beleg_ost.png - durchgehende Laengswand vor dem Suedband",
@@ -5472,12 +5505,14 @@
     "art": "trennwand"
    },
    {
+    "id": "w-1ba70c10-b3588004",
     "corner1": "1ba70c10-e3b3-9104-13be-94661589ec39",
     "corner2": "b3588004-bb54-9a30-5fe3-1e19ad887c23",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt ost, beleg_ost.png - durchgehende Laengswand vor dem Suedband",
     "art": "trennwand"
    },
    {
+    "id": "w-b3588004-70eb07ae",
     "corner1": "b3588004-bb54-9a30-5fe3-1e19ad887c23",
     "corner2": "70eb07ae-a351-f84a-e552-ab0a1b184134",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt ost, beleg_ost.png - durchgehende Laengswand vor dem Suedband",
@@ -5742,6 +5777,7 @@
     "art": "aussen"
    },
    {
+    "id": "w-3f47d625-73c4dbbc",
     "corner1": "3f47d625-3352-10ad-0377-9aa4cf2e3692",
     "corner2": "73c4dbbc-8eae-2169-0c88-03c9775fe312",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt ost, beleg_ost.png - Ostfassade, vier Fensteroeffnungen bei y 135..355, 615..745, 860..960, 1215..1485",
@@ -6048,6 +6084,7 @@
     "art": "aussen"
    },
    {
+    "id": "w-a507f541-7fd485d5",
     "corner1": "a507f541-1213-4776-b794-a7bc54fbae5b",
     "corner2": "7fd485d5-dd0d-92bf-1fd4-4e8c3211fa12",
     "herkunft": "Hotel-PDF 06.05.2026, Abschnitt regel, beleg_regel.png - Nord-Flurwand",
@@ -6124,6 +6161,1846 @@
     "corner2": "e28c835a-a975-4fd8-9edf-18dab8a16647",
     "herkunft": "Handskizze Seite 2, Umbau Westkopf 2026-09-18; Tinte-Schwelle 190, Messband +-10 cm; B5-Westwand bis zur Suedfassade; Probe (1180,1453)-(1180,1545) = 0.83, ganze Wand (1180,1295)-(1180,1545) = 0.92 - schliesst die Loggia des Sonderzimmers, die ohne die entfallene Wand 1300..1370/1290 offen bliebe",
     "art": "trennwand"
+   }
+  ],
+  "oeffnungen": [
+   {
+    "wandId": "w-a5e8c33e-417d1cd1",
+    "lage": 35.39999999999998,
+    "breite": 37.5,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 471.4,
+     "y": 625.4
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-013f19d7-52f184e3",
+    "lage": 114.20000000000005,
+    "breite": 28.2,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 624.2,
+     "y": 546.4
+    },
+    "quelle": "gemessen",
+    "sicherheit": "schwach",
+    "id": "o-tuer--0#2",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 74,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 736.5,
+     "y": 580
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#3",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 39,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 1823.6,
+     "y": 443
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#4",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 44.4,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 2480,
+     "y": 495.9
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#5",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "w-a2e26d5c-945e0f7c",
+    "lage": 25.2,
+    "breite": 50.4,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 2900.5,
+     "y": 517.8
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#6",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 79.7,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 3534.8,
+     "y": 493.7
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#7",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "w-a507f541-7fd485d5",
+    "lage": 40.100000000000364,
+    "breite": 61.2,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 4230.1,
+     "y": 535.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#8",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-7fd485d5-fd1b27ff",
+    "lage": 306.89999999999964,
+    "breite": 68.7,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 4851.9,
+     "y": 528.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#9",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 79.9,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 5556.1,
+     "y": 438.7
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#10",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 70.3,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 6212.1,
+     "y": 445.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#11",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 89.7,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 6893.6,
+     "y": 435.1
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#12",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "w-310c4c5f-8b2aa59e",
+    "lage": 42.65,
+    "breite": 34.7,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 7328.8,
+     "y": 531
+    },
+    "quelle": "gemessen",
+    "sicherheit": "schwach",
+    "id": "o-tuer--0#13",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 41.2,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 1326.3,
+     "y": 787.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#14",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 50.2,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 1731.8,
+     "y": 797.4
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#15",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 27.4,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 2445.8,
+     "y": 785.2
+    },
+    "quelle": "gemessen",
+    "sicherheit": "schwach",
+    "id": "o-tuer--0#16",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "w-d6fe6f6f-0e93eacd",
+    "lage": 59.80000000000018,
+    "breite": 62.3,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 2749.8,
+     "y": 705
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#17",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 62.9,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 3006.4,
+     "y": 758.7
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#18",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 64.6,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 3414.5,
+     "y": 708.1
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#19",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 85.2,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 3693.1,
+     "y": 701.4
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#20",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 63.1,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 4067.2,
+     "y": 712.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#21",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 60.7,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 4365.9,
+     "y": 718.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#22",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 58.2,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 4731.5,
+     "y": 720.6
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#23",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 53.9,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 5017.9,
+     "y": 720.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#24",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 65.9,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 5401.4,
+     "y": 732.4
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#25",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 88,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 5671.3,
+     "y": 706.3
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#26",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 37.8,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 6085.2,
+     "y": 727
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#27",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 80.4,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 6329.6,
+     "y": 765.7
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#28",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 77.1,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 6743.4,
+     "y": 703.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#29",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 29,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 7034.7,
+     "y": 709
+    },
+    "quelle": "gemessen",
+    "sicherheit": "schwach",
+    "id": "o-tuer--0#30",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "w-3f47d625-73c4dbbc",
+    "lage": 151,
+    "breite": 31,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 7823.4,
+     "y": 726
+    },
+    "quelle": "gemessen",
+    "sicherheit": "schwach",
+    "id": "o-tuer--0#31",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-cfdd209e-30083a4a",
+    "lage": 297.59999999999997,
+    "breite": 62,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 1692.6,
+     "y": 221.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#32",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 25.8,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 1764.8,
+     "y": 180.7
+    },
+    "quelle": "gemessen",
+    "sicherheit": "schwach",
+    "id": "o-tuer--0#33",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 80,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 1971.5,
+     "y": 199.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#34",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "w-8417beb1-11a24b98",
+    "lage": 33.55,
+    "breite": 67.1,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 2059.6,
+     "y": 215
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#35",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-aeba82f1-ad9e56f3",
+    "lage": 119.19999999999982,
+    "breite": 44.5,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 3029.2,
+     "y": 194.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#36",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-f125449f-8f80799a",
+    "lage": 146.4953707626313,
+    "breite": 51.8,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 3446.2,
+     "y": 183.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#37",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-f68137c2-790e02d6",
+    "lage": 24,
+    "breite": 48,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 4294.2,
+     "y": 206
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#38",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-7fcc5c9f-e9b8e44f",
+    "lage": 22.25,
+    "breite": 44.5,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 4816.7,
+     "y": 190.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#39",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-0fcbc077-212b1460",
+    "lage": 29.3,
+    "breite": 58.6,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 5705.3,
+     "y": 209.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#40",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-06bf0a98-3a60bafd",
+    "lage": 87.40000000000009,
+    "breite": 43.7,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 2802.4,
+     "y": 1286.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#41",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-3a60bafd-20fc5d7d",
+    "lage": 59.80000000000018,
+    "breite": 46.5,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 2934.8,
+     "y": 1282
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#42",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-77f19bac-306d2acf",
+    "lage": 104.8000000000002,
+    "breite": 53.4,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 3469.8,
+     "y": 1283.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#43",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-428ff527-17064109",
+    "lage": 14.7,
+    "breite": 29.4,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 3626.8,
+     "y": 1274.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "schwach",
+    "id": "o-tuer--0#44",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-8e10dd4c-461310ce",
+    "lage": 68.19999999999982,
+    "breite": 61.4,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 4103.2,
+     "y": 1293.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#45",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-dd74d48b-9cbbf6e4",
+    "lage": 30.600000000000367,
+    "breite": 47.2,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 4315.6,
+     "y": 1294
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#46",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-d2873f0a-99076f0a",
+    "lage": 73.80000000000018,
+    "breite": 44,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 4768.8,
+     "y": 1275
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#47",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-0f14bf61-b8f78422",
+    "lage": 37,
+    "breite": 30.3,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 4977,
+     "y": 1275.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "schwach",
+    "id": "o-tuer--0#48",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-6258ecb1-4678d296",
+    "lage": 95.19999999999983,
+    "breite": 49.2,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 5455.2,
+     "y": 1287
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#49",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-31a044a3-349b12ca",
+    "lage": 40.3,
+    "breite": 80.6,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 5638.3,
+     "y": 1288.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#50",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-cbd2641b-bd49286d",
+    "lage": 79.69999999999982,
+    "breite": 50,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 6109.7,
+     "y": 1286
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#51",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-bd49286d-acb2e52e",
+    "lage": 105.80000000000017,
+    "breite": 63.2,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 6295.8,
+     "y": 1287
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#52",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-1ba70c10-b3588004",
+    "lage": 83.69999999999982,
+    "breite": 39.6,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 6808.7,
+     "y": 1287
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#53",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-b3588004-70eb07ae",
+    "lage": 93.80000000000018,
+    "breite": 69,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 6988.8,
+     "y": 1291
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#54",
+    "hoehe": 201,
+    "verwaist": false
+   }
+  ],
+  "oeffnungen": [
+   {
+    "wandId": "w-a5e8c33e-417d1cd1",
+    "lage": 35.39999999999998,
+    "breite": 37.5,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 471.4,
+     "y": 625.4
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-013f19d7-52f184e3",
+    "lage": 114.20000000000005,
+    "breite": 28.2,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 624.2,
+     "y": 546.4
+    },
+    "quelle": "gemessen",
+    "sicherheit": "schwach",
+    "id": "o-tuer--0#2",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-013f19d7-52f184e3",
+    "lage": 226.5,
+    "breite": 74,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 736.5,
+     "y": 535
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#3",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-cfdd209e-30083a4a",
+    "lage": 428.59999999999997,
+    "breite": 39,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 1823.6,
+     "y": 220
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#4",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 44.4,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 2480,
+     "y": 495.9
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#5",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "w-a2e26d5c-945e0f7c",
+    "lage": 25.2,
+    "breite": 50.4,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 2900.5,
+     "y": 517.8
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#6",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-f4d8c7d2-48d7fb87",
+    "lage": 205.15,
+    "breite": 79.7,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 3534.8,
+     "y": 535
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#7",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-a507f541-7fd485d5",
+    "lage": 40.100000000000364,
+    "breite": 61.2,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 4230.1,
+     "y": 535.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#8",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-7fd485d5-fd1b27ff",
+    "lage": 306.89999999999964,
+    "breite": 68.7,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 4851.9,
+     "y": 528.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#9",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-a9acc314-af53b58d",
+    "lage": 71.10000000000036,
+    "breite": 79.9,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 5556.1,
+     "y": 530
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#10",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-3a30792e-74a04f8a",
+    "lage": 279.85,
+    "breite": 70.3,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 6212.1,
+     "y": 530
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#11",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-5d2d8a5b-310c4c5f",
+    "lage": 44.85,
+    "breite": 89.7,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 6893.6,
+     "y": 520
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#12",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-310c4c5f-8b2aa59e",
+    "lage": 42.65,
+    "breite": 34.7,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 7328.8,
+     "y": 531
+    },
+    "quelle": "gemessen",
+    "sicherheit": "schwach",
+    "id": "o-tuer--0#13",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-be9c6279-e50376ec",
+    "lage": 20.6,
+    "breite": 41.2,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 1326.3,
+     "y": 700
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#14",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-6da2e929-37d53a3f",
+    "lage": 25.1,
+    "breite": 50.2,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 1731.8,
+     "y": 700
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#15",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-939eae92-2ecf1c11",
+    "lage": 70.80000000000018,
+    "breite": 27.4,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 2445.8,
+     "y": 700
+    },
+    "quelle": "gemessen",
+    "sicherheit": "schwach",
+    "id": "o-tuer--0#16",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-d6fe6f6f-0e93eacd",
+    "lage": 59.80000000000018,
+    "breite": 62.3,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 2749.8,
+     "y": 705
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#17",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-d57b645c-63f1df83",
+    "lage": 76.40000000000009,
+    "breite": 62.9,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 3006.4,
+     "y": 700
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#18",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 64.6,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 3414.5,
+     "y": 708.1
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#19",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 85.2,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 3693.1,
+     "y": 701.4
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#20",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 63.1,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 4067.2,
+     "y": 712.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#21",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 60.7,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 4365.9,
+     "y": 718.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#22",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 58.2,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 4731.5,
+     "y": 720.6
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#23",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 53.9,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 5017.9,
+     "y": 720.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#24",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 65.9,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 5401.4,
+     "y": 732.4
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#25",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 88,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 5671.3,
+     "y": 706.3
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#26",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 37.8,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 6085.2,
+     "y": 727
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#27",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 80.4,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 6329.6,
+     "y": 710
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#28",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 77.1,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 6743.4,
+     "y": 703.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#29",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 29,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 7034.7,
+     "y": 709
+    },
+    "quelle": "gemessen",
+    "sicherheit": "schwach",
+    "id": "o-tuer--0#30",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "w-3f47d625-73c4dbbc",
+    "lage": 151,
+    "breite": 31,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 7823.4,
+     "y": 726
+    },
+    "quelle": "gemessen",
+    "sicherheit": "schwach",
+    "id": "o-tuer--0#31",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-cfdd209e-30083a4a",
+    "lage": 297.59999999999997,
+    "breite": 62,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 1692.6,
+     "y": 221.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#32",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 25.8,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 1764.8,
+     "y": 180.7
+    },
+    "quelle": "gemessen",
+    "sicherheit": "schwach",
+    "id": "o-tuer--0#33",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "",
+    "lage": 0,
+    "breite": 80,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 1971.5,
+     "y": 199.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#34",
+    "hoehe": 201,
+    "verwaist": true
+   },
+   {
+    "wandId": "w-8417beb1-11a24b98",
+    "lage": 33.55,
+    "breite": 67.1,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 2059.6,
+     "y": 215
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#35",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-aeba82f1-ad9e56f3",
+    "lage": 119.19999999999982,
+    "breite": 44.5,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 3029.2,
+     "y": 194.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#36",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-f125449f-8f80799a",
+    "lage": 146.4953707626313,
+    "breite": 51.8,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 3446.2,
+     "y": 183.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#37",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-f68137c2-790e02d6",
+    "lage": 24,
+    "breite": 48,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 4294.2,
+     "y": 206
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#38",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-7fcc5c9f-e9b8e44f",
+    "lage": 22.25,
+    "breite": 44.5,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 4816.7,
+     "y": 190.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "mittel",
+    "id": "o-tuer--0#39",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-0fcbc077-212b1460",
+    "lage": 29.3,
+    "breite": 58.6,
+    "art": "tuer",
+    "seite": 1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 5705.3,
+     "y": 209.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#40",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-06bf0a98-3a60bafd",
+    "lage": 87.40000000000009,
+    "breite": 43.7,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 2802.4,
+     "y": 1286.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#41",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-3a60bafd-20fc5d7d",
+    "lage": 59.80000000000018,
+    "breite": 46.5,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 2934.8,
+     "y": 1282
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#42",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-77f19bac-306d2acf",
+    "lage": 104.8000000000002,
+    "breite": 53.4,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 3469.8,
+     "y": 1283.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#43",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-428ff527-17064109",
+    "lage": 14.7,
+    "breite": 29.4,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 3626.8,
+     "y": 1274.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "schwach",
+    "id": "o-tuer--0#44",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-8e10dd4c-461310ce",
+    "lage": 68.19999999999982,
+    "breite": 61.4,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 4103.2,
+     "y": 1293.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#45",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-dd74d48b-9cbbf6e4",
+    "lage": 30.600000000000367,
+    "breite": 47.2,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 4315.6,
+     "y": 1294
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#46",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-d2873f0a-99076f0a",
+    "lage": 73.80000000000018,
+    "breite": 44,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 4768.8,
+     "y": 1275
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#47",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-0f14bf61-b8f78422",
+    "lage": 37,
+    "breite": 30.3,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 4977,
+     "y": 1275.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "schwach",
+    "id": "o-tuer--0#48",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-6258ecb1-4678d296",
+    "lage": 95.19999999999983,
+    "breite": 49.2,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 5455.2,
+     "y": 1287
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#49",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-31a044a3-349b12ca",
+    "lage": 40.3,
+    "breite": 80.6,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 5638.3,
+     "y": 1288.5
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#50",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-cbd2641b-bd49286d",
+    "lage": 79.69999999999982,
+    "breite": 50,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 6109.7,
+     "y": 1286
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#51",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-bd49286d-acb2e52e",
+    "lage": 105.80000000000017,
+    "breite": 63.2,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 6295.8,
+     "y": 1287
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#52",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-1ba70c10-b3588004",
+    "lage": 83.69999999999982,
+    "breite": 39.6,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "ende",
+    "anker": {
+     "x": 6808.7,
+     "y": 1287
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#53",
+    "hoehe": 201,
+    "verwaist": false
+   },
+   {
+    "wandId": "w-b3588004-70eb07ae",
+    "lage": 93.80000000000018,
+    "breite": 69,
+    "art": "tuer",
+    "seite": -1,
+    "anschlag": "anfang",
+    "anker": {
+     "x": 6988.8,
+     "y": 1291
+    },
+    "quelle": "gemessen",
+    "sicherheit": "sicher",
+    "id": "o-tuer--0#54",
+    "hoehe": 201,
+    "verwaist": false
    }
   ],
   "wallTextures": [],
