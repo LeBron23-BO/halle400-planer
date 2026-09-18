@@ -573,7 +573,34 @@ try {
           'B6 GEGENPROBE: derselbe Wisch auf leerer Flaeche bewegt KEIN Moebel'
         )
         log(`    Blickaenderung: az ${blickVorher.az.toFixed(3)} -> ${blickNachher.az.toFixed(3)}, el ${blickVorher.el.toFixed(3)} -> ${blickNachher.el.toFixed(3)}`)
-        pruefe(gedreht > 0.05, `B7 GEGENPROBE: er DREHT das Blatt (${gedreht.toFixed(3)} rad Summe > 0,05)`)
+        /* ── B7 WURDE UMGESCHRIEBEN (H2), und zwar bewusst ──────────────────
+           Bis hierher stand hier: „er DREHT das Blatt". Das war der Vertrag
+           BIS zur Handy-Welle H2 — seither SCHIEBT ein Finger am Telefon, und
+           zwar aus einem gemessenen Grund: die Grundeinpassung quetscht 78 m
+           auf 358 Bildpunkte, man MUSS also weit hineinzoomen, und danach war
+           das Blatt unbewegbar (`schiebX` blieb ueber jede Geste auf 0). Die
+           Maus dreht unveraendert weiter; das prueft `pruefe-nur-modell.mjs`
+           mit `page.mouse`.
+
+           Der neue Satz ist STRENGER als der alte, nicht lascher: statt einer
+           Schwelle („mehr als 0,05 rad irgendwas") verlangt er den GENAUEN
+           Wischweg in Bildpunkten UND die Gegenprobe, dass sich dabei nichts
+           dreht. Ein Gate, das beim Umbau eines Vertrages weicher wird, ist
+           kein Gate mehr. */
+        const geschoben = {
+          x: blickNachher.schiebX - blickVorher.schiebX,
+          y: blickNachher.schiebY - blickVorher.schiebY
+        }
+        log(`    Verschiebung: ${geschoben.x.toFixed(1)} / ${geschoben.y.toFixed(1)} px (gewischt ${wegPx.x} / ${wegPx.y})`)
+        pruefe(
+          Math.abs(geschoben.x - wegPx.x) < 1 && Math.abs(geschoben.y - wegPx.y) < 1,
+          `B7 GEGENPROBE: EIN Finger SCHIEBT das Blatt um genau den Wischweg ` +
+            `(${geschoben.x.toFixed(1)}/${geschoben.y.toFixed(1)} px, gewischt ${wegPx.x}/${wegPx.y} px)`
+        )
+        pruefe(
+          gedreht < 1e-9,
+          `B7b GEGENPROBE zur GEGENPROBE: und dreht dabei NICHTS (${gedreht.toExponential(1)} rad)`
+        )
         await page.screenshot({ path: path.join(STANDBILDER, 'finger-8-blatt-gedreht.png') })
       }
 

@@ -243,12 +243,47 @@ export const DARSTELLUNG = {
 
   /** Zoom-Grenzen und Empfindlichkeit.       [uebersicht.html:777-778,792] */
   zoomMin: 0.45,
-  zoomMax: 4.2,
+  /* ── WARUM 24 UND NICHT MEHR 4,2 (Handy-Welle H2) ────────────────────
+     GEMESSEN an der Bank-Fassung bei 390 x 844: die Grundeinpassung quetscht
+     den 78-m-Riegel in 358 nutzbare Bildpunkte. Bei der alten Obergrenze 4,2
+     war ein Hotelzimmer von 3,5 m damit 62 Bildpunkte breit — 16 % der
+     Anzeigenbreite, ein Daumennagel. "Jeder Raum soll perfekt absehbar sein"
+     ist mit dieser Zahl nicht einloesbar, egal wie gut die Geste ist.
+
+     24 ist keine runde Wunschzahl, sondern zurueckgerechnet: 62,4 px x
+     (24 / 4,2) = 357 px, also 91 % der Anzeigenbreite fuer ein Zimmer — es
+     FUELLT den Bildschirm, mit einem Rest Rand, damit man noch sieht, wo man
+     ist. Die Tiefenrichtung (3,6 m) kommt dabei auf 283 px.
+
+     Am Rechner verschlechtert die hoehere Grenze nichts: sie verschiebt nur,
+     wo das Rad aufhoert. Der Startzoom bleibt 1, die Einpassung bleibt
+     dieselbe Rechnung. Wer nie weiter als 4,2 dreht, merkt keinen
+     Unterschied. */
+  zoomMax: 24,
   zoomSchritt: 1.11,
   drehProPixel: 0.006,
   neigeProPixel: 0.0042,
   neigeMin: 0.1,
-  neigeMax: 1.45
+  neigeMax: 1.45,
+
+  /* ── ZWEI FINGER VERDREHEN = DREHEN (Handy-Welle H2) ─────────────────
+     Seit ein Finger am Telefon VERSCHIEBT, braucht das Drehen dort einen
+     eigenen Weg. Er liegt auf der zweiten Hand-Geste: der Winkel zwischen den
+     beiden Fingern. Die Schwelle ist der ganze Trick — beim Aufziehen kippen
+     die Finger IMMER ein paar Grad mit, und ein Blatt, das sich dabei
+     wegdreht, fuehlt sich kaputt an. Erst ab rund 12 Grad (0,21 rad)
+     bewusster Verdrehung folgt der Blick, und dann ohne den Nachholsprung:
+     gezaehlt wird ab der Schwelle, nicht ab dem Aufsetzen. */
+  drehSchwelle: 0.21,
+
+  /* ── WIE WEIT DARF MAN WEGSCHIEBEN (Handy-Welle H2) ──────────────────
+     Mit Zoom 24 ist das Modell bis zu 9000 Bildpunkte breit — ohne Grenze
+     wischt man es in zwei Zuegen aus der Anzeige und findet es nicht wieder.
+     Also eine weiche Leine statt eines Kaefigs: mindestens so viele
+     Bildpunkte des Modells bleiben immer stehen. 72 px ist eine Daumenbreite
+     — genug zum Zurueckfinden, wenig genug, um jeden Rand erreichen zu
+     koennen. */
+  schubRand: 72
 }
 
 /* ══════════════════════════════════════════════════════════════════

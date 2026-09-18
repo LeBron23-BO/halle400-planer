@@ -20,9 +20,23 @@
      die Werkzeugleiste sichtbar, obwohl sie versteckt ist — die Bank saehe den
      Werkzeugkasten. */
   [hidden]{display:none!important}
+  /* `overscroll-behavior:none` und `touch-action:manipulation` sind die zwei
+     Zeilen gegen das, was der BROWSER am Telefon von sich aus tut (H2):
+     das Gummiband-Scrollen der Seite am Rand und der Doppeltipp-Zoom. Beides
+     laeuft ueber den Fingern des Nutzers ab, waehrend er das Modell bedienen
+     will, und beides ist hier sinnlos — die Seite hat ohnehin keinen Scrollweg
+     (`overflow:hidden`), und gezoomt wird im Modell, nicht auf dem Papier.
+     `manipulation` und nicht `none`: die Knoepfe der Leisten sollen normal
+     bleiben, nur der Doppeltipp-Zoom faellt weg. */
   body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
-       -webkit-font-smoothing:antialiased;overflow:hidden}
-  canvas{display:block;width:100%;height:100%;touch-action:none}
+       -webkit-font-smoothing:antialiased;overflow:hidden;
+       overscroll-behavior:none;touch-action:manipulation}
+  /* `user-select`/`touch-callout` auf der Zeichenflaeche: ein Zug ueber das
+     Blatt soll ZIEHEN und nicht markieren, und ein langer Druck soll kein
+     System-Menue aufziehen. Bewusst NUR hier und nicht auf der ganzen Ansicht
+     — der Blattkopf bleibt Text, den man kopieren darf. */
+  canvas{display:block;width:100%;height:100%;touch-action:none;
+       user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 
   /* Beide Ansichten liegen uebereinander und behalten IHRE GROESSE, auch wenn
      sie ruhen: mit display:none haette der Grundriss-Zeichner beim Start eine
@@ -414,9 +428,42 @@
        font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-mute);
        pointer-events:none;opacity:.85;line-height:1.7}
 
+  /* ── DER FINGER-HINWEIS (H2) ──────────────────────────────────────────
+     Am Rechner steht die Bedienung in `.hinweis` — am Telefon faellt dieser
+     ganze Block unter 900 px weg (siehe gleich darunter), und mit ihm jedes
+     Wort darueber, was die Finger koennen. GEMESSEN: `.hinweis` hatte auf
+     390 px `display:none`, es stand also NICHTS da. Niemand probiert eine
+     Geste, von der er nicht weiss, dass es sie gibt.
+
+     Der Block selbst darf NICHT zurueckkommen: in ihm steht die
+     Herkunfts-Fussnote ("Grundriss und Ausstattung sind gemessen", mit dem
+     Massstabs-Vorbehalt der Oeffnungen), und die braucht auf 390 px vier
+     Zeilen ueber dem Modell. Also eine EIGENE, kurze Zeile — und nur die.
+
+     Sie geht nach der ersten Beruehrung weg und kommt nicht wieder: ein
+     Hinweis, den man schon befolgt hat, ist ab da nur noch Deckel ueber dem
+     Bild. `pointer-events:none`, damit er nicht selbst die Geste abfaengt,
+     die er erklaert. */
+  /* `bottom:150px` ist GEMESSEN und nicht geschaetzt: die Blick-Leiste bricht
+     am Telefon in drei Reihen um und beginnt bei 800 px Hoehe schon bei 656 px
+     (siehe die Handy-Welle weiter unten) — sie ist also rund 144 px hoch. Bei
+     64 px laege diese Zeile mitten in den Knoepfen. In der reinen Fassung ist
+     die Leiste weggeschnitten, dort steht sie einfach im leeren Blattfuss.
+     Schriftgroesse und Laufweite sind auf EINE Zeile bei 390 px abgestimmt:
+     mit 9,5 px und .1em brach der Satz um, und ein zweizeiliger Hinweis ist
+     nicht mehr unaufdringlich. */
+  .fingerhinweis{display:none;position:fixed;left:10px;right:10px;bottom:150px;z-index:45;
+       text-align:center;font-family:var(--mono);font-size:9px;letter-spacing:.06em;
+       text-transform:uppercase;color:var(--ink-mute);pointer-events:none;
+       transition:opacity .45s ease}
+  .fingerhinweis.weg{opacity:0}
+
   @media (max-width:900px){
     .tafel{top:auto;bottom:112px;right:10px;left:10px;width:auto;max-height:38vh}
     .hinweis{display:none}
+    /* NUR hier sichtbar — am Rechner erklaert `.hinweis` dieselbe Sache
+       vollstaendiger, und zwei Bedienzeilen nebeneinander waeren eine zu viel. */
+    .fingerhinweis{display:block}
     /* ── W7 am Handy ─────────────────────────────────────────────────────
        GEMESSEN bei 390 x 800, nicht uebertragen: fuer eine SCHWEBENDE Leiste
        ist hier nirgends Platz. Oben laeuft der Blattkopf ab 52 px quer ueber
@@ -546,7 +593,7 @@
     /* Bedienelemente gehoeren nicht aufs Papier. Ein gedruckter Knopf ist eine
        Aufforderung, die das Blatt nicht einloesen kann. */
     .kopfleiste,.leiste,.palette,.standleiste,.meldung,.frage,.geist,
-    .arbeitshinweis,#hinweisBedienung{display:none!important}
+    .arbeitshinweis,#hinweisBedienung,.fingerhinweis{display:none!important}
     /* Die Saeulen-Tafel ist ein Bildschirm-Aufsteller mit eigenem Schalter und
        Weichzeichner: auf Papier verdeckte sie ein Viertel des Grundrisses, und
        der Weichzeichner druckt ohnehin nicht. Ihr Inhalt steht als Beschriftung
@@ -734,7 +781,10 @@
     <!-- Bedienhinweise gehören auf den Bildschirm, nicht aufs Papier (M5).
          Deshalb ein eigener Anker: die Fussnote darunter MUSS gedruckt
          werden, diese Zeile darf es nicht. -->
-    <span id="hinweisBedienung">Ziehen dreht &middot; Rad zoomt &middot; zwei Finger zoomen<br></span>
+    <!-- „Umschalt schiebt" stand hier nie, obwohl es die Bedienung seit jeher
+         gibt — und ohne Schieben ist ein hoher Zoom am Rechner genauso wertlos
+         wie am Telefon. Der Rest bleibt Wort fuer Wort stehen. -->
+    <span id="hinweisBedienung">Ziehen dreht &middot; Umschalt schiebt &middot; Rad zoomt &middot; zwei Finger zoomen<br></span>
     <span id="hinweisHerkunft">Grundriss und Ausstattung sind gemessen.</span> Höhen sind
     gesetzte Annahmen — ein Grundriss enthält keine.
     <!-- Der Massstabs-Vorbehalt der Öffnungen (W4) steht HIER und nicht im
@@ -742,6 +792,12 @@
          und oben schöbe er sich in die Raumnamen (am Standbild gemessen). -->
     <span id="hinweisOeffnung"></span>
   </div>
+
+  <!-- H2: die Bedienzeile fuers Telefon. Sie steht nur unter 900 px da (CSS)
+       und verschwindet nach der ersten Beruehrung. Eigenes Element und nicht
+       ein Teil von `.hinweis`: dieser Block traegt die Herkunfts-Fussnote,
+       die auf 390 px keinen Platz hat und aufs Papier MUSS. -->
+  <div class="fingerhinweis" id="fingerhinweis">Ein Finger schiebt &middot; Zwei Finger zoomen und drehen</div>
 </div>
 
 <!-- ── Grundriss: hier wird bearbeitet. ─────────────────────────────── -->
@@ -904,7 +960,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "baa23946eff6";
-const BAU_STEMPEL = "2026-09-18 15:16";
+const BAU_STEMPEL = "2026-09-18 16:52";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -10119,12 +10175,47 @@ const DARSTELLUNG = {
 
   /** Zoom-Grenzen und Empfindlichkeit.       [uebersicht.html:777-778,792] */
   zoomMin: 0.45,
-  zoomMax: 4.2,
+  /* ── WARUM 24 UND NICHT MEHR 4,2 (Handy-Welle H2) ────────────────────
+     GEMESSEN an der Bank-Fassung bei 390 x 844: die Grundeinpassung quetscht
+     den 78-m-Riegel in 358 nutzbare Bildpunkte. Bei der alten Obergrenze 4,2
+     war ein Hotelzimmer von 3,5 m damit 62 Bildpunkte breit — 16 % der
+     Anzeigenbreite, ein Daumennagel. "Jeder Raum soll perfekt absehbar sein"
+     ist mit dieser Zahl nicht einloesbar, egal wie gut die Geste ist.
+
+     24 ist keine runde Wunschzahl, sondern zurueckgerechnet: 62,4 px x
+     (24 / 4,2) = 357 px, also 91 % der Anzeigenbreite fuer ein Zimmer — es
+     FUELLT den Bildschirm, mit einem Rest Rand, damit man noch sieht, wo man
+     ist. Die Tiefenrichtung (3,6 m) kommt dabei auf 283 px.
+
+     Am Rechner verschlechtert die hoehere Grenze nichts: sie verschiebt nur,
+     wo das Rad aufhoert. Der Startzoom bleibt 1, die Einpassung bleibt
+     dieselbe Rechnung. Wer nie weiter als 4,2 dreht, merkt keinen
+     Unterschied. */
+  zoomMax: 24,
   zoomSchritt: 1.11,
   drehProPixel: 0.006,
   neigeProPixel: 0.0042,
   neigeMin: 0.1,
-  neigeMax: 1.45
+  neigeMax: 1.45,
+
+  /* ── ZWEI FINGER VERDREHEN = DREHEN (Handy-Welle H2) ─────────────────
+     Seit ein Finger am Telefon VERSCHIEBT, braucht das Drehen dort einen
+     eigenen Weg. Er liegt auf der zweiten Hand-Geste: der Winkel zwischen den
+     beiden Fingern. Die Schwelle ist der ganze Trick — beim Aufziehen kippen
+     die Finger IMMER ein paar Grad mit, und ein Blatt, das sich dabei
+     wegdreht, fuehlt sich kaputt an. Erst ab rund 12 Grad (0,21 rad)
+     bewusster Verdrehung folgt der Blick, und dann ohne den Nachholsprung:
+     gezaehlt wird ab der Schwelle, nicht ab dem Aufsetzen. */
+  drehSchwelle: 0.21,
+
+  /* ── WIE WEIT DARF MAN WEGSCHIEBEN (Handy-Welle H2) ──────────────────
+     Mit Zoom 24 ist das Modell bis zu 9000 Bildpunkte breit — ohne Grenze
+     wischt man es in zwei Zuegen aus der Anzeige und findet es nicht wieder.
+     Also eine weiche Leine statt eines Kaefigs: mindestens so viele
+     Bildpunkte des Modells bleiben immer stehen. 72 px ist eine Daumenbreite
+     — genug zum Zurueckfinden, wenig genug, um jeden Rand erreichen zu
+     koennen. */
+  schubRand: 72
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -11860,6 +11951,23 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     const grund = Math.min(platzB / Math.max(0.001, ux1 - ux0), platzH / Math.max(0.001, uy1 - uy0))
     const m = grund * blick.zoom
     kameraWerte.massstab = m
+    /* ── DIE WEICHE LEINE (H2) ───────────────────────────────────────────
+       Hier und nirgends sonst, weil HIER die projizierte Groesse des Modells
+       in Bildpunkten bekannt ist — ausserhalb muesste man sie nachrechnen und
+       haette eine zweite Wahrheit ueber die Einpassung.
+
+       WARUM UEBERHAUPT: mit der neuen Zoom-Obergrenze ist das Modell bis zu
+       9000 Bildpunkte breit. Ein Finger schiebt am Telefon jetzt frei — ohne
+       Grenze ist das Blatt nach zwei Wischern aus der Anzeige heraus, und der
+       Betrachter sieht leeres Papier ohne zu wissen, wohin. Kein Kaefig: die
+       Grenze laesst jeden Rand des Modells erreichen und haelt nur immer
+       mindestens `schubRand` Bildpunkte davon im Bild. */
+    const modellB = (ux1 - ux0) * m
+    const modellH = (uy1 - uy0) * m
+    const maxX = Math.max(0, (modellB + breite) / 2 - DARSTELLUNG.schubRand)
+    const maxY = Math.max(0, (modellH + hoehe) / 2 - DARSTELLUNG.schubRand)
+    blick.schiebX = Math.max(-maxX, Math.min(maxX, blick.schiebX))
+    blick.schiebY = Math.max(-maxY, Math.min(maxY, blick.schiebY))
     const cxp = ((ux0 + ux1) / 2) * m
     const cyp = ((uy0 + uy1) / 2) * m
     kameraWerte.ox = (weit ? (breite - randRechts) / 2 : breite / 2) - cxp + blick.schiebX
@@ -12246,12 +12354,46 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     zeichne()
   }
 
-  /* ── Bedienung: ziehen dreht, Rad zoomt, zwei Finger zoomen ─────── */
+  /* ── Bedienung ───────────────────────────────────────────────────────
+     AM RECHNER (Maus): Ziehen dreht, Umschalt+Ziehen schiebt, Rad zoomt.
+     Unveraendert — das ist die Bedienung, mit der die Blaetter gebaut werden.
+
+     AM TELEFON (Finger): EIN Finger SCHIEBT, ZWEI Finger zoomen um ihre Mitte
+     und schieben dabei mit, Verdrehen der zwei Finger dreht.
+
+     WARUM DER EINE FINGER SCHIEBT UND NICHT DREHT (H2, begruendet):
+     Bis hierher drehte er — und das war am Telefon die falsche Wahl, aus einem
+     messbaren Grund: die Grundeinpassung quetscht 78 m auf 358 Bildpunkte,
+     also MUSS man weit hineinzoomen, um ein Zimmer zu sehen. Gemessen war das
+     Blatt danach unbewegbar: ein Finger drehte, zwei Finger zoomten nur, und
+     `schiebX`/`schiebY` blieben ueber jede Geste hinweg auf 0. Zoomen ohne
+     Verschieben ist kein halbes Werkzeug, es ist gar keins — man landet in
+     einer Zimmerecke und kommt nicht zum naechsten Zimmer.
+
+     Und: Drehen hat am Telefon bereits einen zweiten Weg (die Knoepfe
+     Nord/West/Sued/Plan und jetzt das Verdrehen), Schieben hatte KEINEN.
+     Umschalt gibt es an keinem Telefon. Wer einen Grundriss ansieht, faehrt
+     ausserdem ueber ihn hinweg wie ueber eine Karte; das Drehen ist der
+     seltenere, bewusste Akt. Also bekommt der haeufige Akt die einfache
+     Geste. */
   let zieht = false
   let lx = 0
   let ly = 0
+  /* WOMIT gezogen wird, beim Aufsetzen festgehalten. Nicht bei jeder Bewegung
+     neu gefragt: ein Zug, der auf halber Strecke die Bedeutung wechselte, waere
+     keine Geste mehr. */
+  let ziehArt = 'maus'
   let zeiger = new Map()
   let spanne = 0
+  /* Die Fingermitte des letzten Ereignisses, in BILD-Koordinaten der Leinwand
+     (nicht in Fenster-Koordinaten) — `projiziere` rechnet in diesen. */
+  let mitteBX = 0
+  let mitteBY = 0
+  let winkelVor = 0
+  /* Aufgelaufene Verdrehung, solange sie unter der Schwelle liegt. Sie wird
+     bei der Schwelle FESTGEHALTEN und nicht nachgeholt: sonst spraenge das
+     Blatt im Augenblick des Ueberschreitens um 12 Grad. */
+  let drehStau = 0
 
   /* ══ MOEBEL GREIFEN (W7) ═══════════════════════════════════════════════
      Der TREFFER entscheidet, keine Zusatztaste: Druck auf einen Koerper
@@ -12284,6 +12426,120 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     return p ? { x: p.x / CM, y: p.z / CM } : null
   }
 
+  const klemmeZoom = (z) => Math.max(DARSTELLUNG.zoomMin, Math.min(DARSTELLUNG.zoomMax, z))
+
+  /** Lage der beiden Finger: Mitte in BILD-Koordinaten, Abstand, Winkel. */
+  function fingerLage() {
+    const v = [...zeiger.values()]
+    const r = canvas.getBoundingClientRect()
+    return {
+      mx: (v[0][0] + v[1][0]) / 2 - r.left,
+      my: (v[0][1] + v[1][1]) / 2 - r.top,
+      d: Math.hypot(v[0][0] - v[1][0], v[0][1] - v[1][1]),
+      w: Math.atan2(v[1][1] - v[0][1], v[1][0] - v[0][0])
+    }
+  }
+
+  /**
+   * ZOOMEN UND DREHEN UM EINEN BILDPUNKT (H2).
+   *
+   * Der Kern der Karten-Bedienung: was unter den Fingern liegt, bleibt unter
+   * den Fingern. Vorher zoomte dieses Blatt um die Mitte seiner EINPASSUNG —
+   * gemessen wanderte der angefasste Punkt bei einem einzigen Aufziehen um
+   * 152 Bildpunkte weg, also mehr als eine Drittel-Anzeigenbreite. Man zielt
+   * auf ein Zimmer und landet in einem anderen.
+   *
+   * KEINE zweite Projektionsformel, und das ist Absicht: der Punkt wird mit
+   * `umkehreAuf` zurueckgerechnet, die Aenderung angewandt, und derselbe
+   * Weltpunkt mit `projiziere` wieder vorwaerts gerechnet. Die Differenz ist
+   * die noetige Verschiebung. Damit stimmt die Rechnung auch dann noch, wenn
+   * sich im selben Augenblick der BLICKWINKEL mitdreht — eine ausgeschriebene
+   * Zoom-Formel koennte das nicht, sie kennt nur den Massstab.
+   *
+   * Die Hoehe ist `mitteY`, die Drehachse des Blattes: auf dieser Ebene steht
+   * der Punkt beim Drehen ohnehin am ruhigsten.
+   */
+  function haltePunkt(bx, by, aendere) {
+    setzeKamera()
+    const h = kameraWerte.mitteY
+    const vorher = umkehreAuf(kamera(), bx, by, h)
+    aendere()
+    if (!vorher) return
+    setzeKamera()
+    const p = projiziere(vorher.x, h, vorher.z)
+    blick.schiebX += bx - p.x
+    blick.schiebY += by - p.y
+  }
+
+  /* ══ DIE ZANGE WIRD JE BILD AUSGEWERTET, NICHT JE EREIGNIS (H2) ═══════════
+     GEMESSEN und nicht vermutet: der Browser meldet zwei Finger in ZWEI
+     getrennten `pointermove`-Ereignissen. Im ersten steht der eine Finger schon
+     auf der neuen Stelle und der andere noch auf der alten — der Abstand ist
+     dort um den halben Schritt FALSCH. Rechnet man jedes Ereignis einzeln aus,
+     zappelt der Zoom bei jedem Bild um rund 6 % hin und her.
+
+     Unsichtbar bleibt das nur, solange nichts klemmt. AN DER ZOOM-GRENZE wird
+     aus dem Zappeln eine Einbahnstrasse: der Schritt nach oben wird von
+     `klemmeZoom` abgeschnitten, der Schritt nach unten nicht. Gemessen: zwei
+     Finger, parallel verschoben, ohne jede Abstandsaenderung — der Zoom fiel
+     von 24,00 auf 22,53. Das Blatt zoomte von selbst heraus, waehrend der
+     Nutzer nur schob.
+
+     Ein Bild, eine Auswertung: bis der Browser das naechste Bild zeichnet,
+     sind BEIDE Finger frisch. Nebenbei halbiert es die Neuzeichnungen. */
+  let zangeOffen = false
+  const naechstesBild = (f) =>
+    globalThis.requestAnimationFrame ? globalThis.requestAnimationFrame(f) : setTimeout(f, 16)
+
+  function zangeAuswerten() {
+    zangeOffen = false
+    // Ein vorgemerktes Bild kann NACH `zerstoere` eintreffen. Dann zeichnete ein
+    // abgemeldeter Renderer noch einmal auf eine Flaeche, die schon einem
+    // anderen gehoert — dieselbe Klasse von Fehler wie die gestapelten Abos (B3).
+    if (abbruch.signal.aborted) return
+    if (zeiger.size !== 2) return
+    const f = fingerLage()
+    if (spanne) {
+      /* ZUERST die Fingermitte: das Blatt faehrt mit der Hand mit, in reinen
+         Bildpunkten und ohne Umweg. Das ist die Haelfte, die bisher ganz
+         fehlte — gemessen blieb `schiebX` bei zwei parallel geschobenen
+         Fingern auf 0,00, das Blatt stand einfach still. */
+      blick.schiebX += f.mx - mitteBX
+      blick.schiebY += f.my - mitteBY
+
+      /* DANN Massstab und Blickwinkel, beides um genau den Punkt, der jetzt
+         unter der Fingermitte liegt. Beides in EINEM `haltePunkt`, damit die
+         Korrektur die Summe beider Aenderungen sieht und nicht zweimal
+         nacheinander nachfaehrt. */
+      let dw = f.w - winkelVor
+      // Der Winkel springt bei ±π. Ohne diese zwei Zeilen dreht sich das
+      // Blatt einmal um sich selbst, sobald die Finger die Senkrechte kreuzen.
+      while (dw > Math.PI) dw -= 2 * Math.PI
+      while (dw < -Math.PI) dw += 2 * Math.PI
+      haltePunkt(f.mx, f.my, () => {
+        blick.zoom = klemmeZoom(blick.zoom * (f.d / spanne))
+        drehStau += dw
+        const s = DARSTELLUNG.drehSchwelle
+        if (Math.abs(drehStau) > s) {
+          const ueber = drehStau - Math.sign(drehStau) * s
+          blick.az -= ueber
+          drehStau = Math.sign(drehStau) * s
+        }
+      })
+      zeichne()
+    }
+    spanne = f.d
+    mitteBX = f.mx
+    mitteBY = f.my
+    winkelVor = f.w
+  }
+
+  function zangeVormerken() {
+    if (zangeOffen) return
+    zangeOffen = true
+    naechstesBild(zangeAuswerten)
+  }
+
   /** Zeiger-Aussage: was liegt unter dem Zeiger, und wie sagt es der Zeiger? */
   function zeigerPflegen(treffer) {
     unterZeiger = treffer ? treffer.id : null
@@ -12303,6 +12559,22 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
       // Ein zweiter Finger beendet einen laufenden Griff: zwei Finger heissen
       // in diesem Blatt „zoomen", und beides zugleich waere keine Geste.
       if (greift) griffBeenden()
+      /* Die Ausgangslage der Zange SOFORT festhalten, nicht erst bei der
+         ersten Bewegung. Sonst waere der erste `pointermove` gegen eine
+         Spanne von 0 gerechnet und das Blatt spraenge (gemessen als
+         Zoom-Sprung beim Aufsetzen des zweiten Fingers). */
+      if (zeiger.size === 2) {
+        const f = fingerLage()
+        spanne = f.d
+        mitteBX = f.mx
+        mitteBY = f.my
+        winkelVor = f.w
+        drehStau = 0
+        /* Waehrend der Zange nur die grossen Flaechen zeichnen. Ein Aufziehen
+           erzeugt 30 bis 60 Bilder; mit allen 289 Ausstattungs-Stuecken je Bild
+           ruckelt genau die Geste, die sich fluessig anfuehlen soll. */
+        schnell = true
+      }
       return
     }
     if (bearbeitbar()) {
@@ -12341,6 +12613,7 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     }
     zieht = true
     schnell = true
+    ziehArt = e.pointerType === 'touch' ? 'finger' : 'maus'
     lx = e.clientX
     ly = e.clientY
     try {
@@ -12366,13 +12639,7 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
   amCanvas('pointermove', (e) => {
     if (zeiger.has(e.pointerId)) zeiger.set(e.pointerId, [e.clientX, e.clientY])
     if (zeiger.size === 2) {
-      const v = [...zeiger.values()]
-      const d = Math.hypot(v[0][0] - v[1][0], v[0][1] - v[1][1])
-      if (spanne) {
-        blick.zoom = Math.max(DARSTELLUNG.zoomMin, Math.min(DARSTELLUNG.zoomMax, blick.zoom * (d / spanne)))
-        zeichne()
-      }
-      spanne = d
+      zangeVormerken()
       return
     }
     // --- Ein Stueck in der Hand: es folgt, das Blatt steht still (W7).
@@ -12398,7 +12665,10 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     const dy = e.clientY - ly
     lx = e.clientX
     ly = e.clientY
-    if (e.shiftKey) {
+    /* EIN FINGER SCHIEBT — Umschalt gibt es am Telefon nicht, und Schieben ist
+       dort die Geste, die man dauernd braucht (Begruendung oben am Block).
+       Die Maus behaelt ihre alte Bedeutung, Zahl fuer Zahl. */
+    if (ziehArt === 'finger' || e.shiftKey) {
       blick.schiebX += dx
       blick.schiebY += dy
     } else {
@@ -12412,15 +12682,38 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
   })
 
   const beenden = (e) => {
+    /* Eine vorgemerkte Zangen-Auswertung NACHHOLEN, bevor der Finger aus der
+       Liste faellt: sonst geht der letzte Schritt einer Geste verloren — genau
+       der, mit dem der Nutzer sein Ziel eingestellt hat. */
+    if (zangeOffen) zangeAuswerten()
     zeiger.delete(e.pointerId)
-    if (zeiger.size < 2) spanne = 0
+    if (zeiger.size < 2) {
+      spanne = 0
+      drehStau = 0
+    }
+    /* ZWEI FINGER, EINER GEHT HOCH: der verbleibende SCHIEBT weiter (H2).
+       Ohne diese Uebergabe steht das Blatt still, bis man neu aufsetzt — und
+       genau so hebt man in der Praxis ab: erst den einen Finger, dann den
+       anderen. Vorher endete jede Zange in einem toten Augenblick. */
+    if (zeiger.size === 1) {
+      const rest = [...zeiger.values()][0]
+      zieht = true
+      ziehArt = 'finger'
+      schnell = true
+      lx = rest[0]
+      ly = rest[1]
+      return
+    }
     // Das Stueck ist abgelegt. ZUERST, denn `lassLos` baut die Szene voll neu
     // — danach stimmte `zieht` nicht mehr mit dem Bild zusammen.
     if (greift) {
       griffBeenden()
       return
     }
-    if (!zieht) return
+    // `schnell` gehoert auch dann zurueckgenommen, wenn KEIN Zug lief: die
+    // Zange setzt es, und ohne diese Zeile blieben die Moebel nach einem
+    // Aufziehen einfach weg.
+    if (!zieht && !schnell) return
     zieht = false
     schnell = false
     zeichne()
@@ -13091,6 +13384,19 @@ function rueckgaengigSatz(){
   return schmal() ? 'Rückgängig mit dem Knopf in der Leiste.' : 'Rückgängig mit Strg+Z.';
 }
 
+/* ── H2: der Finger-Hinweis geht nach der ersten Beruehrung ──────────────
+   Einmal und endgueltig. Wer die Geste gemacht hat, braucht den Satz nicht
+   mehr; wer ihn zweimal lesen muesste, haette ein anderes Problem. Ein
+   eigener Schalter statt einer Abfrage im Ereignis, damit es genau EINE
+   Stelle gibt, an der diese Zeile verschwindet. */
+let fingerhinweisGesehen = false;
+function fingerhinweisWeg(){
+  if (fingerhinweisGesehen) return;
+  fingerhinweisGesehen = true;
+  const e = document.getElementById('fingerhinweis');
+  if (e) e.classList.add('weg');
+}
+
 function arbeitshinweisPflegen(){
   const flach = !!axoAnsicht && !axoAnsicht.ziehbar;
   /* AM HANDY GIBT ES KEINE TASTATUR (Handy-Welle). Bis hierher versprach diese
@@ -13123,7 +13429,17 @@ function axoNeuBauen(){
     axoAnsicht.passeAn();
     /* EINMALIG, nicht je Neubau: das Canvas wechselt nicht mehr, also wechseln
        auch seine Zuhoerer nicht. */
-    axoCanvas.addEventListener('pointerdown', function(){ axoCanvas.classList.add('zieht'); });
+    axoCanvas.addEventListener('pointerdown', function(e){
+      axoCanvas.classList.add('zieht');
+      /* H2: der Finger-Hinweis hat seinen Zweck erfuellt, sobald die erste
+         Beruehrung da ist. Nur bei FINGERN: an einer Maus stand er ohnehin nie
+         (CSS ab 900 px), und ein Mausklick soll nichts ausblenden, was der
+         Nutzer gar nicht sieht — sonst aendert sich der DOM-Abdruck der
+         Klick-Probe fuer etwas, das niemand angesehen hat.
+         Er bleibt STEHEN und wird nur durchsichtig: ein `display:none` haette
+         den Blattkopf darueber springen lassen. */
+      if (e.pointerType === 'touch') fingerhinweisWeg();
+    });
     ['pointerup','pointercancel'].forEach(function(t){
       axoCanvas.addEventListener(t, function(){
         axoCanvas.classList.remove('zieht');

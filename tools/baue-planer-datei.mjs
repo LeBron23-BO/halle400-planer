@@ -331,9 +331,23 @@ let html = `<!DOCTYPE html>
      die Werkzeugleiste sichtbar, obwohl sie versteckt ist — die Bank saehe den
      Werkzeugkasten. */
   [hidden]{display:none!important}
+  /* \`overscroll-behavior:none\` und \`touch-action:manipulation\` sind die zwei
+     Zeilen gegen das, was der BROWSER am Telefon von sich aus tut (H2):
+     das Gummiband-Scrollen der Seite am Rand und der Doppeltipp-Zoom. Beides
+     laeuft ueber den Fingern des Nutzers ab, waehrend er das Modell bedienen
+     will, und beides ist hier sinnlos — die Seite hat ohnehin keinen Scrollweg
+     (\`overflow:hidden\`), und gezoomt wird im Modell, nicht auf dem Papier.
+     \`manipulation\` und nicht \`none\`: die Knoepfe der Leisten sollen normal
+     bleiben, nur der Doppeltipp-Zoom faellt weg. */
   body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
-       -webkit-font-smoothing:antialiased;overflow:hidden}
-  canvas{display:block;width:100%;height:100%;touch-action:none}
+       -webkit-font-smoothing:antialiased;overflow:hidden;
+       overscroll-behavior:none;touch-action:manipulation}
+  /* \`user-select\`/\`touch-callout\` auf der Zeichenflaeche: ein Zug ueber das
+     Blatt soll ZIEHEN und nicht markieren, und ein langer Druck soll kein
+     System-Menue aufziehen. Bewusst NUR hier und nicht auf der ganzen Ansicht
+     — der Blattkopf bleibt Text, den man kopieren darf. */
+  canvas{display:block;width:100%;height:100%;touch-action:none;
+       user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 
   /* Beide Ansichten liegen uebereinander und behalten IHRE GROESSE, auch wenn
      sie ruhen: mit display:none haette der Grundriss-Zeichner beim Start eine
@@ -746,9 +760,42 @@ let html = `<!DOCTYPE html>
        font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-mute);
        pointer-events:none;opacity:.85;line-height:1.7}
 
+  /* ── DER FINGER-HINWEIS (H2) ──────────────────────────────────────────
+     Am Rechner steht die Bedienung in \`.hinweis\` — am Telefon faellt dieser
+     ganze Block unter 900 px weg (siehe gleich darunter), und mit ihm jedes
+     Wort darueber, was die Finger koennen. GEMESSEN: \`.hinweis\` hatte auf
+     390 px \`display:none\`, es stand also NICHTS da. Niemand probiert eine
+     Geste, von der er nicht weiss, dass es sie gibt.
+
+     Der Block selbst darf NICHT zurueckkommen: in ihm steht die
+     Herkunfts-Fussnote ("Grundriss und Ausstattung sind gemessen", mit dem
+     Massstabs-Vorbehalt der Oeffnungen), und die braucht auf 390 px vier
+     Zeilen ueber dem Modell. Also eine EIGENE, kurze Zeile — und nur die.
+
+     Sie geht nach der ersten Beruehrung weg und kommt nicht wieder: ein
+     Hinweis, den man schon befolgt hat, ist ab da nur noch Deckel ueber dem
+     Bild. \`pointer-events:none\`, damit er nicht selbst die Geste abfaengt,
+     die er erklaert. */
+  /* \`bottom:150px\` ist GEMESSEN und nicht geschaetzt: die Blick-Leiste bricht
+     am Telefon in drei Reihen um und beginnt bei 800 px Hoehe schon bei 656 px
+     (siehe die Handy-Welle weiter unten) — sie ist also rund 144 px hoch. Bei
+     64 px laege diese Zeile mitten in den Knoepfen. In der reinen Fassung ist
+     die Leiste weggeschnitten, dort steht sie einfach im leeren Blattfuss.
+     Schriftgroesse und Laufweite sind auf EINE Zeile bei 390 px abgestimmt:
+     mit 9,5 px und .1em brach der Satz um, und ein zweizeiliger Hinweis ist
+     nicht mehr unaufdringlich. */
+  .fingerhinweis{display:none;position:fixed;left:10px;right:10px;bottom:150px;z-index:45;
+       text-align:center;font-family:var(--mono);font-size:9px;letter-spacing:.06em;
+       text-transform:uppercase;color:var(--ink-mute);pointer-events:none;
+       transition:opacity .45s ease}
+  .fingerhinweis.weg{opacity:0}
+
   @media (max-width:900px){
     .tafel{top:auto;bottom:112px;right:10px;left:10px;width:auto;max-height:38vh}
     .hinweis{display:none}
+    /* NUR hier sichtbar — am Rechner erklaert \`.hinweis\` dieselbe Sache
+       vollstaendiger, und zwei Bedienzeilen nebeneinander waeren eine zu viel. */
+    .fingerhinweis{display:block}
     /* ── W7 am Handy ─────────────────────────────────────────────────────
        GEMESSEN bei 390 x 800, nicht uebertragen: fuer eine SCHWEBENDE Leiste
        ist hier nirgends Platz. Oben laeuft der Blattkopf ab 52 px quer ueber
@@ -879,7 +926,7 @@ let html = `<!DOCTYPE html>
     /* Bedienelemente gehoeren nicht aufs Papier. Ein gedruckter Knopf ist eine
        Aufforderung, die das Blatt nicht einloesen kann. */
     .kopfleiste,.leiste,.palette,.standleiste,.meldung,.frage,.geist,
-    .arbeitshinweis,#hinweisBedienung{display:none!important}
+    .arbeitshinweis,#hinweisBedienung,.fingerhinweis{display:none!important}
     /* Die Saeulen-Tafel ist ein Bildschirm-Aufsteller mit eigenem Schalter und
        Weichzeichner: auf Papier verdeckte sie ein Viertel des Grundrisses, und
        der Weichzeichner druckt ohnehin nicht. Ihr Inhalt steht als Beschriftung
@@ -1123,7 +1170,10 @@ ${OHNE_SAEULEN ? '' : `    <div class="grp">
     <!-- Bedienhinweise gehören auf den Bildschirm, nicht aufs Papier (M5).
          Deshalb ein eigener Anker: die Fussnote darunter MUSS gedruckt
          werden, diese Zeile darf es nicht. -->
-    <span id="hinweisBedienung">Ziehen dreht &middot; Rad zoomt &middot; zwei Finger zoomen<br></span>
+    <!-- „Umschalt schiebt" stand hier nie, obwohl es die Bedienung seit jeher
+         gibt — und ohne Schieben ist ein hoher Zoom am Rechner genauso wertlos
+         wie am Telefon. Der Rest bleibt Wort fuer Wort stehen. -->
+    <span id="hinweisBedienung">Ziehen dreht &middot; Umschalt schiebt &middot; Rad zoomt &middot; zwei Finger zoomen<br></span>
     <span id="hinweisHerkunft">Grundriss und Ausstattung sind gemessen.</span> Höhen sind
     gesetzte Annahmen — ein Grundriss enthält keine.
     <!-- Der Massstabs-Vorbehalt der Öffnungen (W4) steht HIER und nicht im
@@ -1131,6 +1181,12 @@ ${OHNE_SAEULEN ? '' : `    <div class="grp">
          und oben schöbe er sich in die Raumnamen (am Standbild gemessen). -->
     <span id="hinweisOeffnung"></span>
   </div>
+
+  <!-- H2: die Bedienzeile fuers Telefon. Sie steht nur unter 900 px da (CSS)
+       und verschwindet nach der ersten Beruehrung. Eigenes Element und nicht
+       ein Teil von \`.hinweis\`: dieser Block traegt die Herkunfts-Fussnote,
+       die auf 390 px keinen Platz hat und aufs Papier MUSS. -->
+  <div class="fingerhinweis" id="fingerhinweis">Ein Finger schiebt &middot; Zwei Finger zoomen und drehen</div>
 </div>
 
 <!-- ── Grundriss: hier wird bearbeitet. ─────────────────────────────── -->
@@ -2046,6 +2102,19 @@ function rueckgaengigSatz(){
   return schmal() ? 'Rückgängig mit dem Knopf in der Leiste.' : 'Rückgängig mit Strg+Z.';
 }
 
+/* ── H2: der Finger-Hinweis geht nach der ersten Beruehrung ──────────────
+   Einmal und endgueltig. Wer die Geste gemacht hat, braucht den Satz nicht
+   mehr; wer ihn zweimal lesen muesste, haette ein anderes Problem. Ein
+   eigener Schalter statt einer Abfrage im Ereignis, damit es genau EINE
+   Stelle gibt, an der diese Zeile verschwindet. */
+let fingerhinweisGesehen = false;
+function fingerhinweisWeg(){
+  if (fingerhinweisGesehen) return;
+  fingerhinweisGesehen = true;
+  const e = document.getElementById('fingerhinweis');
+  if (e) e.classList.add('weg');
+}
+
 function arbeitshinweisPflegen(){
   const flach = !!axoAnsicht && !axoAnsicht.ziehbar;
   /* AM HANDY GIBT ES KEINE TASTATUR (Handy-Welle). Bis hierher versprach diese
@@ -2078,7 +2147,17 @@ function axoNeuBauen(){
     axoAnsicht.passeAn();
     /* EINMALIG, nicht je Neubau: das Canvas wechselt nicht mehr, also wechseln
        auch seine Zuhoerer nicht. */
-    axoCanvas.addEventListener('pointerdown', function(){ axoCanvas.classList.add('zieht'); });
+    axoCanvas.addEventListener('pointerdown', function(e){
+      axoCanvas.classList.add('zieht');
+      /* H2: der Finger-Hinweis hat seinen Zweck erfuellt, sobald die erste
+         Beruehrung da ist. Nur bei FINGERN: an einer Maus stand er ohnehin nie
+         (CSS ab 900 px), und ein Mausklick soll nichts ausblenden, was der
+         Nutzer gar nicht sieht — sonst aendert sich der DOM-Abdruck der
+         Klick-Probe fuer etwas, das niemand angesehen hat.
+         Er bleibt STEHEN und wird nur durchsichtig: ein \`display:none\` haette
+         den Blattkopf darueber springen lassen. */
+      if (e.pointerType === 'touch') fingerhinweisWeg();
+    });
     ['pointerup','pointercancel'].forEach(function(t){
       axoCanvas.addEventListener(t, function(){
         axoCanvas.classList.remove('zieht');

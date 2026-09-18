@@ -186,6 +186,23 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     const grund = Math.min(platzB / Math.max(0.001, ux1 - ux0), platzH / Math.max(0.001, uy1 - uy0))
     const m = grund * blick.zoom
     kameraWerte.massstab = m
+    /* ── DIE WEICHE LEINE (H2) ───────────────────────────────────────────
+       Hier und nirgends sonst, weil HIER die projizierte Groesse des Modells
+       in Bildpunkten bekannt ist — ausserhalb muesste man sie nachrechnen und
+       haette eine zweite Wahrheit ueber die Einpassung.
+
+       WARUM UEBERHAUPT: mit der neuen Zoom-Obergrenze ist das Modell bis zu
+       9000 Bildpunkte breit. Ein Finger schiebt am Telefon jetzt frei — ohne
+       Grenze ist das Blatt nach zwei Wischern aus der Anzeige heraus, und der
+       Betrachter sieht leeres Papier ohne zu wissen, wohin. Kein Kaefig: die
+       Grenze laesst jeden Rand des Modells erreichen und haelt nur immer
+       mindestens `schubRand` Bildpunkte davon im Bild. */
+    const modellB = (ux1 - ux0) * m
+    const modellH = (uy1 - uy0) * m
+    const maxX = Math.max(0, (modellB + breite) / 2 - DARSTELLUNG.schubRand)
+    const maxY = Math.max(0, (modellH + hoehe) / 2 - DARSTELLUNG.schubRand)
+    blick.schiebX = Math.max(-maxX, Math.min(maxX, blick.schiebX))
+    blick.schiebY = Math.max(-maxY, Math.min(maxY, blick.schiebY))
     const cxp = ((ux0 + ux1) / 2) * m
     const cyp = ((uy0 + uy1) / 2) * m
     kameraWerte.ox = (weit ? (breite - randRechts) / 2 : breite / 2) - cxp + blick.schiebX
@@ -572,12 +589,46 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     zeichne()
   }
 
-  /* ── Bedienung: ziehen dreht, Rad zoomt, zwei Finger zoomen ─────── */
+  /* ── Bedienung ───────────────────────────────────────────────────────
+     AM RECHNER (Maus): Ziehen dreht, Umschalt+Ziehen schiebt, Rad zoomt.
+     Unveraendert — das ist die Bedienung, mit der die Blaetter gebaut werden.
+
+     AM TELEFON (Finger): EIN Finger SCHIEBT, ZWEI Finger zoomen um ihre Mitte
+     und schieben dabei mit, Verdrehen der zwei Finger dreht.
+
+     WARUM DER EINE FINGER SCHIEBT UND NICHT DREHT (H2, begruendet):
+     Bis hierher drehte er — und das war am Telefon die falsche Wahl, aus einem
+     messbaren Grund: die Grundeinpassung quetscht 78 m auf 358 Bildpunkte,
+     also MUSS man weit hineinzoomen, um ein Zimmer zu sehen. Gemessen war das
+     Blatt danach unbewegbar: ein Finger drehte, zwei Finger zoomten nur, und
+     `schiebX`/`schiebY` blieben ueber jede Geste hinweg auf 0. Zoomen ohne
+     Verschieben ist kein halbes Werkzeug, es ist gar keins — man landet in
+     einer Zimmerecke und kommt nicht zum naechsten Zimmer.
+
+     Und: Drehen hat am Telefon bereits einen zweiten Weg (die Knoepfe
+     Nord/West/Sued/Plan und jetzt das Verdrehen), Schieben hatte KEINEN.
+     Umschalt gibt es an keinem Telefon. Wer einen Grundriss ansieht, faehrt
+     ausserdem ueber ihn hinweg wie ueber eine Karte; das Drehen ist der
+     seltenere, bewusste Akt. Also bekommt der haeufige Akt die einfache
+     Geste. */
   let zieht = false
   let lx = 0
   let ly = 0
+  /* WOMIT gezogen wird, beim Aufsetzen festgehalten. Nicht bei jeder Bewegung
+     neu gefragt: ein Zug, der auf halber Strecke die Bedeutung wechselte, waere
+     keine Geste mehr. */
+  let ziehArt = 'maus'
   let zeiger = new Map()
   let spanne = 0
+  /* Die Fingermitte des letzten Ereignisses, in BILD-Koordinaten der Leinwand
+     (nicht in Fenster-Koordinaten) — `projiziere` rechnet in diesen. */
+  let mitteBX = 0
+  let mitteBY = 0
+  let winkelVor = 0
+  /* Aufgelaufene Verdrehung, solange sie unter der Schwelle liegt. Sie wird
+     bei der Schwelle FESTGEHALTEN und nicht nachgeholt: sonst spraenge das
+     Blatt im Augenblick des Ueberschreitens um 12 Grad. */
+  let drehStau = 0
 
   /* ══ MOEBEL GREIFEN (W7) ═══════════════════════════════════════════════
      Der TREFFER entscheidet, keine Zusatztaste: Druck auf einen Koerper
@@ -610,6 +661,120 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     return p ? { x: p.x / CM, y: p.z / CM } : null
   }
 
+  const klemmeZoom = (z) => Math.max(DARSTELLUNG.zoomMin, Math.min(DARSTELLUNG.zoomMax, z))
+
+  /** Lage der beiden Finger: Mitte in BILD-Koordinaten, Abstand, Winkel. */
+  function fingerLage() {
+    const v = [...zeiger.values()]
+    const r = canvas.getBoundingClientRect()
+    return {
+      mx: (v[0][0] + v[1][0]) / 2 - r.left,
+      my: (v[0][1] + v[1][1]) / 2 - r.top,
+      d: Math.hypot(v[0][0] - v[1][0], v[0][1] - v[1][1]),
+      w: Math.atan2(v[1][1] - v[0][1], v[1][0] - v[0][0])
+    }
+  }
+
+  /**
+   * ZOOMEN UND DREHEN UM EINEN BILDPUNKT (H2).
+   *
+   * Der Kern der Karten-Bedienung: was unter den Fingern liegt, bleibt unter
+   * den Fingern. Vorher zoomte dieses Blatt um die Mitte seiner EINPASSUNG —
+   * gemessen wanderte der angefasste Punkt bei einem einzigen Aufziehen um
+   * 152 Bildpunkte weg, also mehr als eine Drittel-Anzeigenbreite. Man zielt
+   * auf ein Zimmer und landet in einem anderen.
+   *
+   * KEINE zweite Projektionsformel, und das ist Absicht: der Punkt wird mit
+   * `umkehreAuf` zurueckgerechnet, die Aenderung angewandt, und derselbe
+   * Weltpunkt mit `projiziere` wieder vorwaerts gerechnet. Die Differenz ist
+   * die noetige Verschiebung. Damit stimmt die Rechnung auch dann noch, wenn
+   * sich im selben Augenblick der BLICKWINKEL mitdreht — eine ausgeschriebene
+   * Zoom-Formel koennte das nicht, sie kennt nur den Massstab.
+   *
+   * Die Hoehe ist `mitteY`, die Drehachse des Blattes: auf dieser Ebene steht
+   * der Punkt beim Drehen ohnehin am ruhigsten.
+   */
+  function haltePunkt(bx, by, aendere) {
+    setzeKamera()
+    const h = kameraWerte.mitteY
+    const vorher = umkehreAuf(kamera(), bx, by, h)
+    aendere()
+    if (!vorher) return
+    setzeKamera()
+    const p = projiziere(vorher.x, h, vorher.z)
+    blick.schiebX += bx - p.x
+    blick.schiebY += by - p.y
+  }
+
+  /* ══ DIE ZANGE WIRD JE BILD AUSGEWERTET, NICHT JE EREIGNIS (H2) ═══════════
+     GEMESSEN und nicht vermutet: der Browser meldet zwei Finger in ZWEI
+     getrennten `pointermove`-Ereignissen. Im ersten steht der eine Finger schon
+     auf der neuen Stelle und der andere noch auf der alten — der Abstand ist
+     dort um den halben Schritt FALSCH. Rechnet man jedes Ereignis einzeln aus,
+     zappelt der Zoom bei jedem Bild um rund 6 % hin und her.
+
+     Unsichtbar bleibt das nur, solange nichts klemmt. AN DER ZOOM-GRENZE wird
+     aus dem Zappeln eine Einbahnstrasse: der Schritt nach oben wird von
+     `klemmeZoom` abgeschnitten, der Schritt nach unten nicht. Gemessen: zwei
+     Finger, parallel verschoben, ohne jede Abstandsaenderung — der Zoom fiel
+     von 24,00 auf 22,53. Das Blatt zoomte von selbst heraus, waehrend der
+     Nutzer nur schob.
+
+     Ein Bild, eine Auswertung: bis der Browser das naechste Bild zeichnet,
+     sind BEIDE Finger frisch. Nebenbei halbiert es die Neuzeichnungen. */
+  let zangeOffen = false
+  const naechstesBild = (f) =>
+    globalThis.requestAnimationFrame ? globalThis.requestAnimationFrame(f) : setTimeout(f, 16)
+
+  function zangeAuswerten() {
+    zangeOffen = false
+    // Ein vorgemerktes Bild kann NACH `zerstoere` eintreffen. Dann zeichnete ein
+    // abgemeldeter Renderer noch einmal auf eine Flaeche, die schon einem
+    // anderen gehoert — dieselbe Klasse von Fehler wie die gestapelten Abos (B3).
+    if (abbruch.signal.aborted) return
+    if (zeiger.size !== 2) return
+    const f = fingerLage()
+    if (spanne) {
+      /* ZUERST die Fingermitte: das Blatt faehrt mit der Hand mit, in reinen
+         Bildpunkten und ohne Umweg. Das ist die Haelfte, die bisher ganz
+         fehlte — gemessen blieb `schiebX` bei zwei parallel geschobenen
+         Fingern auf 0,00, das Blatt stand einfach still. */
+      blick.schiebX += f.mx - mitteBX
+      blick.schiebY += f.my - mitteBY
+
+      /* DANN Massstab und Blickwinkel, beides um genau den Punkt, der jetzt
+         unter der Fingermitte liegt. Beides in EINEM `haltePunkt`, damit die
+         Korrektur die Summe beider Aenderungen sieht und nicht zweimal
+         nacheinander nachfaehrt. */
+      let dw = f.w - winkelVor
+      // Der Winkel springt bei ±π. Ohne diese zwei Zeilen dreht sich das
+      // Blatt einmal um sich selbst, sobald die Finger die Senkrechte kreuzen.
+      while (dw > Math.PI) dw -= 2 * Math.PI
+      while (dw < -Math.PI) dw += 2 * Math.PI
+      haltePunkt(f.mx, f.my, () => {
+        blick.zoom = klemmeZoom(blick.zoom * (f.d / spanne))
+        drehStau += dw
+        const s = DARSTELLUNG.drehSchwelle
+        if (Math.abs(drehStau) > s) {
+          const ueber = drehStau - Math.sign(drehStau) * s
+          blick.az -= ueber
+          drehStau = Math.sign(drehStau) * s
+        }
+      })
+      zeichne()
+    }
+    spanne = f.d
+    mitteBX = f.mx
+    mitteBY = f.my
+    winkelVor = f.w
+  }
+
+  function zangeVormerken() {
+    if (zangeOffen) return
+    zangeOffen = true
+    naechstesBild(zangeAuswerten)
+  }
+
   /** Zeiger-Aussage: was liegt unter dem Zeiger, und wie sagt es der Zeiger? */
   function zeigerPflegen(treffer) {
     unterZeiger = treffer ? treffer.id : null
@@ -629,6 +794,22 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
       // Ein zweiter Finger beendet einen laufenden Griff: zwei Finger heissen
       // in diesem Blatt „zoomen", und beides zugleich waere keine Geste.
       if (greift) griffBeenden()
+      /* Die Ausgangslage der Zange SOFORT festhalten, nicht erst bei der
+         ersten Bewegung. Sonst waere der erste `pointermove` gegen eine
+         Spanne von 0 gerechnet und das Blatt spraenge (gemessen als
+         Zoom-Sprung beim Aufsetzen des zweiten Fingers). */
+      if (zeiger.size === 2) {
+        const f = fingerLage()
+        spanne = f.d
+        mitteBX = f.mx
+        mitteBY = f.my
+        winkelVor = f.w
+        drehStau = 0
+        /* Waehrend der Zange nur die grossen Flaechen zeichnen. Ein Aufziehen
+           erzeugt 30 bis 60 Bilder; mit allen 289 Ausstattungs-Stuecken je Bild
+           ruckelt genau die Geste, die sich fluessig anfuehlen soll. */
+        schnell = true
+      }
       return
     }
     if (bearbeitbar()) {
@@ -667,6 +848,7 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     }
     zieht = true
     schnell = true
+    ziehArt = e.pointerType === 'touch' ? 'finger' : 'maus'
     lx = e.clientX
     ly = e.clientY
     try {
@@ -692,13 +874,7 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
   amCanvas('pointermove', (e) => {
     if (zeiger.has(e.pointerId)) zeiger.set(e.pointerId, [e.clientX, e.clientY])
     if (zeiger.size === 2) {
-      const v = [...zeiger.values()]
-      const d = Math.hypot(v[0][0] - v[1][0], v[0][1] - v[1][1])
-      if (spanne) {
-        blick.zoom = Math.max(DARSTELLUNG.zoomMin, Math.min(DARSTELLUNG.zoomMax, blick.zoom * (d / spanne)))
-        zeichne()
-      }
-      spanne = d
+      zangeVormerken()
       return
     }
     // --- Ein Stueck in der Hand: es folgt, das Blatt steht still (W7).
@@ -724,7 +900,10 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     const dy = e.clientY - ly
     lx = e.clientX
     ly = e.clientY
-    if (e.shiftKey) {
+    /* EIN FINGER SCHIEBT — Umschalt gibt es am Telefon nicht, und Schieben ist
+       dort die Geste, die man dauernd braucht (Begruendung oben am Block).
+       Die Maus behaelt ihre alte Bedeutung, Zahl fuer Zahl. */
+    if (ziehArt === 'finger' || e.shiftKey) {
       blick.schiebX += dx
       blick.schiebY += dy
     } else {
@@ -738,15 +917,38 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
   })
 
   const beenden = (e) => {
+    /* Eine vorgemerkte Zangen-Auswertung NACHHOLEN, bevor der Finger aus der
+       Liste faellt: sonst geht der letzte Schritt einer Geste verloren — genau
+       der, mit dem der Nutzer sein Ziel eingestellt hat. */
+    if (zangeOffen) zangeAuswerten()
     zeiger.delete(e.pointerId)
-    if (zeiger.size < 2) spanne = 0
+    if (zeiger.size < 2) {
+      spanne = 0
+      drehStau = 0
+    }
+    /* ZWEI FINGER, EINER GEHT HOCH: der verbleibende SCHIEBT weiter (H2).
+       Ohne diese Uebergabe steht das Blatt still, bis man neu aufsetzt — und
+       genau so hebt man in der Praxis ab: erst den einen Finger, dann den
+       anderen. Vorher endete jede Zange in einem toten Augenblick. */
+    if (zeiger.size === 1) {
+      const rest = [...zeiger.values()][0]
+      zieht = true
+      ziehArt = 'finger'
+      schnell = true
+      lx = rest[0]
+      ly = rest[1]
+      return
+    }
     // Das Stueck ist abgelegt. ZUERST, denn `lassLos` baut die Szene voll neu
     // — danach stimmte `zieht` nicht mehr mit dem Bild zusammen.
     if (greift) {
       griffBeenden()
       return
     }
-    if (!zieht) return
+    // `schnell` gehoert auch dann zurueckgenommen, wenn KEIN Zug lief: die
+    // Zange setzt es, und ohne diese Zeile blieben die Moebel nach einem
+    // Aufziehen einfach weg.
+    if (!zieht && !schnell) return
     zieht = false
     schnell = false
     zeichne()
