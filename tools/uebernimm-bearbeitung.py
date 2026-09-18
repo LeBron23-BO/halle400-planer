@@ -505,6 +505,219 @@ def nur_ecken(pfad: Path, walls: Path | None = None) -> int:
     return 1 if (untreu or fehlend) else 0
 
 
+def _paar(w: dict) -> tuple[str, str]:
+    """Eine Wand heisst, an WELCHEN ZWEI ECKEN sie haengt — in fester Ordnung.
+
+    Nicht ueber `id`: die tragen in `app/public/plaene/hotel400.json` nur 47 von
+    650 Waenden (gemessen), der Rest hat gar keine. Nicht ueber die Koordinate:
+    die aendert sich beim Verschieben, und genau dort soll die Zuordnung ja
+    halten. Die Ecken-KENNUNG ueberlebt beides — `Corner.move` aendert x und y,
+    nie die Kennung.
+    """
+    return tuple(sorted((w.get("corner1"), w.get("corner2"))))  # type: ignore[return-value]
+
+
+def _lage(w: dict, ecken: dict) -> tuple[float, float, float, float] | None:
+    a = ecken.get(w.get("corner1"))
+    b = ecken.get(w.get("corner2"))
+    if not a or not b:
+        return None
+    return (round(float(a["x"]), 1), round(float(a["y"]), 1),
+            round(float(b["x"]), 1), round(float(b["y"]), 1))
+
+
+def _auf_achse(lage: tuple[float, float, float, float],
+               achse: tuple[float, float, float, float], toleranz: float = 6.0) -> bool:
+    """Liegt eine Strecke GANZ auf der Achse einer anderen?
+
+    Fuer die Teilstueck-Erbschaft: wird eine gemessene Wand im Planer geteilt
+    (eine neue Ecke hineingesetzt), entstehen zwei Waende mit NEUEN Ecken-Paaren
+    — die Zuordnung ueber das Paar findet sie nicht mehr. Ihre Achse ist aber
+    dieselbe. `Corner.mergeWithIntersected` vererbt aus genau diesem Grund schon
+    im Planer die Herkunft an die zweite Haelfte (`src/model/corner.ts`); hier
+    steht dieselbe Regel fuer den Rueckweg.
+    """
+    ax, ay, bx, by = achse
+    dx, dy = bx - ax, by - ay
+    laenge2 = dx * dx + dy * dy
+    if laenge2 < 1:
+        return False
+    for px, py in ((lage[0], lage[1]), (lage[2], lage[3])):
+        t = ((px - ax) * dx + (py - ay) * dy) / laenge2
+        if t < -0.02 or t > 1.02:
+            return False
+        if ((px - (ax + t * dx)) ** 2 + (py - (ay + t * dy)) ** 2) ** 0.5 > toleranz:
+            return False
+    return True
+
+
+def uebernimm_plan(nutzer: dict, plan_pfad: Path, stempel: str,
+                   schreibe: bool) -> int:
+    """Einen bearbeiteten Stand zurueck in einen FERTIGEN Plan holen (W15).
+
+    WARUM DAS EIN EIGENER WEG IST — UND KEIN SCHALTER AM ALTEN
+    ----------------------------------------------------------
+    Der Weg darueber misst gegen das AUFMASS (`data/walls.json`,
+    `data/ausstattung.json`) und schreibt in `data/gesetzt.json`. Das ist fuer
+    die Halle richtig und fuer das Hotel falsch: `app/public/plaene/hotel400.json`
+    entsteht nicht aus `data/walls.json`, sondern aus der Hotel-PDF, und seine
+    Ecken-Kennungen sind keine Koordinaten-Hashes. Gegen den falschen Massstab
+    gehalten meldete das alte Werkzeug 76 „verschwundene gemessene Ecken" und
+    brach hart ab — kein einziger dieser Befunde betraf die Arbeit des Nutzers.
+    Ein Pruefer, der den falschen Massstab anlegt, macht die richtige Datei rot.
+
+    WAS DER PLANER BEIM SPEICHERN VERLIERT
+    --------------------------------------
+    Er schreibt an einer Wand nur `id`, `corner1`, `corner2`, `quelle` und die
+    Texturen. `herkunft` (der Beleg aus der PDF) und `art` kennt sein Format
+    NICHT — gemessen: 650 von 650 Herkuenften fehlen im gesicherten Stand. Wer
+    die Datei einfach zurueckkopiert, loescht damit die gesamte Beweiskette,
+    ohne dass irgendwo etwas rot wird. Genau das verhindert dieser Weg: die
+    Herkunft kommt aus dem alten Plan zurueck, Wand fuer Wand.
+
+    DIE VIER GRUPPEN
+    ----------------
+    | Wand mit demselben Ecken-Paar, gleiche Lage | Herkunft 1:1 zurueck       |
+    | dieselbe, ABER verschoben                   | Herkunft + VERMERK         |
+    | neu, liegt auf GENAU EINER alten Achse      | Herkunft geerbt + VERMERK  |
+    | sonst neu                                   | ohne Herkunft, gezeichnet  |
+
+    DIE GEAENDERTE REGEL (W15, ausdruecklich)
+    -----------------------------------------
+    Eine verschobene gemessene Wand bricht hier NICHT mehr ab. Die alte Regel
+    stammt aus einer Zeit, in der eine verschobene Messwand nur ein Unfall sein
+    konnte — es gab kein Werkzeug dafuer. Seit W14 gibt es eines, und der Nutzer
+    benutzt es mit Absicht. Beide Fehler werden trotzdem vermieden:
+      · Sie gilt NICHT weiter als unveraendert gemessen — der Vermerk sagt, dass
+        sie von Hand gezogen wurde, mit alter und neuer Lage in Zentimetern.
+      · Sie verliert ihre Messherkunft NICHT — der urspruengliche Beleg bleibt
+        wortwoertlich stehen, der Vermerk kommt dahinter.
+    Eine Wand, die als gemessen gilt, obwohl jemand sie gezogen hat, waere eine
+    Luege im Plan; eine, die ihre Messherkunft verliert, waere ein Verlust.
+    """
+    alt = json.loads(plan_pfad.read_text(encoding="utf-8"))
+    alt_fp = alt["floorplan"]
+    neu_fp = nutzer["floorplan"]
+
+    alt_ecken = alt_fp.get("corners") or {}
+    neu_ecken = neu_fp.get("corners") or {}
+
+    nach_paar: dict[tuple[str, str], dict] = {}
+    for w in alt_fp.get("walls") or []:
+        nach_paar.setdefault(_paar(w), w)
+
+    # Die Achsen der ALTEN Waende, die eine Herkunft tragen — fuer die Erbschaft.
+    achsen = [(_lage(w, alt_ecken), w) for w in alt_fp.get("walls") or []]
+    achsen = [(l, w) for l, w in achsen if l and w.get("herkunft")]
+
+    zahl = {"getragen": 0, "verschoben": 0, "geerbt": 0, "gezeichnet": 0,
+            "mehrdeutig": 0}
+    mehrdeutig: list[str] = []
+    verschoben_liste: list[str] = []
+
+    for w in neu_fp.get("walls") or []:
+        lage_neu = _lage(w, neu_ecken)
+        vorbild = nach_paar.get(_paar(w))
+        if vorbild is not None:
+            if vorbild.get("art") is not None and w.get("art") is None:
+                w["art"] = vorbild["art"]
+            herkunft = vorbild.get("herkunft")
+            if not herkunft:
+                zahl["gezeichnet"] += 1
+                continue
+            lage_alt = _lage(vorbild, alt_ecken)
+            if lage_alt and lage_neu and lage_alt != lage_neu:
+                w["herkunft"] = (
+                    f"{herkunft} | VOM BETREIBER VON HAND VERSCHOBEN "
+                    f"({stempel}): von "
+                    f"{lage_alt[0]:.0f}/{lage_alt[1]:.0f}-{lage_alt[2]:.0f}/{lage_alt[3]:.0f} "
+                    f"auf "
+                    f"{lage_neu[0]:.0f}/{lage_neu[1]:.0f}-{lage_neu[2]:.0f}/{lage_neu[3]:.0f} cm. "
+                    f"Die Messherkunft davor gilt unveraendert; die LAGE ist es, "
+                    f"die jetzt eine Setzung ist und keine Messung.")
+                w["quelle"] = "gesetzt"
+                zahl["verschoben"] += 1
+                verschoben_liste.append(
+                    f"{lage_alt[0]:.0f}/{lage_alt[1]:.0f} -> {lage_neu[0]:.0f}/{lage_neu[1]:.0f} cm")
+            else:
+                w["herkunft"] = herkunft
+                zahl["getragen"] += 1
+            continue
+
+        # Kein Vorbild ueber das Ecken-Paar: geerbtes Teilstueck oder wirklich neu.
+        traeger = [w2 for l, w2 in achsen if lage_neu and _auf_achse(lage_neu, l)]
+        # NUR bei EINDEUTIGKEIT erben. Liegt das Stueck auf zwei alten Achsen
+        # (Doppelwaende gibt es in diesem Plan reichlich), waere jede Wahl
+        # geraten — und eine geratene Herkunft ist schlimmer als keine.
+        quellen = {t.get("herkunft") for t in traeger}
+        if len(quellen) == 1:
+            w["herkunft"] = (
+                f"{traeger[0]['herkunft']} | TEILSTUECK: vom Betreiber am "
+                f"{stempel} aus dieser Wand herausgetrennt; die Achse ist "
+                f"unveraendert, nur die Ecken sind neu gesetzt.")
+            if traeger[0].get("art") is not None and w.get("art") is None:
+                w["art"] = traeger[0]["art"]
+            zahl["geerbt"] += 1
+        elif len(quellen) > 1:
+            zahl["mehrdeutig"] += 1
+            if lage_neu:
+                mehrdeutig.append(
+                    f"{lage_neu[0]:.0f}/{lage_neu[1]:.0f}-{lage_neu[2]:.0f}/{lage_neu[3]:.0f} cm "
+                    f"(liegt auf {len(quellen)} alten Achsen)")
+        else:
+            zahl["gezeichnet"] += 1
+
+    def n(d, k):
+        return len(d.get(k) or [])
+
+    print("UEBERNAHME IN EINEN FERTIGEN PLAN")
+    print(f"  Ziel:  {plan_pfad}")
+    print("")
+    print(f"  Ecken        {len(alt_ecken):>5} -> {len(neu_ecken):>5}"
+          f"   ({len(set(neu_ecken) - set(alt_ecken))} neu gezeichnet, "
+          f"{len(set(alt_ecken) - set(neu_ecken))} entfallen)")
+    print(f"  Waende       {n(alt_fp,'walls'):>5} -> {n(neu_fp,'walls'):>5}")
+    print(f"  Ausstattung  {n(alt_fp,'ausstattung'):>5} -> {n(neu_fp,'ausstattung'):>5}")
+    print(f"  Oeffnungen   {n(alt_fp,'oeffnungen'):>5} -> {n(neu_fp,'oeffnungen'):>5}")
+    print(f"  Raumnamen    {len(alt.get('labels') or []):>5} -> "
+          f"{len(nutzer.get('labels') or []):>5}")
+    print("")
+    print("  HERKUNFT DER WAENDE")
+    print(f"    · unveraendert weitergetragen : {zahl['getragen']}")
+    print(f"    · verschoben, Herkunft + Vermerk: {zahl['verschoben']}")
+    print(f"    · Teilstueck, Herkunft geerbt  : {zahl['geerbt']}")
+    print(f"    · neu gezeichnet, ohne Herkunft: {zahl['gezeichnet']}")
+    print(f"    · NICHT zugeordnet (mehrdeutig): {zahl['mehrdeutig']}")
+    for z in verschoben_liste[:5]:
+        print(f"        verschoben: {z}")
+    for z in mehrdeutig[:5]:
+        print(f"        mehrdeutig: {z}")
+    if len(mehrdeutig) > 5:
+        print(f"        … und {len(mehrdeutig) - 5} weitere")
+
+    fehlt = [w for w in neu_fp.get("walls") or []
+             if not w.get("herkunft") and w.get("quelle") != "gesetzt"]
+    if fehlt:
+        print(f"  HINWEIS: {len(fehlt)} Waende ohne Herkunft tragen auch kein "
+              f"\"gesetzt\" — sie werden als gezeichnet gefuehrt.")
+
+    if not schreibe:
+        print("")
+        print(f"Trockenlauf — {plan_pfad.name} wurde NICHT angefasst.")
+        return 0
+
+    ergebnis = {
+        "floorplan": neu_fp,
+        "items": nutzer.get("items", alt.get("items", [])),
+        "labels": nutzer.get("labels", alt.get("labels", [])),
+    }
+    plan_pfad.write_text(
+        json.dumps(ergebnis, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print("")
+    print(f"GESCHRIEBEN: {plan_pfad}")
+    return 0
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -522,6 +735,10 @@ def main() -> int:
     p.add_argument("--ziel", type=Path, default=STANDARD_ZIEL)
     p.add_argument("--ausstattung", type=Path, default=STANDARD_AUSSTATTUNG)
     p.add_argument("--walls", type=Path, default=STANDARD_WALLS)
+    p.add_argument("--plan", metavar="NAME",
+                   help="zurueck in app/public/plaene/NAME.json statt in "
+                        "data/gesetzt.json — fuer Plaene, die nicht aus "
+                        "data/walls.json entstehen (z.B. hotel400)")
     p.add_argument("--sicherung-ordner", type=Path, default=STANDARD_SICHERUNG)
     p.add_argument("--downloads", type=Path,
                    default=Path.home() / "Downloads")
@@ -561,6 +778,23 @@ def main() -> int:
         if sicherung:
             print(f"Die Datei liegt unveraendert als {sicherung}.")
         return 1
+
+    # --- Der PLAN-Weg (W15) zweigt HIER ab, nach Sicherung und Fassungs-Pruefung
+    # und VOR `pruefe_ecken`. Das ist kein Vorbeischleichen an der Regel, sondern
+    # der Punkt, an dem der Massstab wechselt: `pruefe_ecken` haelt die Datei
+    # gegen das HALLEN-Aufmass, und ein Hotel-Plan hat damit nichts zu tun.
+    # Gemessen: 76 gemeldete „verschwundene gemessene Ecken", von denen keine
+    # einzige in `hotel400.json` oder im Nutzerstand ueberhaupt vorkam.
+    if args.plan:
+        plan_pfad = WURZEL / "app/public/plaene" / f"{args.plan}.json"
+        if not plan_pfad.exists():
+            print(f"fehlt: {plan_pfad}")
+            return 1
+        nutzer_ganz = json.loads(quelle.read_text(encoding="utf-8"))
+        if sicherung:
+            print(f"Roh-Sicherung: {sicherung}")
+        return uebernimm_plan(nutzer_ganz, plan_pfad,
+                              datetime.now().strftime("%Y-%m-%d"), args.schreibe)
 
     befund = Befund()
     pruefe_ecken(fp, ecken_der_quelle(args.walls), befund)
