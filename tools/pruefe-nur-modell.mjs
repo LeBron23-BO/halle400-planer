@@ -199,7 +199,11 @@ const ERLAUBTE_KNOEPFE = [
   // geprueft wird weiterhin auf GLEICHHEIT, ein neunter Knopf faellt durch.
   'ansicht=plan', 'ansicht=axo',
   'blick=0', 'blick=1', 'blick=2', 'blick=3',
-  'sicht=gesamt', 'sicht=naeher', 'sicht=weiter'
+  'sicht=gesamt', 'sicht=naeher', 'sicht=weiter',
+  // Druck-Welle: Betreiber-Ansage „setze druckfunktionen ein damit man es sehr
+  // einfach im richtigen format ausdrucken kann". Die Liste waechst um GENAU
+  // diesen einen Knopf; geprueft wird weiterhin auf Gleichheit.
+  'sicht=drucken'
 ].sort()
 const fremdeKnoepfe = bestand.knopfKennungen.filter((k) => !ERLAUBTE_KNOEPFE.includes(k))
 pruefe(

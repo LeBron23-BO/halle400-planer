@@ -13,6 +13,11 @@
 //                        {raumnamen} {breite} {tiefe} werden zur Laufzeit gefuellt.
 //                        Ohne den Schalter bleibt die gerechnete Buero-Zeile.
 //   --namen <stellung>   Anfangsstellung der Namensschicht: alle|knapp|wichtige|aus
+//   --farbe <stufe>      Ausarbeitung der Darstellung:
+//                        zurueckhaltend (Vorgabe) | deutlich | c1 | c2
+//                        c1/c2 bringen zusaetzlich Schnittflaechen, Schlagschatten
+//                        und Umrisse in der Uebersicht
+//   --blatt <format>     Blattformat des Ausdrucks: a4 (Vorgabe) | a3, immer quer
 //                        (Vorgabe alle = bisheriges Verhalten; knapp = jeder Raum,
 //                        aber ohne Zusatzzeile — die Stellung fuer Papier)
 //   --ohne-saeulen       laesst die Neun-Saeulen-Tafel und ihre Schalter WEG
@@ -227,6 +232,55 @@ if (!NAMEN_START) {
   console.error(`  Erlaubt: ${Object.keys(NAMEN_STELLUNGEN).join(' | ')} (Vorgabe alle).`)
   process.exit(1)
 }
+/* ── WIE KRAEFTIG DIE RAUMARTEN FAERBEN (--farbe) ─────────────────────
+   Betreiber-Ansage: „kannst du das alles mit mehr farbe gestalten aber nicht
+   zu aufdringlich". Weil „nicht zu aufdringlich" eine Geschmacksgrenze ist und
+   keine messbare, baut die Datei BEIDE Staerken aus EINER Leiter — der
+   Unterschied ist genau ein Faktor auf den Buntanteil (`FARB_STAERKE` in
+   `src/axo/axo-kontrakt.js`). Die Helligkeitsstufen sind in beiden Fassungen
+   dieselben; der Schwarzweiss-Ausdruck faellt darum gleich aus, und die Wahl
+   ist wirklich nur eine Bildschirm-Wahl. */
+const FARB_STUFEN = { zurueckhaltend: 1, deutlich: 1, c1: 1, c2: 1 }
+const FARB_WAHL = arg('--farbe', 'zurueckhaltend')
+if (!FARB_STUFEN[FARB_WAHL]) {
+  console.error(`Abbruch: --farbe ${FARB_WAHL} kennt die Datei nicht.`)
+  console.error(`  Erlaubt: ${Object.keys(FARB_STUFEN).join(' | ')} (Vorgabe zurueckhaltend).`)
+  process.exit(1)
+}
+
+/* ── DAS BLATT, AUF DEM ES LANDET (--blatt) ───────────────────────────
+   Der Riegel ist 78,0 m lang. GERECHNET, nicht geschaetzt, mit 10 mm Rand und
+   18 mm Fussnote:
+
+     A4 quer  297 x 210 mm  ->  Zeichenfeld 277 x 170 mm  ->  rund 1:290,
+                                ein 3,5-m-Zimmer 12 mm breit
+     A3 quer  420 x 297 mm  ->  Zeichenfeld 400 x 257 mm  ->  rund 1:200,
+                                dasselbe Zimmer 17,5 mm breit
+
+   VORGABE IST A4, und zwar gegen die bessere Lesbarkeit: der Auftrag heisst
+   „dem Bankmitarbeiter so einfach wie moeglich". A4 liegt in jedem Geraet;
+   A3 ist in vielen Buerohaeusern gar nicht eingelegt, und dann steht der
+   Empfaenger genau vor der Frage, die dieser Knopf abschaffen soll. Wer das
+   Blatt gross braucht, baut mit `--blatt a3` — und wer EINEN Raum lesbar
+   braucht, zoomt vorher heran: der Knopf druckt, was zu sehen ist. */
+const BLATT_MASSE = {
+  a4: { seite: 'A4 landscape', feldBreite: '277mm', feldHoehe: '170mm', fussOben: '172mm', blattHoehe: '190mm' },
+  a3: { seite: 'A3 landscape', feldBreite: '400mm', feldHoehe: '257mm', fussOben: '259mm', blattHoehe: '277mm' }
+}
+const BLATT_WAHL = arg('--blatt', 'a4').toLowerCase()
+const BLATT = BLATT_MASSE[BLATT_WAHL]
+if (!BLATT) {
+  console.error(`Abbruch: --blatt ${BLATT_WAHL} kennt die Datei nicht.`)
+  console.error(`  Erlaubt: ${Object.keys(BLATT_MASSE).join(' | ')} (Vorgabe a4).`)
+  process.exit(1)
+}
+
+/* Bildpunkte je CSS-Punkt beim Drucken. 3 ist gerechnet und nicht gewuenscht:
+   ein 1600 px breites Fenster ergibt damit 4800 Bildpunkte auf 277 mm, also
+   440 dpi — mehr als jeder Buerodrucker aufloest. 4 waere Speicher fuer
+   nichts (bei 1600 x 900 rund 92 MB Leinwand). */
+const DRUCK_DICHTE = 3
+
 const OHNE_SAEULEN = process.argv.includes('--ohne-saeulen')
 if (OHNE_SAEULEN && NAMEN_START === 'saeulen') {
   console.error('Abbruch: --namen wichtige zusammen mit --ohne-saeulen.')
@@ -940,11 +994,33 @@ let html = `<!DOCTYPE html>
   .nurDruck{display:none}
   ${AB_JS}.siegelDruck.warnt{color:var(--rot);font-weight:700}${ZU_JS}
   @media print{
-    @page{size:A4 landscape;margin:10mm}
+    @page{size:${BLATT.seite};margin:10mm}
+    /* ── DAS ZEICHENFELD (Druck-Welle) ─────────────────────────────────
+       GEMESSEN am erzeugten PDF, bevor diese Zeilen hier standen: die
+       Leinwand lag mit 1153 x 792 mm auf einem 297 x 210 mm grossen Blatt und
+       ragte oben aus ihm heraus — auf dem Papier war ein Daumennagel Modell
+       und sonst nichts. Ursache ist \`position:fixed;inset:0\`: am Bildschirm
+       ist das „so gross wie das Fenster", im Seiten-Layout bezieht es sich auf
+       einen ganz anderen Kasten. Im Druck wird die Groesse darum in
+       MILLIMETERN gesagt — das Mass, in dem ein Blatt gemessen wird.
+
+       \`object-fit:contain\` ist der zweite Teil: die Leinwand hat das
+       Seitenverhaeltnis des Fensters, das Blatt ein anderes. Ohne diese Zeile
+       zerrt der Browser das Bild auf das Blattmass (Vorgabe \`fill\`) und die
+       Axonometrie stuende schief. Mit ihr wird EINGEPASST — oben und unten
+       bleibt ein weisser Streifen, und NICHTS wird abgeschnitten. */
+    .ansicht{position:absolute!important;left:0;top:0;right:auto;bottom:auto;
+         width:${BLATT.feldBreite}!important;height:${BLATT.feldHoehe}!important}
+    .ansicht>canvas{position:static!important;width:100%!important;height:100%!important;
+         object-fit:contain;display:block}
     /* Der warme Papierton bleibt — er ist die Bildidee, nicht Zierat. Wer ihn
        nicht mitdrucken will, schaltet in seinem Druckdialog die
        Hintergrundgrafiken ab; das ist seine Entscheidung, nicht unsere. */
-    html,body{background:#fff;overflow:visible}
+    /* \`overflow:hidden\` und eine Hoehe: ohne beides wuchs das Dokument ueber
+       das Blatt hinaus und Chrome haengte eine zweite, leere Seite an. Ein
+       Grundriss, der auf drei Seiten zerfaellt, ist kein Ausdruck. */
+    html,body{background:#fff;overflow:hidden;width:${BLATT.feldBreite};
+         height:${BLATT.blattHoehe};margin:0;padding:0;position:relative}
     /* Bedienelemente gehoeren nicht aufs Papier. Ein gedruckter Knopf ist eine
        Aufforderung, die das Blatt nicht einloesen kann. */
     .kopfleiste,.leiste,.palette,.standleiste,.meldung,.frage,.geist,
@@ -958,12 +1034,36 @@ let html = `<!DOCTYPE html>
        Halbdurchsichtiges — beides druckt unzuverlaessig und kostet nur Farbe. */
     *{transition:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
     .ansicht.weg{display:none!important}
+    /* ── DIE FUSSNOTE GEHOERT AUF BEIDE BLAETTER ───────────────────────
+       Sie STEHT im Blatt-Umschlag (\`#blatt\`), und der verschwindet beim
+       Umschalten auf den Grundriss. GEMESSEN: der gedruckte Grundriss kam
+       ohne einen einzigen Herkunfts-Satz heraus — ohne die Zeile „20 Stueck
+       sind frei gesetzt" ist ein Blatt von einem Aufmass nicht zu
+       unterscheiden, und genau das darf es nie sein.
+       Das ruhende Blatt bleibt darum im Druck STEHEN, aber auf Null gesetzt:
+       seine Leinwand ist weg, seine Fussnote bleibt. Der saubere Weg waere,
+       die Fussnote wie die Sichtleiste aus beiden Ansichten herauszunehmen —
+       am Bildschirm stuende sie dann aber mitten im Grundriss-Werkzeug, und
+       das ist eine groessere Aenderung als dieses Blatt braucht. */
+    /* \`visibility\` und \`opacity\` VERERBEN sich — \`.ansicht.weg\` setzt beide,
+       und ein \`display:block\` allein holt darum nichts zurueck. Genau daran
+       ist der erste Versuch gescheitert (gemessen am gedruckten Grundriss:
+       weiterhin keine Fussnote). */
+    #blatt.weg{display:block!important;width:0!important;height:0!important;
+         overflow:visible!important;background:none!important;
+         visibility:visible!important;opacity:1!important}
+    #blatt.weg>canvas{display:none!important}
     /* Und JETZT der eigentliche Fund: die Fussnote ueber die Herkunft. Sie ist
        das einzige, was ein frei gesetztes Blatt von einem Aufmass
        unterscheidet — sie darf auf dem Papier NIE fehlen. */
-    .hinweis{display:block!important;position:fixed;left:0;right:0;bottom:0;
-         max-width:none;padding:0 6mm;opacity:1;color:#1E2A25;
-         font-size:8.5pt;letter-spacing:.06em;line-height:1.5}
+    /* Die Fussnote steht UNTER dem Zeichenfeld und ueber die ganze Blattbreite
+       — \`position:fixed\` hatte hier denselben Bezugs-Fehler wie die Leinwand
+       und presste den Satz in eine schmale Spalte ueber die halbe Blatthoehe
+       (am Ausdruck gesehen, nicht vermutet). */
+    .hinweis{display:block!important;position:absolute!important;left:0;right:auto;
+         top:${BLATT.fussOben};bottom:auto;width:${BLATT.feldBreite}!important;
+         max-width:none!important;padding:0;opacity:1;color:#1E2A25;
+         font-size:6.8pt;letter-spacing:.04em;line-height:1.45}
     /* Der Blattkopf muss ENGER stehen als am Bildschirm. Auf A4 quer beginnt
        die oberste Reihe der Raumnamen bei rund 133 px (der Zeichner rechnet
        seinen oberen Rand aus der Silhouette, nicht aus diesem Kopf) — mit der
@@ -1202,6 +1302,14 @@ ${OHNE_SAEULEN ? '' : `    <div class="grp">
          Blattkopf: er gehört zu dem Satz über die Höhen, der schon da ist —
          und oben schöbe er sich in die Raumnamen (am Standbild gemessen). -->
     <span id="hinweisOeffnung"></span>
+    <!-- DER VORBEHALT ZUR FARBE (Farb-Welle). Er steht genau hier, weil er
+         dieselbe Art Satz ist wie der ueber die Hoehen: eine Auskunft
+         darueber, was am Bild GEMESSEN und was GEDEUTET ist. Eine Toenung
+         ohne diesen Satz waere eine Behauptung — der Leser saehe „Loggia"
+         und wuesste nicht, dass der Plan das an 22 von 30 Stellen gar nicht
+         schreibt. Der Text entsteht erst beim Zeichnen, aus der GEZAEHLTEN
+         Szene, nicht aus einer beim Bau gesetzten Zahl. -->
+    <span id="hinweisFarbe"></span>
   </div>
 
   <!-- H2: die Bedienzeile fuers Telefon. Sie steht nur unter 900 px da (CSS)
@@ -1272,6 +1380,13 @@ ${
            Bildschirmleser kein Wort. -->
       <button type="button" data-sicht="naeher" aria-label="Näher heranzoomen">+</button>
       <button type="button" data-sicht="weiter" aria-label="Weiter wegzoomen">−</button>
+    </div>
+    <!-- DRUCKEN (Druck-Welle). Eigene Gruppe am Ende: er tut etwas anderes als
+         seine Nachbarn — die stellen die Ansicht ein, dieser gibt sie aus. Er
+         traegt \`data-sicht\` wie sie, weil derselbe Zuhoerer ihn bedient; ein
+         zweiter nur fuer einen Knopf waere eine zweite Bedienlogik. -->
+    <div class="grp">
+      <button type="button" data-sicht="drucken" title="Druckt genau die Ansicht, die gerade zu sehen ist">Drucken</button>
     </div>
   </div>
 `
@@ -1948,6 +2063,18 @@ function gesetztZeigen(){
    Verwaiste Oeffnungen werden getrennt genannt: sie stehen im Modell, aber
    nicht im Bild. Das still zu lassen waere die schlechtere Wahl — der Nutzer
    soll erfahren, dass beim Loeschen einer Wand seine Tuer heimatlos wurde. */
+/* Der Farb-Vorbehalt. Gezaehlt wird die fertige Szene, nicht der Plan: nur
+   so stimmt die Zahl auch dann noch, wenn jemand Waende verschiebt und ein
+   Raum dabei seinen Namens-Anker verliert. */
+function farbHinweisZeigen(szene){
+  const el2 = el('hinweisFarbe');
+  if (!el2) return;
+  const a = szene && szene.raumArten ? szene.raumArten : { getoent: 0, gedeutet: 0 };
+  el2.textContent = a.getoent === 0 ? '' :
+    ' Die Böden sind nach dem Raumnamen getönt; wo der Plan keinen Namen setzt, bleibt der Boden hell und ungetönt.' +
+    (a.gedeutet > 0 ? ' ' + a.gedeutet + ' Räume tragen nur eine Deutung („Deutung unsicher") — sie sind blasser getönt.' : '');
+}
+
 function oeffnungenZeigen(){
   const m = grundriss.zaehleOeffnungen();
   const verwaist = grundriss.zaehleVerwaiste();
@@ -2244,7 +2371,8 @@ function axoNeuBauen(){
     axoAnsicht.setzeSzene(szene);
   } else {
     axoAnsicht = erzeugeAxonometrie(axoCanvas, szene, {
-      namen: namenModus, randRechts: tafelRand(), bearbeitung: axoBearbeitung
+      namen: namenModus, randRechts: tafelRand(), bearbeitung: axoBearbeitung,
+      farbStufe: FARB_STUFE.${FARB_WAHL}
     });
     axoAnsicht.passeAn();
     /* EINMALIG, nicht je Neubau: das Canvas wechselt nicht mehr, also wechseln
@@ -2271,6 +2399,7 @@ function axoNeuBauen(){
     });
   }
   tafelZeichnen();
+  farbHinweisZeigen(szene);
   axoVeraltet = false;
 }
 
@@ -4128,6 +4257,55 @@ document.querySelectorAll('[data-blick]').forEach(function(b){
     markiere('[data-blick]', b.dataset.blick);
   });
 });
+/* ── DRUCKEN (Druck-Welle) ───────────────────────────────────────────
+   Betreiber-Ansage: „setze druckfunktionen ein damit man es sehr einfach im
+   richtigen format ausdrucken kann." Ein Knopf, ein sauberes Blatt.
+
+   WAS HIER PASSIERT UND WARUM SO WENIG:
+   Das Blattformat steht im CSS (\`@page\`), nicht in Javascript — so gilt es
+   AUCH fuer Strg+P und fuer jeden, der nie auf den Knopf sieht. Javascript
+   hat genau EINE Aufgabe: die Leinwand kurz feiner rechnen zu lassen, damit
+   das eingebettete Bild druckscharf ist. Alles andere — welche Ansicht,
+   welcher Blick, welcher Zoom — steht ohnehin schon so auf der Leinwand, wie
+   der Nutzer es sich hingedreht hat. Genau das soll aufs Papier.
+
+   DIE FALLE, die hier gemessen wurde: Browser drucken HINTERGRUNDGRAFIKEN
+   standardmaessig NICHT. Alles, was ueber eine CSS-Hintergrundfarbe kaeme,
+   fehlte dann auf dem Papier. Eine LEINWAND ist keine Hintergrundgrafik,
+   sondern ein Bild — sie wird ins PDF eingebettet und gedruckt, ob der
+   Schalter an ist oder nicht. Deshalb liegt in dieser Datei ALLES, was ein
+   Plan aussagt (Boeden, Waende, Toenung, Tueren), auf der Leinwand und nichts
+   davon in einer CSS-Flaeche. Gemessen mit \`printBackground\` an UND aus:
+   dasselbe Blatt, dasselbe eingebettete Bild.
+
+   BILDSCHIRM UNVERAENDERT: \`passeAn(dichte)\` aendert nur die Bildpunktzahl
+   der Leinwand, nicht ihre CSS-Groesse und nicht den Blick. Nach dem Druck
+   wird zurueckgestellt. */
+let druckSchaerfer = false;
+function druckSchaerfen(){
+  if (druckSchaerfer || !axoAnsicht) return;
+  druckSchaerfer = true;
+  axoAnsicht.passeAn(${DRUCK_DICHTE});
+}
+function druckZuruecknehmen(){
+  if (!druckSchaerfer || !axoAnsicht) return;
+  druckSchaerfer = false;
+  axoAnsicht.passeAn();
+}
+/* Zwei Wege fuehren zum Drucker: der Knopf und Strg+P. Beide bekommen
+   dieselbe Vorbereitung — \`beforeprint\` deckt den zweiten ab, und beim
+   Knopf ist es der Browser selbst, der ihn ausloest. */
+addEventListener('beforeprint', druckSchaerfen);
+addEventListener('afterprint', druckZuruecknehmen);
+function druckeBlatt(){
+  druckSchaerfen();
+  window.print();
+  /* Gegen Browser, die \`afterprint\` verschlucken: nach dem Dialog auf jeden
+     Fall zuruecknehmen. Ein doppelter Aufruf schadet nicht, der Riegel oben
+     faengt ihn ab. */
+  setTimeout(druckZuruecknehmen, 0);
+}
+
 /* ── DIE SICHTLEISTE (H3): Gesamtansicht und Zoom ───────────────────
    Nur die zwei Dinge, die die vier Blick-Knoepfe NICHT koennen. Alles andere
    laeuft ueber den Zuhoerer darueber — es gibt keine zweite Blick-Logik.
@@ -4136,6 +4314,10 @@ document.querySelectorAll('[data-blick]').forEach(function(b){
 document.querySelectorAll('[data-sicht]').forEach(function(b){
   b.addEventListener('click', function(){
     const was = b.dataset.sicht;
+    /* DRUCKEN steht VOR der Ansichts-Weiche: er gilt in BEIDEN Ansichten und
+       braucht von ihnen nichts zu wissen — welches Blatt aufs Papier geht,
+       entscheidet das Druck-CSS ueber \`.ansicht.weg\`, nicht dieser Zuhoerer. */
+    if (was === 'drucken') { druckeBlatt(); return; }
     /* H4: derselbe Knopf, zwei Ansichten. Welche gemeint ist, sagt \`ansicht\`
        und nicht der Knopf — sonst braeuchte es zwei Leisten, die sich
        gegenseitig verdecken. Die AUSFUEHRUNG ist jeweils die vorhandene:
@@ -5517,7 +5699,11 @@ const ERLAUBTE_KNOEPFE = [
   // und ein zweites Merkmal nur fuer diese Pruefung waere eine zweite Wahrheit.
   'id="btnAnsichtPlan"', 'id="btnAnsichtAxo"',
   'data-blick="0"', 'data-blick="1"', 'data-blick="2"', 'data-blick="3"',
-  'data-sicht="gesamt"', 'data-sicht="naeher"', 'data-sicht="weiter"'
+  'data-sicht="gesamt"', 'data-sicht="naeher"', 'data-sicht="weiter"',
+  // Druck-Welle: der Knopf, der die gerade sichtbare Ansicht aufs Papier gibt.
+  // Die Liste WAECHST um genau einen Eintrag und wird nicht weicher — geprueft
+  // wird weiterhin auf Gleichheit, ein elfter Knopf faellt durch.
+  'data-sicht="drucken"'
 ]
 if (NUR_MODELL) {
   const felder = (html.match(/<input[\s>]/g) || []).length

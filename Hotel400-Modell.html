@@ -630,10 +630,32 @@
   .siegelDruck.warnt{color:var(--rot);font-weight:700}
   @media print{
     @page{size:A4 landscape;margin:10mm}
+    /* ── DAS ZEICHENFELD (Druck-Welle) ─────────────────────────────────
+       GEMESSEN am erzeugten PDF, bevor diese Zeilen hier standen: die
+       Leinwand lag mit 1153 x 792 mm auf einem 297 x 210 mm grossen Blatt und
+       ragte oben aus ihm heraus — auf dem Papier war ein Daumennagel Modell
+       und sonst nichts. Ursache ist `position:fixed;inset:0`: am Bildschirm
+       ist das „so gross wie das Fenster", im Seiten-Layout bezieht es sich auf
+       einen ganz anderen Kasten. Im Druck wird die Groesse darum in
+       MILLIMETERN gesagt — das Mass, in dem ein Blatt gemessen wird.
+
+       `object-fit:contain` ist der zweite Teil: die Leinwand hat das
+       Seitenverhaeltnis des Fensters, das Blatt ein anderes. Ohne diese Zeile
+       zerrt der Browser das Bild auf das Blattmass (Vorgabe `fill`) und die
+       Axonometrie stuende schief. Mit ihr wird EINGEPASST — oben und unten
+       bleibt ein weisser Streifen, und NICHTS wird abgeschnitten. */
+    .ansicht{position:absolute!important;left:0;top:0;right:auto;bottom:auto;
+         width:277mm!important;height:170mm!important}
+    .ansicht>canvas{position:static!important;width:100%!important;height:100%!important;
+         object-fit:contain;display:block}
     /* Der warme Papierton bleibt — er ist die Bildidee, nicht Zierat. Wer ihn
        nicht mitdrucken will, schaltet in seinem Druckdialog die
        Hintergrundgrafiken ab; das ist seine Entscheidung, nicht unsere. */
-    html,body{background:#fff;overflow:visible}
+    /* `overflow:hidden` und eine Hoehe: ohne beides wuchs das Dokument ueber
+       das Blatt hinaus und Chrome haengte eine zweite, leere Seite an. Ein
+       Grundriss, der auf drei Seiten zerfaellt, ist kein Ausdruck. */
+    html,body{background:#fff;overflow:hidden;width:277mm;
+         height:190mm;margin:0;padding:0;position:relative}
     /* Bedienelemente gehoeren nicht aufs Papier. Ein gedruckter Knopf ist eine
        Aufforderung, die das Blatt nicht einloesen kann. */
     .kopfleiste,.leiste,.palette,.standleiste,.meldung,.frage,.geist,
@@ -647,12 +669,36 @@
        Halbdurchsichtiges — beides druckt unzuverlaessig und kostet nur Farbe. */
     *{transition:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
     .ansicht.weg{display:none!important}
+    /* ── DIE FUSSNOTE GEHOERT AUF BEIDE BLAETTER ───────────────────────
+       Sie STEHT im Blatt-Umschlag (`#blatt`), und der verschwindet beim
+       Umschalten auf den Grundriss. GEMESSEN: der gedruckte Grundriss kam
+       ohne einen einzigen Herkunfts-Satz heraus — ohne die Zeile „20 Stueck
+       sind frei gesetzt" ist ein Blatt von einem Aufmass nicht zu
+       unterscheiden, und genau das darf es nie sein.
+       Das ruhende Blatt bleibt darum im Druck STEHEN, aber auf Null gesetzt:
+       seine Leinwand ist weg, seine Fussnote bleibt. Der saubere Weg waere,
+       die Fussnote wie die Sichtleiste aus beiden Ansichten herauszunehmen —
+       am Bildschirm stuende sie dann aber mitten im Grundriss-Werkzeug, und
+       das ist eine groessere Aenderung als dieses Blatt braucht. */
+    /* `visibility` und `opacity` VERERBEN sich — `.ansicht.weg` setzt beide,
+       und ein `display:block` allein holt darum nichts zurueck. Genau daran
+       ist der erste Versuch gescheitert (gemessen am gedruckten Grundriss:
+       weiterhin keine Fussnote). */
+    #blatt.weg{display:block!important;width:0!important;height:0!important;
+         overflow:visible!important;background:none!important;
+         visibility:visible!important;opacity:1!important}
+    #blatt.weg>canvas{display:none!important}
     /* Und JETZT der eigentliche Fund: die Fussnote ueber die Herkunft. Sie ist
        das einzige, was ein frei gesetztes Blatt von einem Aufmass
        unterscheidet — sie darf auf dem Papier NIE fehlen. */
-    .hinweis{display:block!important;position:fixed;left:0;right:0;bottom:0;
-         max-width:none;padding:0 6mm;opacity:1;color:#1E2A25;
-         font-size:8.5pt;letter-spacing:.06em;line-height:1.5}
+    /* Die Fussnote steht UNTER dem Zeichenfeld und ueber die ganze Blattbreite
+       — `position:fixed` hatte hier denselben Bezugs-Fehler wie die Leinwand
+       und presste den Satz in eine schmale Spalte ueber die halbe Blatthoehe
+       (am Ausdruck gesehen, nicht vermutet). */
+    .hinweis{display:block!important;position:absolute!important;left:0;right:auto;
+         top:172mm;bottom:auto;width:277mm!important;
+         max-width:none!important;padding:0;opacity:1;color:#1E2A25;
+         font-size:6.8pt;letter-spacing:.04em;line-height:1.45}
     /* Der Blattkopf muss ENGER stehen als am Bildschirm. Auf A4 quer beginnt
        die oberste Reihe der Raumnamen bei rund 133 px (der Zeichner rechnet
        seinen oberen Rand aus der Silhouette, nicht aus diesem Kopf) — mit der
@@ -848,6 +894,14 @@
          Blattkopf: er gehört zu dem Satz über die Höhen, der schon da ist —
          und oben schöbe er sich in die Raumnamen (am Standbild gemessen). -->
     <span id="hinweisOeffnung"></span>
+    <!-- DER VORBEHALT ZUR FARBE (Farb-Welle). Er steht genau hier, weil er
+         dieselbe Art Satz ist wie der ueber die Hoehen: eine Auskunft
+         darueber, was am Bild GEMESSEN und was GEDEUTET ist. Eine Toenung
+         ohne diesen Satz waere eine Behauptung — der Leser saehe „Loggia"
+         und wuesste nicht, dass der Plan das an 22 von 30 Stellen gar nicht
+         schreibt. Der Text entsteht erst beim Zeichnen, aus der GEZAEHLTEN
+         Szene, nicht aus einer beim Bau gesetzten Zahl. -->
+    <span id="hinweisFarbe"></span>
   </div>
 
   <!-- H2: die Bedienzeile fuers Telefon. Sie steht nur unter 900 px da (CSS)
@@ -856,6 +910,8 @@
        die auf 390 px keinen Platz hat und aufs Papier MUSS. -->
   <div class="fingerhinweis" id="fingerhinweis">Ein Finger schiebt &middot; Zwei Finger zoomen und drehen</div>
 </div>
+
+
 
 <!-- ── Grundriss: hier wird bearbeitet. ─────────────────────────────── -->
 <div class="ansicht weg" id="plan">
@@ -1188,7 +1244,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "5f505fb6b364";
-const BAU_STEMPEL = "2026-09-18 22:00";
+const BAU_STEMPEL = "2026-09-19 09:30";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -10468,6 +10524,233 @@ const PALETTE = {
   }
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   1b · BODEN NACH RAUMART — die Gliederung des Geschosses
+   ══════════════════════════════════════════════════════════════════
+   BIS HIERHER faerbte sich ein Boden nach GEOMETRIE: die grosse maeandernde
+   Zone wurde `flur`, ein Raum unter 20 m² `bodenNeben`, alles andere `boden`.
+   Im Buerogeschoss traegt das, weil dort Raeume sehr verschieden gross sind.
+   Im Hotel-Zimmergeschoss traegt es NICHT: Zimmer, Bad, Loggia und Flur liegen
+   alle unter 20 m² und bekamen darum denselben Ton. Das Blatt zeigte 136
+   Flaechen in EINER Farbe — man sah den Grundriss, aber nicht die NUTZUNG.
+
+   DIE ENTSCHEIDUNG, und warum sie zweigeteilt ist:
+
+   · HELLIGKEIT traegt die Raumart.  Sie ueberlebt den Schwarzweiss-Ausdruck,
+     den dieses Blatt sicher erlebt. Die Leiter hat GLEICHE Stufen (rund zehn
+     von 255 Graustufen) und ist in BEIDEN Fassungen dieselbe — der Ausdruck
+     faellt darum in beiden Fassungen gleich aus.
+   · FARBE traegt nur, WELCHE Art es ist.  Sie ist der Teil, der sich
+     zurueckdrehen laesst: `FARB_STAERKE` skaliert AUSSCHLIESSLICH den
+     Buntanteil. „Zurueckhaltend" und „deutlich" sind darum dasselbe Blatt mit
+     unterschiedlich kraeftiger Toenung, nicht zwei Entwuerfe.
+
+   KEINE NEUE FARBFAMILIE. Jeder Ton entsteht als Mischung aus dem Sand des
+   Blattes (`boden`) und EINEM schon vorhandenen Palettenton — `akzent`,
+   `sitz`, `liege`, `gruen`. Danach wird der Grauwert exakt auf die Stufe
+   zurueckgeholt, damit das Einmischen die Leiter nicht verschiebt.
+
+   WAS DIE FARBE NICHT BEHAUPTEN DARF. 28 der 75 Namens-Anker des
+   Zimmergeschosses tragen „Deutung unsicher" oder „im Plan nicht beschriftet":
+   der Plan ZEICHNET die Zelle, er BENENNT sie nicht. Ein voller Ton wuerde aus
+   dieser Lesart eine Beschriftung machen. Solche Raeume bekommen darum
+   dieselbe Stufe (die Geometrie ist gemessen, daran ist nichts unsicher), aber
+   nur `OFFEN_ANTEIL` des Buntanteils — sichtbar blasser, dieselbe Sprache wie
+   das Zurueckweichen frei gesetzter Stuecke (`gesetztRueckzug`).
+   ⚠ Im Graustufen-Ausdruck ist dieser Unterschied WEG, weil er nur im
+   Buntanteil steckt. Auf Papier sagt die Farbe also nicht, wie sicher die
+   Deutung ist; das muss der Blatt-Hinweis sagen, nicht der Ton. */
+
+/** Hex nach [r,g,b] — die eine Stelle, an der dieser Kontrakt Farben rechnet. */
+function hexRgb(hex) {
+  const h = hex.replace('#', '')
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]
+}
+
+/** Grauwert nach der Matrix, die auch `filter:grayscale(1)` und der
+ *  Schwarzweiss-Druck benutzen. Genau diese Zahl ist die Leiter-Stufe. */
+function grauWert(c) {
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+}
+
+/**
+ * Raumart aus dem Namen des Ankers. KEIN Raten: erkannt wird nur, was der
+ * Plan auch schreibt; alles andere liefert `null` und bleibt ungefaerbt.
+ */
+const RAUM_ART_MUSTER = [
+  { art: 'erschliessung', muster: /^(flur|treppenhaus|treppe|aufzug|gang)\b/i },
+  { art: 'bad', muster: /^(bad|dusche|wc)\b/i },
+  { art: 'loggia', muster: /^(loggia|balkon|terrasse)\b/i },
+  { art: 'betrieb', muster: /^(empfang|backoffice|back office|waschraum|lager|personal)\b/i },
+  { art: 'zimmer', muster: /^zimmer\b/i }
+]
+
+/** @param {string} text @returns {string|null} */
+function raumArtFuer(text) {
+  const t = (text || '').trim()
+  for (const r of RAUM_ART_MUSTER) if (r.muster.test(t)) return r.art
+  return null
+}
+
+/** Traegt dieser Anker eine DEUTUNG statt einer Beschriftung? */
+function artIstOffen(zusatz) {
+  return /deutung unsicher|im plan nicht beschriftet/i.test(zusatz || '')
+}
+
+/**
+ * Die Leiter. `hell`/`dunkel` sind Ziel-GRAUWERTE in der Palette (vor dem
+ * Streiflicht), `partner` ein vorhandener Palettenton, `anteil` sein Gewicht
+ * bei voller Staerke.
+ *
+ * Im hellen Blatt laeuft die Leiter nach UNTEN, in gleichen Stufen von rund
+ * neun Graustufen, und sie erzaehlt dabei eine Reihenfolge: je weiter ein Raum
+ * vom stillen Wohnen wegfuehrt, desto dunkler und bunter wird er — nichts
+ * gesagt, Zimmer, Betrieb, Erschliessung, Bad, Loggia (draussen). Im
+ * dunklen Blatt laeuft sie nach OBEN, weil dort der Grund dunkel ist; genauso
+ * haelt es die mitgefuehrte Palette seit der Vorlage (`loggia` ist dort
+ * heller als `boden`).
+ */
+const BODEN_ART = {
+  /* OHNE ANGABE ist die wichtigste Stufe, nicht die uebrig gebliebene: 55 der
+     136 Flaechen des Zimmergeschosses tragen keinen Namens-Anker. Sie stehen
+     am hellsten UND als einzige ohne jeden Buntanteil — „hier steht nichts"
+     sieht dann aus wie unbedrucktes Papier. Bekaeme diese Stufe einen Ton,
+     waere sie eine Aussage; bekaeme sie die der Zimmer, waere sie eine falsche. */
+  ohne_angabe: { hell: 242, dunkel: 40, partner: null, anteil: 0 },
+  zimmer: { hell: 233, dunkel: 46, partner: 'holz', anteil: 0.1 },
+  betrieb: { hell: 224, dunkel: 52, partner: 'akzent', anteil: 0.12 },
+  erschliessung: { hell: 215, dunkel: 58, partner: 'sitz', anteil: 0.2 },
+  bad: { hell: 206, dunkel: 64, partner: 'liege', anteil: 0.22 },
+  loggia: { hell: 197, dunkel: 70, partner: 'gruen', anteil: 0.24 }
+}
+
+/**
+ * DIE VIER STUFEN DER AUSARBEITUNG.
+ *
+ * `zurueckhaltend` und `deutlich` waren die erste Lieferung: gleiche
+ * Helligkeitsleiter, nur der Buntanteil verschieden. Der Betreiber hat beide
+ * gesehen — „noch mehr farbe und professionalitaet ist gewuenscht. es soll
+ * ansehnlicher und professioneller sein." Daraus wurden `c1` und `c2`.
+ *
+ * WARUM C NICHT EINFACH „MEHR SAETTIGUNG" IST. Ein Blatt sieht nicht
+ * professionell aus, weil es bunter ist, sondern weil es die Mittel der
+ * Bauzeichnung benutzt. Drei kommen dazu, und alle drei sind seit hundert
+ * Jahren Handwerk und kein Zierat:
+ *
+ *   `schnitt`  Das GESCHNITTENE wird dunkel (Poche). Die Ansicht saegt die
+ *              Waende auf 1,16 m auf — die waagerechte Kappe IST die
+ *              Schnittflaeche. Bisher war sie die HELLSTE Flaeche der Wand,
+ *              weil sie am steilsten zum Licht steht; damit stand der Plan auf
+ *              dem Kopf. Dunkel gelegt wird aus dem Kappen-Gewimmel ein
+ *              Liniennetz, das den Grundriss zeichnet. Nebenbei behebt es den
+ *              schwaechsten gemessenen Wert der letzten Lieferung: Boden gegen
+ *              Wandkappe stand bei Kontrast 1,01.
+ *   `schatten` Ein SCHLAGSCHATTEN, hart und ohne Verlauf, in der Richtung des
+ *              Streiflichts, das die Flaechen ohnehin schon toent. Er stellt
+ *              den Baukoerper aufs Blatt, statt ihn darin schwimmen zu lassen.
+ *   `kanten`   Umrisslinien AUCH in der Uebersicht. Bisher erschienen sie erst
+ *              ab Massstab 2,2 — genau in der Gesamtansicht, die die Bank als
+ *              Erstes sieht, war das Blatt darum weich.
+ *
+ * Was NICHT dazukommt und warum, steht bei jedem Punkt in der Lieferung:
+ * keine Verlaeufe ausser dem vorhandenen Blattgrund, keine Spiegelungen, keine
+ * Bodenmuster.
+ */
+const FARB_STUFE = {
+  zurueckhaltend: { chroma: 0.4, schnitt: 0, schatten: 0, kanten: false },
+  deutlich: { chroma: 1, schnitt: 0, schatten: 0, kanten: false },
+  /* C1 — die Empfehlung. Der Buntanteil liegt knapp ueber `deutlich` (der
+     Betreiber nennt es die Untergrenze), die Wirkung kommt aus dem Handwerk. */
+  c1: { chroma: 1.45, schnitt: 0.58, schatten: 0.1, kanten: true },
+  /* C2 — eine Stufe kraeftiger: buntere Boeden, schwaerzerer Schnitt,
+     kraeftigerer Schatten. Dieselben Mittel, nur lauter. */
+  c2: { chroma: 1.95, schnitt: 0.7, schatten: 0.15, kanten: true }
+}
+
+/** Alt-Name, damit vorhandene Aufrufe nicht ins Leere greifen. */
+const FARB_STAERKE = { zurueckhaltend: 0.4, deutlich: 1 }
+
+/**
+ * Die SCHNITTFLAECHEN-Toene: `wand` und `wandAussen` zur Tinte des Blattes hin
+ * abgedunkelt. Kein neuer Farbwert — dieselbe Familie, nur tiefer.
+ *
+ * Der Anteil ist nicht frei gewaehlt, sondern eine UNTERGRENZE: die dunkelste
+ * Wandflanke liegt bei Helligkeit 0,60 (`SCHATTEN.grund`), die Kappe steht mit
+ * 0,943 fast im vollen Licht. Damit der Schnitt dunkler bleibt als jede
+ * Flanke, muss sein Grauwert unter rund 133 liegen — bei 0,58 sind es 111, bei
+ * 0,70 sind es 92. Weniger, und der Schnitt verschwindet zwischen den Flanken;
+ * dann waere er ein Fleck statt einer Aussage.
+ */
+function schnittToene(farben, anteil) {
+  if (!(anteil > 0)) return {}
+  const tinte = hexRgb(farben.tinte)
+  const raus = {}
+  /* NUR die beiden Wand-Toene. Der erste Versuch nahm `kern` und `stufe`
+     dazu und legte damit die Treppe und den Aufzugsschacht dunkel — beide
+     werden aber gar NICHT geschnitten: die Treppe ist 15 cm hoch, der Schacht
+     geht mit 3,00 m ueber die Schnittebene hinaus. Ein dunkler Deckel haette
+     dort einen Schnitt behauptet, den es nicht gibt (am Standbild als
+     schwarzer Fleck am Westkopf aufgefallen). Was nicht geschnitten ist,
+     bekommt keine Schnittflaeche. */
+  for (const name of ['wand', 'wandAussen']) {
+    const c = hexRgb(farben[name]).map((v, i) => v + (tinte[i] - v) * anteil)
+    raus[name + 'Schnitt'] = '#' + c.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('')
+  }
+  return raus
+}
+
+/**
+ * Wohin ein Punkt auf Hoehe `h` seinen Schatten wirft — in Weltmetern (x, z).
+ * Gerechnet aus DEMSELBEN Lichtvektor, der schon die Flaechen toent; ein
+ * zweiter waere ein Schatten, der nicht zur Beleuchtung passt, und genau das
+ * sieht jeder sofort, ohne sagen zu koennen warum.
+ */
+function schattenVersatz(h) {
+  return [(-h * LICHT[0]) / LICHT[1], (-h * LICHT[2]) / LICHT[1]]
+}
+
+/** Wie stark eine bloss GEDEUTETE Raumart faerben darf. */
+const OFFEN_ANTEIL = 0.45
+
+/** Materialname eines Raumbodens. */
+function bodenMaterial(art, offen) {
+  return 'boden_' + art + (offen ? '_offen' : '')
+}
+
+/**
+ * Die Boden-Toene zu einem Farbklima. Ergebnis ist ein Aufsatz auf die
+ * PALETTE, kein Ersatz — `boden`, `bodenNeben`, `flur` bleiben unangetastet
+ * und tragen weiter jeden Plan, in dem keine Raumart erkannt wird.
+ *
+ * @param {Record<string,string>} farben PALETTE.hell oder PALETTE.dunkel
+ * @param {number} staerke 0..1, skaliert NUR den Buntanteil
+ * @param {boolean} dunkel welches Farbklima
+ */
+function bodenToene(farben, staerke, dunkel) {
+  const sand = hexRgb(farben.boden)
+  const sandGrau = grauWert(sand)
+  const raus = {}
+  const zweiStellig = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')
+  for (const art of Object.keys(BODEN_ART)) {
+    const d = BODEN_ART[art]
+    const ziel = dunkel ? d.dunkel : d.hell
+    const partner = d.partner ? hexRgb(farben[d.partner]) : null
+    for (const offen of [false, true]) {
+      const m = d.anteil * staerke * (offen ? OFFEN_ANTEIL : 1)
+      // 1) Sand auf die Stufe bringen, 2) Partner einmischen,
+      // 3) Grauwert exakt zurueckholen — sonst verschoebe das Mischen die Leiter.
+      let c = sand.map((v) => (v * ziel) / sandGrau)
+      if (partner && m > 0) {
+        c = c.map((v, i) => v * (1 - m) + partner[i] * m)
+        const g = grauWert(c)
+        c = c.map((v) => (v * ziel) / g)
+      }
+      raus[bodenMaterial(art, offen)] = '#' + c.map(zweiStellig).join('')
+    }
+  }
+  return raus
+}
+
 /** Schriftfamilien der Vorlage.                  [uebersicht.html:11-13] */
 const SCHRIFT = {
   serif: '"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif',
@@ -11823,6 +12106,8 @@ function koerperUnter(szene, kamera, X, Y) {
  * heisst hier darum (x, z) — `z` ist das `y` des Planers.
  */
 
+// EINE Zeile, keine mehrzeilige Form: `buendel-kern.mjs` streift Importe
+// zeilenweise ab (IMPORT_ZEILE), eine umgebrochene bliebe im Rumpf stehen.
 
 
 
@@ -12086,12 +12371,61 @@ function baueSzene(plan, opt = {}) {
     })
   })
 
+  /* ── Raum -> RAUMART, aus den Namens-Ankern ──────────────────────
+     Derselbe Weg wie oben bei den Saeulen: ein Anker liegt in einem Raum, also
+     gehoert sein Name diesem Raum. Neu ist nur, was daraus folgt — der Ton des
+     Bodens statt einer Hervorhebung.
+
+     DREI REGELN, die verhindern, dass die Farbe mehr sagt als der Plan:
+     · Ein Name, den `raumArtFuer` nicht kennt, faerbt NICHT. Der Raum faellt
+       auf die alte Geometrie-Regel zurueck; das ist der ganze Grund, warum das
+       Buerogeschoss unveraendert aussieht.
+     · Liegen zwei Anker VERSCHIEDENER Art im selben Raum, faerbt er gar nicht.
+       Zwei Deutungen sind keine Deutung, und die haeufigere zu waehlen waere
+       geraten.
+     · Traegt der Anker „Deutung unsicher", ist die Art `offen` — gleiche
+       Helligkeitsstufe, blasserer Buntanteil. Ein Raum mit zwei Ankern
+       derselben Art gilt als gesichert, sobald EINER es ist. */
+  const raumArt = raeume.map(() => null)
+  const streit = new Set()
+  marken.forEach((m) => {
+    const art = raumArtFuer(m.text)
+    if (!art) return
+    const offen = artIstOffen(m.zusatz)
+    raeume.forEach((r, i) => {
+      if (i === flurIndex || streit.has(i)) return
+      if (!liegtIn({ x: m.x, y: m.z }, r.punkte.map((p) => ({ x: p.x, y: p.z })))) return
+      const bisher = raumArt[i]
+      if (!bisher) raumArt[i] = { art, offen }
+      else if (bisher.art !== art) { raumArt[i] = null; streit.add(i) }
+      else if (!offen) bisher.offen = false
+    })
+  })
+  /* Traegt dieser Plan ueberhaupt benannte Raumarten? Wenn nein, bleibt alles
+     bei der Geometrie-Regel — kein Plan aendert sein Aussehen, nur weil eine
+     neue Moeglichkeit existiert. Die Erschliessungszone bekommt ihren eigenen
+     Ton erst, wenn auch die uebrigen Raeume einen haben; sonst stuende ein
+     einzelner gruenstichiger Flur in einem sonst unveraenderten Blatt.
+
+     Die Schwelle ist darum nicht „mindestens einer", sondern EIN VIERTEL der
+     Raeume. Das Buerogeschoss kennt vier Anker, die hier greifen (Aufzug,
+     Empfang, Lager, Loggia); waeren die schon genug, bekaeme es ein Blatt mit
+     drei getoenten und zweiundzwanzig ungetoenten Raeumen — das sieht nach
+     Fehler aus, nicht nach Ordnung, und es aenderte eine ausgelieferte Datei
+     fuer nichts. Gemessen: Buero 2 von 25 Raeumen (8 %), Zimmergeschoss 62
+     von 136 (46 %). */
+  const artenErkannt = raumArt.filter(Boolean).length >= raeume.length * 0.25
+
   /* ── Koerper: Boeden, Waende, Ausstattung ──────────────────────── */
   const boeden = raeume.map((r, i) => ({
     punkte: r.punkte,
     y0: 0,
     y1: DARSTELLUNGSHOEHE.boden,
-    material: i === flurIndex ? 'flur' : saeulenRaeume.has(i) ? 'bodenSaeule' : r.flaeche < 20 ? 'bodenNeben' : 'boden',
+    material: !artenErkannt
+      ? (i === flurIndex ? 'flur' : saeulenRaeume.has(i) ? 'bodenSaeule' : r.flaeche < 20 ? 'bodenNeben' : 'boden')
+      : i === flurIndex ? bodenMaterial('erschliessung', false)
+        : raumArt[i] ? bodenMaterial(raumArt[i].art, raumArt[i].offen)
+          : bodenMaterial('ohne_angabe', false),
     istBoden: true
   }))
 
@@ -12344,6 +12678,14 @@ function baueSzene(plan, opt = {}) {
     moebel,
     marken,
     raeume,
+    /* Wie viele Boeden ihren Ton aus einem Raumnamen haben. Die Huelle
+       schreibt daraus den Vorbehalt aufs Blatt — eine Toenung, die niemand
+       erklaert, ist eine Behauptung. `gedeutet` sind die, deren Anker nur
+       „Deutung unsicher" traegt; sie faerben blasser. */
+    raumArten: {
+      getoent: artenErkannt ? raumArt.filter(Boolean).length + 1 : 0,
+      gedeutet: artenErkannt ? raumArt.filter((a) => a && a.offen).length : 0
+    },
     flurIndex,
     grenzen: { x0, x1, z0, z1 },
     mitte: { x: (x0 + x1) / 2, z: (z0 + z1) / 2 },
@@ -12412,6 +12754,7 @@ function toenen(hex, n, zurueck) {
  * @param {HTMLCanvasElement} canvas
  * @param {object} szeneEingang Ergebnis von `baueSzene`
  * @param {{dunkel?:boolean, namen?:'alle'|'knapp'|'saeulen'|'aus', randRechts?:number,
+ *          farbStaerke?:number,
  *          randOben?:number, bearbeitung?:{
  *            aktiv:()=>boolean,
  *            greife:(id:string,weltX:number,weltY:number)=>boolean,
@@ -12458,7 +12801,21 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
      HOEHE gesagt, genau wie bei `randRechts` und der Legenden-Tafel. */
   let randUntenZusatz = opt.randUnten || 0
   let schnell = false
-  let farben = dunkel ? PALETTE.dunkel : PALETTE.hell
+  /* Wie kraeftig die Raumart-Toene faerben (Betreiber-Wahl: zurueckhaltend
+     oder deutlich). Der Wert beruehrt NUR den Buntanteil — die Helligkeits-
+     leiter und damit der Schwarzweiss-Ausdruck sind in beiden Fassungen
+     gleich. Ohne Angabe bleibt es bei `zurueckhaltend`: wer nichts sagt,
+     bekommt die leisere Fassung. */
+  const stufe = (opt.farbStufe && typeof opt.farbStufe === 'object') ? opt.farbStufe : FARB_STUFE.zurueckhaltend
+  const farbStaerke = stufe.chroma
+  /* Die Raumart-Toene sind ein AUFSATZ auf die Palette, kein Ersatz: `boden`,
+     `bodenNeben` und `flur` bleiben darunter stehen und tragen jeden Plan, in
+     dem keine Raumart erkannt wurde. */
+  const klima = (an) => {
+    const grund = an ? PALETTE.dunkel : PALETTE.hell
+    return { ...grund, ...bodenToene(grund, farbStaerke, an), ...schnittToene(grund, stufe.schnitt) }
+  }
+  let farben = klima(dunkel)
 
   /**
    * ALLE Projektionsgroessen in EINEM Objekt, bei jedem Bild neu befuellt.
@@ -12603,7 +12960,14 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     const p = k.punkte
     const n = p.length
 
-    // Deckel
+    /* ── DER DECKEL IST DIE SCHNITTFLAECHE ───────────────────────────────
+       Bei einer Wand ist die waagerechte Kappe genau die Flaeche, an der die
+       Ansicht das Haus aufgesaegt hat. Sie bekommt darum — wenn die Stufe es
+       vorsieht — einen EIGENEN, dunklen Ton (`wandSchnitt`, `kernSchnitt`).
+       Boeden, Moebel und Tuerblaetter haben keinen solchen Eintrag und behalten
+       ihre Materialfarbe; die Weiche braucht dafuer keine Fallunterscheidung,
+       sie fragt die Palette. */
+    const deckelFarbe = farben[k.material + 'Schnitt'] || farbe
     const oben = p.map((q) => projiziere(q.x, k.y1, q.z))
     if (richtung[1] > 0.001) {
       let tiefe = 0
@@ -12612,7 +12976,7 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
       // wer eine Flaechenliste in der Hand hat, kann seither sagen, zu WELCHEM
       // Stueck sie gehoert. Kostet ein Feld je Flaeche und macht den Malvorgang
       // nachpruefbar.
-      raus.push({ id: k.id, pts: oben, col: toenen(farbe, [0, 1, 0], zurueck), depth: tiefe / n, gesetzt: !!k.gesetzt, ungesichert })
+      raus.push({ id: k.id, pts: oben, col: toenen(deckelFarbe, [0, 1, 0], zurueck), depth: tiefe / n, gesetzt: !!k.gesetzt, ungesichert })
     }
 
     if (k.istBoden) return // Boeden sind flach; ihre Kanten lohnen nicht
@@ -12657,8 +13021,118 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     }
   }
 
+  /**
+   * DER SCHLAGSCHATTEN — das einzige Stueck dieser Ansicht, das kein Bauteil
+   * ist. Er steht hier, weil eine Axonometrie ohne ihn im Blatt SCHWIMMT: es
+   * gibt keinen Fluchtpunkt, der sagt, wo unten ist, und keine Perspektive,
+   * die Tiefe erzwingt. Der Schatten ist in dieser Darstellungsart das
+   * billigste und aelteste Mittel, den Koerper auf das Papier zu stellen.
+   *
+   * VIER ENTSCHEIDUNGEN, die ihn vom Rendering trennen:
+   * · HART. Kein Verlauf, keine weiche Kante, keine Halbschatten — eine
+   *   Bauzeichnung schattiert mit der Feder, nicht mit der Lampe.
+   * · EIN TON. Die Tinte des Blattes mit kleiner Deckkraft, keine eigene
+   *   Farbe. Er verdunkelt, was darunter liegt, und behauptet nichts.
+   * · AUS DEMSELBEN LICHT wie die Flaechentoenung (`schattenVersatz` rechnet
+   *   mit `LICHT`). Ein Schatten, der woanders hinfaellt als das Streiflicht
+   *   zeigt, faellt jedem auf, ohne dass er sagen koennte warum.
+   * · EIN EINZIGER FUELLVORGANG. Alle Wandschatten wandern in EINEN Pfad und
+   *   werden mit `nonzero` gefuellt. Zweihundert einzeln gefuellte
+   *   halbdurchsichtige Flaechen wuerden sich an jeder Ueberlappung
+   *   aufaddieren — das Ergebnis waere ein fleckiger Teppich statt eines
+   *   Schattens. So ist jede Stelle genau einmal abgedunkelt.
+   *
+   * Die Form je Wandkachel ist der Minkowski-Wischer: das versetzte Rechteck
+   * plus die vier Verbindungsflaechen zum urspruenglichen. Damit haengt der
+   * Schatten an seiner Wand, statt als geloestes Rechteck daneben zu liegen.
+   * Eine konvexe Huelle waere dasselbe Ergebnis mit mehr Rechnung.
+   */
+  function maleSchatten() {
+    if (!(stufe.schatten > 0) || schnell) return
+    const pfad = new Path2D()
+    /* JEDER Eckpunkt wird GENAU ZWEIMAL projiziert — einmal am Ort, einmal
+       versetzt — und beide Fassungen tragen danach alle fuenf Teilflaechen.
+       Der erste Entwurf rechnete die Verbindungsflaechen aus den Weltpunkten
+       neu und projizierte zwanzigmal je Wandkachel; gemessen kostete das
+       Bild dadurch 128 ms statt 4 ms. Bei 526 Kacheln plus Ausstattung ist die
+       Projektion die ganze Rechnung. */
+    const wirf = (k, y) => {
+      const v = schattenVersatz(k.y1 - y)
+      const p = k.punkte
+      const n = p.length
+      const A = new Array(n)
+      const B = new Array(n)
+      for (let i = 0; i < n; i++) {
+        A[i] = projiziere(p[i].x, y, p[i].z)
+        B[i] = projiziere(p[i].x + v[0], y, p[i].z + v[1])
+      }
+      /* EINE Teilflaeche statt fuenf: die konvexe Huelle aus Ort und Versatz.
+         Das Ergebnis ist dieselbe Form (fuer ein konvexes Vieleck ist der
+         Wischer genau diese Huelle), aber der Pfad hat ein Drittel der Kanten.
+         Gemessen an 526 Wandkacheln: 90 ms -> 28 ms je Bild. Die Projektion
+         ist orthographisch, also bleibt eine Huelle im Bild eine Huelle in der
+         Welt — hier darf im Bildraum gerechnet werden. */
+      huelle(A.concat(B), pfad)
+    }
+    /* Die Hoehe, AUF die geworfen wird, ist die Oberkante der Bodenplatte —
+       nicht 0. Sonst laege der Schatten unter dem Fussboden und waere von ihm
+       verdeckt (die Platte ist 10 cm hoch, in der Uebersicht ein Bildpunkt, in
+       der Nahsicht ein sichtbarer Streifen). */
+    const bodenY = szene.boeden.length ? szene.boeden[0].y1 : 0.1
+    for (const k of szene.waende) wirf(k, bodenY)
+    /* AUCH die Ausstattung und die Tuerblaetter. Der Betreiber sagt, die
+       Moebel „wirken wie Kisten" — das liegt nicht an ihrer Form, sondern
+       daran, dass nichts sie mit dem Fussboden verbindet. Ein Stuhl ohne
+       Schatten liegt im Bild, ein Stuhl mit Schatten STEHT darin. Bei den
+       schwebenden Stuecken (eine Tischplatte sitzt auf 74 cm) faellt der
+       Schatten versetzt daneben — das ist richtig so und sagt zugleich, dass
+       die Platte schwebt. */
+    for (const k of szene.moebel) wirf(k, bodenY)
+    for (const k of szene.tueren || []) wirf(k, bodenY)
+    ctx.save()
+    ctx.globalAlpha = stufe.schatten
+    ctx.fillStyle = farben.tinte
+    ctx.fill(pfad, 'nonzero')
+    ctx.restore()
+  }
+
+  /** Konvexe Huelle (Andrew, monotone Kette) als Teilflaeche in `pfad`. */
+  function huelle(pts, pfad) {
+    const p = pts.slice().sort((a, b) => (a.x - b.x) || (a.y - b.y))
+    const kreuz = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
+    const bau = (liste) => {
+      const h = []
+      for (const q of liste) {
+        while (h.length >= 2 && kreuz(h[h.length - 2], h[h.length - 1], q) <= 0) h.pop()
+        h.push(q)
+      }
+      h.pop()
+      return h
+    }
+    const h = bau(p).concat(bau(p.slice().reverse()))
+    if (h.length < 3) return
+    pfad.moveTo(h[0].x, h[0].y)
+    for (let i = 1; i < h.length; i++) pfad.lineTo(h[i].x, h[i].y)
+    pfad.closePath()
+  }
+
   function maleFlaechen(liste) {
-    const kanten = kameraWerte.massstab > DARSTELLUNG.kanteAbMassstab
+    /* KANTEN AUCH IN DER UEBERSICHT (Stufe C).
+       `kanteAbMassstab` beantwortet die Frage „lohnen Umrisse hier?" mit ja
+       oder nein. Genau in der Gesamtansicht — dem Bild, das die Bank als
+       Erstes sieht — lautete die Antwort nein, und das Blatt war dort weich.
+       Statt die Schwelle zu senken (dann waeren die Linien unten so satt wie
+       oben und die Uebersicht ein Knaeuel) laeuft die Deckkraft mit dem
+       Massstab ein: unter der Schwelle mit der Wurzel, damit sie frueh
+       sichtbar wird und trotzdem leicht bleibt. Ueber der Schwelle bleibt
+       alles wie bisher. */
+    const nah = kameraWerte.massstab > DARSTELLUNG.kanteAbMassstab
+    const kantenDeckkraft = nah
+      ? DARSTELLUNG.kanteDeckkraft
+      : stufe.kanten
+        ? DARSTELLUNG.kanteDeckkraft * Math.sqrt(Math.min(1, kameraWerte.massstab / DARSTELLUNG.kanteAbMassstab))
+        : 0
+    const kanten = kantenDeckkraft > 0.02
     ctx.lineJoin = 'round'
     for (const f of liste) {
       const p = f.pts
@@ -12700,7 +13174,7 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
         ctx.setLineDash([])
       } else if (kanten) {
         ctx.strokeStyle = farben.tinte
-        ctx.globalAlpha = DARSTELLUNG.kanteDeckkraft
+        ctx.globalAlpha = kantenDeckkraft
         ctx.lineWidth = DARSTELLUNG.kanteBreite
         ctx.stroke()
         ctx.globalAlpha = 1
@@ -12924,6 +13398,8 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     unten.sort((a, b) => a.depth - b.depth)
     maleFlaechen(unten)
 
+    maleSchatten()
+
     const oben = []
     for (const k of szene.waende) flaechenVon(k, richtung, oben)
     /* Tueren im GLEICHEN Durchgang wie die Waende (H4) und nicht danach: ein
@@ -12960,8 +13436,25 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     return true
   }
 
-  function passeAn() {
-    const dpr = Math.min(globalThis.devicePixelRatio || 1, 2)
+  /**
+   * @param {number} [dichte] Bildpunkte je CSS-Punkt. Ohne Angabe die des
+   *        Bildschirms (hoechstens 2 — mehr kostet nur Speicher).
+   *
+   * WOFUER DER PARAMETER DA IST: fuers PAPIER. Ein Ausdruck loest rund
+   * dreimal so fein auf wie ein Bildschirm; die Leinwand wird beim Drucken als
+   * BILD eingebettet, also entscheidet ihre Bildpunktzahl ueber die Schaerfe
+   * des Blattes. Am 1600 px breiten Fenster ohne Aufloesungs-Verdopplung sind
+   * das 1600 Punkte auf 277 mm Zeichenfeld — 147 dpi, sichtbar weich. Mit
+   * `dichte = 3` sind es 4800 Punkte, also 440 dpi.
+   *
+   * Der BLICK bleibt dabei stehen: `breite`/`hoehe` sind CSS-Punkte und
+   * aendern sich nicht. Das ist der Grund, warum hier eine Dichte steht und
+   * nicht eine zweite Leinwand — eine zweite muesste Blick, Zoom und
+   * Verschiebung nachbauen, und die erste, die beim naechsten Umbau vergessen
+   * wird.
+   */
+  function passeAn(dichte) {
+    const dpr = dichte || Math.min(globalThis.devicePixelRatio || 1, 2)
     const kasten = canvas.getBoundingClientRect()
     breite = Math.max(1, Math.round(kasten.width))
     hoehe = Math.max(1, Math.round(kasten.height))
@@ -13436,7 +13929,7 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     },
     setzeDunkel(an) {
       dunkel = an
-      farben = an ? PALETTE.dunkel : PALETTE.hell
+      farben = klima(an)
       zeichne()
     },
     setzeRandRechts(px) {
@@ -13807,6 +14300,18 @@ function gesetztZeigen(){
    Verwaiste Oeffnungen werden getrennt genannt: sie stehen im Modell, aber
    nicht im Bild. Das still zu lassen waere die schlechtere Wahl — der Nutzer
    soll erfahren, dass beim Loeschen einer Wand seine Tuer heimatlos wurde. */
+/* Der Farb-Vorbehalt. Gezaehlt wird die fertige Szene, nicht der Plan: nur
+   so stimmt die Zahl auch dann noch, wenn jemand Waende verschiebt und ein
+   Raum dabei seinen Namens-Anker verliert. */
+function farbHinweisZeigen(szene){
+  const el2 = el('hinweisFarbe');
+  if (!el2) return;
+  const a = szene && szene.raumArten ? szene.raumArten : { getoent: 0, gedeutet: 0 };
+  el2.textContent = a.getoent === 0 ? '' :
+    ' Die Böden sind nach dem Raumnamen getönt; wo der Plan keinen Namen setzt, bleibt der Boden hell und ungetönt.' +
+    (a.gedeutet > 0 ? ' ' + a.gedeutet + ' Räume tragen nur eine Deutung („Deutung unsicher") — sie sind blasser getönt.' : '');
+}
+
 function oeffnungenZeigen(){
   const m = grundriss.zaehleOeffnungen();
   const verwaist = grundriss.zaehleVerwaiste();
@@ -13862,6 +14367,7 @@ try {
 letzterStand = JSON.stringify(grundriss.saveFloorplan());
 
 const zeichner = new Floorplanner('grundriss-canvas', grundriss);
+
 
 /* Historie anschliessen — GENAU wie im Planer (src/blueprint3d.ts:57-58).
    `setUndoManager` meldet dem UndoManager zugleich, wie die Ansicht ueber ein
@@ -14089,7 +14595,8 @@ function axoNeuBauen(){
     axoAnsicht.setzeSzene(szene);
   } else {
     axoAnsicht = erzeugeAxonometrie(axoCanvas, szene, {
-      namen: namenModus, randRechts: tafelRand(), bearbeitung: axoBearbeitung
+      namen: namenModus, randRechts: tafelRand(), bearbeitung: axoBearbeitung,
+      farbStufe: FARB_STUFE.c2
     });
     axoAnsicht.passeAn();
     /* EINMALIG, nicht je Neubau: das Canvas wechselt nicht mehr, also wechseln
@@ -14116,6 +14623,7 @@ function axoNeuBauen(){
     });
   }
   tafelZeichnen();
+  farbHinweisZeigen(szene);
   axoVeraltet = false;
 }
 
@@ -14179,6 +14687,19 @@ function zeigeAnsicht(name, merken){
   planEl.classList.toggle('weg', name !== 'plan');
   el('btnAnsichtAxo').setAttribute('aria-pressed', String(name === 'axo'));
   el('btnAnsichtPlan').setAttribute('aria-pressed', String(name === 'plan'));
+  /* H4: die Blickrichtungen gehoeren zum Modell. Im Grundriss werden sie
+     WEGGENOMMEN und nicht nur blass geschaltet — sie kosten am Telefon eine
+     ganze Leistenreihe, und eine Reihe, die nichts tut, ist verlorene
+     Bildhoehe. `hidden` statt `.platzhalter`: dort ging es darum, dass die
+     Leiste nicht SPRINGT (V7), hier darum, dass sie schrumpft. */
+  const grpBlick = document.getElementById('grpBlick');
+  if (grpBlick) grpBlick.hidden = name !== 'axo';
+  /* ZUERST den Fuss der Leiste nachziehen, DANN einpassen: mit der Blick-Gruppe
+     faellt eine ganze Leistenreihe weg bzw. kommt zurueck, das Blatt hat also
+     nach dem Wechsel einen anderen Fuss. Umgekehrte Reihenfolge rechnete das
+     Bild einmal mit dem alten — sichtbar als Sprung (dieselbe Falle wie beim
+     Drehen des Telefons, H3). */
+  if (name === 'axo') sichtRandPflegen();
   if (name === 'plan') {
     zeichner.resizeView();
   } else if (axoVeraltet) {
@@ -15960,6 +16481,55 @@ document.querySelectorAll('[data-blick]').forEach(function(b){
     markiere('[data-blick]', b.dataset.blick);
   });
 });
+/* ── DRUCKEN (Druck-Welle) ───────────────────────────────────────────
+   Betreiber-Ansage: „setze druckfunktionen ein damit man es sehr einfach im
+   richtigen format ausdrucken kann." Ein Knopf, ein sauberes Blatt.
+
+   WAS HIER PASSIERT UND WARUM SO WENIG:
+   Das Blattformat steht im CSS (`@page`), nicht in Javascript — so gilt es
+   AUCH fuer Strg+P und fuer jeden, der nie auf den Knopf sieht. Javascript
+   hat genau EINE Aufgabe: die Leinwand kurz feiner rechnen zu lassen, damit
+   das eingebettete Bild druckscharf ist. Alles andere — welche Ansicht,
+   welcher Blick, welcher Zoom — steht ohnehin schon so auf der Leinwand, wie
+   der Nutzer es sich hingedreht hat. Genau das soll aufs Papier.
+
+   DIE FALLE, die hier gemessen wurde: Browser drucken HINTERGRUNDGRAFIKEN
+   standardmaessig NICHT. Alles, was ueber eine CSS-Hintergrundfarbe kaeme,
+   fehlte dann auf dem Papier. Eine LEINWAND ist keine Hintergrundgrafik,
+   sondern ein Bild — sie wird ins PDF eingebettet und gedruckt, ob der
+   Schalter an ist oder nicht. Deshalb liegt in dieser Datei ALLES, was ein
+   Plan aussagt (Boeden, Waende, Toenung, Tueren), auf der Leinwand und nichts
+   davon in einer CSS-Flaeche. Gemessen mit `printBackground` an UND aus:
+   dasselbe Blatt, dasselbe eingebettete Bild.
+
+   BILDSCHIRM UNVERAENDERT: `passeAn(dichte)` aendert nur die Bildpunktzahl
+   der Leinwand, nicht ihre CSS-Groesse und nicht den Blick. Nach dem Druck
+   wird zurueckgestellt. */
+let druckSchaerfer = false;
+function druckSchaerfen(){
+  if (druckSchaerfer || !axoAnsicht) return;
+  druckSchaerfer = true;
+  axoAnsicht.passeAn(3);
+}
+function druckZuruecknehmen(){
+  if (!druckSchaerfer || !axoAnsicht) return;
+  druckSchaerfer = false;
+  axoAnsicht.passeAn();
+}
+/* Zwei Wege fuehren zum Drucker: der Knopf und Strg+P. Beide bekommen
+   dieselbe Vorbereitung — `beforeprint` deckt den zweiten ab, und beim
+   Knopf ist es der Browser selbst, der ihn ausloest. */
+addEventListener('beforeprint', druckSchaerfen);
+addEventListener('afterprint', druckZuruecknehmen);
+function druckeBlatt(){
+  druckSchaerfen();
+  window.print();
+  /* Gegen Browser, die `afterprint` verschlucken: nach dem Dialog auf jeden
+     Fall zuruecknehmen. Ein doppelter Aufruf schadet nicht, der Riegel oben
+     faengt ihn ab. */
+  setTimeout(druckZuruecknehmen, 0);
+}
+
 /* ── DIE SICHTLEISTE (H3): Gesamtansicht und Zoom ───────────────────
    Nur die zwei Dinge, die die vier Blick-Knoepfe NICHT koennen. Alles andere
    laeuft ueber den Zuhoerer darueber — es gibt keine zweite Blick-Logik.
@@ -15968,6 +16538,26 @@ document.querySelectorAll('[data-blick]').forEach(function(b){
 document.querySelectorAll('[data-sicht]').forEach(function(b){
   b.addEventListener('click', function(){
     const was = b.dataset.sicht;
+    /* DRUCKEN steht VOR der Ansichts-Weiche: er gilt in BEIDEN Ansichten und
+       braucht von ihnen nichts zu wissen — welches Blatt aufs Papier geht,
+       entscheidet das Druck-CSS ueber `.ansicht.weg`, nicht dieser Zuhoerer. */
+    if (was === 'drucken') { druckeBlatt(); return; }
+    /* H4: derselbe Knopf, zwei Ansichten. Welche gemeint ist, sagt `ansicht`
+       und nicht der Knopf — sonst braeuchte es zwei Leisten, die sich
+       gegenseitig verdecken. Die AUSFUEHRUNG ist jeweils die vorhandene:
+       im Blatt `setzeBlick`/`zoomeUm`, im Grundriss `resizeView` und
+       `zoomeAufPunkt` — genau die zwei Griffe, die auch Rad und zwei Finger
+       dort benutzen (die Lese-Navigation, K3). */
+    if (ansicht === 'plan') {
+      if (was === 'gesamt') { zeichner.resizeView(); return; }
+      const k = el('grundriss-canvas').getBoundingClientRect();
+      zeichner.zoomeAufPunkt(
+        zeichner.getZoom() * (was === 'naeher' ? ZOOM_KNOPF_2D : 1 / ZOOM_KNOPF_2D),
+        k.width / 2,
+        k.height / 2
+      );
+      return;
+    }
     if (was === 'gesamt') {
       /* `setzeBlick` setzt AUCH den Zoom auf 1 und die Verschiebung auf 0 —
          genau das macht diesen Knopf zum Rueckweg aus JEDER Lage, und nicht
@@ -15980,6 +16570,12 @@ document.querySelectorAll('[data-sicht]').forEach(function(b){
     axoAnsicht.zoomeUm(was === 'naeher' ? 1 : -1);
   });
 });
+
+/* Derselbe Schritt wie im Blatt (DARSTELLUNG.zoomKnopfSchritt), hier als Zahl:
+   der uebersetzte 2D-Kern kennt den Axonometrie-Kontrakt nicht, und ihn dafuer
+   quer zu verdrahten waere eine Abhaengigkeit fuer eine Konstante. Dass beide
+   1,6 sind, ist Absicht und steht darum an beiden Stellen im Klartext. */
+const ZOOM_KNOPF_2D = 1.6;
 
 /* ── WIE VIEL BLATT DIE SICHTLEISTE VERDECKT (H3) ───────────────────
    GEMESSEN am Element, nicht geschaetzt: am Rechner steht die Leiste in EINER
@@ -17048,6 +17644,17 @@ window.__planerDatei = {
     if (!axoAnsicht) return null;
     const p = axoAnsicht.umkehre(bildX, bildY, hoeheM);
     return p ? { x: p.x / CM, y: p.z / CM } : null;
+  },
+  /* H4: die TUERKOERPER des Blattes — Schwelle und Blatt je Oeffnung.
+     Read-only, wie der ganze Messzugang. Ohne ihn muesste ein Gate aus
+     Bildpunkten raten, ob eine Tuer als Tuer gezeichnet wurde, und genau
+     daran ist schon einmal fuenf Wellen lang vorbeigemessen worden (K3). */
+  axoTueren: function(){
+    if (!axoAnsicht || !axoAnsicht.szene || !axoAnsicht.szene.tueren) return [];
+    return axoAnsicht.szene.tueren.map(function(k){
+      return { id: k.id || null, typ: k.typ, unsicher: !!k.unsicher,
+               material: k.material, y0: k.y0, y1: k.y1, ecken: k.punkte.length };
+    });
   },
   axoMoebel: function(){
     if (!szene) return null;

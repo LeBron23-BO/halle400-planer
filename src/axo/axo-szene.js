@@ -21,7 +21,9 @@
  * heisst hier darum (x, z) — `z` ist das `y` des Planers.
  */
 
-import { CM, DARSTELLUNGSHOEHE, DARSTELLUNG, bauformFuer, saeuleFuer } from './axo-kontrakt.js'
+// EINE Zeile, keine mehrzeilige Form: `buendel-kern.mjs` streift Importe
+// zeilenweise ab (IMPORT_ZEILE), eine umgebrochene bliebe im Rumpf stehen.
+import { CM, DARSTELLUNGSHOEHE, DARSTELLUNG, bauformFuer, saeuleFuer, raumArtFuer, artIstOffen, bodenMaterial } from './axo-kontrakt.js'
 import { leiteRaeumeAb, flaecheVon, mitteVon, liegtIn } from './axo-zyklen.js'
 
 /** @typedef {{x:number,z:number}} Punkt */
@@ -284,12 +286,61 @@ export function baueSzene(plan, opt = {}) {
     })
   })
 
+  /* ── Raum -> RAUMART, aus den Namens-Ankern ──────────────────────
+     Derselbe Weg wie oben bei den Saeulen: ein Anker liegt in einem Raum, also
+     gehoert sein Name diesem Raum. Neu ist nur, was daraus folgt — der Ton des
+     Bodens statt einer Hervorhebung.
+
+     DREI REGELN, die verhindern, dass die Farbe mehr sagt als der Plan:
+     · Ein Name, den `raumArtFuer` nicht kennt, faerbt NICHT. Der Raum faellt
+       auf die alte Geometrie-Regel zurueck; das ist der ganze Grund, warum das
+       Buerogeschoss unveraendert aussieht.
+     · Liegen zwei Anker VERSCHIEDENER Art im selben Raum, faerbt er gar nicht.
+       Zwei Deutungen sind keine Deutung, und die haeufigere zu waehlen waere
+       geraten.
+     · Traegt der Anker „Deutung unsicher", ist die Art `offen` — gleiche
+       Helligkeitsstufe, blasserer Buntanteil. Ein Raum mit zwei Ankern
+       derselben Art gilt als gesichert, sobald EINER es ist. */
+  const raumArt = raeume.map(() => null)
+  const streit = new Set()
+  marken.forEach((m) => {
+    const art = raumArtFuer(m.text)
+    if (!art) return
+    const offen = artIstOffen(m.zusatz)
+    raeume.forEach((r, i) => {
+      if (i === flurIndex || streit.has(i)) return
+      if (!liegtIn({ x: m.x, y: m.z }, r.punkte.map((p) => ({ x: p.x, y: p.z })))) return
+      const bisher = raumArt[i]
+      if (!bisher) raumArt[i] = { art, offen }
+      else if (bisher.art !== art) { raumArt[i] = null; streit.add(i) }
+      else if (!offen) bisher.offen = false
+    })
+  })
+  /* Traegt dieser Plan ueberhaupt benannte Raumarten? Wenn nein, bleibt alles
+     bei der Geometrie-Regel — kein Plan aendert sein Aussehen, nur weil eine
+     neue Moeglichkeit existiert. Die Erschliessungszone bekommt ihren eigenen
+     Ton erst, wenn auch die uebrigen Raeume einen haben; sonst stuende ein
+     einzelner gruenstichiger Flur in einem sonst unveraenderten Blatt.
+
+     Die Schwelle ist darum nicht „mindestens einer", sondern EIN VIERTEL der
+     Raeume. Das Buerogeschoss kennt vier Anker, die hier greifen (Aufzug,
+     Empfang, Lager, Loggia); waeren die schon genug, bekaeme es ein Blatt mit
+     drei getoenten und zweiundzwanzig ungetoenten Raeumen — das sieht nach
+     Fehler aus, nicht nach Ordnung, und es aenderte eine ausgelieferte Datei
+     fuer nichts. Gemessen: Buero 2 von 25 Raeumen (8 %), Zimmergeschoss 62
+     von 136 (46 %). */
+  const artenErkannt = raumArt.filter(Boolean).length >= raeume.length * 0.25
+
   /* ── Koerper: Boeden, Waende, Ausstattung ──────────────────────── */
   const boeden = raeume.map((r, i) => ({
     punkte: r.punkte,
     y0: 0,
     y1: DARSTELLUNGSHOEHE.boden,
-    material: i === flurIndex ? 'flur' : saeulenRaeume.has(i) ? 'bodenSaeule' : r.flaeche < 20 ? 'bodenNeben' : 'boden',
+    material: !artenErkannt
+      ? (i === flurIndex ? 'flur' : saeulenRaeume.has(i) ? 'bodenSaeule' : r.flaeche < 20 ? 'bodenNeben' : 'boden')
+      : i === flurIndex ? bodenMaterial('erschliessung', false)
+        : raumArt[i] ? bodenMaterial(raumArt[i].art, raumArt[i].offen)
+          : bodenMaterial('ohne_angabe', false),
     istBoden: true
   }))
 
@@ -542,6 +593,14 @@ export function baueSzene(plan, opt = {}) {
     moebel,
     marken,
     raeume,
+    /* Wie viele Boeden ihren Ton aus einem Raumnamen haben. Die Huelle
+       schreibt daraus den Vorbehalt aufs Blatt — eine Toenung, die niemand
+       erklaert, ist eine Behauptung. `gedeutet` sind die, deren Anker nur
+       „Deutung unsicher" traegt; sie faerben blasser. */
+    raumArten: {
+      getoent: artenErkannt ? raumArt.filter(Boolean).length + 1 : 0,
+      gedeutet: artenErkannt ? raumArt.filter((a) => a && a.offen).length : 0
+    },
     flurIndex,
     grenzen: { x0, x1, z0, z1 },
     mitte: { x: (x0 + x1) / 2, z: (z0 + z1) / 2 },

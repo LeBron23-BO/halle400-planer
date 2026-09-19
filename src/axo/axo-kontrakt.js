@@ -98,6 +98,233 @@ export const PALETTE = {
   }
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   1b · BODEN NACH RAUMART — die Gliederung des Geschosses
+   ══════════════════════════════════════════════════════════════════
+   BIS HIERHER faerbte sich ein Boden nach GEOMETRIE: die grosse maeandernde
+   Zone wurde `flur`, ein Raum unter 20 m² `bodenNeben`, alles andere `boden`.
+   Im Buerogeschoss traegt das, weil dort Raeume sehr verschieden gross sind.
+   Im Hotel-Zimmergeschoss traegt es NICHT: Zimmer, Bad, Loggia und Flur liegen
+   alle unter 20 m² und bekamen darum denselben Ton. Das Blatt zeigte 136
+   Flaechen in EINER Farbe — man sah den Grundriss, aber nicht die NUTZUNG.
+
+   DIE ENTSCHEIDUNG, und warum sie zweigeteilt ist:
+
+   · HELLIGKEIT traegt die Raumart.  Sie ueberlebt den Schwarzweiss-Ausdruck,
+     den dieses Blatt sicher erlebt. Die Leiter hat GLEICHE Stufen (rund zehn
+     von 255 Graustufen) und ist in BEIDEN Fassungen dieselbe — der Ausdruck
+     faellt darum in beiden Fassungen gleich aus.
+   · FARBE traegt nur, WELCHE Art es ist.  Sie ist der Teil, der sich
+     zurueckdrehen laesst: `FARB_STAERKE` skaliert AUSSCHLIESSLICH den
+     Buntanteil. „Zurueckhaltend" und „deutlich" sind darum dasselbe Blatt mit
+     unterschiedlich kraeftiger Toenung, nicht zwei Entwuerfe.
+
+   KEINE NEUE FARBFAMILIE. Jeder Ton entsteht als Mischung aus dem Sand des
+   Blattes (`boden`) und EINEM schon vorhandenen Palettenton — `akzent`,
+   `sitz`, `liege`, `gruen`. Danach wird der Grauwert exakt auf die Stufe
+   zurueckgeholt, damit das Einmischen die Leiter nicht verschiebt.
+
+   WAS DIE FARBE NICHT BEHAUPTEN DARF. 28 der 75 Namens-Anker des
+   Zimmergeschosses tragen „Deutung unsicher" oder „im Plan nicht beschriftet":
+   der Plan ZEICHNET die Zelle, er BENENNT sie nicht. Ein voller Ton wuerde aus
+   dieser Lesart eine Beschriftung machen. Solche Raeume bekommen darum
+   dieselbe Stufe (die Geometrie ist gemessen, daran ist nichts unsicher), aber
+   nur `OFFEN_ANTEIL` des Buntanteils — sichtbar blasser, dieselbe Sprache wie
+   das Zurueckweichen frei gesetzter Stuecke (`gesetztRueckzug`).
+   ⚠ Im Graustufen-Ausdruck ist dieser Unterschied WEG, weil er nur im
+   Buntanteil steckt. Auf Papier sagt die Farbe also nicht, wie sicher die
+   Deutung ist; das muss der Blatt-Hinweis sagen, nicht der Ton. */
+
+/** Hex nach [r,g,b] — die eine Stelle, an der dieser Kontrakt Farben rechnet. */
+export function hexRgb(hex) {
+  const h = hex.replace('#', '')
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]
+}
+
+/** Grauwert nach der Matrix, die auch `filter:grayscale(1)` und der
+ *  Schwarzweiss-Druck benutzen. Genau diese Zahl ist die Leiter-Stufe. */
+export function grauWert(c) {
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+}
+
+/**
+ * Raumart aus dem Namen des Ankers. KEIN Raten: erkannt wird nur, was der
+ * Plan auch schreibt; alles andere liefert `null` und bleibt ungefaerbt.
+ */
+export const RAUM_ART_MUSTER = [
+  { art: 'erschliessung', muster: /^(flur|treppenhaus|treppe|aufzug|gang)\b/i },
+  { art: 'bad', muster: /^(bad|dusche|wc)\b/i },
+  { art: 'loggia', muster: /^(loggia|balkon|terrasse)\b/i },
+  { art: 'betrieb', muster: /^(empfang|backoffice|back office|waschraum|lager|personal)\b/i },
+  { art: 'zimmer', muster: /^zimmer\b/i }
+]
+
+/** @param {string} text @returns {string|null} */
+export function raumArtFuer(text) {
+  const t = (text || '').trim()
+  for (const r of RAUM_ART_MUSTER) if (r.muster.test(t)) return r.art
+  return null
+}
+
+/** Traegt dieser Anker eine DEUTUNG statt einer Beschriftung? */
+export function artIstOffen(zusatz) {
+  return /deutung unsicher|im plan nicht beschriftet/i.test(zusatz || '')
+}
+
+/**
+ * Die Leiter. `hell`/`dunkel` sind Ziel-GRAUWERTE in der Palette (vor dem
+ * Streiflicht), `partner` ein vorhandener Palettenton, `anteil` sein Gewicht
+ * bei voller Staerke.
+ *
+ * Im hellen Blatt laeuft die Leiter nach UNTEN, in gleichen Stufen von rund
+ * neun Graustufen, und sie erzaehlt dabei eine Reihenfolge: je weiter ein Raum
+ * vom stillen Wohnen wegfuehrt, desto dunkler und bunter wird er — nichts
+ * gesagt, Zimmer, Betrieb, Erschliessung, Bad, Loggia (draussen). Im
+ * dunklen Blatt laeuft sie nach OBEN, weil dort der Grund dunkel ist; genauso
+ * haelt es die mitgefuehrte Palette seit der Vorlage (`loggia` ist dort
+ * heller als `boden`).
+ */
+export const BODEN_ART = {
+  /* OHNE ANGABE ist die wichtigste Stufe, nicht die uebrig gebliebene: 55 der
+     136 Flaechen des Zimmergeschosses tragen keinen Namens-Anker. Sie stehen
+     am hellsten UND als einzige ohne jeden Buntanteil — „hier steht nichts"
+     sieht dann aus wie unbedrucktes Papier. Bekaeme diese Stufe einen Ton,
+     waere sie eine Aussage; bekaeme sie die der Zimmer, waere sie eine falsche. */
+  ohne_angabe: { hell: 242, dunkel: 40, partner: null, anteil: 0 },
+  zimmer: { hell: 233, dunkel: 46, partner: 'holz', anteil: 0.1 },
+  betrieb: { hell: 224, dunkel: 52, partner: 'akzent', anteil: 0.12 },
+  erschliessung: { hell: 215, dunkel: 58, partner: 'sitz', anteil: 0.2 },
+  bad: { hell: 206, dunkel: 64, partner: 'liege', anteil: 0.22 },
+  loggia: { hell: 197, dunkel: 70, partner: 'gruen', anteil: 0.24 }
+}
+
+/**
+ * DIE VIER STUFEN DER AUSARBEITUNG.
+ *
+ * `zurueckhaltend` und `deutlich` waren die erste Lieferung: gleiche
+ * Helligkeitsleiter, nur der Buntanteil verschieden. Der Betreiber hat beide
+ * gesehen — „noch mehr farbe und professionalitaet ist gewuenscht. es soll
+ * ansehnlicher und professioneller sein." Daraus wurden `c1` und `c2`.
+ *
+ * WARUM C NICHT EINFACH „MEHR SAETTIGUNG" IST. Ein Blatt sieht nicht
+ * professionell aus, weil es bunter ist, sondern weil es die Mittel der
+ * Bauzeichnung benutzt. Drei kommen dazu, und alle drei sind seit hundert
+ * Jahren Handwerk und kein Zierat:
+ *
+ *   `schnitt`  Das GESCHNITTENE wird dunkel (Poche). Die Ansicht saegt die
+ *              Waende auf 1,16 m auf — die waagerechte Kappe IST die
+ *              Schnittflaeche. Bisher war sie die HELLSTE Flaeche der Wand,
+ *              weil sie am steilsten zum Licht steht; damit stand der Plan auf
+ *              dem Kopf. Dunkel gelegt wird aus dem Kappen-Gewimmel ein
+ *              Liniennetz, das den Grundriss zeichnet. Nebenbei behebt es den
+ *              schwaechsten gemessenen Wert der letzten Lieferung: Boden gegen
+ *              Wandkappe stand bei Kontrast 1,01.
+ *   `schatten` Ein SCHLAGSCHATTEN, hart und ohne Verlauf, in der Richtung des
+ *              Streiflichts, das die Flaechen ohnehin schon toent. Er stellt
+ *              den Baukoerper aufs Blatt, statt ihn darin schwimmen zu lassen.
+ *   `kanten`   Umrisslinien AUCH in der Uebersicht. Bisher erschienen sie erst
+ *              ab Massstab 2,2 — genau in der Gesamtansicht, die die Bank als
+ *              Erstes sieht, war das Blatt darum weich.
+ *
+ * Was NICHT dazukommt und warum, steht bei jedem Punkt in der Lieferung:
+ * keine Verlaeufe ausser dem vorhandenen Blattgrund, keine Spiegelungen, keine
+ * Bodenmuster.
+ */
+export const FARB_STUFE = {
+  zurueckhaltend: { chroma: 0.4, schnitt: 0, schatten: 0, kanten: false },
+  deutlich: { chroma: 1, schnitt: 0, schatten: 0, kanten: false },
+  /* C1 — die Empfehlung. Der Buntanteil liegt knapp ueber `deutlich` (der
+     Betreiber nennt es die Untergrenze), die Wirkung kommt aus dem Handwerk. */
+  c1: { chroma: 1.45, schnitt: 0.58, schatten: 0.1, kanten: true },
+  /* C2 — eine Stufe kraeftiger: buntere Boeden, schwaerzerer Schnitt,
+     kraeftigerer Schatten. Dieselben Mittel, nur lauter. */
+  c2: { chroma: 1.95, schnitt: 0.7, schatten: 0.15, kanten: true }
+}
+
+/** Alt-Name, damit vorhandene Aufrufe nicht ins Leere greifen. */
+export const FARB_STAERKE = { zurueckhaltend: 0.4, deutlich: 1 }
+
+/**
+ * Die SCHNITTFLAECHEN-Toene: `wand` und `wandAussen` zur Tinte des Blattes hin
+ * abgedunkelt. Kein neuer Farbwert — dieselbe Familie, nur tiefer.
+ *
+ * Der Anteil ist nicht frei gewaehlt, sondern eine UNTERGRENZE: die dunkelste
+ * Wandflanke liegt bei Helligkeit 0,60 (`SCHATTEN.grund`), die Kappe steht mit
+ * 0,943 fast im vollen Licht. Damit der Schnitt dunkler bleibt als jede
+ * Flanke, muss sein Grauwert unter rund 133 liegen — bei 0,58 sind es 111, bei
+ * 0,70 sind es 92. Weniger, und der Schnitt verschwindet zwischen den Flanken;
+ * dann waere er ein Fleck statt einer Aussage.
+ */
+export function schnittToene(farben, anteil) {
+  if (!(anteil > 0)) return {}
+  const tinte = hexRgb(farben.tinte)
+  const raus = {}
+  /* NUR die beiden Wand-Toene. Der erste Versuch nahm `kern` und `stufe`
+     dazu und legte damit die Treppe und den Aufzugsschacht dunkel — beide
+     werden aber gar NICHT geschnitten: die Treppe ist 15 cm hoch, der Schacht
+     geht mit 3,00 m ueber die Schnittebene hinaus. Ein dunkler Deckel haette
+     dort einen Schnitt behauptet, den es nicht gibt (am Standbild als
+     schwarzer Fleck am Westkopf aufgefallen). Was nicht geschnitten ist,
+     bekommt keine Schnittflaeche. */
+  for (const name of ['wand', 'wandAussen']) {
+    const c = hexRgb(farben[name]).map((v, i) => v + (tinte[i] - v) * anteil)
+    raus[name + 'Schnitt'] = '#' + c.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('')
+  }
+  return raus
+}
+
+/**
+ * Wohin ein Punkt auf Hoehe `h` seinen Schatten wirft — in Weltmetern (x, z).
+ * Gerechnet aus DEMSELBEN Lichtvektor, der schon die Flaechen toent; ein
+ * zweiter waere ein Schatten, der nicht zur Beleuchtung passt, und genau das
+ * sieht jeder sofort, ohne sagen zu koennen warum.
+ */
+export function schattenVersatz(h) {
+  return [(-h * LICHT[0]) / LICHT[1], (-h * LICHT[2]) / LICHT[1]]
+}
+
+/** Wie stark eine bloss GEDEUTETE Raumart faerben darf. */
+export const OFFEN_ANTEIL = 0.45
+
+/** Materialname eines Raumbodens. */
+export function bodenMaterial(art, offen) {
+  return 'boden_' + art + (offen ? '_offen' : '')
+}
+
+/**
+ * Die Boden-Toene zu einem Farbklima. Ergebnis ist ein Aufsatz auf die
+ * PALETTE, kein Ersatz — `boden`, `bodenNeben`, `flur` bleiben unangetastet
+ * und tragen weiter jeden Plan, in dem keine Raumart erkannt wird.
+ *
+ * @param {Record<string,string>} farben PALETTE.hell oder PALETTE.dunkel
+ * @param {number} staerke 0..1, skaliert NUR den Buntanteil
+ * @param {boolean} dunkel welches Farbklima
+ */
+export function bodenToene(farben, staerke, dunkel) {
+  const sand = hexRgb(farben.boden)
+  const sandGrau = grauWert(sand)
+  const raus = {}
+  const zweiStellig = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')
+  for (const art of Object.keys(BODEN_ART)) {
+    const d = BODEN_ART[art]
+    const ziel = dunkel ? d.dunkel : d.hell
+    const partner = d.partner ? hexRgb(farben[d.partner]) : null
+    for (const offen of [false, true]) {
+      const m = d.anteil * staerke * (offen ? OFFEN_ANTEIL : 1)
+      // 1) Sand auf die Stufe bringen, 2) Partner einmischen,
+      // 3) Grauwert exakt zurueckholen — sonst verschoebe das Mischen die Leiter.
+      let c = sand.map((v) => (v * ziel) / sandGrau)
+      if (partner && m > 0) {
+        c = c.map((v, i) => v * (1 - m) + partner[i] * m)
+        const g = grauWert(c)
+        c = c.map((v) => (v * ziel) / g)
+      }
+      raus[bodenMaterial(art, offen)] = '#' + c.map(zweiStellig).join('')
+    }
+  }
+  return raus
+}
+
 /** Schriftfamilien der Vorlage.                  [uebersicht.html:11-13] */
 export const SCHRIFT = {
   serif: '"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif',

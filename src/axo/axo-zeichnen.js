@@ -13,7 +13,7 @@
  * fuer beide Auslieferungen.
  */
 
-import { PALETTE, SCHRIFT, BLICK_START, LICHT, SCHATTEN, DARSTELLUNG, BESCHRIFTUNG, SAEULEN } from './axo-kontrakt.js'
+import { PALETTE, SCHRIFT, BLICK_START, LICHT, SCHATTEN, DARSTELLUNG, BESCHRIFTUNG, SAEULEN, FARB_STUFE, bodenToene, schnittToene, schattenVersatz } from './axo-kontrakt.js'
 import { CM } from './axo-kontrakt.js'
 import { projiziereAuf, umkehreAuf, koerperUnter, NEIGUNG_MIN_ZIEHEN } from './axo-treffer.js'
 
@@ -58,6 +58,7 @@ function toenen(hex, n, zurueck) {
  * @param {HTMLCanvasElement} canvas
  * @param {object} szeneEingang Ergebnis von `baueSzene`
  * @param {{dunkel?:boolean, namen?:'alle'|'knapp'|'saeulen'|'aus', randRechts?:number,
+ *          farbStaerke?:number,
  *          randOben?:number, bearbeitung?:{
  *            aktiv:()=>boolean,
  *            greife:(id:string,weltX:number,weltY:number)=>boolean,
@@ -104,7 +105,21 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
      HOEHE gesagt, genau wie bei `randRechts` und der Legenden-Tafel. */
   let randUntenZusatz = opt.randUnten || 0
   let schnell = false
-  let farben = dunkel ? PALETTE.dunkel : PALETTE.hell
+  /* Wie kraeftig die Raumart-Toene faerben (Betreiber-Wahl: zurueckhaltend
+     oder deutlich). Der Wert beruehrt NUR den Buntanteil — die Helligkeits-
+     leiter und damit der Schwarzweiss-Ausdruck sind in beiden Fassungen
+     gleich. Ohne Angabe bleibt es bei `zurueckhaltend`: wer nichts sagt,
+     bekommt die leisere Fassung. */
+  const stufe = (opt.farbStufe && typeof opt.farbStufe === 'object') ? opt.farbStufe : FARB_STUFE.zurueckhaltend
+  const farbStaerke = stufe.chroma
+  /* Die Raumart-Toene sind ein AUFSATZ auf die Palette, kein Ersatz: `boden`,
+     `bodenNeben` und `flur` bleiben darunter stehen und tragen jeden Plan, in
+     dem keine Raumart erkannt wurde. */
+  const klima = (an) => {
+    const grund = an ? PALETTE.dunkel : PALETTE.hell
+    return { ...grund, ...bodenToene(grund, farbStaerke, an), ...schnittToene(grund, stufe.schnitt) }
+  }
+  let farben = klima(dunkel)
 
   /**
    * ALLE Projektionsgroessen in EINEM Objekt, bei jedem Bild neu befuellt.
@@ -249,7 +264,14 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     const p = k.punkte
     const n = p.length
 
-    // Deckel
+    /* ── DER DECKEL IST DIE SCHNITTFLAECHE ───────────────────────────────
+       Bei einer Wand ist die waagerechte Kappe genau die Flaeche, an der die
+       Ansicht das Haus aufgesaegt hat. Sie bekommt darum — wenn die Stufe es
+       vorsieht — einen EIGENEN, dunklen Ton (`wandSchnitt`, `kernSchnitt`).
+       Boeden, Moebel und Tuerblaetter haben keinen solchen Eintrag und behalten
+       ihre Materialfarbe; die Weiche braucht dafuer keine Fallunterscheidung,
+       sie fragt die Palette. */
+    const deckelFarbe = farben[k.material + 'Schnitt'] || farbe
     const oben = p.map((q) => projiziere(q.x, k.y1, q.z))
     if (richtung[1] > 0.001) {
       let tiefe = 0
@@ -258,7 +280,7 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
       // wer eine Flaechenliste in der Hand hat, kann seither sagen, zu WELCHEM
       // Stueck sie gehoert. Kostet ein Feld je Flaeche und macht den Malvorgang
       // nachpruefbar.
-      raus.push({ id: k.id, pts: oben, col: toenen(farbe, [0, 1, 0], zurueck), depth: tiefe / n, gesetzt: !!k.gesetzt, ungesichert })
+      raus.push({ id: k.id, pts: oben, col: toenen(deckelFarbe, [0, 1, 0], zurueck), depth: tiefe / n, gesetzt: !!k.gesetzt, ungesichert })
     }
 
     if (k.istBoden) return // Boeden sind flach; ihre Kanten lohnen nicht
@@ -303,8 +325,118 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     }
   }
 
+  /**
+   * DER SCHLAGSCHATTEN — das einzige Stueck dieser Ansicht, das kein Bauteil
+   * ist. Er steht hier, weil eine Axonometrie ohne ihn im Blatt SCHWIMMT: es
+   * gibt keinen Fluchtpunkt, der sagt, wo unten ist, und keine Perspektive,
+   * die Tiefe erzwingt. Der Schatten ist in dieser Darstellungsart das
+   * billigste und aelteste Mittel, den Koerper auf das Papier zu stellen.
+   *
+   * VIER ENTSCHEIDUNGEN, die ihn vom Rendering trennen:
+   * · HART. Kein Verlauf, keine weiche Kante, keine Halbschatten — eine
+   *   Bauzeichnung schattiert mit der Feder, nicht mit der Lampe.
+   * · EIN TON. Die Tinte des Blattes mit kleiner Deckkraft, keine eigene
+   *   Farbe. Er verdunkelt, was darunter liegt, und behauptet nichts.
+   * · AUS DEMSELBEN LICHT wie die Flaechentoenung (`schattenVersatz` rechnet
+   *   mit `LICHT`). Ein Schatten, der woanders hinfaellt als das Streiflicht
+   *   zeigt, faellt jedem auf, ohne dass er sagen koennte warum.
+   * · EIN EINZIGER FUELLVORGANG. Alle Wandschatten wandern in EINEN Pfad und
+   *   werden mit `nonzero` gefuellt. Zweihundert einzeln gefuellte
+   *   halbdurchsichtige Flaechen wuerden sich an jeder Ueberlappung
+   *   aufaddieren — das Ergebnis waere ein fleckiger Teppich statt eines
+   *   Schattens. So ist jede Stelle genau einmal abgedunkelt.
+   *
+   * Die Form je Wandkachel ist der Minkowski-Wischer: das versetzte Rechteck
+   * plus die vier Verbindungsflaechen zum urspruenglichen. Damit haengt der
+   * Schatten an seiner Wand, statt als geloestes Rechteck daneben zu liegen.
+   * Eine konvexe Huelle waere dasselbe Ergebnis mit mehr Rechnung.
+   */
+  function maleSchatten() {
+    if (!(stufe.schatten > 0) || schnell) return
+    const pfad = new Path2D()
+    /* JEDER Eckpunkt wird GENAU ZWEIMAL projiziert — einmal am Ort, einmal
+       versetzt — und beide Fassungen tragen danach alle fuenf Teilflaechen.
+       Der erste Entwurf rechnete die Verbindungsflaechen aus den Weltpunkten
+       neu und projizierte zwanzigmal je Wandkachel; gemessen kostete das
+       Bild dadurch 128 ms statt 4 ms. Bei 526 Kacheln plus Ausstattung ist die
+       Projektion die ganze Rechnung. */
+    const wirf = (k, y) => {
+      const v = schattenVersatz(k.y1 - y)
+      const p = k.punkte
+      const n = p.length
+      const A = new Array(n)
+      const B = new Array(n)
+      for (let i = 0; i < n; i++) {
+        A[i] = projiziere(p[i].x, y, p[i].z)
+        B[i] = projiziere(p[i].x + v[0], y, p[i].z + v[1])
+      }
+      /* EINE Teilflaeche statt fuenf: die konvexe Huelle aus Ort und Versatz.
+         Das Ergebnis ist dieselbe Form (fuer ein konvexes Vieleck ist der
+         Wischer genau diese Huelle), aber der Pfad hat ein Drittel der Kanten.
+         Gemessen an 526 Wandkacheln: 90 ms -> 28 ms je Bild. Die Projektion
+         ist orthographisch, also bleibt eine Huelle im Bild eine Huelle in der
+         Welt — hier darf im Bildraum gerechnet werden. */
+      huelle(A.concat(B), pfad)
+    }
+    /* Die Hoehe, AUF die geworfen wird, ist die Oberkante der Bodenplatte —
+       nicht 0. Sonst laege der Schatten unter dem Fussboden und waere von ihm
+       verdeckt (die Platte ist 10 cm hoch, in der Uebersicht ein Bildpunkt, in
+       der Nahsicht ein sichtbarer Streifen). */
+    const bodenY = szene.boeden.length ? szene.boeden[0].y1 : 0.1
+    for (const k of szene.waende) wirf(k, bodenY)
+    /* AUCH die Ausstattung und die Tuerblaetter. Der Betreiber sagt, die
+       Moebel „wirken wie Kisten" — das liegt nicht an ihrer Form, sondern
+       daran, dass nichts sie mit dem Fussboden verbindet. Ein Stuhl ohne
+       Schatten liegt im Bild, ein Stuhl mit Schatten STEHT darin. Bei den
+       schwebenden Stuecken (eine Tischplatte sitzt auf 74 cm) faellt der
+       Schatten versetzt daneben — das ist richtig so und sagt zugleich, dass
+       die Platte schwebt. */
+    for (const k of szene.moebel) wirf(k, bodenY)
+    for (const k of szene.tueren || []) wirf(k, bodenY)
+    ctx.save()
+    ctx.globalAlpha = stufe.schatten
+    ctx.fillStyle = farben.tinte
+    ctx.fill(pfad, 'nonzero')
+    ctx.restore()
+  }
+
+  /** Konvexe Huelle (Andrew, monotone Kette) als Teilflaeche in `pfad`. */
+  function huelle(pts, pfad) {
+    const p = pts.slice().sort((a, b) => (a.x - b.x) || (a.y - b.y))
+    const kreuz = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
+    const bau = (liste) => {
+      const h = []
+      for (const q of liste) {
+        while (h.length >= 2 && kreuz(h[h.length - 2], h[h.length - 1], q) <= 0) h.pop()
+        h.push(q)
+      }
+      h.pop()
+      return h
+    }
+    const h = bau(p).concat(bau(p.slice().reverse()))
+    if (h.length < 3) return
+    pfad.moveTo(h[0].x, h[0].y)
+    for (let i = 1; i < h.length; i++) pfad.lineTo(h[i].x, h[i].y)
+    pfad.closePath()
+  }
+
   function maleFlaechen(liste) {
-    const kanten = kameraWerte.massstab > DARSTELLUNG.kanteAbMassstab
+    /* KANTEN AUCH IN DER UEBERSICHT (Stufe C).
+       `kanteAbMassstab` beantwortet die Frage „lohnen Umrisse hier?" mit ja
+       oder nein. Genau in der Gesamtansicht — dem Bild, das die Bank als
+       Erstes sieht — lautete die Antwort nein, und das Blatt war dort weich.
+       Statt die Schwelle zu senken (dann waeren die Linien unten so satt wie
+       oben und die Uebersicht ein Knaeuel) laeuft die Deckkraft mit dem
+       Massstab ein: unter der Schwelle mit der Wurzel, damit sie frueh
+       sichtbar wird und trotzdem leicht bleibt. Ueber der Schwelle bleibt
+       alles wie bisher. */
+    const nah = kameraWerte.massstab > DARSTELLUNG.kanteAbMassstab
+    const kantenDeckkraft = nah
+      ? DARSTELLUNG.kanteDeckkraft
+      : stufe.kanten
+        ? DARSTELLUNG.kanteDeckkraft * Math.sqrt(Math.min(1, kameraWerte.massstab / DARSTELLUNG.kanteAbMassstab))
+        : 0
+    const kanten = kantenDeckkraft > 0.02
     ctx.lineJoin = 'round'
     for (const f of liste) {
       const p = f.pts
@@ -346,7 +478,7 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
         ctx.setLineDash([])
       } else if (kanten) {
         ctx.strokeStyle = farben.tinte
-        ctx.globalAlpha = DARSTELLUNG.kanteDeckkraft
+        ctx.globalAlpha = kantenDeckkraft
         ctx.lineWidth = DARSTELLUNG.kanteBreite
         ctx.stroke()
         ctx.globalAlpha = 1
@@ -570,6 +702,8 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     unten.sort((a, b) => a.depth - b.depth)
     maleFlaechen(unten)
 
+    maleSchatten()
+
     const oben = []
     for (const k of szene.waende) flaechenVon(k, richtung, oben)
     /* Tueren im GLEICHEN Durchgang wie die Waende (H4) und nicht danach: ein
@@ -606,8 +740,25 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     return true
   }
 
-  function passeAn() {
-    const dpr = Math.min(globalThis.devicePixelRatio || 1, 2)
+  /**
+   * @param {number} [dichte] Bildpunkte je CSS-Punkt. Ohne Angabe die des
+   *        Bildschirms (hoechstens 2 — mehr kostet nur Speicher).
+   *
+   * WOFUER DER PARAMETER DA IST: fuers PAPIER. Ein Ausdruck loest rund
+   * dreimal so fein auf wie ein Bildschirm; die Leinwand wird beim Drucken als
+   * BILD eingebettet, also entscheidet ihre Bildpunktzahl ueber die Schaerfe
+   * des Blattes. Am 1600 px breiten Fenster ohne Aufloesungs-Verdopplung sind
+   * das 1600 Punkte auf 277 mm Zeichenfeld — 147 dpi, sichtbar weich. Mit
+   * `dichte = 3` sind es 4800 Punkte, also 440 dpi.
+   *
+   * Der BLICK bleibt dabei stehen: `breite`/`hoehe` sind CSS-Punkte und
+   * aendern sich nicht. Das ist der Grund, warum hier eine Dichte steht und
+   * nicht eine zweite Leinwand — eine zweite muesste Blick, Zoom und
+   * Verschiebung nachbauen, und die erste, die beim naechsten Umbau vergessen
+   * wird.
+   */
+  function passeAn(dichte) {
+    const dpr = dichte || Math.min(globalThis.devicePixelRatio || 1, 2)
     const kasten = canvas.getBoundingClientRect()
     breite = Math.max(1, Math.round(kasten.width))
     hoehe = Math.max(1, Math.round(kasten.height))
@@ -1082,7 +1233,7 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     },
     setzeDunkel(an) {
       dunkel = an
-      farben = an ? PALETTE.dunkel : PALETTE.hell
+      farben = klima(an)
       zeichne()
     },
     setzeRandRechts(px) {
