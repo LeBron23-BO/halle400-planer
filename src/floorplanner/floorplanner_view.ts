@@ -119,6 +119,17 @@ const ausstattungLinienBreite = 1
 const GESETZT_STRICH = [4, 3]
 
 /**
+ * Das Strichmuster der Fang-Hilfslinien (W15) — länger als `GESETZT_STRICH`.
+ *
+ * Nicht dasselbe Muster, und das mit Absicht: `GESETZT_STRICH` heisst in diesem
+ * Plan „gesetzt statt gemessen" und ist eine Aussage über die Herkunft von
+ * Bausubstanz. Eine Hilfslinie ist gar keine Bausubstanz. Gleiches Muster für
+ * zwei verschiedene Dinge wäre eine Verwechslung, die genau dem passiert, der
+ * die Legende gelesen hat.
+ */
+const FANG_STRICH = [10, 6]
+
+/**
  * Ab wann die Ausstattung DETAILS zeigt (Treppenstufen, Kochfeld-Platten,
  * Stuhl-Lehnen) und ab wann nur noch ihren Umriss. Beides sind Schwellen in
  * BILDSCHIRM-Pixeln pro cm, nicht in Weltmaß — dieselbe Lehre wie bei den
@@ -284,6 +295,14 @@ export class FloorplannerView {
     if (this.viewmodel.mode == floorplannerModes.DRAW) {
       this.drawTarget(this.viewmodel.targetX, this.viewmodel.targetY, this.viewmodel.lastNode)
     }
+
+    // W15 — die HILFSLINIEN des Fangs, ganz zuletzt und damit über allem.
+    //
+    // Sie gehören nach oben, nicht unter die Wände: eine Hilfslinie, die eine
+    // Wand verdeckt, sagt genau das, was sie sagen soll — „DIESE Linie meine
+    // ich gerade". Läge sie darunter, verschwände sie ausgerechnet dort, wo sie
+    // gebraucht wird, nämlich auf der Flucht, an der schon eine Wand liegt.
+    this.zeichneFangLinien()
 
     this.floorplan.getWalls().forEach((wall) => {
       this.drawWallLabels(wall)
@@ -1203,6 +1222,48 @@ export class FloorplannerView {
       hover ? cornerRadiusHover : cornerRadius,
       color
     )
+  }
+
+  /**
+   * Die Hilfslinien des laufenden Fangs (W15).
+   *
+   * WARUM ES SIE GEBEN MUSS — gerechnet: in der Grundansicht sind 8,7 cm ein
+   * Bildpunkt. Rastet der Punkt um 6 cm ein, bewegt sich im Bild NICHTS
+   * Sichtbares. Ohne Rückmeldung erführe der Nutzer erst beim Nachmessen, ob
+   * seine Wand nun fluchtet — und genau das Nachmessen soll ihm diese Welle
+   * ersparen. Eine Linie quer durchs Bild ist die einzige Auskunft, die ohne
+   * Zahlen auskommt und auch am Telefon lesbar ist.
+   *
+   * GESTRICHELT und in der Fangfarbe, dieselbe wie der Ring um eine gefangene
+   * Ecke: der Nutzer soll „eingerastet" an EINER Farbe erkennen, nicht an
+   * zweien. Durchgezogen wäre sie von einer Wand nicht zu unterscheiden — und
+   * eine Hilfslinie, die man für Bausubstanz hält, ist schlimmer als keine.
+   */
+  private zeichneFangLinien() {
+    const linien = this.viewmodel.fangLinien
+    if (!linien || linien.length === 0) {
+      return
+    }
+    const ctx = this.context
+    ctx.save()
+    ctx.strokeStyle = fangFarbe
+    ctx.lineWidth = 1
+    ctx.setLineDash(FANG_STRICH)
+    for (const l of linien) {
+      ctx.beginPath()
+      if (l.achse === 'x') {
+        const zx = this.viewmodel.convertX(l.wert)
+        ctx.moveTo(zx, 0)
+        ctx.lineTo(zx, this.canvasElement.height)
+      } else {
+        const zy = this.viewmodel.convertY(l.wert)
+        ctx.moveTo(0, zy)
+        ctx.lineTo(this.canvasElement.width, zy)
+      }
+      ctx.stroke()
+    }
+    ctx.setLineDash([])
+    ctx.restore()
   }
 
   /** */

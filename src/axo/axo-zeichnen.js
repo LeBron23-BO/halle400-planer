@@ -741,6 +741,43 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
   }
 
   /**
+   * Die Kacheln EINER Wand austauschen (W15) — fuer eine gezogene Wand.
+   *
+   * Eine Wand ist im Bild nicht EIN Koerper, sondern viele: sie wird in Kacheln
+   * von hoechstens `DARSTELLUNG.kachel` zerlegt, damit der Maler sie richtig
+   * sortieren kann (sonst verdeckte die 78 m lange Nordwand mit EINEM
+   * Tiefenwert alles dahinter). Getauscht wird deshalb eine LISTE gegen eine
+   * Liste, an Ort und Stelle: `splice` statt neu zusammensetzen, weil
+   * `szene.waende` mehrere tausend Eintraege hat und ein Neubau je
+   * Zeigerbewegung genau das Ruckeln waere, das dieser ganze Weg vermeidet.
+   *
+   * @param {string} wandId
+   * @param {Array} stuecke die neuen Kacheln (aus `baueWandKoerper`)
+   */
+  function tauscheWandKoerper(wandId, stuecke) {
+    if (!wandId || !stuecke || !szene?.waende) return false
+    const behalten = []
+    let erster = -1
+    for (let i = 0; i < szene.waende.length; i++) {
+      if (szene.waende[i].wandId === wandId) {
+        if (erster < 0) erster = i
+      } else {
+        behalten.push(szene.waende[i])
+      }
+    }
+    if (erster < 0) return false
+    // An DERSELBEN Stelle wieder einsetzen, an der die alten Kacheln standen:
+    // die Reihenfolge in `szene.waende` ist zwar nicht die Malreihenfolge (die
+    // rechnet `zeichne` aus den Tiefenwerten), aber sie ist der Tiebreaker bei
+    // gleicher Tiefe. Hinten anzuhaengen liesse gleich tiefe Flaechen bei jedem
+    // Zug die Reihenfolge wechseln — ein Flackern ohne erkennbaren Grund.
+    behalten.splice(Math.min(erster, behalten.length), 0, ...stuecke)
+    szene.waende = behalten
+    zeichne()
+    return true
+  }
+
+  /**
    * @param {number} [dichte] Bildpunkte je CSS-Punkt. Ohne Angabe die des
    *        Bildschirms (hoechstens 2 — mehr kostet nur Speicher).
    *
@@ -827,6 +864,19 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
   let unterZeiger = null
 
   const bearbeitbar = () => !!bearbeitung && bearbeitung.aktiv()
+
+  /* Ob im Blatt auch WAENDE greifbar sind (W15) — die Huelle entscheidet, nicht
+     der Renderer. Fehlt die Frage, bleibt es bei W7: nur Moebel. Damit ist der
+     Auslieferungszustand der Weitergabe-Fassung von dieser Welle gar nicht
+     erreichbar, und zwar von der Bauart her und nicht durch eine Abfrage, die
+     jemand vergessen koennte. */
+  const waendeGreifbar = () => bearbeitbar() && !!bearbeitung.waendeGreifbar?.()
+
+  /* Die EINE Stelle, an der gefragt wird „was liegt unter diesem Bildpunkt?".
+     Zwei Aufrufer (Aufsetzen und Hinueberfahren) mit zwei verschiedenen
+     Einstellungen waeren zwei Wahrheiten: der Zeiger sagte „greifbar" und der
+     Druck fasste nichts, oder umgekehrt. */
+  const unterBild = (b) => koerperUnter(szene, kamera(), b.x, b.y, { waende: waendeGreifbar() })
 
   /** Bildpunkt in CSS-Pixeln, so wie `projiziere` sie liefert. */
   function amBild(e) {
@@ -993,7 +1043,7 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     }
     if (bearbeitbar()) {
       const b = amBild(e)
-      const treffer = koerperUnter(szene, kamera(), b.x, b.y)
+      const treffer = unterBild(b)
       if (treffer) {
         /* DIE EHRLICHE GRENZE. Unter `NEIGUNG_MIN_ZIEHEN` bedeutet 1 Bildpunkt
            ueber 22 cm Tiefe — dort wird NICHT gezogen. Gesagt, nicht still
@@ -1066,13 +1116,24 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
          gemessen 16,2 ms — bei jeder Zeigerbewegung waere das ein Ruckeln, das
          der Nutzer der Bank zurecht als „hakt" liest. Der volle Neubau kommt
          beim Loslassen. */
-      if (neu) tauscheKoerper(greift, neu)
+      if (!neu) return
+      /* WAND ODER MOEBEL — an der FORM der Antwort unterschieden und nicht an
+         einer zweiten Frage an die Huelle. Eine Wand bewegt sich nie allein:
+         ihre Endecken gleiten auf den Nachbarwaenden, also aendern sich MEHRERE
+         Waende auf einmal (`verschiebeWandParallel`). Die Huelle schickt darum
+         eine Liste; ein Moebel bleibt ein einzelner Koerper, Zeichen fuer
+         Zeichen wie in W7. */
+      if (neu.waende) {
+        for (const w2 of neu.waende) tauscheWandKoerper(w2.id, w2.stuecke)
+      } else {
+        tauscheKoerper(greift, neu)
+      }
       return
     }
     // --- Nichts in der Hand: sagen, was greifbar waere.
     if (!zieht && bearbeitbar()) {
       const b = amBild(e)
-      zeigerPflegen(koerperUnter(szene, kamera(), b.x, b.y))
+      zeigerPflegen(unterBild(b))
     }
     if (!zieht) return
     const dx = e.clientX - lx
@@ -1173,6 +1234,7 @@ export function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
       zeichne()
     },
     tauscheKoerper,
+    tauscheWandKoerper,
     /** Die aktuelle Szene — der Treffer-Test braucht ihre Koerper. */
     get szene() {
       return szene

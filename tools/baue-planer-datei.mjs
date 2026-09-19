@@ -1448,7 +1448,12 @@ ${
       <button type="button" data-oeffnung="durchgang" aria-pressed="false">Durchgang</button>
     </div>
     <div class="grp">
-      <button type="button" id="btnEinrasten" aria-pressed="true" title="Gezogene Möbel bündig an die Wand legen, Öffnungen bündig an die Ecke oder in die Wandmitte, sonst auf 5 cm runden">Einrasten</button>
+      <button type="button" id="btnEinrasten" aria-pressed="true" title="Gezogene Möbel bündig an die Wand legen, Öffnungen bündig an die Ecke oder in die Wandmitte, sonst auf 5 cm runden — und beim Zeichnen wie beim Wandverschieben auf die Flucht der Nachbarwände (gestrichelte Hilfslinie)">Einrasten</button>
+      <!-- W15 — die AUFRÄUM-HILFE. Sie steht neben „Einrasten", weil sie
+           dessen andere Hälfte ist: der Fang verhindert neue Fluchtfehler, dies
+           findet die alten. Sie VERÄNDERT beim Drücken NICHTS — sie zählt und
+           zeigt; begradigt wird erst nach der Rückfrage. -->
+      <button type="button" id="btnFluchten" title="Nebeneinanderliegende Wände suchen, die nicht fluchten — zeigt die Fundstellen an und begradigt erst nach Rückfrage">Fluchten prüfen</button>
     </div>
     <div class="grp">
       <button type="button" id="btnUndo" title="Rückgängig (Strg+Z)">Rückgängig</button>
@@ -1480,6 +1485,22 @@ ${
       <button type="button" id="btnZurueckJa" class="ernst">Zurücksetzen</button>
     </span>
     <span class="fuss">Rückgängig ist danach abgeschaltet. Der Stand wird vorher gesichert und lässt sich einmal zurückholen; „Sichern“ legt ihn zusätzlich als Datei ab.</span>
+  </div>
+
+  <!-- W15 — die Rückfrage der AUFRÄUM-HILFE.
+       Sie nennt den Umfang in Zahlen, so wie „Zurücksetzen" es seit C3 tut:
+       wie viele Stellen, wie viele Ecken, und wie weit sich die weiteste
+       bewegt. „Begradigen" allein wäre wahr und nutzlos — wer nicht weiss,
+       wie viel sich bewegt, kann nicht entscheiden. Und es ist derselbe
+       Grund, aus dem hier überhaupt gefragt wird: ein Werkzeug, das ungefragt
+       30 Wände verschiebt, zerstört mehr, als es heilt. -->
+  <div class="frage" id="fluchtFrage" role="alertdialog" aria-live="assertive" aria-label="Fluchten begradigen bestätigen" hidden>
+    <span class="txt"><b>Fluchten:</b> <span id="fluchtFrageUmfang" class="wert"></span></span>
+    <span class="knoepfe">
+      <button type="button" id="btnFluchtNein">Abbrechen</button>
+      <button type="button" id="btnFluchtJa" class="ernst">Begradigen</button>
+    </span>
+    <span class="fuss">Die gefundenen Fluchten stehen als gestrichelte Linien im Plan. Rückgängig nimmt das Begradigen in EINEM Schritt zurück.</span>
   </div>
 </div>
 
@@ -2277,6 +2298,19 @@ function tafelRand(){ return (tafelAn && innerWidth > 900) ? 294 : 0; }
    Schalter allein macht es auch nicht scharf. */
 const axoBearbeitung = {
   aktiv: function(){ return bearbeiten && ansicht === 'axo'; },
+  /* W15 — AUCH WAENDE, und zwar an dieselbe Bedingung geknuepft wie alles
+     andere: \`bearbeiten\`. Eine eigene Schranke waere ein zweiter Schalter fuer
+     dieselbe Frage; die Weitergabe-Fassung schaltet \`bearbeiten\` nie ein und
+     kann darum auch hier nichts greifen.
+
+     WARUM ES DAS JETZT GIBT, obwohl W7 Punkt 7 es ausdruecklich ablehnte: der
+     Grund war „eine verschobene gemessene Ecke bricht den Rueckweg (W5) hart
+     ab". Seit W12b gibt es die Kategorie UMBAU — die Wand gleitet parallel,
+     ihre Endecken laufen auf den Nachbarachsen, der Grundriss bleibt
+     geschlossen, und der Raum-Waechter prueft danach nach. Der abgelehnte
+     Zustand entsteht nicht mehr. Der zweite Grund („die Krone liegt 1,63 m
+     neben dem Fusspunkt") galt einer GERATENEN Hoehe; hier ist sie gemessen. */
+  waendeGreifbar: function(){ return true; },
   greife: function(id, wx, wy){ return zeichner.zugBeginnen(id, wx, wy); },
   ziehe: function(wx, wy){
     if (!zeichner.zugSchritt(wx, wy)) return null;
@@ -2287,6 +2321,33 @@ const axoBearbeitung = {
        Gate muss beweisen koennen, dass es diesen Unterschied ueberhaupt
        bemerkt. Im Betrieb ist dieser Zweig aus. */
     if (vollNeubauImZug) { grundriss.update(); axoNeuBauen(); return null; }
+    /* --- Eine WAND in der Hand (W15): mehrere Waende aendern sich auf einmal.
+       Nicht nur die gezogene — ihre Endecken gleiten auf den Nachbarwaenden
+       entlang, und deren Kacheln stimmen danach nicht mehr. Nur die eine
+       nachzufuehren liesse an jedem Wandende eine klaffende Luecke stehen, bis
+       der Nutzer loslaesst. Gesucht werden darum alle Waende, die an einer der
+       beiden Endecken haengen — das sind gemessen drei bis fuenf, nicht 589. */
+    const wandId = zeichner.wandZugLaeuft && zeichner.wandZugLaeuft();
+    if (wandId) {
+      const gezogen = grundriss.getWalls().find(function(w){ return w.id === wandId; });
+      if (!gezogen) return null;
+      const eckenIds = [gezogen.getStart().id, gezogen.getEnd().id];
+      const betroffen = grundriss.getWalls().filter(function(w){
+        return w.id === wandId ||
+          eckenIds.indexOf(w.getStart().id) >= 0 || eckenIds.indexOf(w.getEnd().id) >= 0;
+      });
+      const liste = [];
+      for (const w of betroffen) {
+        /* DIESELBE \`wandStuecke\`, mit der \`baueSzene\` die Wand gebaut hat —
+           ueber das dort gemerkte Rezept. Ein hier nachgebautes Vieleck waere
+           eine zweite Wahrheit ueber das Aussehen einer Wand, und sie fiele
+           erst beim Loslassen auf. */
+        const stuecke = baueWandKoerper(szene, w.id,
+          { x: w.getStartX(), y: w.getStartY() }, { x: w.getEndX(), y: w.getEndY() });
+        if (stuecke) liste.push({ id: w.id, stuecke: stuecke });
+      }
+      return liste.length ? { waende: liste } : null;
+    }
     const stueck = grundriss.findeAusstattung(zeichner.zugLaeuft());
     /* NUR dieser eine Koerper — aus DERSELBEN Funktion, aus der \`baueSzene\` ihn
        baut. Ein hier nachgebautes Vieleck waere eine zweite Wahrheit ueber das
@@ -2295,7 +2356,13 @@ const axoBearbeitung = {
     return stueck ? (ausstattungsKoerper(stueck, HOEHEN)[0] || null) : null;
   },
   lassLos: function(){
-    const id = zeichner.zugLaeuft();
+    /* BEIDE fragen, und zwar VOR \`zugBeenden\` — danach sind beide null.
+       \`zugLaeuft\` meldet nur Moebel; eine gezogene Wand steht in
+       \`wandZugLaeuft\`. Ohne die zweite Frage bliebe der volle Neubau nach
+       einem Wandzug aus: die Wand staende im Blatt mit den Kacheln aus dem
+       Zug da (Aussen-Normale und Raumboeden von vorher), und der Grundriss
+       wuerde nicht gesichert. Ein Fehler, der wie „geht doch" aussieht. */
+    const id = zeichner.zugLaeuft() || (zeichner.wandZugLaeuft && zeichner.wandZugLaeuft());
     zeichner.zugBeenden();
     /* Erst JETZT der volle Neubau (ueber \`bemerkeAenderung\` -> \`axoBaldNeu\`):
        waehrend des Zuges kostete er gemessen 16,2 ms je Bewegung. */
@@ -3880,6 +3947,79 @@ zeichner.addEinrastCallback(function(an){
 });
 el('btnEinrasten').setAttribute('aria-pressed', String(zeichner.istEinrasten()));
 
+/* ══════════ AUFRÄUM-HILFE · Fluchten (W15) ══════════════════════════════
+
+   Nutzerwunsch, wörtlich: *„damit zum beispiel die wände nicht unterschiedlich
+   lang sind, obwohl sie nebeneinander liegen und es nicht der fall sein darf."*
+   Der Fang verhindert NEUE solche Stellen; was schon gezeichnet ist, findet er
+   nicht mehr. Diese Hälfte sucht sie im fertigen Plan.
+
+   DREI SCHRITTE, und ihre Trennung ist der ganze Punkt:
+     1. Drücken SUCHT und ZEIGT — und verändert nichts.
+     2. Die Rückfrage nennt den Umfang in Zahlen (Stellen, Ecken, weiteste
+        Bewegung). „Begradigen?" allein wäre wahr und nutzlos.
+     3. Erst „Begradigen" fasst Geometrie an, in EINEM Rückgängig-Schritt.
+
+   Ein Werkzeug, das ungefragt 30 Wände verschiebt, zerstört mehr, als es
+   heilt: die Fundstellen sind Vermutungen über eine ABSICHT („das sollte
+   fluchten"), und eine Vermutung darf keine Geometrie anfassen. */
+const fluchtFrage = el('fluchtFrage');
+let fluchtFund = null;
+
+function fluchtSchliessen(){
+  fluchtFrage.hidden = true;
+  fluchtFund = null;
+  /* Die Hilfslinien MÜSSEN mit weg. Eine Linie, die stehen bleibt, nachdem die
+     Frage weg ist, behauptet weiter etwas über einen Zustand, den es nicht
+     mehr gibt — und beim nächsten Zeichnen hielte man sie für einen Fang. */
+  zeichner.fluchtZeigen(null);
+}
+
+el('btnFluchten').addEventListener('click', function(){
+  /* Suchen und ZEIGEN. \`fluchtFehler\` ist lesend — das ist keine Bequemlichkeit
+     der Umsetzung, sondern die Zusicherung, mit der man den Knopf überhaupt
+     drücken kann, ohne vorher zu sichern. */
+  fluchtFund = zeichner.fluchtFehler();
+  if (!fluchtFund.length) {
+    zeichner.fluchtZeigen(null);
+    meldung('Keine Stelle gefunden: alle nebeneinanderliegenden Wände fluchten bereits.', false);
+    return;
+  }
+  zeichner.fluchtZeigen(fluchtFund);
+  const ecken = fluchtFund.reduce(function(s, f){ return s + f.ecken.length; }, 0);
+  const weit = fluchtFund.reduce(function(m, f){ return Math.max(m, f.versatz); }, 0);
+  el('fluchtFrageUmfang').textContent =
+    fluchtFund.length + ' Stelle' + (fluchtFund.length === 1 ? '' : 'n') +
+    ', an denen nebeneinanderliegende Wände nicht fluchten. ' +
+    'Begradigen bewegt ' + ecken + ' Eckpunkt' + (ecken === 1 ? '' : 'e') +
+    ', keinen weiter als ' + weit + ' cm.';
+  frageZeigen(fluchtFrage);
+  el('btnFluchtNein').focus();
+});
+
+el('btnFluchtNein').addEventListener('click', fluchtSchliessen);
+
+el('btnFluchtJa').addEventListener('click', function(){
+  if (!fluchtFund) { fluchtSchliessen(); return; }
+  const erg = zeichner.fluchtBegradigen(fluchtFund);
+  fluchtSchliessen();
+  /* GEMELDET wird das GEMESSENE, nicht das Vorgeschlagene: \`bewegt\` zählt die
+     Ecken, die sich wirklich bewegt haben. Und die Räume werden GENANNT — der
+     Wächter, den es für das Wandziehen schon gibt (W14), gilt hier genauso:
+     eine Aufräumung, die einen Raum aufreisst, muss das sagen und nicht
+     schweigen. */
+  const raumSatz = erg.raeumeNachher === erg.raeumeVorher
+    ? 'Die Räume schliessen weiter (' + erg.raeumeNachher + ').'
+    : 'ACHTUNG: die Zahl der Räume hat sich geändert (' +
+      erg.raeumeVorher + ' → ' + erg.raeumeNachher + ') — mit Rückgängig zurücknehmen.';
+  meldung(
+    erg.bewegt + ' Eckpunkt' + (erg.bewegt === 1 ? '' : 'e') + ' begradigt, weiteste Bewegung ' +
+    erg.weiteste + ' cm. ' + raumSatz + ' Rückgängig nimmt alles in einem Schritt zurück.',
+    erg.raeumeNachher !== erg.raeumeVorher
+  );
+  bemerkeAenderung();
+});
+
 /* ── Palette: ein Stueck in den Grundriss ziehen (W3) ────────────────
    Bewusst mit Maus-Ereignissen und NICHT mit der HTML5-Ziehschnittstelle
    (draggable + dragstart/drop). Zwei gemessene Gruende: erstens laesst sich
@@ -4195,6 +4335,12 @@ addEventListener('keydown', function(e){
   // ist dort ohnehin taub — ein Strg+Z waere die einzige Tuer, durch die sich
   // ein ruhiges Blatt noch verstellen liesse.
   if (!bearbeiten) return;
+  /* W15 — Escape nimmt die Flucht-Rückfrage zurück, wie bei jeder anderen
+     Rückfrage dieser Datei. Der KERN registriert Escape zwar selbst, kennt
+     dieses Fenster aber nicht: es gehört der Hülle. Ohne diese Zeile wäre die
+     Flucht-Rückfrage die einzige, die sich nicht mit Escape wegdrücken lässt
+     — und der Nutzer lernte, dass Escape „manchmal" wirkt. */
+  if (e.key === 'Escape' && !fluchtFrage.hidden) { e.preventDefault(); fluchtSchliessen(); return; }
   if (!(e.ctrlKey || e.metaKey)) return;
   const taste = (e.key || '').toLowerCase();
   if (taste === 'z' && !e.shiftKey) { e.preventDefault(); undo.undo(); }
@@ -5346,6 +5492,23 @@ window.__planerDatei = {
   },
   einrasten: function(){ return zeichner.istEinrasten(); },
   setzeEinrasten: function(an){ zeichner.setzeEinrasten(an); },
+  /* ── Aufräum-Hilfe (W15), für die Gates ──────────────────────────────
+     LESEND (\`fluchtFehler\`, \`fluchtLinien\`) und SCHREIBEND (\`fluchtKnopf\`,
+     \`fluchtJa\`) getrennt gehalten. Der schreibende Weg geht über die KNÖPFE
+     und nicht über den Kern: ein Gate, das \`fluchtBegradigen\` direkt riefe,
+     bewiese nur, dass die Rechnung rechnet — nicht, dass sie ohne Bestätigung
+     unerreichbar ist. Und genau das ist hier die Zusage. */
+  /* WOHIN der naechste gezeichnete Punkt WIRKLICH faellt — nach allen drei
+     Hilfen (Ecke, Winkel, Flucht). Das ist die Groesse, die ein Gate messen
+     MUSS, wenn es den Fang beim Zeichnen beweisen will: die Zeigerlage sagt nur,
+     wohin die Hand zielte, nicht, was daraus wird. */
+  zeichenZiel: function(){ return { x: zeichner.targetX, y: zeichner.targetY }; },
+  fluchtFehler: function(tol){ return zeichner.fluchtFehler(tol); },
+  fluchtLinien: function(){ return zeichner.fangLinien.slice(); },
+  fluchtFrageOffen: function(){ return el('fluchtFrage').hidden === false; },
+  fluchtKnopf: function(){ el('btnFluchten').click(); },
+  fluchtJa: function(){ el('btnFluchtJa').click(); },
+  fluchtNein: function(){ el('btnFluchtNein').click(); },
   zoomeAufPunkt: function(z, bx, by){ zeichner.zoomeAufPunkt(z, bx, by); },
   proCm: function(){ return zeichner.pixelProCm(); },
   undoJetzt: function(){ undo.undo(); },
@@ -5404,6 +5567,16 @@ window.__planerDatei = {
   axoTreffer: function(x, y){
     if (!axoAnsicht) return null;
     return koerperUnter(axoAnsicht.szene, axoAnsicht.kamera(), x, y);
+  },
+  /* Derselbe Test, aber MIT Waenden (W15) — die Frage, die auch die Hand im
+     Bearbeiten-Zustand stellt. Getrennt gehalten und nicht als Parameter an
+     \`axoTreffer\`: jener beantwortet die Frage „welches MOEBEL liegt hier",
+     und daran haengen die Selbsttreffer-Proben ueber alle Ausstattungs-Stuecke.
+     Eine Umschaltung an derselben Stelle liesse jede dieser Proben still eine
+     andere Frage stellen, sobald jemand den Standardwert aendert. */
+  axoTrefferMitWand: function(x, y){
+    if (!axoAnsicht) return null;
+    return koerperUnter(axoAnsicht.szene, axoAnsicht.kamera(), x, y, { waende: true });
   },
   /* Ein Weltpunkt (cm) auf seiner Hoehe (m) VORWAERTS ins Bild — die
      Gegenrichtung zu \`axoTreffer\`. */
@@ -5533,6 +5706,14 @@ function schneideBlock(text, id) {
 const WERKSTATT_BLOECKE = [
   'palette', 'werkzeuge', 'zurueckFrage', 'schlossFrage', 'rueckfrage',
   'grpBearbeiten', 'standleiste', 'ortFrage', 'ladeFrage', 'dateiWahl',
+  /* W15 — die Rueckfrage der Aufraeum-Hilfe. SIE MUSS HIER STEHEN, und das ist
+     die Falle dieser Liste: der KNOPF (`btnFluchten`) liegt in `werkzeuge` und
+     faellt mit ihm; die RUECKFRAGE liegt daneben und haette den Schnitt
+     ueberlebt. Die Weitergabe-Fassung haette dann ein Fenster getragen, das
+     Geometrie begradigen will — genau das, was sie nie koennen darf. Jede neue
+     Rueckfrage der Werkstatt gehoert auf diese Liste; `zurueckFrage`,
+     `ladeFrage` und `ortFrage` stehen aus demselben Grund darauf. */
+  'fluchtFrage',
 ]
 
 /* ══════════════════════════════════════════════════════════════════════

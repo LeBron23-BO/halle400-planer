@@ -516,6 +516,17 @@ export function baueSzene(plan, opt = {}) {
 
   const waende = []
   const tueren = []
+  /* ── Das BAUREZEPT je Wand (W15) ─────────────────────────────────────
+     Damit eine GEZOGENE Wand im Blatt nachgeführt werden kann, ohne die ganze
+     Szene neu zu bauen (gemessen 16,2 ms je Bewegung — das ruckelt sichtbar).
+
+     Gemerkt werden nur die Zutaten, NICHT das Ergebnis: beim Nachführen läuft
+     dieselbe `wandStuecke` noch einmal, mit denselben Zutaten und neuen
+     Endpunkten. Ein hier nachgebautes Vieleck wäre eine ZWEITE Wahrheit über
+     das Aussehen einer Wand — und sie fiele erst beim Loslassen auf, wenn die
+     Wand in ihre richtige Form zurückspringt. Genau diese Falle vermeidet der
+     Möbel-Weg schon (`ausstattungsKoerper` wird dort erneut gerufen). */
+  const wandBau = new Map()
   for (const w of fp.walls) {
     const a = fp.corners[w.corner1]
     const b = fp.corners[w.corner2]
@@ -540,15 +551,23 @@ export function baueSzene(plan, opt = {}) {
     // Steht die Wand voellig frei (beide Seiten leer), bleibt sie stehen: sie
     // wegzuschneiden liesse ein Stueck Grundriss verschwinden, das es gibt.
     const aussen = !!normale
+    const rezept = {
+      dicke,
+      y1: aussen ? DARSTELLUNGSHOEHE.wandAussen : DARSTELLUNGSHOEHE.wandInnen,
+      material: aussen ? 'wandAussen' : 'wand',
+      normale,
+      oeffnungen: oeffnungenJeWand.get(w.id) || []
+    }
+    wandBau.set(w.id, rezept)
     waende.push(
       ...wandStuecke(
         pa,
         pb,
-        dicke,
-        aussen ? DARSTELLUNGSHOEHE.wandAussen : DARSTELLUNGSHOEHE.wandInnen,
-        aussen ? 'wandAussen' : 'wand',
-        normale,
-        oeffnungenJeWand.get(w.id) || [],
+        rezept.dicke,
+        rezept.y1,
+        rezept.material,
+        rezept.normale,
+        rezept.oeffnungen,
         w.id
       )
     )
@@ -583,6 +602,10 @@ export function baueSzene(plan, opt = {}) {
   return {
     boeden,
     waende,
+    /* Das Baurezept je Wand — s. oben. Eine Map und kein einfaches Objekt,
+       weil Wand-Kennungen aus `Utils.guid()` kommen und als Objekt-Schlüssel
+       mit `__proto__` und Konsorten kollidieren könnten. */
+    wandBau,
     /* EIGENE Liste und nicht zu `waende` oder `moebel` geschlagen (H4).
        `moebel` waere falsch gezaehlt: `axoMoebel()` meldet ihre Zahl an die
        Gates, und 54 Tuerblaetter haetten die Ausstattungs-Bilanz 292/292 ueber
@@ -606,4 +629,45 @@ export function baueSzene(plan, opt = {}) {
     mitte: { x: (x0 + x1) / 2, z: (z0 + z1) / 2 },
     hoechster: DARSTELLUNGSHOEHE.kern
   }
+}
+
+/**
+ * Die Koerper EINER Wand neu bauen, mit neuen Endpunkten (W15).
+ *
+ * Fuer das Nachfuehren einer GEZOGENEN Wand im Blatt. Der volle Szenen-Neubau
+ * kostet gemessen 16,2 ms je Bewegung — das ist ein sichtbares Ruckeln genau in
+ * der Geste, die sich fluessig anfuehlen soll. Eine Wand allein kostet
+ * Bruchteile davon.
+ *
+ * Gerufen wird DIESELBE `wandStuecke` wie beim Bau der Szene, mit dem beim Bau
+ * gemerkten Rezept. Ein hier nachgebautes Vieleck waere eine zweite Wahrheit
+ * ueber das Aussehen einer Wand.
+ *
+ * WAS DABEI VERALTET, offen gesagt: die Aussen-NORMALE stammt aus dem Bau und
+ * wird nicht neu getastet. Sie entscheidet ueber die Schattierung, nicht ueber
+ * die Form. Waehrend eines Zuges ist sie hoechstens fuer einen Augenblick die
+ * falsche; beim Loslassen baut die Huelle die Szene ohnehin voll neu, und dann
+ * stimmt sie wieder. Sie im Zug neu zu tasten hiesse, die Raum-Ableitung je
+ * Bewegung laufen zu lassen — und genau die ist der teure Teil.
+ *
+ * @param {object} szene   aus `baueSzene`
+ * @param {string} wandId
+ * @param {{x:number,y:number}} a  Anfangsecke in ZENTIMETERN (Planer-Mass)
+ * @param {{x:number,y:number}} b  Endecke, dito
+ * @returns {Array|null} die neuen Koerper, oder `null` wenn die Wand kein
+ *          Rezept hat (sie stammt dann nicht aus dieser Szene).
+ */
+export function baueWandKoerper(szene, wandId, a, b) {
+  const rezept = szene && szene.wandBau ? szene.wandBau.get(wandId) : null
+  if (!rezept) return null
+  return wandStuecke(
+    { x: a.x * CM, z: a.y * CM },
+    { x: b.x * CM, z: b.y * CM },
+    rezept.dicke,
+    rezept.y1,
+    rezept.material,
+    rezept.normale,
+    rezept.oeffnungen,
+    wandId
+  )
 }

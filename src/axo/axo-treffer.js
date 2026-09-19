@@ -188,34 +188,71 @@ function obersterTreffer(p0, p1, punkte) {
  * Diese Rueckrechnung braucht 289 Strecke-gegen-Vieleck-Tests, gemessen unter
  * 0,1 ms, und laeuft ohne Canvas.
  *
- * NUR MOEBEL. Boden, Buehne und Wand liefern bewusst `null` — dort dreht der
- * Zug das Blatt, wie bisher. Eine Wand laesst sich rechnerisch ebenso treffen,
- * aber nicht sinnvoll ZIEHEN: der Klick auf ihre Krone liegt 1,63 m neben ihrem
- * Fusspunkt, und eine verschobene gemessene Ecke bricht den Rueckweg ins
- * Projekt (W5) hart ab. Eine Bedienung, die in einen abgelehnten Zustand
- * fuehrt, ist keine.
+ * MOEBEL IMMER — WAENDE NUR AUF VERLANGEN (`opt.waende`). Boden und Buehne nie:
+ * dort dreht der Zug das Blatt, wie bisher.
  *
+ * WARUM DIE WAND ERST JETZT DAZUKOMMT (W15) — und warum das kein Widerruf ist:
+ * W7 Punkt 7 hat sie mit zwei Gruenden abgelehnt. Der ERSTE lautete „der Klick
+ * auf ihre Krone liegt 1,63 m neben ihrem Fusspunkt". Das ist der Fehler einer
+ * GERATENEN Hoehe (`tiefenFehler`, h·cot el) — und geraten wird hier nichts:
+ * ein Wandkoerper kennt sein `y0`/`y1` genau wie ein Tisch, der Sehstrahl ist
+ * also auch bei ihm eine endliche Strecke, und die Huelle zieht in der EBENE
+ * des Treffers (`griffHoehe`). Der Grund traf nie die Wand, sondern das Raten.
+ * Der ZWEITE lautete „eine verschobene gemessene Ecke bricht den Rueckweg (W5)
+ * hart ab". Der galt, solange es nur Aufmass und Setzung gab. Seit W12b gibt es
+ * die dritte Kategorie UMBAU (`src/raum/wand-bewegen.js`): eine bewegte Wand
+ * wird `quelle: 'gesetzt'`, ihre Endecken GLEITEN auf den Nachbarachsen, und
+ * der Grundriss bleibt geschlossen. Der abgelehnte Zustand, vor dem der Satz
+ * warnte, entsteht gar nicht mehr.
+ *
+ * Trotzdem ist es eine WAHL der Huelle und keine Selbstverstaendlichkeit: ohne
+ * `opt.waende` bleibt alles wie in W7, und die Weitergabe-Fassung fragt nie
+ * danach.
+ *
+ * @param {{waende?:boolean}} [opt]
  * @returns {{id:string, typ:string, tiefe:number, y0:number, y1:number, hoehe:number}|null}
  */
-export function koerperUnter(szene, kamera, X, Y) {
+export function koerperUnter(szene, kamera, X, Y, opt = {}) {
   if (!szene || !kamera) return null
   let bester = null
-  for (const k of szene.moebel || []) {
-    if (!k.id) continue // ohne Rueckverweis kein Bearbeiten — lieber nichts
-    const p0 = umkehreAuf(kamera, X, Y, k.y0)
-    const p1 = umkehreAuf(kamera, X, Y, k.y1)
-    if (!p0 || !p1) return null // entartete Kamera: fuer KEIN Stueck eine Aussage
-    const t = obersterTreffer(p0, p1, k.punkte)
-    if (t === null) continue
-    const hoehe = k.y0 + (k.y1 - k.y0) * t
-    const tiefe = p0.tiefe + (p1.tiefe - p0.tiefe) * t
-    // Bei Mehrfachtreffern gewinnt der GROESSTE Tiefenwert. Das ist per
-    // Konstruktion das, was zuletzt gemalt wurde (`oben.sort` nach `depth`) —
-    // also das, was man sieht. Ein Stuhl unter einem Tisch bleibt so greifbar,
-    // sobald man auf seine Lehnenseite zeigt statt auf die Platte.
-    if (!bester || tiefe > bester.tiefe) {
-      bester = { id: k.id, typ: k.typ, tiefe, y0: k.y0, y1: k.y1, hoehe }
+  let entartet = false
+  /** Eine Liste von Koerpern durchsuchen. `kennung` sagt, welches Feld den
+   *  Rueckverweis ins Modell traegt — Moebel fuehren ihn als `id`, Wandstuecke
+   *  als `wandId` (eine Wand zerfaellt in viele Kacheln, die alle dieselbe
+   *  Wand meinen). */
+  const durchsuche = (liste, kennung, typ) => {
+    for (const k of liste || []) {
+      const id = k[kennung]
+      if (!id) continue // ohne Rueckverweis kein Bearbeiten — lieber nichts
+      const p0 = umkehreAuf(kamera, X, Y, k.y0)
+      const p1 = umkehreAuf(kamera, X, Y, k.y1)
+      if (!p0 || !p1) {
+        entartet = true // entartete Kamera: fuer KEIN Stueck eine Aussage
+        return
+      }
+      const t = obersterTreffer(p0, p1, k.punkte)
+      if (t === null) continue
+      const hoehe = k.y0 + (k.y1 - k.y0) * t
+      const tiefe = p0.tiefe + (p1.tiefe - p0.tiefe) * t
+      // Bei Mehrfachtreffern gewinnt der GROESSTE Tiefenwert. Das ist per
+      // Konstruktion das, was zuletzt gemalt wurde (`oben.sort` nach `depth`) —
+      // also das, was man sieht. Ein Stuhl unter einem Tisch bleibt so greifbar,
+      // sobald man auf seine Lehnenseite zeigt statt auf die Platte.
+      if (!bester || tiefe > bester.tiefe) {
+        bester = { id, typ: typ || k.typ, tiefe, y0: k.y0, y1: k.y1, hoehe }
+      }
     }
+  }
+  durchsuche(szene.moebel, 'id', null)
+  if (entartet) return null
+  /* Die Waende ZULETZT und mit demselben Tiefenvergleich — NICHT mit Vorrang
+     fuer das Moebel. Der Maler sortiert beide in EINE Reihenfolge; wer vorn
+     liegt, liegt vorn. Ein Vorrang fuer Moebel hiesse: der Schrank VOR der Wand
+     bliebe greifbar, obwohl die Wand ihn verdeckt — und der Nutzer griffe ein
+     Stueck, das er gar nicht sieht. */
+  if (opt.waende) {
+    durchsuche(szene.waende, 'wandId', 'wand')
+    if (entartet) return null
   }
   return bester
 }
