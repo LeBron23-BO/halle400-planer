@@ -219,6 +219,12 @@ export const RAUM_MODULE = [
   'wunsch-werkzeuge.js',
   'raum-zusammenlegen.js',
   'wand-bewegen.js',
+  // W15 — Fluchten: der Fang beim Zeichnen und Ziehen, und die Aufräum-Hilfe.
+  // VOR `objekt-menue.js` nur der Ordnung halber; die Reihenfolge ist hier
+  // gleichgültig, weil alle Ausfuhren dieser Datei `function`-Deklarationen
+  // oder `const` auf oberster Ebene sind und der Kern sie erst zur LAUFZEIT
+  // ruft (dieselbe Lage wie `wand-bewegen.js`).
+  'fluchten.js',
   'objekt-menue.js'
 ]
 

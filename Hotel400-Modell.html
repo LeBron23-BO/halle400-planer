@@ -969,7 +969,12 @@
       <button type="button" data-oeffnung="durchgang" aria-pressed="false">Durchgang</button>
     </div>
     <div class="grp">
-      <button type="button" id="btnEinrasten" aria-pressed="true" title="Gezogene Möbel bündig an die Wand legen, Öffnungen bündig an die Ecke oder in die Wandmitte, sonst auf 5 cm runden">Einrasten</button>
+      <button type="button" id="btnEinrasten" aria-pressed="true" title="Gezogene Möbel bündig an die Wand legen, Öffnungen bündig an die Ecke oder in die Wandmitte, sonst auf 5 cm runden — und beim Zeichnen wie beim Wandverschieben auf die Flucht der Nachbarwände (gestrichelte Hilfslinie)">Einrasten</button>
+      <!-- W15 — die AUFRÄUM-HILFE. Sie steht neben „Einrasten", weil sie
+           dessen andere Hälfte ist: der Fang verhindert neue Fluchtfehler, dies
+           findet die alten. Sie VERÄNDERT beim Drücken NICHTS — sie zählt und
+           zeigt; begradigt wird erst nach der Rückfrage. -->
+      <button type="button" id="btnFluchten" title="Nebeneinanderliegende Wände suchen, die nicht fluchten — zeigt die Fundstellen an und begradigt erst nach Rückfrage">Fluchten prüfen</button>
     </div>
     <div class="grp">
       <button type="button" id="btnUndo" title="Rückgängig (Strg+Z)">Rückgängig</button>
@@ -1001,6 +1006,22 @@
       <button type="button" id="btnZurueckJa" class="ernst">Zurücksetzen</button>
     </span>
     <span class="fuss">Rückgängig ist danach abgeschaltet. Der Stand wird vorher gesichert und lässt sich einmal zurückholen; „Sichern“ legt ihn zusätzlich als Datei ab.</span>
+  </div>
+
+  <!-- W15 — die Rückfrage der AUFRÄUM-HILFE.
+       Sie nennt den Umfang in Zahlen, so wie „Zurücksetzen" es seit C3 tut:
+       wie viele Stellen, wie viele Ecken, und wie weit sich die weiteste
+       bewegt. „Begradigen" allein wäre wahr und nutzlos — wer nicht weiss,
+       wie viel sich bewegt, kann nicht entscheiden. Und es ist derselbe
+       Grund, aus dem hier überhaupt gefragt wird: ein Werkzeug, das ungefragt
+       30 Wände verschiebt, zerstört mehr, als es heilt. -->
+  <div class="frage" id="fluchtFrage" role="alertdialog" aria-live="assertive" aria-label="Fluchten begradigen bestätigen" hidden>
+    <span class="txt"><b>Fluchten:</b> <span id="fluchtFrageUmfang" class="wert"></span></span>
+    <span class="knoepfe">
+      <button type="button" id="btnFluchtNein">Abbrechen</button>
+      <button type="button" id="btnFluchtJa" class="ernst">Begradigen</button>
+    </span>
+    <span class="fuss">Die gefundenen Fluchten stehen als gestrichelte Linien im Plan. Rückgängig nimmt das Begradigen in EINEM Schritt zurück.</span>
   </div>
 </div>
 
@@ -1244,7 +1265,7 @@ const HOEHEN = {"oberkante":{"tisch":74,"rundtisch":74,"stuhl":45,"schrank":200,
 
 /* Fingerabdruck des eingebauten Plans und Zeitpunkt dieses Baus. */
 const PLAN_ABDRUCK = "5f505fb6b364";
-const BAU_STEMPEL = "2026-09-19 09:30";
+const BAU_STEMPEL = "2026-09-19 10:11";
 
 /* ══════ three (Rechen-Teil, ohne Bildschirm-Ausgabe) ══════ */
 /* eslint-disable */
@@ -2864,6 +2885,441 @@ const _wbPruefzugang = {
   wbNachbarn,
   wbGleitWand,
   wbLaenge
+}
+
+/* ══════ fluchten.js ══════ */
+// FLUCHTEN (W15) — die reine Rechnung hinter „smart zeichnen" und „Fluchten aufräumen".
+//
+// Nutzerwunsch, wörtlich: *„es soll noch einfacher und smarter gearbeitet werden
+// können, damit zum beispiel die wände nicht unterschiedlich lang sind, obwohl
+// sie nebeneinander liegen und es nicht der fall sein darf."*
+//
+// WAS DIESER FEHLER IST — und warum man ihn beim Zeichnen nicht sieht
+// Der Plan ist orthogonal: jede Wand liegt auf einer Achse, und mehrere Wände
+// teilen sich dieselbe. Zeichnet man freihändig, trifft man diese Achse auf den
+// Zentimeter nie. Zwei Zimmertrennwände nebeneinander sitzen dann auf x = 1234
+// und x = 1237 — im Bild bei 1:290 sind das 0,01 Bildpunkte, also NICHTS. Im
+// Plan sind es zwei verschiedene Fluchten, und die daran hängenden Wände sind
+// unterschiedlich lang. Der Fehler entsteht unsichtbar und fällt erst auf, wenn
+// jemand Maße abliest.
+//
+// DIE VIER FESTLEGUNGEN
+//
+// 1. **Gerechnet wird über EINE Achsen-Liste, nicht über Wandpaare.** Eine
+//    Flucht ist keine Beziehung zwischen zwei Wänden, sondern ein WERT, auf dem
+//    mehrere sitzen. Paarweise Vergleiche (589 Wände → 173 000 Paare) wären
+//    teurer und liefen beim Aufräumen in Widersprüche: A rastet auf B, B auf C,
+//    und am Ende steht A woanders als gedacht. Ein Wert je Gruppe kann das
+//    nicht.
+//
+// 2. **Das Gewicht einer Flucht ist WANDLÄNGE, nicht Wandzahl.** Eine 30 m
+//    lange Aussenwand ist eine stärkere Aussage über „hier ist die Achse" als
+//    drei kurze Stummel daneben. Nach Zahl gewichtet zöge der Stummel-Haufen
+//    die Aussenwand zu sich — das Aufräumen machte den Plan schlechter.
+//
+// 3. **„Nebeneinander" ist eine Bedingung, keine Zierde.** Zwei Achsen 20 cm
+//    auseinander an entgegengesetzten Enden eines 78-m-Gebäudes sind zwei
+//    verschiedene Achsen, nicht ein Fehler. Zusammengelegt werden nur Werte,
+//    deren Wände sich in der ANDEREN Richtung auch wirklich nahe kommen
+//    (`NACHBARSCHAFT_CM`).
+//
+// 4. **Diese Datei verändert nichts.** Sie liefert Vorschläge — Fangpunkte,
+//    Fundstellen, neue Eckpunkte. Setzen tut der Kern, und nur auf Bestätigung.
+//    Dieselbe Trennung wie `wand-bewegen.js` und `raum-zusammenlegen.js`: erst
+//    rechnen, dann zeigen, dann anwenden. Ein Werkzeug, das ungefragt 30 Wände
+//    verschiebt, zerstört mehr, als es heilt.
+
+/** Ganze Zentimeter — Projekt-DNA Punkt 3. */
+const flCm = (n) => Math.round(n)
+
+/**
+ * Wie weit zwei Achsen höchstens auseinanderliegen dürfen, um noch als EINE
+ * gemeinte Flucht zu gelten — in cm.
+ *
+ * 25 cm ist derselbe Wert wie `snapTolerance` im Kern und kein Zufall: er ist
+ * die halbe Wanddicke plus Zeichen-Ungenauigkeit. Grösser gewählt frässe das
+ * Aufräumen echte Versätze (ein 30-cm-Vorsprung ist Architektur, kein Fehler);
+ * kleiner gewählt bliebe genau der Fall liegen, den der Nutzer meldet.
+ */
+const FLUCHT_TOLERANZ_CM = 25
+
+/**
+ * Wie nah sich zwei Wände in ihrer LÄNGSRICHTUNG kommen müssen, damit sie als
+ * „nebeneinander" gelten — in cm.
+ *
+ * 800 cm ist die Grössenordnung eines Hotelzimmers samt Flur. Wände, die weiter
+ * auseinanderliegen, haben miteinander nichts zu tun; sie auf einen Wert zu
+ * ziehen wäre eine Behauptung über einen Zusammenhang, den niemand geprüft hat.
+ */
+const NACHBARSCHAFT_CM = 800
+
+/**
+ * Die Toleranz der AUFRÄUM-HILFE — bewusst kleiner als die des Fangs (10 statt
+ * 25 cm).
+ *
+ * Ein Fang ist ein ANGEBOT im Augenblick des Zeichnens: er ist sichtbar, und
+ * wer ihn nicht will, zieht weiter. Das Aufräumen ist ein EINGRIFF in fertige
+ * Geometrie, oft an vielen Stellen zugleich. Beide mit demselben Wert zu
+ * fahren wäre bequem und falsch: 25 cm sind weniger als eine Wanddicke, aber
+ * mehr als jede Zeichen-Ungenauigkeit — ein 25-cm-Versatz kann ein gewollter
+ * Vorsprung sein. 10 cm kann er nicht. Gemessen im Hotelplan: bei 25 cm
+ * fänden sich Gruppen, die echte Nischen einebnen; bei 10 cm bleibt genau der
+ * Zittert-beim-Zeichnen-Fehler übrig.
+ */
+const AUFRAEUM_TOLERANZ_CM = 10
+
+/**
+ * Ab welcher Schrägheit eine Wand NICHT mehr achsparallel gemeint ist.
+ *
+ * Eine Wand mit 3 cm Versatz auf 120 cm Länge ist eine zittrige Waagerechte;
+ * eine mit 120 cm auf 120 cm ist eine gewollte Diagonale. Die Grenze ist
+ * dieselbe Toleranz — mehr Versatz als die Fangweite heisst: so war es gemeint.
+ */
+const SCHRAEG_GRENZE_CM = FLUCHT_TOLERANZ_CM
+
+/** Wandlänge. */
+const flLaenge = (w) => Math.hypot(w.b.x - w.a.x, w.b.y - w.a.y)
+
+/**
+ * Die Achse, die eine Wand VERLANGT — oder `null` für eine echte Diagonale.
+ *
+ * @returns {{achse:'x'|'y', wert:number, von:number, bis:number, laenge:number}|null}
+ *          `achse` ist die Koordinate, die entlang der Wand KONSTANT sein muss;
+ *          `von`/`bis` ist ihre Ausdehnung in der anderen Richtung.
+ */
+function achseVon(w) {
+  const dx = Math.abs(w.b.x - w.a.x)
+  const dy = Math.abs(w.b.y - w.a.y)
+  const laenge = Math.hypot(dx, dy)
+  if (laenge === 0) return null
+  if (dy <= dx) {
+    // waagerecht: y ist konstant
+    if (dy > SCHRAEG_GRENZE_CM) return null
+    return {
+      achse: 'y',
+      wert: (w.a.y + w.b.y) / 2,
+      von: Math.min(w.a.x, w.b.x),
+      bis: Math.max(w.a.x, w.b.x),
+      laenge
+    }
+  }
+  if (dx > SCHRAEG_GRENZE_CM) return null
+  return {
+    achse: 'x',
+    wert: (w.a.x + w.b.x) / 2,
+    von: Math.min(w.a.y, w.b.y),
+    bis: Math.max(w.a.y, w.b.y),
+    laenge
+  }
+}
+
+/**
+ * Alle Fang-Kandidaten eines Plans, nach Achse getrennt.
+ *
+ * ZWEI ARTEN, und sie sind nicht dasselbe:
+ *   `flucht` — die Achse einer bestehenden Wand. Darauf einzurasten heisst:
+ *              „meine Wand liegt in derselben Linie wie jene."
+ *   `ende`   — die Koordinate eines Eckpunkts. Darauf einzurasten heisst:
+ *              „meine Wand hört da auf, wo jene aufhört" — und GENAU das macht
+ *              zwei nebeneinanderliegende Wände gleich lang.
+ *
+ * Beide in EINER Liste je Achse, weil der Fang sie nicht unterscheiden muss:
+ * er sucht den nächsten Wert. Die Art wird nur mitgeführt, damit die Hilfslinie
+ * das Richtige sagen kann.
+ *
+ * @param {Array} waende  {id, a:{x,y}, b:{x,y}}
+ * @returns {{x:Array, y:Array}} je Achse: {wert, art, laenge, von, bis}
+ */
+function sammleFangKandidaten(waende) {
+  const x = new Map()
+  const y = new Map()
+  const legeAb = (karte, wert, art, laenge, von, bis) => {
+    const schluessel = flCm(wert)
+    const da = karte.get(schluessel)
+    if (!da) {
+      karte.set(schluessel, { wert: schluessel, art, laenge, von, bis })
+      return
+    }
+    da.laenge += laenge
+    // Eine Flucht schlägt ein Ende: liegt an derselben Koordinate sowohl eine
+    // Wandachse als auch nur ein Eckpunkt, ist die Achse die stärkere Aussage.
+    if (art === 'flucht') da.art = 'flucht'
+    da.von = Math.min(da.von, von)
+    da.bis = Math.max(da.bis, bis)
+  }
+  for (const w of waende) {
+    const a = achseVon(w)
+    if (a) {
+      legeAb(a.achse === 'x' ? x : y, a.wert, 'flucht', a.laenge, a.von, a.bis)
+    }
+    // Die Enden IMMER, auch bei einer Diagonalen: ihre Eckpunkte sind trotzdem
+    // Punkte, an die man anschliessen will.
+    const l = flLaenge(w)
+    for (const p of [w.a, w.b]) {
+      legeAb(x, p.x, 'ende', l, p.y, p.y)
+      legeAb(y, p.y, 'ende', l, p.x, p.x)
+    }
+  }
+  const sortiert = (k) => [...k.values()].sort((p, q) => p.wert - q.wert)
+  return { x: sortiert(x), y: sortiert(y) }
+}
+
+/**
+ * Der nächste Kandidat zu `wert` innerhalb von `toleranz` — oder `null`.
+ *
+ * Bei gleichem Abstand gewinnt die GRÖSSERE Länge: zwischen einer Aussenwand
+ * und einem Stummel ist die Aussenwand die gemeinte Achse (Festlegung 2).
+ */
+function naechsterKandidat(liste, wert, toleranz, quer) {
+  let bester = null
+  for (const k of liste) {
+    const d = Math.abs(k.wert - wert)
+    if (d > toleranz) continue
+    // „Nebeneinander" gilt auch beim Fangen: eine Achse am anderen Ende des
+    // Gebäudes ist kein Angebot, sondern ein Sprung ins Nichts.
+    if (quer !== undefined && k.von !== undefined) {
+      const abstand = quer < k.von ? k.von - quer : quer > k.bis ? quer - k.bis : 0
+      if (abstand > NACHBARSCHAFT_CM) continue
+    }
+    if (!bester || d < bester.d - 0.001 || (Math.abs(d - bester.d) <= 0.001 && k.laenge > bester.k.laenge)) {
+      bester = { d, k }
+    }
+  }
+  return bester ? bester.k : null
+}
+
+/**
+ * Einen frei gesetzten Punkt auf die Fluchten des Plans ziehen.
+ *
+ * `freiX`/`freiY` sagen, welche Koordinate überhaupt bewegt werden DARF. Das
+ * braucht der Zeichner: hat der Winkel-Fang die Strecke schon auf die
+ * Waagerechte gelegt, würde ein Fang in y sie wieder schief machen — die
+ * zweite Hilfe nähme der ersten ihr Ergebnis wieder weg.
+ *
+ * @returns {{x:number, y:number, fangX:object|null, fangY:object|null}}
+ */
+function fangePunkt(kandidaten, x, y, toleranz, freiX = true, freiY = true) {
+  const fangX = freiX ? naechsterKandidat(kandidaten.x, x, toleranz, y) : null
+  const fangY = freiY ? naechsterKandidat(kandidaten.y, y, toleranz, x) : null
+  return {
+    x: fangX ? fangX.wert : x,
+    y: fangY ? fangY.wert : y,
+    fangX,
+    fangY
+  }
+}
+
+/**
+ * Den QUERVERSATZ eines Wand-Zugs auf eine Nachbar-Flucht ziehen (Teil 1,
+ * Ziehen).
+ *
+ * Beim Verschieben einer Wand ist nicht ihr Endpunkt die Grösse, die zählt,
+ * sondern ihr Abstand von der eigenen Achse. Gefangen wird deshalb nicht ein
+ * Punkt, sondern der VERSATZ: die Wand soll da zu liegen kommen, wo schon eine
+ * parallele Wand liegt. Das ist die Bedienung, die der Nutzer „bündig" nennt.
+ *
+ * Nur PARALLELE Wände kommen in Frage — eine Flucht, die die eigene Wand
+ * kreuzt, ist keine Lage, sondern ein Schnittpunkt.
+ *
+ * @param {object} wand     die bewegte Wand {a,b}
+ * @param {Array}  waende   alle Wände
+ * @param {number} versatz  gewünschter Querversatz in cm (längs ist schon weg)
+ * @param {number} toleranz Fangweite in cm
+ * @returns {{versatz:number, gefangen:boolean, achse:number|null}}
+ */
+function fangeVersatz(wand, waende, versatz, toleranz) {
+  const dx = wand.b.x - wand.a.x
+  const dy = wand.b.y - wand.a.y
+  const l = Math.hypot(dx, dy)
+  if (l === 0) return { versatz, gefangen: false, achse: null }
+  const nx = -dy / l
+  const ny = dx / l
+  const eigen = wand.a.x * nx + wand.a.y * ny
+  const ziel = eigen + versatz
+  let bester = null
+  for (const w of waende) {
+    if (w.id === wand.id) continue
+    const wdx = w.b.x - w.a.x
+    const wdy = w.b.y - w.a.y
+    const wl = Math.hypot(wdx, wdy)
+    if (wl === 0) continue
+    // Parallel? Der Betrag des Kreuzprodukts der Einheitsrichtungen ist der
+    // Sinus des Zwischenwinkels — unter 0,017 sind das keine 1 Grad.
+    if (Math.abs((dx / l) * (wdy / wl) - (dy / l) * (wdx / wl)) > 0.017) continue
+    // Die Lage der Nachbarwand auf DERSELBEN Normalen. Beide Endpunkte prüfen:
+    // eine leicht schiefe Nachbarwand hat zwei verschiedene, und die nähere ist
+    // die gemeinte.
+    for (const p of [w.a, w.b]) {
+      const lage = p.x * nx + p.y * ny
+      const d = Math.abs(lage - ziel)
+      if (d > toleranz) continue
+      if (!bester || d < bester.d || (d === bester.d && wl > bester.l)) {
+        bester = { d, l: wl, lage }
+      }
+    }
+  }
+  if (!bester) return { versatz, gefangen: false, achse: null }
+  return { versatz: bester.lage - eigen, gefangen: true, achse: bester.lage }
+}
+
+/* ══ TEIL 3 · AUFRÄUM-HILFE ═══════════════════════════════════════════════
+   Was schon schief IST, findet der Fang nicht mehr — er greift beim Zeichnen,
+   und gezeichnet ist gezeichnet. Diese Hälfte sucht die Stellen im fertigen
+   Plan, zeigt sie, und begradigt erst auf Bestätigung. */
+
+/**
+ * Alle Stellen, an denen Wände nebeneinanderliegen, ohne zu fluchten.
+ *
+ * DAS VERFAHREN, in vier Schritten:
+ *
+ * 1. Jede achsparallele Wand VERLANGT, dass ihre beiden Ecken denselben Wert
+ *    auf ihrer Achse haben. Nur solche Ecken kommen überhaupt in Frage —
+ *    ohne diese Einschränkung zöge das Verfahren beliebige Punkte zusammen,
+ *    die zufällig nah beieinanderliegen.
+ * 2. Nach dem Achswert sortieren und in Gruppen schneiden, die HÖCHSTENS
+ *    `toleranz` breit sind.
+ * 3. Jede Wertgruppe in Nachbarschafts-Gruppen zerlegen: Ecken, die in der
+ *    ANDEREN Richtung mehr als `NACHBARSCHAFT_CM` auseinanderliegen, liegen
+ *    nicht nebeneinander und haben miteinander nichts zu tun.
+ * 4. Eine Gruppe mit mehr als einem Wert ist eine Fundstelle.
+ *
+ * WARUM DER SCHNITT IN SCHRITT 2 DER GANZE PUNKT IST — gemessen, nicht
+ * vermutet: ohne ihn legt eine Verbandssuche (A liegt nah bei B, B nah bei C)
+ * im Hotelplan 44 Ecken zu EINER Gruppe zusammen, die über 105 cm streut. Das
+ * Begradigen zöge dann Wände um einen ganzen Meter — es hätte nichts mehr mit
+ * „diese zwei fluchten nicht" zu tun und den Plan zerstört. Die Regel „eine
+ * Gruppe ist nie breiter als die Toleranz" ist die Zusicherung, mit der man
+ * das Werkzeug überhaupt anfassen kann: KEINE Ecke bewegt sich weiter als
+ * `toleranz`.
+ *
+ * Der Preis ist ehrlich zu nennen: liegen drei Werte in gleichen Abständen
+ * hintereinander (0 / 20 / 40 bei Toleranz 25), schneidet der Lauf zwischen 20
+ * und 40. Das ist eine Entscheidung und keine Wahrheit — aber eine, die nie
+ * mehr bewegt als angekündigt.
+ *
+ * @param {Array} waende {id, a:{x,y}, b:{x,y}, aId, bId}
+ * @param {number} toleranz cm
+ * @returns {Array} Fundstellen, nach Versatz absteigend
+ */
+function findeFluchtFehler(waende, toleranz = AUFRAEUM_TOLERANZ_CM) {
+  const stellen = []
+  for (const achse of ['x', 'y']) {
+    const ecken = new Map() // id -> {id, wert, quer, laenge}
+    const merke = (id, p, laenge, quer) => {
+      const da = ecken.get(id)
+      if (da) {
+        da.laenge += laenge
+        return
+      }
+      ecken.set(id, { id, wert: achse === 'x' ? p.x : p.y, quer, laenge })
+    }
+    const fordernd = []
+    for (const w of waende) {
+      const a = achseVon(w)
+      if (!a || a.achse !== achse) continue
+      const l = a.laenge
+      merke(w.aId, w.a, l, achse === 'x' ? w.a.y : w.a.x)
+      merke(w.bId, w.b, l, achse === 'x' ? w.b.y : w.b.x)
+      fordernd.push(w)
+    }
+    // Schritt 2: Wertgruppen mit hartem Breiten-Deckel.
+    const liste = [...ecken.values()].sort((p, q) => p.wert - q.wert)
+    const wertGruppen = []
+    let lauf = []
+    for (const e of liste) {
+      if (lauf.length && e.wert - lauf[0].wert > toleranz) {
+        wertGruppen.push(lauf)
+        lauf = []
+      }
+      lauf.push(e)
+    }
+    if (lauf.length) wertGruppen.push(lauf)
+
+    // Schritt 3: innerhalb einer Wertgruppe nach NACHBARSCHAFT trennen.
+    // Einfache Kettenbildung über die Querlage: eine Reihe Zimmertrennwände
+    // entlang eines Flurs ist EINE Flucht, auch wenn sie 40 m lang ist — aber
+    // zwei Wände an entgegengesetzten Gebäudeenden sind es nicht.
+    const gruppen = []
+    for (const wg of wertGruppen) {
+      const nachQuer = [...wg].sort((p, q) => p.quer - q.quer)
+      let kette = []
+      for (const e of nachQuer) {
+        if (kette.length && e.quer - kette[kette.length - 1].quer > NACHBARSCHAFT_CM) {
+          gruppen.push(kette)
+          kette = []
+        }
+        kette.push(e)
+      }
+      if (kette.length) gruppen.push(kette)
+    }
+
+    // Schritt 4: auswerten.
+    for (const gruppe of gruppen) {
+      const wurzel = gruppe[0].id
+      const werte = [...new Set(gruppe.map((e) => flCm(e.wert)))]
+      if (werte.length < 2) continue
+      const min = Math.min(...werte)
+      const max = Math.max(...werte)
+      // Gewicht je Wert = Wandlänge, die auf ihm sitzt (Festlegung 2).
+      const gewicht = new Map()
+      for (const e of gruppe) {
+        const k = flCm(e.wert)
+        gewicht.set(k, (gewicht.get(k) || 0) + e.laenge)
+      }
+      let ziel = null
+      let bestesGewicht = -1
+      for (const [k, g] of gewicht) {
+        if (g > bestesGewicht || (g === bestesGewicht && ziel !== null && k < ziel)) {
+          bestesGewicht = g
+          ziel = k
+        }
+      }
+      const betroffen = gruppe.filter((e) => flCm(e.wert) !== ziel)
+      if (betroffen.length === 0) continue
+      const ids = new Set(gruppe.map((e) => e.id))
+      const waendeDrin = fordernd.filter((w) => ids.has(w.aId) || ids.has(w.bId))
+      stellen.push({
+        achse,
+        wurzel,
+        ziel,
+        versatz: max - min,
+        ecken: betroffen.map((e) => ({ id: e.id, von: flCm(e.wert), nach: ziel })),
+        waende: waendeDrin.map((w) => w.id),
+        // Wo im Plan das liegt — für die Anzeige. Die Mitte der Gruppe in der
+        // Querrichtung, damit die Ansicht dorthin springen kann.
+        quer: gruppe.reduce((s, e) => s + e.quer, 0) / gruppe.length
+      })
+    }
+  }
+  // Der grösste Versatz zuerst: wer die Liste durchgeht, soll mit dem
+  // auffälligsten Fehler anfangen, nicht mit dem Millimeter.
+  return stellen.sort((p, q) => q.versatz - p.versatz || q.ecken.length - p.ecken.length)
+}
+
+/**
+ * Die neuen Eckpunkte einer Fundstelle — MEHR TUT DIESE DATEI NICHT.
+ *
+ * `x`/`y` kommen beide zurück, damit der Aufrufer `Corner.move(x, y)` rufen
+ * kann, ohne selbst zu wissen, welche Achse gemeint war. Die andere Koordinate
+ * bleibt, wie sie ist: eine Flucht ist eine Aussage über EINE Richtung.
+ *
+ * @param {object} stelle aus `findeFluchtFehler`
+ * @param {Map|object} eckenLage  id -> {x,y} (der aktuelle Stand)
+ * @returns {Array<{id:string, x:number, y:number}>}
+ */
+function begradige(stelle, eckenLage) {
+  const hole = (id) => (eckenLage instanceof Map ? eckenLage.get(id) : eckenLage[id])
+  const neu = []
+  for (const e of stelle.ecken) {
+    const lage = hole(e.id)
+    if (!lage) continue
+    neu.push({
+      id: e.id,
+      x: stelle.achse === 'x' ? stelle.ziel : flCm(lage.x),
+      y: stelle.achse === 'y' ? stelle.ziel : flCm(lage.y)
+    })
+  }
+  return neu
 }
 
 /* ══════ objekt-menue.js ══════ */
@@ -6582,6 +7038,16 @@ const ausstattungLinienBreite = 1;
  */
 const GESETZT_STRICH = [4, 3];
 /**
+ * Das Strichmuster der Fang-Hilfslinien (W15) — länger als `GESETZT_STRICH`.
+ *
+ * Nicht dasselbe Muster, und das mit Absicht: `GESETZT_STRICH` heisst in diesem
+ * Plan „gesetzt statt gemessen" und ist eine Aussage über die Herkunft von
+ * Bausubstanz. Eine Hilfslinie ist gar keine Bausubstanz. Gleiches Muster für
+ * zwei verschiedene Dinge wäre eine Verwechslung, die genau dem passiert, der
+ * die Legende gelesen hat.
+ */
+const FANG_STRICH = [10, 6];
+/**
  * Ab wann die Ausstattung DETAILS zeigt (Treppenstufen, Kochfeld-Platten,
  * Stuhl-Lehnen) und ab wann nur noch ihren Umriss. Beides sind Schwellen in
  * BILDSCHIRM-Pixeln pro cm, nicht in Weltmaß — dieselbe Lehre wie bei den
@@ -6744,6 +7210,13 @@ class FloorplannerView {
         if (this.viewmodel.mode == floorplannerModes.DRAW) {
             this.drawTarget(this.viewmodel.targetX, this.viewmodel.targetY, this.viewmodel.lastNode);
         }
+        // W15 — die HILFSLINIEN des Fangs, ganz zuletzt und damit über allem.
+        //
+        // Sie gehören nach oben, nicht unter die Wände: eine Hilfslinie, die eine
+        // Wand verdeckt, sagt genau das, was sie sagen soll — „DIESE Linie meine
+        // ich gerade". Läge sie darunter, verschwände sie ausgerechnet dort, wo sie
+        // gebraucht wird, nämlich auf der Flucht, an der schon eine Wand liegt.
+        this.zeichneFangLinien();
         this.floorplan.getWalls().forEach((wall) => {
             this.drawWallLabels(wall);
         });
@@ -7474,6 +7947,48 @@ class FloorplannerView {
         }
         this.drawCircle(this.viewmodel.convertX(corner.x), this.viewmodel.convertY(corner.y), hover ? cornerRadiusHover : cornerRadius, color);
     }
+    /**
+     * Die Hilfslinien des laufenden Fangs (W15).
+     *
+     * WARUM ES SIE GEBEN MUSS — gerechnet: in der Grundansicht sind 8,7 cm ein
+     * Bildpunkt. Rastet der Punkt um 6 cm ein, bewegt sich im Bild NICHTS
+     * Sichtbares. Ohne Rückmeldung erführe der Nutzer erst beim Nachmessen, ob
+     * seine Wand nun fluchtet — und genau das Nachmessen soll ihm diese Welle
+     * ersparen. Eine Linie quer durchs Bild ist die einzige Auskunft, die ohne
+     * Zahlen auskommt und auch am Telefon lesbar ist.
+     *
+     * GESTRICHELT und in der Fangfarbe, dieselbe wie der Ring um eine gefangene
+     * Ecke: der Nutzer soll „eingerastet" an EINER Farbe erkennen, nicht an
+     * zweien. Durchgezogen wäre sie von einer Wand nicht zu unterscheiden — und
+     * eine Hilfslinie, die man für Bausubstanz hält, ist schlimmer als keine.
+     */
+    zeichneFangLinien() {
+        const linien = this.viewmodel.fangLinien;
+        if (!linien || linien.length === 0) {
+            return;
+        }
+        const ctx = this.context;
+        ctx.save();
+        ctx.strokeStyle = fangFarbe;
+        ctx.lineWidth = 1;
+        ctx.setLineDash(FANG_STRICH);
+        for (const l of linien) {
+            ctx.beginPath();
+            if (l.achse === 'x') {
+                const zx = this.viewmodel.convertX(l.wert);
+                ctx.moveTo(zx, 0);
+                ctx.lineTo(zx, this.canvasElement.height);
+            }
+            else {
+                const zy = this.viewmodel.convertY(l.wert);
+                ctx.moveTo(0, zy);
+                ctx.lineTo(this.canvasElement.width, zy);
+            }
+            ctx.stroke();
+        }
+        ctx.setLineDash([]);
+        ctx.restore();
+    }
     /** */
     drawTarget(x, y, lastNode) {
         const zx = this.viewmodel.convertX(x);
@@ -7584,6 +8099,8 @@ class FloorplannerView {
 // @ts-ignore — dito. NICHT umbenennen (`as`): `buendleKern` entfernt jede
 // Import-Zeile und legt alle Raum-Module in EIN Namensfeld.
 
+// @ts-ignore — dito (W15). Reine Rechnung, in node prüfbar, kein DOM.
+
 /**
  * Wie lange der Zeiger ruhen muss, bis das Objekt darunter zum Löschen
  * vorgeschlagen wird (E1). 700 ms ist die Mitte zwischen zwei Fehlern: zu kurz
@@ -7615,6 +8132,28 @@ const WINKEL_RASTER = Math.PI / 4;
  * schräge Wand liesse sich kaum noch zeichnen.
  */
 const WINKEL_TOLERANZ = (5 * Math.PI) / 180;
+/**
+ * Wie nah der Zeiger an einer FLUCHT liegen muss, damit der Punkt darauf
+ * einrastet (W15) — in BILDSCHIRM-Pixeln, und das ist der ganze Punkt.
+ *
+ * Nutzerwunsch, wörtlich: *„damit zum beispiel die wände nicht unterschiedlich
+ * lang sind, obwohl sie nebeneinander liegen"*.
+ *
+ * WARUM PIXEL UND NICHT ZENTIMETER — gerechnet, nicht gefühlt: die Grundansicht
+ * quetscht 78 m auf rund 900 Bildpunkte, das sind 8,7 cm je Pixel. Eine
+ * Fangweite von 25 cm (`snapTolerance`, der Wert des Kerns) wäre dort 2,9
+ * Bildpunkte — der Nutzer müsste auf 3 px genau zielen, und das kann eine Hand
+ * nicht. Umgekehrt beim Hineinzoomen auf 1:20: dieselben 25 cm wären 40
+ * Bildpunkte, und der Fang risse den Punkt quer über den halben Raum. EINE
+ * Weltgrösse ist für beide Zoomstufen die falsche. 12 px ist bei Zoom 1 rund
+ * 1 m und schrumpft beim Hineinzoomen mit — genau die Begründung, mit der
+ * `GREIF_TOLERANZ_PX` schon in Pixeln rechnet (T7).
+ *
+ * Knapp unter `FANG_ECKE_PX` (14), damit eine echte Ecke gewinnt, wenn beides
+ * in Reichweite ist: ein Anschluss an einen vorhandenen Punkt ist mehr wert
+ * als eine Flucht, denn er schliesst den Grundriss auch wirklich.
+ */
+const FLUCHT_FANG_PX = 12;
 /**
  * Wie lange ein Finger liegen bleiben muss, bis das Loeschen vorgeschlagen wird
  * (E3). Kuerzer als das Verweilen der Maus (700 ms): Aufsetzen und Halten ist
@@ -8237,6 +8776,30 @@ class Floorplanner {
          * Anschluss saß.
          */
         this.fangEcke = null;
+        /**
+         * Die HILFSLINIEN des laufenden Fangs (W15) — Weltkoordinaten in cm.
+         *
+         * Ohne sichtbare Rückmeldung merkt niemand, dass der Fang gegriffen hat: die
+         * Verschiebung ist im Bild oft weniger als ein Pixel, und der Nutzer erführe
+         * erst beim Nachmessen, ob seine Wand nun fluchtet. Eine Linie quer durchs
+         * Bild ist die einzige Auskunft, die ohne Zahlen auskommt.
+         *
+         * `art` unterscheidet, WORAUF eingerastet ist — „dieselbe Linie wie jene
+         * Wand" (`flucht`) ist eine andere Aussage als „so lang wie jene Wand"
+         * (`ende`), und beide will man beim Zeichnen auseinanderhalten können.
+         */
+        this.fangLinien = [];
+        /**
+         * Die Fang-Kandidaten des Plans, zwischengespeichert.
+         *
+         * Sie über 589 Wände bei JEDER Zeigerbewegung neu zu sammeln wäre der
+         * teuerste Teil des Zeichnens (gemessen 0,4 ms, also rund 2 % eines Bildes
+         * für eine Liste, die sich zwischen zwei Klicks nie ändert). Der Stand-Zähler
+         * wird überall dort hochgezählt, wo Wände entstehen oder wandern — ein
+         * Zeitstempel wäre hier falsch, weil er auch dann neu baute, wenn nichts
+         * passiert ist.
+         */
+        this.fangKandidaten = null;
         /** Läuft, solange der Zeiger über einem löschbaren Objekt ruht. */
         this.verweilTimer = null;
         /** Zeigerposition, an der das aktuelle Verweilen begann (Bildschirm-Pixel). */
@@ -8305,6 +8868,32 @@ class Floorplanner {
         this.zugWandStart = null;
         /** Der letzte Grund, warum eine Bewegung begrenzt wurde — die Oberfläche liest ihn. */
         this.zugWandHinweis = null;
+        /* ── Der FLUCHT-FANG beim Wand-Ziehen (W15) ──────────────────────────
+           DREI Grössen, und jede einzelne verhindert einen Fehler, den es schon
+           einmal gab:
+      
+           `zugWandNormale` — die Querrichtung, EINMAL beim Aufsetzen bestimmt. Die
+             Wand dreht sich während des Zugs nicht, ihre Ecken gleiten nur; eine je
+             Schritt neu gerechnete Normale schwankte trotzdem um Bruchteile eines
+             Grades und liesse den Fang flackern.
+      
+           `zugWandAchse0` — die Lage der Wandachse beim Aufsetzen, gemessen auf
+             dieser Normalen.
+      
+           `zugWandRohQuer` — wie weit der ZEIGER seit dem Aufsetzen quer gewandert
+             ist, UNGEFANGEN. Das ist der Kern: rechnete der Fang gegen die gerade
+             erreichte (also gefangene) Lage, ginge bei jedem Schritt der Weg
+             verloren, den der Fang zurückgezogen hat — die Wand klebte an der
+             Flucht und liesse sich nicht mehr wegziehen. Das ist genau der Fehler,
+             den `snapToAxis` beim Maus-Ziehen hatte (W14, dort gemessen: 200 cm Zug
+             bewegten 45 cm). Ein ungefangener Zähler kann ihn nicht haben: er wächst
+             mit jedem Schritt, egal was der Fang tut. */
+        this.zugWandNormale = null;
+        this.zugWandAchse0 = 0;
+        this.zugWandRohQuer = 0;
+        /** Der Anfasspunkt des Zugs — UNVERAENDERT ueber den ganzen Zug.
+         *  `zugWandStart` taugt dafuer nicht: der wandert mit jedem Schritt mit. */
+        this.zugWandGriff = null;
         /* ── Der RAUM-WÄCHTER (W14) ──────────────────────────────────────────
            Die Rechnung in `wand-bewegen.js` lässt die Endecken GLEITEN und begrenzt
            den Zug, bevor ein Raum zum Spalt wird. Das ist die Vorsorge. Sie ersetzt
@@ -8535,6 +9124,126 @@ class Floorplanner {
      * verfehlt die Waagerechte also fast immer. Ein Winkelfenster ist von der
      * Länge unabhängig: nah an der letzten Ecke ebenso treffsicher wie weit weg.
      */
+    /**
+     * Die Wände in der Form, die `fluchten.js` liest (W15).
+     *
+     * Dieselbe Gestalt wie `wandDatenFuerZug`, aber eine eigene Methode: jene
+     * trägt `dicke` und `quelle` mit, die hier niemand braucht, und sie läuft
+     * je Zieh-SCHRITT, diese je Zieh-ZUG. Zusammenzulegen hiesse, die teurere
+     * von beiden öfter zu bezahlen.
+     */
+    wandDatenFuerFang(ohneWandId) {
+        const raus = [];
+        for (const w of this.floorplan.getWalls()) {
+            if (ohneWandId && w.id === ohneWandId)
+                continue;
+            raus.push({
+                id: w.id,
+                aId: w.getStart().id,
+                bId: w.getEnd().id,
+                a: { x: w.getStartX(), y: w.getStartY() },
+                b: { x: w.getEndX(), y: w.getEndY() }
+            });
+        }
+        return raus;
+    }
+    /**
+     * Die Fang-Kandidaten für den kommenden Zug sammeln — EINMAL je Zug.
+     *
+     * WARUM NICHT BEI JEDER BEWEGUNG, und warum das kein Sparen ist, sondern
+     * Richtigkeit: das gezogene Stück steht selbst in der Liste. Bei jeder
+     * Bewegung neu gesammelt fände es seine EIGENE Achse als Kandidaten und
+     * rastete auf sich selbst ein — die Wand klebte, und niemand sähe warum. Das
+     * ist derselbe Fehler, den `snapToAxis` beim Wand-Ziehen hatte (W14), nur
+     * eine Ebene höher. Also: Kandidaten aus dem Zustand VOR dem Zug, ohne das
+     * Stück in der Hand.
+     */
+    fangKandidatenNeu(ohneWandId, ohneEckeId) {
+        let waende = this.wandDatenFuerFang(ohneWandId);
+        if (ohneEckeId) {
+            // Eine gezogene ECKE nimmt ihre ganzen Wände aus dem Angebot: deren Achse
+            // wandert ja mit ihr mit und ist deshalb keine Auskunft über „wo liegt
+            // der Plan", sondern nur eine über „wo ist gerade die Maus".
+            waende = waende.filter((w) => w.aId !== ohneEckeId && w.bId !== ohneEckeId);
+        }
+        this.fangKandidaten = sammleFangKandidaten(waende);
+    }
+    /** Die Kandidaten verwerfen — der nächste Zug sammelt frisch. */
+    fangKandidatenVerwerfen() {
+        this.fangKandidaten = null;
+        this.fangLinien = [];
+    }
+    /**
+     * Einen Punkt auf die Fluchten des Plans ziehen und die Hilfslinien setzen.
+     *
+     * `freiX`/`freiY` sagen, welche Koordinate bewegt werden darf. Hat der
+     * Winkel-Fang die Strecke schon auf die Waagerechte gelegt, ist y GEBUNDEN —
+     * ein Fang dort nähme der ersten Hilfe ihr Ergebnis wieder weg, und der
+     * Nutzer bekäme für zwei eingeschaltete Hilfen ein Ergebnis, das keine von
+     * beiden wollte.
+     */
+    fangeAufFlucht(x, y, freiX, freiY) {
+        // DER VORHANDENE SCHALTER, kein zweiter daneben (W15).
+        //
+        // „Einrasten" steht seit W2 in der Leiste und regelt das Anlegen der Möbel.
+        // Der Flucht-Fang ist dieselbe Art Hilfe an derselben Art Handlung; ihn an
+        // einen EIGENEN Schalter zu hängen hiesse, den Nutzer zweimal dasselbe
+        // fragen zu lassen — und ihn dann zu überraschen, wenn „Einrasten aus"
+        // trotzdem einrastet. Der Ecken- und der Winkel-Fang bleiben absichtlich
+        // unberührt: die gab es vor diesem Schalter, sie sind keine Bequemlichkeit,
+        // sondern die Bedienung des Zeichnens selbst (E2).
+        if (!this.einrasten) {
+            this.fangLinien = [];
+            return { x, y };
+        }
+        if (!this.fangKandidaten) {
+            // Beim ZEICHNEN ist nichts in der Hand, das sich selbst fangen könnte —
+            // hier ist das späte Sammeln ungefährlich und spart dem Aufrufer eine
+            // Pflicht, die er vergessen könnte.
+            this.fangKandidatenNeu();
+        }
+        const toleranz = FLUCHT_FANG_PX * this.cmPerPixel;
+        const f = fangePunkt(this.fangKandidaten, x, y, toleranz, freiX, freiY);
+        this.fangLinien = [];
+        if (f.fangX) {
+            this.fangLinien.push({ achse: 'x', wert: f.fangX.wert, art: f.fangX.art, von: f.fangX.von, bis: f.fangX.bis });
+        }
+        if (f.fangY) {
+            this.fangLinien.push({ achse: 'y', wert: f.fangY.wert, art: f.fangY.art, von: f.fangY.von, bis: f.fangY.bis });
+        }
+        return { x: f.x, y: f.y };
+    }
+    /**
+     * Darf die Ecke `ecke` auf (x, y) gefangen werden? (W15)
+     *
+     * DER GRUND, ausgeschrieben, weil er sonst beim nächsten Nachbessern wieder
+     * verlorengeht: ein Fang zieht Bausubstanz ABSICHTLICH auf gemeinsame Linien.
+     * Genau dabei kann er zwei Punkte AUFEINANDER legen — und eine Wand der Länge
+     * null ist keine Wand, sondern eine Division durch null. `Wall` normiert mit
+     * 1/Länge, die Raumableitung erbt NaN, und der Browser meldet
+     * „computeBoundingBox(): Computed min/max have NaN values" für eine Wand, die
+     * im Bild gar nicht mehr zu sehen ist. Der Fehler ist danach in der Datei,
+     * nicht auf dem Schirm — das ist die schlimmste Sorte.
+     *
+     * 1 cm ist die Schwelle, weil in ganzen Zentimetern gerechnet wird
+     * (Projekt-DNA Punkt 3): alles darunter IST null.
+     */
+    fangErlaubtFuerEcke(ecke, x, y) {
+        for (const c of this.floorplan.getCorners()) {
+            if (c === ecke)
+                continue;
+            if (Math.hypot(c.x - x, c.y - y) < 1)
+                return false;
+        }
+        // Über `adjacentCorners()` und nicht über die Wand-Listen: die sind privat,
+        // und für diese Frage genügt der NACHBARPUNKT — eine Wand ist genau dann
+        // null lang, wenn ihre beiden Ecken zusammenfallen.
+        for (const nachbar of ecke.adjacentCorners()) {
+            if (Math.hypot(nachbar.x - x, nachbar.y - y) < 1)
+                return false;
+        }
+        return true;
+    }
     updateTarget() {
         if (this.mode != floorplannerModes.DRAW) {
             this.targetX = this.mouseX;
@@ -8544,17 +9253,32 @@ class Floorplanner {
             return;
         }
         // --- 1. an eine vorhandene Ecke fangen
+        //
+        // ZUERST, und mit der grössten Weite: ein Anschluss an einen vorhandenen
+        // Punkt schliesst den Grundriss WIRKLICH. Eine Flucht macht die Wand nur
+        // gerade — in 3D lässt eine verfehlte Ecke Licht durch, eine verfehlte
+        // Flucht nicht.
         const fangToleranz = FANG_ECKE_PX * this.cmPerPixel;
         const fang = this.floorplan.overlappedCorner(this.mouseX, this.mouseY, fangToleranz);
         if (fang && fang !== this.lastNode) {
             this.targetX = fang.x;
             this.targetY = fang.y;
             this.fangEcke = fang;
+            this.fangLinien = [];
             this.view.draw();
             return;
         }
         this.fangEcke = null;
         // --- 2. auf einen glatten Winkel einrasten
+        //
+        // Die beiden Hilfen greifen NACHEINANDER, nicht gegeneinander: der Winkel
+        // legt die RICHTUNG fest, die Flucht die LÄNGE. Zusammen ergeben sie genau
+        // die Bedienung, die der Nutzer verlangt hat — „waagerecht, und so lang wie
+        // die Wand nebenan". Jede für sich könnte das nicht: der Winkel allein
+        // lässt die Länge frei, die Flucht allein macht die Wand wieder schief.
+        let winkelGerastet = false;
+        let freiX = true;
+        let freiY = true;
         if (this.lastNode) {
             const dx = this.mouseX - this.lastNode.x;
             const dy = this.mouseY - this.lastNode.y;
@@ -8572,13 +9296,40 @@ class Floorplanner {
                 if (Math.abs(abweichung) <= WINKEL_TOLERANZ) {
                     this.targetX = this.lastNode.x + Math.cos(gerastet) * laenge;
                     this.targetY = this.lastNode.y + Math.sin(gerastet) * laenge;
-                    this.view.draw();
-                    return;
+                    winkelGerastet = true;
+                    // WELCHE Koordinate danach noch frei ist, entscheidet der gerastete
+                    // Winkel. Waagerecht (cos = ±1, sin = 0): y ist gebunden, x darf auf
+                    // die Flucht. Senkrecht: umgekehrt. Bei 45° ist keine von beiden frei
+                    // — dort würde jeder Fang die Diagonale brechen.
+                    const cx = Math.abs(Math.cos(gerastet));
+                    const cy = Math.abs(Math.sin(gerastet));
+                    freiX = cx > 0.9;
+                    freiY = cy > 0.9;
                 }
             }
         }
-        this.targetX = this.mouseX;
-        this.targetY = this.mouseY;
+        if (!winkelGerastet) {
+            this.targetX = this.mouseX;
+            this.targetY = this.mouseY;
+        }
+        // --- 3. auf eine FLUCHT einrasten (W15)
+        const gefangen = this.fangeAufFlucht(this.targetX, this.targetY, freiX, freiY);
+        // EINE WAND DER LÄNGE NULL IST KEINE WAND — und sie ist auch kein
+        // Schönheitsfehler, sondern eine Division durch null. GEMESSEN, nicht
+        // vermutet: rastet der Zielpunkt auf die Flucht, auf der `lastNode` selbst
+        // liegt, fallen beide Punkte zusammen. `Wall` normiert dann mit 1/0, die
+        // Raumableitung erbt NaN, und der Browser meldet
+        // „computeBoundingBox(): Computed min/max have NaN values" — für eine
+        // Wand, die der Nutzer gar nicht zeichnen wollte. Der Fang gibt in diesem
+        // einen Fall nach; er ist eine Hilfe und kein Befehl.
+        if (!this.lastNode ||
+            Math.hypot(gefangen.x - this.lastNode.x, gefangen.y - this.lastNode.y) >= 1) {
+            this.targetX = gefangen.x;
+            this.targetY = gefangen.y;
+        }
+        else {
+            this.fangLinien = [];
+        }
         this.view.draw();
     }
     /**
@@ -8644,6 +9395,9 @@ class Floorplanner {
         // gehen, weil jeder Schritt vom Aufsetzpunkt aus neu rechnet statt zu
         // addieren. Zwei Wege für dieselbe Handlung waren zwei Wahrheiten — und
         // die schlechtere war die, die der Rechner benutzte.
+        // W15: die Fang-Kandidaten für DIESEN Zug — aus dem Zustand VOR ihm und
+        // ohne das Stück in der Hand (Begründung bei `fangKandidatenNeu`).
+        this.fangKandidatenNeu(this.mode == floorplannerModes.WAND && this.activeWall ? this.activeWall.id : undefined, this.mode == floorplannerModes.WAND && this.activeCorner ? this.activeCorner.id : undefined);
         if (this.mode == floorplannerModes.WAND && this.activeWall) {
             if (!this.zugBeginnen(this.activeWall.id, this.mouseX, this.mouseY)) {
                 // Die Wand gibt es nicht mehr (gelöscht, zurückgespielt). Die Merkung
@@ -8922,8 +9676,35 @@ class Floorplanner {
                 // Fang-Problem der Wand nie gehabt: was der Fang zurückzieht, setzt der
                 // nächste Schritt wieder auf die Zeigerlage. Hier bleibt alles, wie es
                 // war — gemessen bewegt ein Zug über 40 cm sie um 38 cm.
+                //
+                // W15 — DIE REIHENFOLGE IST DIE AUSSAGE, und sie ist gemessen:
+                // `snapToAxis` sieht nur die NACHBARECKEN und rechnet in 25 cm Weltmass.
+                // In der Grundansicht (8,7 cm je Pixel) sind das 2,9 Bildpunkte — der
+                // Fang ist dort praktisch tot. Der Flucht-Fang rechnet in Bildpunkten
+                // und sieht den GANZEN Plan. Beide zusammen und in DIESER Folge: erst
+                // der alte, enge Nachbarschafts-Fang, dann der weite. So kann der enge
+                // den weiten nicht mehr zurückziehen — umgekehrt wäre das Ergebnis vom
+                // Zoom abhängig gewesen, und dieselbe Handlung hätte zweimal etwas
+                // anderes getan.
                 this.activeCorner.move(this.mouseX, this.mouseY);
                 this.activeCorner.snapToAxis(snapTolerance);
+                const gefangen = this.fangeAufFlucht(this.activeCorner.x, this.activeCorner.y, true, true);
+                if ((gefangen.x !== this.activeCorner.x || gefangen.y !== this.activeCorner.y) &&
+                    this.fangErlaubtFuerEcke(this.activeCorner, gefangen.x, gefangen.y)) {
+                    // OHNE VERSCHMELZEN (`false`) — und das ist kein Detail, sondern die
+                    // Bedingung dafür, dass dieser Fang überhaupt gebaut werden darf.
+                    // GEMESSEN: mit dem Standard (`verschmelzen = true`) legt der Fang die
+                    // Ecke exakt auf die Achse einer Nachbarwand, `mergeWithIntersected`
+                    // liest das als „Ecke liegt auf Wand" und TEILT die Wand. Der
+                    // Hotelplan wuchs dabei von 589 auf 590 Wände, eine der beiden
+                    // Hälften war 0 cm lang, und die Raumableitung erbte daraus NaN
+                    // (`computeBoundingBox(): Computed min/max have NaN values`).
+                    //
+                    // Es ist derselbe Grund wie beim Wand-Zug (W14): ein Fang bringt
+                    // Ecken zwangsläufig in die Nähe anderer Bausubstanz — das ist seine
+                    // Aufgabe. Wer dort verschmilzt, bestraft genau das Gelingen.
+                    this.activeCorner.move(gefangen.x, gefangen.y, false);
+                }
                 this.view.draw();
             }
             else if (this.zugWandId) {
@@ -9204,6 +9985,9 @@ class Floorplanner {
             this.zugWandHinweis = null;
             this.zugWandAnker = null;
             this.zugWandGrundVorher = null;
+            this.zugWandNormale = null;
+            this.zugWandRohQuer = 0;
+            this.zugWandGriff = null;
             // Der Bericht geht IMMER raus, auch bei einem Zug ohne Wirkung: die
             // Oberfläche entscheidet, was davon sie zeigt. Ein Rückruf, der nur im
             // Schadensfall feuert, liesse sich nicht gegenprüfen — und ein Wächter,
@@ -9218,7 +10002,109 @@ class Floorplanner {
         }
         this.zugKennung = null;
         this.zugGesichert = false;
+        // W15: der Zug ist vorbei, die Geometrie kann sich geändert haben — die
+        // Kandidaten des nächsten Zugs werden frisch gesammelt. Und die
+        // Hilfslinien gehören weg: sie waren eine Aussage über DIESEN Augenblick.
+        this.fangKandidatenVerwerfen();
         this.zeigerStilSetzen();
+    }
+    /* ══ AUFRÄUM-HILFE · Fluchten finden und begradigen (W15) ═════════════
+       Was schon schief IST, findet kein Fang mehr — er greift beim Zeichnen, und
+       gezeichnet ist gezeichnet. Diese beiden Methoden sind die zweite Hälfte,
+       und sie sind BEWUSST getrennt:
+  
+         `fluchtFehler()`  findet und ZEIGT. Verändert nichts.
+         `fluchtBegradigen()` verändert — und nur, wenn jemand sie ruft.
+  
+       Ein Werkzeug, das ungefragt 30 Wände verschiebt, zerstört mehr, als es
+       heilt: die Fundstellen sind Vermutungen über eine ABSICHT („das sollte
+       fluchten"), und eine Vermutung darf keine Geometrie anfassen. Der Nutzer
+       sieht erst die Zahl, dann die Stelle, dann entscheidet er. */
+    /**
+     * Alle Stellen, an denen nebeneinanderliegende Wände nicht fluchten.
+     *
+     * @param toleranz Wie weit zwei Achsen auseinanderliegen dürfen, um noch als
+     *        EINE gemeinte Flucht zu gelten. Der Standard ist knapper als die
+     *        Fangweite — Begründung bei `AUFRAEUM_TOLERANZ_CM`.
+     */
+    fluchtFehler(toleranz = AUFRAEUM_TOLERANZ_CM) {
+        return findeFluchtFehler(this.wandDatenFuerFang(), toleranz);
+    }
+    /**
+     * EINE Fundstelle begradigen — mit Schnappschuss, Neubau und Raum-Prüfung.
+     *
+     * @returns Wie viele Ecken WIRKLICH bewegt wurden, und ob dabei ein Raum
+     *          verlorenging. Die Zahl ist gemessen und nicht die Länge der
+     *          Vorschlagsliste: eine Ecke, die es nicht mehr gibt, wird auch
+     *          nicht bewegt, und die Oberfläche soll das Gemessene melden.
+     */
+    fluchtBegradigen(stellen) {
+        const liste = Array.isArray(stellen) ? stellen : [stellen];
+        const raeumeVorher = this.floorplan.getRooms().length;
+        const ecken = this.floorplan.getCorners();
+        const lage = new Map();
+        for (const c of ecken)
+            lage.set(c.id, { x: c.x, y: c.y });
+        let bewegt = 0;
+        let weiteste = 0;
+        for (const stelle of liste) {
+            const neu = begradige(stelle, lage);
+            for (const n of neu) {
+                const c = ecken.find((e) => e.id === n.id);
+                if (!c)
+                    continue;
+                const weg = Math.hypot(c.x - n.x, c.y - n.y);
+                if (weg < 1)
+                    continue;
+                // EIN Schnappschuss für die GANZE Aufräumung, gezogen vor der ersten
+                // Bewegung: für den Nutzer ist es EINE Handlung („begradigen"), also
+                // ist es EIN Rückgängig-Schritt. 34 Schritte für einen Knopfdruck
+                // machten das vorhandene Rückgängig unbrauchbar — und ein Nichts-Tun
+                // gehört gar nicht erst in die Historie.
+                if (bewegt === 0)
+                    this.undoManager?.snapshot();
+                // OHNE Verschmelzen (`false`), aus demselben Grund wie beim Wand-Zug:
+                // eine begradigte Ecke kommt ihrer Nachbarin zwangsläufig näher, und
+                // ein Verschmelzen dort frässe Bausubstanz.
+                c.move(n.x, n.y, false);
+                lage.set(c.id, { x: c.x, y: c.y });
+                bewegt++;
+                if (weg > weiteste)
+                    weiteste = weg;
+            }
+        }
+        if (bewegt > 0) {
+            // Erst NACH allen Ecken: `update()` leitet die Räume ab, und eine
+            // Zwischenlage mitten in der Gruppe wäre ein Fehlalarm.
+            this.floorplan.update();
+            this.fangKandidatenVerwerfen();
+            this.view?.draw();
+        }
+        return {
+            bewegt,
+            raeumeVorher,
+            raeumeNachher: this.floorplan.getRooms().length,
+            weiteste: Math.round(weiteste)
+        };
+    }
+    /**
+     * Die gefundenen Fluchten ZEIGEN — ohne irgendetwas zu verändern (W15).
+     *
+     * Dieselben gestrichelten Linien, die auch der Fang benutzt. Kein zweiter
+     * Zeichenweg: der Nutzer soll „hier ist eine Flucht gemeint" an EINEM Bild
+     * erkennen, gleich ob er gerade zeichnet oder aufräumt. Ein eigenes Aussehen
+     * für dieselbe Aussage wäre eine zweite Vokabel für eine Sprache, die er erst
+     * lernen muss.
+     */
+    fluchtZeigen(stellen) {
+        this.fangLinien = (stellen || []).map((s) => ({
+            achse: s.achse,
+            wert: s.ziel,
+            art: 'flucht',
+            von: -Infinity,
+            bis: Infinity
+        }));
+        this.view?.draw();
     }
     /** Meldet nach jedem beendeten Wand-Zug, was er bewirkt hat. */
     addWandZugBerichtCallback(callback) {
@@ -9238,6 +10124,25 @@ class Floorplanner {
         // Wand nicht unter dem Zeiger wegspringt (dieselbe Begründung wie der
         // Griff-Versatz bei Möbeln, W2 Punkt 2).
         this.zugWandStart = { x: weltX, y: weltY };
+        // W15: die Querrichtung EINMAL festhalten, samt Ausgangslage (Begründung
+        // an den Feldern). Eine Wand der Länge 0 kann es im Modell geben (zwei
+        // verschmolzene Ecken); dort gibt es keine Querrichtung und also auch
+        // keinen Fang — der Zug läuft dann wie vor W15.
+        {
+            const laenge = Math.hypot(wand.getEndX() - wand.getStartX(), wand.getEndY() - wand.getStartY());
+            if (laenge > 0) {
+                const nx = -(wand.getEndY() - wand.getStartY()) / laenge;
+                const ny = (wand.getEndX() - wand.getStartX()) / laenge;
+                this.zugWandNormale = { x: nx, y: ny };
+                this.zugWandAchse0 = wand.getStartX() * nx + wand.getStartY() * ny;
+            }
+            else {
+                this.zugWandNormale = null;
+                this.zugWandAchse0 = 0;
+            }
+            this.zugWandRohQuer = 0;
+            this.zugWandGriff = { x: weltX, y: weltY };
+        }
         this.zugGesichert = false;
         this.zeigerStilSetzen();
         return true;
@@ -9254,6 +10159,31 @@ class Floorplanner {
             dicke: w.thickness
         }));
     }
+    /**
+     * Bliebe nach diesem Zug-Ergebnis JEDE Wand länger als 1 cm? (W15)
+     *
+     * Gerechnet wird auf den VORGESCHLAGENEN Lagen, bevor irgendeine Ecke
+     * wirklich bewegt ist — das ist der Unterschied zwischen einem Wächter und
+     * einer Entschuldigung. Wäre erst hinterher gemessen, stünde das NaN schon
+     * im Modell und im gesicherten Stand.
+     *
+     * 1 cm, weil in ganzen Zentimetern gerechnet wird (Projekt-DNA Punkt 3):
+     * alles darunter IST null.
+     */
+    zugUnschaedlich(ergebnis, waende) {
+        if (!ergebnis || ergebnis.ecken.length === 0)
+            return true;
+        const neu = new Map();
+        for (const e of ergebnis.ecken)
+            neu.set(e.id, { x: e.x, y: e.y });
+        for (const w of waende) {
+            const a = neu.get(w.aId) ?? w.a;
+            const b = neu.get(w.bId) ?? w.b;
+            if (Math.hypot(b.x - a.x, b.y - a.y) < 1)
+                return false;
+        }
+        return true;
+    }
     wandZugSchritt(weltX, weltY) {
         if (!this.zugWandId || !this.zugWandStart) {
             return false;
@@ -9263,9 +10193,90 @@ class Floorplanner {
         if (!wand) {
             return false;
         }
-        const dx = weltX - this.zugWandStart.x;
-        const dy = weltY - this.zugWandStart.y;
-        const ergebnis = verschiebeWandParallel(wand, waende, dx, dy);
+        let dx = weltX - this.zugWandStart.x;
+        let dy = weltY - this.zugWandStart.y;
+        // --- W15: den QUERVERSATZ auf eine Nachbar-Flucht ziehen.
+        //
+        // Beim Verschieben einer Wand ist nicht ihr Endpunkt die Grösse, die zählt,
+        // sondern ihr ABSTAND von der eigenen Achse — `verschiebeWandParallel`
+        // verwirft den Längsanteil ohnehin. Gefangen wird deshalb nicht ein Punkt,
+        // sondern der Versatz: die Wand rastet dort ein, wo schon eine parallele
+        // Wand liegt. Das ist die Bedienung, die man „bündig" nennt, und ohne sie
+        // entsteht genau der gemeldete Fehler ein zweites Mal — diesmal nicht beim
+        // Zeichnen, sondern beim Verschieben.
+        //
+        // Die Fangweite in Bildpunkten und nicht in cm, aus demselben Grund wie
+        // beim Zeichnen (s. `FLUCHT_FANG_PX`).
+        this.fangLinien = [];
+        // Der UNGEFANGENE Weg wird mitgeführt: er ist der Rückfall, wenn der Fang
+        // eine Nachbarwand auf null zöge (s. unten).
+        let rohDx = dx;
+        let rohDy = dy;
+        let gefangenerVersatz = false;
+        const n = this.einrasten ? this.zugWandNormale : null;
+        if (n && this.zugWandGriff) {
+            // 1. Der ZEIGER-Weg quer zur Wand — ABSOLUT vom Aufsetzpunkt aus gerechnet
+            //    und nicht Schritt für Schritt aufsummiert. Aufsummiert wäre er in
+            //    zwei Fällen falsch: ein Schritt ohne Wirkung (`ergebnis.ecken` leer)
+            //    lässt `zugWandStart` stehen, die Summe zählte denselben Weg also
+            //    zweimal; und ein Schritt, den der Fang zurückzieht, ginge verloren
+            //    (derselbe Fehler wie `snapToAxis` in W14 — die Wand klebte).
+            this.zugWandRohQuer =
+                (weltX - this.zugWandGriff.x) * n.x + (weltY - this.zugWandGriff.y) * n.y;
+            const zielAchse = this.zugWandAchse0 + this.zugWandRohQuer;
+            // 2. Wo die Wand JETZT steht (sie ist im letzten Schritt evtl. gefangen
+            //    worden), und was von dort aus bis zum Ziel fehlt.
+            const istAchse = wand.a.x * n.x + wand.a.y * n.y;
+            const f = fangeVersatz(wand, waende, zielAchse - istAchse, FLUCHT_FANG_PX * this.cmPerPixel);
+            // 3. Erst jetzt in eine Bewegung übersetzen — LÄNGS bleibt null, das ist
+            //    Festlegung 1 von `wand-bewegen.js` und hier schon erledigt.
+            dx = f.versatz * n.x;
+            dy = f.versatz * n.y;
+            // Der ungefangene Weg desselben Schritts — der Rückfall.
+            rohDx = (zielAchse - istAchse) * n.x;
+            rohDy = (zielAchse - istAchse) * n.y;
+            gefangenerVersatz = f.gefangen;
+            if (f.gefangen) {
+                // Die Hilfslinie liegt auf der Wandachse selbst: sie ist die Linie,
+                // mit der die Wand gerade bündig steht.
+                this.fangLinien.push({
+                    achse: Math.abs(n.x) > Math.abs(n.y) ? 'x' : 'y',
+                    wert: Math.round(f.achse ?? 0),
+                    art: 'flucht',
+                    von: -Infinity,
+                    bis: Infinity
+                });
+            }
+        }
+        let ergebnis = verschiebeWandParallel(wand, waende, dx, dy);
+        /* --- WÜRDE DIESER SCHRITT EINE WAND AUF NULL ZUSAMMENZIEHEN? (W15)
+         *
+         * Die gleitenden Endecken laufen auf den Achsen der Nachbarwände entlang.
+         * Erreicht eine von ihnen den ANDEREN Endpunkt ihrer Nachbarwand, ist diese
+         * Wand null lang — und eine Wand der Länge null ist kein Schönheitsfehler,
+         * sondern eine Division durch null: `halfAngleVector` normiert mit 1/Länge,
+         * `interiorStart` erbt NaN, und three meldet bei jedem Bild
+         * „computeBoundingBox(): Computed min/max have NaN values".
+         *
+         * GEMESSEN und nicht befürchtet: von 60 nachgespielten Wand-Zügen über je
+         * 50 cm traf genau einer (w-db4fa5cb-cbbfe5ad) diesen Fall — und zwar erst,
+         * seit der Fang dabei ist. Das ist kein Zufall, sondern die Natur eines
+         * Fangs: er trifft Punkte EXAKT, und der Endpunkt einer Nachbarwand ist ein
+         * Punkt wie jeder andere. `verschiebeWandParallel` begrenzt zwar schon (W12b
+         * Festlegung 4), aber seine Grenze IST dieser Punkt — der Fang landet also
+         * genau auf ihr statt davor.
+         *
+         * Die Antwort ist nicht „Bewegung verbieten", sondern „ohne Fang weiter":
+         * wer zieht, soll ziehen können. Nur das Einrasten gibt hier nach. */
+        if (gefangenerVersatz && !this.zugUnschaedlich(ergebnis, waende)) {
+            this.fangLinien = [];
+            ergebnis = verschiebeWandParallel(wand, waende, rohDx, rohDy);
+            if (!this.zugUnschaedlich(ergebnis, waende)) {
+                // Auch ungefangen schädlich: dann ist die Grenze wirklich erreicht.
+                this.zugWandHinweis = 'Weiter geht es nicht — sonst verschwände eine Nachbarwand.';
+                return false;
+            }
+        }
         if (ergebnis.ecken.length === 0 || ergebnis.strecke === 0) {
             // Keine Bewegung quer zur Wand: nichts tun und KEINEN Schnappschuss ziehen
             // — ein Druck ohne Wirkung soll die Historie nicht mit Leerschritten
@@ -12050,34 +13061,71 @@ function obersterTreffer(p0, p1, punkte) {
  * Diese Rueckrechnung braucht 289 Strecke-gegen-Vieleck-Tests, gemessen unter
  * 0,1 ms, und laeuft ohne Canvas.
  *
- * NUR MOEBEL. Boden, Buehne und Wand liefern bewusst `null` — dort dreht der
- * Zug das Blatt, wie bisher. Eine Wand laesst sich rechnerisch ebenso treffen,
- * aber nicht sinnvoll ZIEHEN: der Klick auf ihre Krone liegt 1,63 m neben ihrem
- * Fusspunkt, und eine verschobene gemessene Ecke bricht den Rueckweg ins
- * Projekt (W5) hart ab. Eine Bedienung, die in einen abgelehnten Zustand
- * fuehrt, ist keine.
+ * MOEBEL IMMER — WAENDE NUR AUF VERLANGEN (`opt.waende`). Boden und Buehne nie:
+ * dort dreht der Zug das Blatt, wie bisher.
  *
+ * WARUM DIE WAND ERST JETZT DAZUKOMMT (W15) — und warum das kein Widerruf ist:
+ * W7 Punkt 7 hat sie mit zwei Gruenden abgelehnt. Der ERSTE lautete „der Klick
+ * auf ihre Krone liegt 1,63 m neben ihrem Fusspunkt". Das ist der Fehler einer
+ * GERATENEN Hoehe (`tiefenFehler`, h·cot el) — und geraten wird hier nichts:
+ * ein Wandkoerper kennt sein `y0`/`y1` genau wie ein Tisch, der Sehstrahl ist
+ * also auch bei ihm eine endliche Strecke, und die Huelle zieht in der EBENE
+ * des Treffers (`griffHoehe`). Der Grund traf nie die Wand, sondern das Raten.
+ * Der ZWEITE lautete „eine verschobene gemessene Ecke bricht den Rueckweg (W5)
+ * hart ab". Der galt, solange es nur Aufmass und Setzung gab. Seit W12b gibt es
+ * die dritte Kategorie UMBAU (`src/raum/wand-bewegen.js`): eine bewegte Wand
+ * wird `quelle: 'gesetzt'`, ihre Endecken GLEITEN auf den Nachbarachsen, und
+ * der Grundriss bleibt geschlossen. Der abgelehnte Zustand, vor dem der Satz
+ * warnte, entsteht gar nicht mehr.
+ *
+ * Trotzdem ist es eine WAHL der Huelle und keine Selbstverstaendlichkeit: ohne
+ * `opt.waende` bleibt alles wie in W7, und die Weitergabe-Fassung fragt nie
+ * danach.
+ *
+ * @param {{waende?:boolean}} [opt]
  * @returns {{id:string, typ:string, tiefe:number, y0:number, y1:number, hoehe:number}|null}
  */
-function koerperUnter(szene, kamera, X, Y) {
+function koerperUnter(szene, kamera, X, Y, opt = {}) {
   if (!szene || !kamera) return null
   let bester = null
-  for (const k of szene.moebel || []) {
-    if (!k.id) continue // ohne Rueckverweis kein Bearbeiten — lieber nichts
-    const p0 = umkehreAuf(kamera, X, Y, k.y0)
-    const p1 = umkehreAuf(kamera, X, Y, k.y1)
-    if (!p0 || !p1) return null // entartete Kamera: fuer KEIN Stueck eine Aussage
-    const t = obersterTreffer(p0, p1, k.punkte)
-    if (t === null) continue
-    const hoehe = k.y0 + (k.y1 - k.y0) * t
-    const tiefe = p0.tiefe + (p1.tiefe - p0.tiefe) * t
-    // Bei Mehrfachtreffern gewinnt der GROESSTE Tiefenwert. Das ist per
-    // Konstruktion das, was zuletzt gemalt wurde (`oben.sort` nach `depth`) —
-    // also das, was man sieht. Ein Stuhl unter einem Tisch bleibt so greifbar,
-    // sobald man auf seine Lehnenseite zeigt statt auf die Platte.
-    if (!bester || tiefe > bester.tiefe) {
-      bester = { id: k.id, typ: k.typ, tiefe, y0: k.y0, y1: k.y1, hoehe }
+  let entartet = false
+  /** Eine Liste von Koerpern durchsuchen. `kennung` sagt, welches Feld den
+   *  Rueckverweis ins Modell traegt — Moebel fuehren ihn als `id`, Wandstuecke
+   *  als `wandId` (eine Wand zerfaellt in viele Kacheln, die alle dieselbe
+   *  Wand meinen). */
+  const durchsuche = (liste, kennung, typ) => {
+    for (const k of liste || []) {
+      const id = k[kennung]
+      if (!id) continue // ohne Rueckverweis kein Bearbeiten — lieber nichts
+      const p0 = umkehreAuf(kamera, X, Y, k.y0)
+      const p1 = umkehreAuf(kamera, X, Y, k.y1)
+      if (!p0 || !p1) {
+        entartet = true // entartete Kamera: fuer KEIN Stueck eine Aussage
+        return
+      }
+      const t = obersterTreffer(p0, p1, k.punkte)
+      if (t === null) continue
+      const hoehe = k.y0 + (k.y1 - k.y0) * t
+      const tiefe = p0.tiefe + (p1.tiefe - p0.tiefe) * t
+      // Bei Mehrfachtreffern gewinnt der GROESSTE Tiefenwert. Das ist per
+      // Konstruktion das, was zuletzt gemalt wurde (`oben.sort` nach `depth`) —
+      // also das, was man sieht. Ein Stuhl unter einem Tisch bleibt so greifbar,
+      // sobald man auf seine Lehnenseite zeigt statt auf die Platte.
+      if (!bester || tiefe > bester.tiefe) {
+        bester = { id, typ: typ || k.typ, tiefe, y0: k.y0, y1: k.y1, hoehe }
+      }
     }
+  }
+  durchsuche(szene.moebel, 'id', null)
+  if (entartet) return null
+  /* Die Waende ZULETZT und mit demselben Tiefenvergleich — NICHT mit Vorrang
+     fuer das Moebel. Der Maler sortiert beide in EINE Reihenfolge; wer vorn
+     liegt, liegt vorn. Ein Vorrang fuer Moebel hiesse: der Schrank VOR der Wand
+     bliebe greifbar, obwohl die Wand ihn verdeckt — und der Nutzer griffe ein
+     Stueck, das er gar nicht sieht. */
+  if (opt.waende) {
+    durchsuche(szene.waende, 'wandId', 'wand')
+    if (entartet) return null
   }
   return bester
 }
@@ -12601,6 +13649,17 @@ function baueSzene(plan, opt = {}) {
 
   const waende = []
   const tueren = []
+  /* ── Das BAUREZEPT je Wand (W15) ─────────────────────────────────────
+     Damit eine GEZOGENE Wand im Blatt nachgeführt werden kann, ohne die ganze
+     Szene neu zu bauen (gemessen 16,2 ms je Bewegung — das ruckelt sichtbar).
+
+     Gemerkt werden nur die Zutaten, NICHT das Ergebnis: beim Nachführen läuft
+     dieselbe `wandStuecke` noch einmal, mit denselben Zutaten und neuen
+     Endpunkten. Ein hier nachgebautes Vieleck wäre eine ZWEITE Wahrheit über
+     das Aussehen einer Wand — und sie fiele erst beim Loslassen auf, wenn die
+     Wand in ihre richtige Form zurückspringt. Genau diese Falle vermeidet der
+     Möbel-Weg schon (`ausstattungsKoerper` wird dort erneut gerufen). */
+  const wandBau = new Map()
   for (const w of fp.walls) {
     const a = fp.corners[w.corner1]
     const b = fp.corners[w.corner2]
@@ -12625,15 +13684,23 @@ function baueSzene(plan, opt = {}) {
     // Steht die Wand voellig frei (beide Seiten leer), bleibt sie stehen: sie
     // wegzuschneiden liesse ein Stueck Grundriss verschwinden, das es gibt.
     const aussen = !!normale
+    const rezept = {
+      dicke,
+      y1: aussen ? DARSTELLUNGSHOEHE.wandAussen : DARSTELLUNGSHOEHE.wandInnen,
+      material: aussen ? 'wandAussen' : 'wand',
+      normale,
+      oeffnungen: oeffnungenJeWand.get(w.id) || []
+    }
+    wandBau.set(w.id, rezept)
     waende.push(
       ...wandStuecke(
         pa,
         pb,
-        dicke,
-        aussen ? DARSTELLUNGSHOEHE.wandAussen : DARSTELLUNGSHOEHE.wandInnen,
-        aussen ? 'wandAussen' : 'wand',
-        normale,
-        oeffnungenJeWand.get(w.id) || [],
+        rezept.dicke,
+        rezept.y1,
+        rezept.material,
+        rezept.normale,
+        rezept.oeffnungen,
         w.id
       )
     )
@@ -12668,6 +13735,10 @@ function baueSzene(plan, opt = {}) {
   return {
     boeden,
     waende,
+    /* Das Baurezept je Wand — s. oben. Eine Map und kein einfaches Objekt,
+       weil Wand-Kennungen aus `Utils.guid()` kommen und als Objekt-Schlüssel
+       mit `__proto__` und Konsorten kollidieren könnten. */
+    wandBau,
     /* EIGENE Liste und nicht zu `waende` oder `moebel` geschlagen (H4).
        `moebel` waere falsch gezaehlt: `axoMoebel()` meldet ihre Zahl an die
        Gates, und 54 Tuerblaetter haetten die Ausstattungs-Bilanz 292/292 ueber
@@ -12691,6 +13762,47 @@ function baueSzene(plan, opt = {}) {
     mitte: { x: (x0 + x1) / 2, z: (z0 + z1) / 2 },
     hoechster: DARSTELLUNGSHOEHE.kern
   }
+}
+
+/**
+ * Die Koerper EINER Wand neu bauen, mit neuen Endpunkten (W15).
+ *
+ * Fuer das Nachfuehren einer GEZOGENEN Wand im Blatt. Der volle Szenen-Neubau
+ * kostet gemessen 16,2 ms je Bewegung — das ist ein sichtbares Ruckeln genau in
+ * der Geste, die sich fluessig anfuehlen soll. Eine Wand allein kostet
+ * Bruchteile davon.
+ *
+ * Gerufen wird DIESELBE `wandStuecke` wie beim Bau der Szene, mit dem beim Bau
+ * gemerkten Rezept. Ein hier nachgebautes Vieleck waere eine zweite Wahrheit
+ * ueber das Aussehen einer Wand.
+ *
+ * WAS DABEI VERALTET, offen gesagt: die Aussen-NORMALE stammt aus dem Bau und
+ * wird nicht neu getastet. Sie entscheidet ueber die Schattierung, nicht ueber
+ * die Form. Waehrend eines Zuges ist sie hoechstens fuer einen Augenblick die
+ * falsche; beim Loslassen baut die Huelle die Szene ohnehin voll neu, und dann
+ * stimmt sie wieder. Sie im Zug neu zu tasten hiesse, die Raum-Ableitung je
+ * Bewegung laufen zu lassen — und genau die ist der teure Teil.
+ *
+ * @param {object} szene   aus `baueSzene`
+ * @param {string} wandId
+ * @param {{x:number,y:number}} a  Anfangsecke in ZENTIMETERN (Planer-Mass)
+ * @param {{x:number,y:number}} b  Endecke, dito
+ * @returns {Array|null} die neuen Koerper, oder `null` wenn die Wand kein
+ *          Rezept hat (sie stammt dann nicht aus dieser Szene).
+ */
+function baueWandKoerper(szene, wandId, a, b) {
+  const rezept = szene && szene.wandBau ? szene.wandBau.get(wandId) : null
+  if (!rezept) return null
+  return wandStuecke(
+    { x: a.x * CM, z: a.y * CM },
+    { x: b.x * CM, z: b.y * CM },
+    rezept.dicke,
+    rezept.y1,
+    rezept.material,
+    rezept.normale,
+    rezept.oeffnungen,
+    wandId
+  )
 }
 
 /* ══════ axo-zeichnen.js ══════ */
@@ -13437,6 +14549,43 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
   }
 
   /**
+   * Die Kacheln EINER Wand austauschen (W15) — fuer eine gezogene Wand.
+   *
+   * Eine Wand ist im Bild nicht EIN Koerper, sondern viele: sie wird in Kacheln
+   * von hoechstens `DARSTELLUNG.kachel` zerlegt, damit der Maler sie richtig
+   * sortieren kann (sonst verdeckte die 78 m lange Nordwand mit EINEM
+   * Tiefenwert alles dahinter). Getauscht wird deshalb eine LISTE gegen eine
+   * Liste, an Ort und Stelle: `splice` statt neu zusammensetzen, weil
+   * `szene.waende` mehrere tausend Eintraege hat und ein Neubau je
+   * Zeigerbewegung genau das Ruckeln waere, das dieser ganze Weg vermeidet.
+   *
+   * @param {string} wandId
+   * @param {Array} stuecke die neuen Kacheln (aus `baueWandKoerper`)
+   */
+  function tauscheWandKoerper(wandId, stuecke) {
+    if (!wandId || !stuecke || !szene?.waende) return false
+    const behalten = []
+    let erster = -1
+    for (let i = 0; i < szene.waende.length; i++) {
+      if (szene.waende[i].wandId === wandId) {
+        if (erster < 0) erster = i
+      } else {
+        behalten.push(szene.waende[i])
+      }
+    }
+    if (erster < 0) return false
+    // An DERSELBEN Stelle wieder einsetzen, an der die alten Kacheln standen:
+    // die Reihenfolge in `szene.waende` ist zwar nicht die Malreihenfolge (die
+    // rechnet `zeichne` aus den Tiefenwerten), aber sie ist der Tiebreaker bei
+    // gleicher Tiefe. Hinten anzuhaengen liesse gleich tiefe Flaechen bei jedem
+    // Zug die Reihenfolge wechseln — ein Flackern ohne erkennbaren Grund.
+    behalten.splice(Math.min(erster, behalten.length), 0, ...stuecke)
+    szene.waende = behalten
+    zeichne()
+    return true
+  }
+
+  /**
    * @param {number} [dichte] Bildpunkte je CSS-Punkt. Ohne Angabe die des
    *        Bildschirms (hoechstens 2 — mehr kostet nur Speicher).
    *
@@ -13523,6 +14672,19 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
   let unterZeiger = null
 
   const bearbeitbar = () => !!bearbeitung && bearbeitung.aktiv()
+
+  /* Ob im Blatt auch WAENDE greifbar sind (W15) — die Huelle entscheidet, nicht
+     der Renderer. Fehlt die Frage, bleibt es bei W7: nur Moebel. Damit ist der
+     Auslieferungszustand der Weitergabe-Fassung von dieser Welle gar nicht
+     erreichbar, und zwar von der Bauart her und nicht durch eine Abfrage, die
+     jemand vergessen koennte. */
+  const waendeGreifbar = () => bearbeitbar() && !!bearbeitung.waendeGreifbar?.()
+
+  /* Die EINE Stelle, an der gefragt wird „was liegt unter diesem Bildpunkt?".
+     Zwei Aufrufer (Aufsetzen und Hinueberfahren) mit zwei verschiedenen
+     Einstellungen waeren zwei Wahrheiten: der Zeiger sagte „greifbar" und der
+     Druck fasste nichts, oder umgekehrt. */
+  const unterBild = (b) => koerperUnter(szene, kamera(), b.x, b.y, { waende: waendeGreifbar() })
 
   /** Bildpunkt in CSS-Pixeln, so wie `projiziere` sie liefert. */
   function amBild(e) {
@@ -13689,7 +14851,7 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
     }
     if (bearbeitbar()) {
       const b = amBild(e)
-      const treffer = koerperUnter(szene, kamera(), b.x, b.y)
+      const treffer = unterBild(b)
       if (treffer) {
         /* DIE EHRLICHE GRENZE. Unter `NEIGUNG_MIN_ZIEHEN` bedeutet 1 Bildpunkt
            ueber 22 cm Tiefe — dort wird NICHT gezogen. Gesagt, nicht still
@@ -13762,13 +14924,24 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
          gemessen 16,2 ms — bei jeder Zeigerbewegung waere das ein Ruckeln, das
          der Nutzer der Bank zurecht als „hakt" liest. Der volle Neubau kommt
          beim Loslassen. */
-      if (neu) tauscheKoerper(greift, neu)
+      if (!neu) return
+      /* WAND ODER MOEBEL — an der FORM der Antwort unterschieden und nicht an
+         einer zweiten Frage an die Huelle. Eine Wand bewegt sich nie allein:
+         ihre Endecken gleiten auf den Nachbarwaenden, also aendern sich MEHRERE
+         Waende auf einmal (`verschiebeWandParallel`). Die Huelle schickt darum
+         eine Liste; ein Moebel bleibt ein einzelner Koerper, Zeichen fuer
+         Zeichen wie in W7. */
+      if (neu.waende) {
+        for (const w2 of neu.waende) tauscheWandKoerper(w2.id, w2.stuecke)
+      } else {
+        tauscheKoerper(greift, neu)
+      }
       return
     }
     // --- Nichts in der Hand: sagen, was greifbar waere.
     if (!zieht && bearbeitbar()) {
       const b = amBild(e)
-      zeigerPflegen(koerperUnter(szene, kamera(), b.x, b.y))
+      zeigerPflegen(unterBild(b))
     }
     if (!zieht) return
     const dx = e.clientX - lx
@@ -13869,6 +15042,7 @@ function erzeugeAxonometrie(canvas, szeneEingang, opt = {}) {
       zeichne()
     },
     tauscheKoerper,
+    tauscheWandKoerper,
     /** Die aktuelle Szene — der Treffer-Test braucht ihre Koerper. */
     get szene() {
       return szene
@@ -14501,6 +15675,19 @@ function tafelRand(){ return (tafelAn && innerWidth > 900) ? 294 : 0; }
    Schalter allein macht es auch nicht scharf. */
 const axoBearbeitung = {
   aktiv: function(){ return bearbeiten && ansicht === 'axo'; },
+  /* W15 — AUCH WAENDE, und zwar an dieselbe Bedingung geknuepft wie alles
+     andere: `bearbeiten`. Eine eigene Schranke waere ein zweiter Schalter fuer
+     dieselbe Frage; die Weitergabe-Fassung schaltet `bearbeiten` nie ein und
+     kann darum auch hier nichts greifen.
+
+     WARUM ES DAS JETZT GIBT, obwohl W7 Punkt 7 es ausdruecklich ablehnte: der
+     Grund war „eine verschobene gemessene Ecke bricht den Rueckweg (W5) hart
+     ab". Seit W12b gibt es die Kategorie UMBAU — die Wand gleitet parallel,
+     ihre Endecken laufen auf den Nachbarachsen, der Grundriss bleibt
+     geschlossen, und der Raum-Waechter prueft danach nach. Der abgelehnte
+     Zustand entsteht nicht mehr. Der zweite Grund („die Krone liegt 1,63 m
+     neben dem Fusspunkt") galt einer GERATENEN Hoehe; hier ist sie gemessen. */
+  waendeGreifbar: function(){ return true; },
   greife: function(id, wx, wy){ return zeichner.zugBeginnen(id, wx, wy); },
   ziehe: function(wx, wy){
     if (!zeichner.zugSchritt(wx, wy)) return null;
@@ -14511,6 +15698,33 @@ const axoBearbeitung = {
        Gate muss beweisen koennen, dass es diesen Unterschied ueberhaupt
        bemerkt. Im Betrieb ist dieser Zweig aus. */
     if (vollNeubauImZug) { grundriss.update(); axoNeuBauen(); return null; }
+    /* --- Eine WAND in der Hand (W15): mehrere Waende aendern sich auf einmal.
+       Nicht nur die gezogene — ihre Endecken gleiten auf den Nachbarwaenden
+       entlang, und deren Kacheln stimmen danach nicht mehr. Nur die eine
+       nachzufuehren liesse an jedem Wandende eine klaffende Luecke stehen, bis
+       der Nutzer loslaesst. Gesucht werden darum alle Waende, die an einer der
+       beiden Endecken haengen — das sind gemessen drei bis fuenf, nicht 589. */
+    const wandId = zeichner.wandZugLaeuft && zeichner.wandZugLaeuft();
+    if (wandId) {
+      const gezogen = grundriss.getWalls().find(function(w){ return w.id === wandId; });
+      if (!gezogen) return null;
+      const eckenIds = [gezogen.getStart().id, gezogen.getEnd().id];
+      const betroffen = grundriss.getWalls().filter(function(w){
+        return w.id === wandId ||
+          eckenIds.indexOf(w.getStart().id) >= 0 || eckenIds.indexOf(w.getEnd().id) >= 0;
+      });
+      const liste = [];
+      for (const w of betroffen) {
+        /* DIESELBE `wandStuecke`, mit der `baueSzene` die Wand gebaut hat —
+           ueber das dort gemerkte Rezept. Ein hier nachgebautes Vieleck waere
+           eine zweite Wahrheit ueber das Aussehen einer Wand, und sie fiele
+           erst beim Loslassen auf. */
+        const stuecke = baueWandKoerper(szene, w.id,
+          { x: w.getStartX(), y: w.getStartY() }, { x: w.getEndX(), y: w.getEndY() });
+        if (stuecke) liste.push({ id: w.id, stuecke: stuecke });
+      }
+      return liste.length ? { waende: liste } : null;
+    }
     const stueck = grundriss.findeAusstattung(zeichner.zugLaeuft());
     /* NUR dieser eine Koerper — aus DERSELBEN Funktion, aus der `baueSzene` ihn
        baut. Ein hier nachgebautes Vieleck waere eine zweite Wahrheit ueber das
@@ -14519,7 +15733,13 @@ const axoBearbeitung = {
     return stueck ? (ausstattungsKoerper(stueck, HOEHEN)[0] || null) : null;
   },
   lassLos: function(){
-    const id = zeichner.zugLaeuft();
+    /* BEIDE fragen, und zwar VOR `zugBeenden` — danach sind beide null.
+       `zugLaeuft` meldet nur Moebel; eine gezogene Wand steht in
+       `wandZugLaeuft`. Ohne die zweite Frage bliebe der volle Neubau nach
+       einem Wandzug aus: die Wand staende im Blatt mit den Kacheln aus dem
+       Zug da (Aussen-Normale und Raumboeden von vorher), und der Grundriss
+       wuerde nicht gesichert. Ein Fehler, der wie „geht doch" aussieht. */
+    const id = zeichner.zugLaeuft() || (zeichner.wandZugLaeuft && zeichner.wandZugLaeuft());
     zeichner.zugBeenden();
     /* Erst JETZT der volle Neubau (ueber `bemerkeAenderung` -> `axoBaldNeu`):
        waehrend des Zuges kostete er gemessen 16,2 ms je Bewegung. */
@@ -16104,6 +17324,79 @@ zeichner.addEinrastCallback(function(an){
 });
 el('btnEinrasten').setAttribute('aria-pressed', String(zeichner.istEinrasten()));
 
+/* ══════════ AUFRÄUM-HILFE · Fluchten (W15) ══════════════════════════════
+
+   Nutzerwunsch, wörtlich: *„damit zum beispiel die wände nicht unterschiedlich
+   lang sind, obwohl sie nebeneinander liegen und es nicht der fall sein darf."*
+   Der Fang verhindert NEUE solche Stellen; was schon gezeichnet ist, findet er
+   nicht mehr. Diese Hälfte sucht sie im fertigen Plan.
+
+   DREI SCHRITTE, und ihre Trennung ist der ganze Punkt:
+     1. Drücken SUCHT und ZEIGT — und verändert nichts.
+     2. Die Rückfrage nennt den Umfang in Zahlen (Stellen, Ecken, weiteste
+        Bewegung). „Begradigen?" allein wäre wahr und nutzlos.
+     3. Erst „Begradigen" fasst Geometrie an, in EINEM Rückgängig-Schritt.
+
+   Ein Werkzeug, das ungefragt 30 Wände verschiebt, zerstört mehr, als es
+   heilt: die Fundstellen sind Vermutungen über eine ABSICHT („das sollte
+   fluchten"), und eine Vermutung darf keine Geometrie anfassen. */
+const fluchtFrage = el('fluchtFrage');
+let fluchtFund = null;
+
+function fluchtSchliessen(){
+  fluchtFrage.hidden = true;
+  fluchtFund = null;
+  /* Die Hilfslinien MÜSSEN mit weg. Eine Linie, die stehen bleibt, nachdem die
+     Frage weg ist, behauptet weiter etwas über einen Zustand, den es nicht
+     mehr gibt — und beim nächsten Zeichnen hielte man sie für einen Fang. */
+  zeichner.fluchtZeigen(null);
+}
+
+el('btnFluchten').addEventListener('click', function(){
+  /* Suchen und ZEIGEN. `fluchtFehler` ist lesend — das ist keine Bequemlichkeit
+     der Umsetzung, sondern die Zusicherung, mit der man den Knopf überhaupt
+     drücken kann, ohne vorher zu sichern. */
+  fluchtFund = zeichner.fluchtFehler();
+  if (!fluchtFund.length) {
+    zeichner.fluchtZeigen(null);
+    meldung('Keine Stelle gefunden: alle nebeneinanderliegenden Wände fluchten bereits.', false);
+    return;
+  }
+  zeichner.fluchtZeigen(fluchtFund);
+  const ecken = fluchtFund.reduce(function(s, f){ return s + f.ecken.length; }, 0);
+  const weit = fluchtFund.reduce(function(m, f){ return Math.max(m, f.versatz); }, 0);
+  el('fluchtFrageUmfang').textContent =
+    fluchtFund.length + ' Stelle' + (fluchtFund.length === 1 ? '' : 'n') +
+    ', an denen nebeneinanderliegende Wände nicht fluchten. ' +
+    'Begradigen bewegt ' + ecken + ' Eckpunkt' + (ecken === 1 ? '' : 'e') +
+    ', keinen weiter als ' + weit + ' cm.';
+  frageZeigen(fluchtFrage);
+  el('btnFluchtNein').focus();
+});
+
+el('btnFluchtNein').addEventListener('click', fluchtSchliessen);
+
+el('btnFluchtJa').addEventListener('click', function(){
+  if (!fluchtFund) { fluchtSchliessen(); return; }
+  const erg = zeichner.fluchtBegradigen(fluchtFund);
+  fluchtSchliessen();
+  /* GEMELDET wird das GEMESSENE, nicht das Vorgeschlagene: `bewegt` zählt die
+     Ecken, die sich wirklich bewegt haben. Und die Räume werden GENANNT — der
+     Wächter, den es für das Wandziehen schon gibt (W14), gilt hier genauso:
+     eine Aufräumung, die einen Raum aufreisst, muss das sagen und nicht
+     schweigen. */
+  const raumSatz = erg.raeumeNachher === erg.raeumeVorher
+    ? 'Die Räume schliessen weiter (' + erg.raeumeNachher + ').'
+    : 'ACHTUNG: die Zahl der Räume hat sich geändert (' +
+      erg.raeumeVorher + ' → ' + erg.raeumeNachher + ') — mit Rückgängig zurücknehmen.';
+  meldung(
+    erg.bewegt + ' Eckpunkt' + (erg.bewegt === 1 ? '' : 'e') + ' begradigt, weiteste Bewegung ' +
+    erg.weiteste + ' cm. ' + raumSatz + ' Rückgängig nimmt alles in einem Schritt zurück.',
+    erg.raeumeNachher !== erg.raeumeVorher
+  );
+  bemerkeAenderung();
+});
+
 /* ── Palette: ein Stueck in den Grundriss ziehen (W3) ────────────────
    Bewusst mit Maus-Ereignissen und NICHT mit der HTML5-Ziehschnittstelle
    (draggable + dragstart/drop). Zwei gemessene Gruende: erstens laesst sich
@@ -16419,6 +17712,12 @@ addEventListener('keydown', function(e){
   // ist dort ohnehin taub — ein Strg+Z waere die einzige Tuer, durch die sich
   // ein ruhiges Blatt noch verstellen liesse.
   if (!bearbeiten) return;
+  /* W15 — Escape nimmt die Flucht-Rückfrage zurück, wie bei jeder anderen
+     Rückfrage dieser Datei. Der KERN registriert Escape zwar selbst, kennt
+     dieses Fenster aber nicht: es gehört der Hülle. Ohne diese Zeile wäre die
+     Flucht-Rückfrage die einzige, die sich nicht mit Escape wegdrücken lässt
+     — und der Nutzer lernte, dass Escape „manchmal" wirkt. */
+  if (e.key === 'Escape' && !fluchtFrage.hidden) { e.preventDefault(); fluchtSchliessen(); return; }
   if (!(e.ctrlKey || e.metaKey)) return;
   const taste = (e.key || '').toLowerCase();
   if (taste === 'z' && !e.shiftKey) { e.preventDefault(); undo.undo(); }
@@ -17570,6 +18869,23 @@ window.__planerDatei = {
   },
   einrasten: function(){ return zeichner.istEinrasten(); },
   setzeEinrasten: function(an){ zeichner.setzeEinrasten(an); },
+  /* ── Aufräum-Hilfe (W15), für die Gates ──────────────────────────────
+     LESEND (`fluchtFehler`, `fluchtLinien`) und SCHREIBEND (`fluchtKnopf`,
+     `fluchtJa`) getrennt gehalten. Der schreibende Weg geht über die KNÖPFE
+     und nicht über den Kern: ein Gate, das `fluchtBegradigen` direkt riefe,
+     bewiese nur, dass die Rechnung rechnet — nicht, dass sie ohne Bestätigung
+     unerreichbar ist. Und genau das ist hier die Zusage. */
+  /* WOHIN der naechste gezeichnete Punkt WIRKLICH faellt — nach allen drei
+     Hilfen (Ecke, Winkel, Flucht). Das ist die Groesse, die ein Gate messen
+     MUSS, wenn es den Fang beim Zeichnen beweisen will: die Zeigerlage sagt nur,
+     wohin die Hand zielte, nicht, was daraus wird. */
+  zeichenZiel: function(){ return { x: zeichner.targetX, y: zeichner.targetY }; },
+  fluchtFehler: function(tol){ return zeichner.fluchtFehler(tol); },
+  fluchtLinien: function(){ return zeichner.fangLinien.slice(); },
+  fluchtFrageOffen: function(){ return el('fluchtFrage').hidden === false; },
+  fluchtKnopf: function(){ el('btnFluchten').click(); },
+  fluchtJa: function(){ el('btnFluchtJa').click(); },
+  fluchtNein: function(){ el('btnFluchtNein').click(); },
   zoomeAufPunkt: function(z, bx, by){ zeichner.zoomeAufPunkt(z, bx, by); },
   proCm: function(){ return zeichner.pixelProCm(); },
   undoJetzt: function(){ undo.undo(); },
@@ -17628,6 +18944,16 @@ window.__planerDatei = {
   axoTreffer: function(x, y){
     if (!axoAnsicht) return null;
     return koerperUnter(axoAnsicht.szene, axoAnsicht.kamera(), x, y);
+  },
+  /* Derselbe Test, aber MIT Waenden (W15) — die Frage, die auch die Hand im
+     Bearbeiten-Zustand stellt. Getrennt gehalten und nicht als Parameter an
+     `axoTreffer`: jener beantwortet die Frage „welches MOEBEL liegt hier",
+     und daran haengen die Selbsttreffer-Proben ueber alle Ausstattungs-Stuecke.
+     Eine Umschaltung an derselben Stelle liesse jede dieser Proben still eine
+     andere Frage stellen, sobald jemand den Standardwert aendert. */
+  axoTrefferMitWand: function(x, y){
+    if (!axoAnsicht) return null;
+    return koerperUnter(axoAnsicht.szene, axoAnsicht.kamera(), x, y, { waende: true });
   },
   /* Ein Weltpunkt (cm) auf seiner Hoehe (m) VORWAERTS ins Bild — die
      Gegenrichtung zu `axoTreffer`. */

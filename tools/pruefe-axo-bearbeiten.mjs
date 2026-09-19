@@ -861,37 +861,95 @@ try {
       pruefe(false, `G4 im flachen Blick war kein Stueck greifbar — die Probe konnte nicht laufen`)
     }
 
-    // G6 — WAS ES NICHT GIBT, und zwar mit Absicht. Ein Druck auf eine WAND
-    // greift nichts: die Krone liegt 1,63 m neben dem Fusspunkt, und eine
-    // verschobene gemessene Ecke braeche den Rueckweg aus W5 hart ab.
+    /* G6 — DIE WAND IM BLATT (W15). Bis hierher stand hier das Gegenteil:
+       „kein Zeigerzug im Blatt bewegt eine WAND — die Grenze der alten
+       Festlegung gilt weiter". Diese Umkehr ist begruendet und kein Nachgeben:
+
+         Der erste Grund von W7 Punkt 7 lautete „die Krone liegt 1,63 m neben
+         dem Fusspunkt". Das ist `tiefenFehler(1.16, el)` — der Fehler einer
+         GERATENEN Hoehe. Geraten wird nichts: ein Wandkoerper kennt sein
+         `y0`/`y1` genau wie ein Tisch, und die Huelle zieht in der EBENE des
+         Treffers. Pruefung B misst genau diesen Unterschied und wuerde rot,
+         wenn er verschwaende.
+
+         Der zweite lautete „eine verschobene gemessene Ecke bricht den
+         Rueckweg (W5) hart ab". Seit W12b gibt es die Kategorie UMBAU: die
+         Wand gleitet parallel, ihre Endecken laufen auf den Nachbarachsen,
+         der Grundriss bleibt geschlossen. Der abgelehnte Zustand entsteht
+         nicht mehr — `pruefe-wand-bewegen.mjs` misst das.
+
+       Geprueft werden hier DREI Dinge, die zusammen die Bedienung ausmachen:
+       die Wand bewegt sich WIRKLICH · das Blatt dreht sich dabei NICHT ·
+       ohne „Bearbeiten" tut derselbe Zug nichts von beidem. */
     await page.evaluate(() => window.__planerDatei.axoSetzeBlick(-0.52, 0.62))
     await page.waitForTimeout(300)
     const aufWand = await page.evaluate(() => {
       const k = window.__planerDatei.axoKasten()
       // Eine Stelle suchen, an der ein WANDSTUECK gemalt ist, aber kein Moebel:
-      // gerechnet ueber die Szene, nicht geraten.
-      for (let y = 30; y < k.hoehe - 30; y += 7) {
-        for (let x = 30; x < k.breite - 320; x += 7) {
+      // gerechnet ueber die Szene, nicht geraten. Der Moebel-Ausschluss ist
+      // noetig, weil sonst der Zug ein Moebel zoege und die Messung vom
+      // falschen Gegenstand handelte.
+      for (let y = 30; y < k.hoehe - 30; y += 5) {
+        for (let x = 30; x < k.breite - 320; x += 5) {
           if (window.__planerDatei.axoTreffer(x, y)) continue
-          const p = window.__planerDatei.axoAufBild(0, 0, 0)
-          if (p) return { x, y }
+          const t = window.__planerDatei.axoTrefferMitWand(x, y)
+          if (t && t.typ === 'wand') return { x, y, wandId: t.id, hoehe: t.hoehe }
         }
       }
       return null
     })
-    const standVor = await page.evaluate(() =>
-      window.__planerDatei.waende().map((w) => w.wax + ':' + w.way).join('|')
-    )
+    pruefe(aufWand !== null, `G6 eine WAND im Blatt gefunden, auf die man zeigen kann (${aufWand ? aufWand.wandId : 'keine'})`)
     if (aufWand) {
+      const lage = (seite, id) =>
+        seite.evaluate((w) => {
+          const x = window.__planerDatei.waende().find((q) => q.id === w)
+          return x ? { x: x.wax, y: x.way } : null
+        }, id)
+      const blickVor = await page.evaluate(() => {
+        const b = window.__planerDatei.axoBlick()
+        return { az: b.az, el: b.el, schiebX: b.schiebX, schiebY: b.schiebY }
+      })
+      const vorher = await lage(page, aufWand.wandId)
       await ziehe(page, kasten, aufWand, { x: 40, y: 20 })
+      await page.waitForTimeout(400)
+      const nachher = await lage(page, aufWand.wandId)
+      const blickNach = await page.evaluate(() => {
+        const b = window.__planerDatei.axoBlick()
+        return { az: b.az, el: b.el, schiebX: b.schiebX, schiebY: b.schiebY }
+      })
+      const weg = vorher && nachher ? Math.hypot(nachher.x - vorher.x, nachher.y - vorher.y) : 0
+      pruefe(
+        weg > 1,
+        `G6 ein Zeigerzug im Blatt BEWEGT die Wand (${Math.round(weg)} cm: ${JSON.stringify(vorher)} -> ${JSON.stringify(nachher)})`
+      )
+      /* DIE ENTSCHEIDENDE HAELFTE: dabei darf sich das Blatt NICHT drehen.
+         Ein Bedienen, bei dem man nicht weiss, ob man gerade die Ansicht dreht
+         oder eine Wand verschiebt, waere schlimmer als gar keines. Die Regel
+         ist dieselbe wie beim Moebel (W7): der TREFFER beim Aufsetzen
+         entscheidet, keine Zusatztaste. Gemessen an den Kamerawerten selbst
+         und nicht am Bild — ein Bild aendert sich auch, wenn nur die Wand
+         wandert. */
+      pruefe(
+        blickVor.az === blickNach.az && blickVor.el === blickNach.el &&
+          blickVor.schiebX === blickNach.schiebX && blickVor.schiebY === blickNach.schiebY,
+        `G6 und das Blatt hat sich dabei NICHT gedreht oder verschoben (az ${blickVor.az} -> ${blickNach.az}, el ${blickVor.el} -> ${blickNach.el})`
+      )
+      /* Rueckgaengig ueber DENSELBEN Weg wie D4 (`undoJetzt`) und NICHT ueber
+         den Knopf: die Werkzeugleiste liegt im Grundriss-Umschlag und ist im
+         Blatt unsichtbar (W7 Punkt 1). Ein Klick darauf lief in eine
+         Zeitueberschreitung — nicht, weil Rueckgaengig fehlte, sondern weil das
+         Gate an der falschen Stelle klopfte. `undoJetzt` ruft denselben
+         Undo-Manager, den auch der Knopf ruft; es gibt keinen zweiten. */
+      const konnteZurueck = await page.evaluate(() => window.__planerDatei.kannZurueck())
+      await page.evaluate(() => window.__planerDatei.undoJetzt())
+      await page.waitForTimeout(400)
+      const zurueck = await lage(page, aufWand.wandId)
+      pruefe(
+        konnteZurueck === true && zurueck && vorher &&
+          Math.hypot(zurueck.x - vorher.x, zurueck.y - vorher.y) < 1,
+        `G6 und EIN Rueckgaengig stellt sie zurueck (${JSON.stringify(zurueck)})`
+      )
     }
-    const standNach = await page.evaluate(() =>
-      window.__planerDatei.waende().map((w) => w.wax + ':' + w.way).join('|')
-    )
-    pruefe(
-      standVor === standNach,
-      `G6 kein Zeigerzug im Blatt bewegt eine WAND — die Grenze der alten Festlegung gilt weiter`
-    )
     pruefe(konsole.length === 0, `G keine Konsolenfehler (${konsole.length}${konsole.length ? ': ' + konsole[0] : ''})`)
 
     /* Das GANZE Blatt im Bearbeiten-Zustand — damit auch die Zeile oben, der

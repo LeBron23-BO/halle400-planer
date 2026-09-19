@@ -896,6 +896,30 @@ if (zugZiel) {
     `G11: der Zeiger fasst die Wand an und zeigt es (${griff.treffer.wand === zugZiel.id ? 'getroffen' : 'daneben'}, Zeiger "${griff.stil}")`
   )
 
+  /* EINRASTEN AUS fuer diesen Zug (W15) — und das ist keine Abschwaechung,
+     sondern die Trennung zweier Aussagen, die nicht in EINE Messung passen:
+
+       Hier wird die RECHNUNG des Zuges geprueft: „50 cm gezogen = 50 cm
+       angekommen, Endecken gleiten, nichts geht verloren." Das ist eine Aussage
+       ueber die Parallelverschiebung (`wand-bewegen.js`) und muss auf den
+       Zentimeter stimmen.
+
+       Der FLUCHT-FANG ist demgegenueber eine absichtliche Abweichung: er zieht
+       die Wand auf die Achse einer Nachbarwand, also gerade NICHT genau dorthin,
+       wo der Zeiger hinzeigt. Beides in derselben Messung haette eine der beiden
+       Aussagen unpruefbar gemacht — und zwar die wichtigere.
+
+     Dass der Fang trotzdem wirkt, beweist die GEGENPROBE weiter unten mit
+     demselben Zug: eingeschaltet landet die Wand messbar anderswo. Und was er
+     dort tut, misst `tools/pruefe-fluchten.mjs` in Zentimetern gegen den
+     Sollwert. Ein Gate, das eine Funktion ABSCHALTET, ohne ihre Wirkung
+     woanders zu messen, waere genau die Luecke, die es zu vermeiden gilt. */
+  await seiteB.evaluate(() => window.__planerDatei.setzeEinrasten(false))
+  pruefe(
+    (await seiteB.evaluate(() => window.__planerDatei.einrasten())) === false,
+    'G11: fuer die Zug-Rechnung ist der Fang wirklich AUS (die Gegenprobe unten schaltet ihn wieder ein)'
+  )
+
   // DER ZUG — zwoelf Schritte, wie eine echte Hand.
   await seiteB.evaluate((q) => window.__planerDatei.maus('mousedown', q.x, q.y), { x: zugZiel.mx, y: zugZiel.my })
   for (let i = 1; i <= 12; i++) {
@@ -958,6 +982,40 @@ if (zugZiel) {
     zurueckVor === zurueckNach && JSON.stringify(unbewegt.a) === JSON.stringify(vorher.a),
     `G11: GEGENPROBE — ein Druck ohne Bewegung aendert nichts und fuellt die Historie nicht (kannZurueck ${zurueckVor} -> ${zurueckNach})`
   )
+  /* GEGENPROBE ZUM FANG (W15): DERSELBE Zug, nur mit eingeschaltetem
+     Einrasten, MUSS anders enden — sonst waere die Abschaltung oben eine
+     Ausrede fuer eine Funktion, die gar nichts tut. Gemessen wird gegen die
+     Lage aus dem ungefangenen Zug (`nachher.a`), nicht gegen den Startpunkt:
+     die Frage ist nicht „hat sich etwas bewegt", sondern „liegt es woanders
+     als ohne Fang". */
+  await seiteB.evaluate(() => window.__planerDatei.setzeEinrasten(true))
+  await seiteB.evaluate((q) => window.__planerDatei.maus('mousemove', q.x, q.y), { x: zugZiel.mx, y: zugZiel.my })
+  await seiteB.evaluate((q) => window.__planerDatei.maus('mousedown', q.x, q.y), { x: zugZiel.mx, y: zugZiel.my })
+  for (let i = 1; i <= 12; i++) {
+    await seiteB.evaluate(
+      (q) => window.__planerDatei.maus('mousemove', q.x, q.y),
+      { x: zugZiel.mx + (nx * SOLL_CM * proCm * i) / 12, y: zugZiel.my + (ny * SOLL_CM * proCm * i) / 12 }
+    )
+    await seiteB.waitForTimeout(16)
+  }
+  await seiteB.evaluate(
+    (q) => window.__planerDatei.maus('mouseup', q.x, q.y),
+    { x: zugZiel.mx + nx * SOLL_CM * proCm, y: zugZiel.my + ny * SOLL_CM * proCm }
+  )
+  await seiteB.waitForTimeout(500)
+  const mitFang = await wandUmfeld(seiteB, zugZiel.id)
+  const versatzDurchFang = Math.hypot(mitFang.a.x - nachher.a.x, mitFang.a.y - nachher.a.y)
+  pruefe(
+    versatzDurchFang > 0.5,
+    `G11: GEGENPROBE — mit Einrasten landet DERSELBE Zug anderswo (${Math.round(versatzDurchFang)} cm Unterschied: ${JSON.stringify(nachher.a)} ohne, ${JSON.stringify(mitFang.a)} mit)`
+  )
+  pruefe(
+    mitFang.zahlen.waende === vorher.zahlen.waende && mitFang.zahlen.ecken === vorher.zahlen.ecken,
+    `G11: und auch der gefangene Zug kostet keine Bausubstanz (${mitFang.zahlen.ecken}/${mitFang.zahlen.waende})`
+  )
+  await klick(seiteB, 'btnUndo')
+  await seiteB.waitForTimeout(500)
+
   await seiteB.screenshot({ path: path.join(DIR, 'F_wand_gezogen.png') })
 }
 

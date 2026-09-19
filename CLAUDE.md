@@ -75,6 +75,12 @@ node tools/pruefe-tueren.mjs      # W4: TUEREN, FENSTER, DURCHGAENGE — 123 Pru
                                   #        Oeffnung muss auf der richtigen Haelfte landen —
                                   #        mit abgeschalteter Versoehnung MUSS dieselbe
                                   #        Pruefung FEHLSCHLAGEN.
+node tools/pruefe-fluchten.mjs    # W15: FLUCHT-FANG + AUFRAEUM-HILFE. A-C ohne Browser
+                                  #        (je Fang-Art eine Messung in cm mit Sollwert),
+                                  #        D/E an der echten Datei mit ECHTEN Zeiger-
+                                  #        Ereignissen. Haerteste Probe: OHNE Bestaetigung
+                                  #        bewegt das Aufraeumen keinen einzigen Eckpunkt.
+                                  #        --nur rechnung | datei
 sh tools/alle-gates.sh            # alle Pruefwerkzeuge nacheinander, je ein Ergebnis
                                   #        (SEQUENTIELL — nebeneinander stoeren sie sich)
 node tools/pruefe-palette.mjs     # W3: die PALETTE — 66 Pruefungen in der Doppelklick-Datei
@@ -145,14 +151,15 @@ Drei Festlegungen, die man kennen muss, bevor man hier etwas aendert:
 2. **Gestutzte Waende sind Absicht.** 1,16 m aussen / 0,94 m innen statt der
    gesetzten 300 cm — der Puppenhaus-Schnitt, der den Blick in die Raeume
    freigibt. Die Ansicht behauptet keine niedrige Halle, sie schneidet sie auf.
-3. **In der Axonometrie werden MOEBEL bearbeitet — sonst nichts.** Bis W6 stand
+3. **In der Axonometrie werden MOEBEL und seit W15 auch WAENDE bearbeitet.** Bis W6 stand
    hier „in der Axonometrie wird nicht bearbeitet". Ueber die PROJEKTION war
    das nie falsch (ein Klick trifft keinen Punkt, sondern einen Sehstrahl),
    ueber den UMFANG war es zu weit: **fuer einen Koerper mit bekanntem
    `y0`/`y1` ist der Sehstrahl eine ENDLICHE Strecke**, und jedes
    Ausstattungs-Stueck kennt seine Hoehe (`bauformFuer`). Es wird also nichts
    geraten. Ziehen, drehen (Q/E) und loeschen (Entf) gehen seit W7 im Blatt;
-   Waende, Tueren und Fenster nicht (s. „Bearbeiten im Blatt").
+   **Waende ziehen seit W15** (Begruendung dort); Tueren und Fenster weiterhin
+   nicht (s. „Bearbeiten im Blatt").
 
 Planer-Ansicht und Bank-Datei benutzen dieselben vier Module — die Bank-Datei
 setzt sie nur ohne Modulgrenzen aneinander, weil `file://` kein Nachladen
@@ -264,11 +271,13 @@ jedes Kandidaten geprueft. Sieben Festlegungen:
    Bildpunkt ueber 22 cm Tiefe. Es wird nur gedreht, und das Blatt SAGT es —
    vorher in der Hinweiszeile, beim Versuch als Meldung. Der Fehler einer
    geratenen Hoehe ist exakt `h·cot(el)`: Tisch 1,04 m, Wandkrone 1,63 m.
-7. **Was es NICHT gibt, und warum.** Wand verschieben: eine verschobene
-   gemessene Ecke bricht den Rueckweg (W5) hart ab — eine Bedienung, die in
-   einen abgelehnten Zustand fuehrt, ist keine. Wand zeichnen: ein Punkt in
-   leerer Luft hat keine bekannte Hoehe. Tuer setzen: Anschlag und
-   Aufschlagseite sind in diesem Bild unsichtbar. Hoehe per Zeiger: nie.
+7. **Was es NICHT gibt, und warum.** ~~Wand verschieben~~ — **seit W15 gibt es
+   das** (s. dort). Beide Gruende dieses Punktes sind erledigt: der erste galt
+   einer GERATENEN Hoehe (ein Wandkoerper kennt sein y0/y1 wie ein Tisch), der
+   zweite einem Zustand, den es seit W12b (Kategorie UMBAU) nicht mehr gibt.
+   Weiterhin NICHT: Wand zeichnen (ein Punkt in leerer Luft hat keine bekannte
+   Hoehe), Tuer setzen (Anschlag und Aufschlagseite sind in diesem Bild
+   unsichtbar), Hoehe per Zeiger (nie).
 
 Drei Befunde wurden dabei geschlossen, die vorher niemand sah: ein gezeichneter
 Koerper trug **keine Kennung** (jetzt `id`/`typ`, Wandstuecke `wandId`), die
@@ -288,6 +297,78 @@ dort seit W8 auch im Blatt** — der Renderer hört `pointerdown/move/up` ab, un
 die tragen jede Fingerkuppe mit, sobald `touch-action:none` gesetzt ist (das
 war es schon). Zu bauen war deshalb nicht das Ziehen, sondern die
 RÜCKMELDUNG: am Rechner sagt der Zeiger `grabbing`, am Telefon sagt es nichts.
+
+## Fluchten: smart zeichnen, Waende im Blatt, aufraeumen (W15, 2026-09-19)
+
+Nutzerwunsch, woertlich: *„in der axometrie ansicht soll das bearbeiten aber
+auch moeglich sein. stelle mehr bearbeitungsoptionen zur verfuegung. es soll
+noch einfacher und smarter gearbeitet werden koennen, damit zum beispiel die
+waende nicht unterschiedlich lang sind, obwohl sie nebeneinander liegen und es
+nicht der fall sein darf."*
+
+```
+src/raum/fluchten.js         reine Rechnung: Fang-Kandidaten, Versatz-Fang,
+                             Fundstellen, Begradigungs-Vorschlaege
+floorplanner.ts              fangeAufFlucht() - fluchtFehler() -
+                             fluchtBegradigen() - fluchtZeigen()
+tools/pruefe-fluchten.mjs    A-C ohne Browser, D/E an der echten Datei
+```
+
+Sieben Festlegungen:
+
+1. **Die Fangweite rechnet in BILDPUNKTEN, nicht in Zentimetern**
+   (`FLUCHT_FANG_PX = 12`). Gerechnet, nicht gefuehlt: die Uebersicht quetscht
+   78 m auf ~900 px (8,7 cm/px), dort waeren 25 cm **2,9 Bildpunkte** — darauf
+   kann eine Hand nicht zielen. Herangezoomt (0,19 cm/px) waeren dieselben 25 cm
+   **132 Bildpunkte**, also 46-mal zu weit. EINE Weltgroesse ist fuer beide
+   Zoomstufen die falsche. Damit ist auch die Frage nach `snapTolerance = 25`
+   beantwortet: der Wert war nie falsch, er war nur die falsche EINHEIT.
+2. **Drei Hilfen, in dieser Reihenfolge: Ecke (14 px) - Winkel (45°/5°) -
+   Flucht (12 px).** Der Winkel legt die RICHTUNG fest, die Flucht die LAENGE;
+   nach einem Winkel-Fang darf nur noch die FREIE Koordinate rasten. Jede allein
+   koennte es nicht — der Winkel laesst die Laenge frei, die Flucht macht die
+   Wand wieder schief.
+3. **Gefangen wird auf `flucht` (Achse einer Wand) UND `ende` (Eckpunkt).**
+   Der zweite Fall ist der gemeldete Fehler: „so lang wie die Wand nebenan".
+4. **„Nebeneinander" ist eine Bedingung, keine Zierde** (`NACHBARSCHAFT_CM =
+   800`). Eine Achse am anderen Gebaeudeende ist kein Angebot.
+5. **Der Fang haengt am vorhandenen Schalter „Einrasten"** — kein zweiter
+   daneben. Ecken- und Winkel-Fang bleiben unberuehrt: die gab es vor dem
+   Schalter, sie sind die Bedienung des Zeichnens selbst (E2).
+6. **DREI Waechter gegen Geometrie der Laenge null**, jeder gegen einen
+   GEMESSENEN Fall: (a) der gezeichnete Punkt darf nicht auf `lastNode` fallen;
+   (b) die gefangene Ecke wird OHNE Verschmelzen gesetzt — mit dem Standard
+   teilte `mergeWithIntersected` eine Wand (589 -> 590, eine Haelfte 0 cm lang);
+   (c) ein Wand-Zug, dessen Fang eine Nachbarwand auf 0 zoege, faellt auf den
+   UNGEFANGENEN Weg zurueck. Alle drei enden sonst in
+   `computeBoundingBox(): Computed min/max have NaN values` — ein Fehler, der in
+   der Datei steht und nicht auf dem Schirm.
+7. **Die AUFRAEUM-HILFE veraendert NICHTS ohne Bestaetigung.** Drücken sucht und
+   zeigt (gestrichelte Linien), die Rueckfrage nennt den Umfang in Zahlen, erst
+   „Begradigen" fasst Geometrie an — in EINEM Rueckgaengig-Schritt, danach der
+   Raum-Waechter. **Keine Gruppe ist breiter als die Toleranz** (`10 cm`): ohne
+   diesen Deckel legt eine Verbandssuche im Hotelplan 44 Ecken zu einer Gruppe
+   zusammen, die ueber **105 cm** streut.
+
+**Stand Hotelplan (gemessen):** **34 Fundstellen**, 169 betroffene Eckpunkte,
+keiner weiter als 10 cm von seiner Flucht.
+
+**In der Axonometrie greift jetzt auch eine WAND.** Der einzige Hebel dafuer war
+`koerperUnter(..., { waende: true })` — die Huelle fragt es ueber
+`bearbeitung.waendeGreifbar()`, die Weitergabe-Fassung fragt nie danach. Gezogen
+wird ueber dieselben drei Methoden wie ueberall (`zugBeginnen`/`zugSchritt`/
+`zugBeenden`, W7 Punkt 4); nachgefuehrt werden im Zug nur die betroffenen Waende
+(`baueWandKoerper` aus dem beim Bau gemerkten Rezept), nicht die ganze Szene.
+Kosten gemessen: Treffersuche **0,097 ms** mit Waenden gegen 0,025 ohne.
+Die Gesten-Trennung ist die von W7: **der Treffer beim Aufsetzen entscheidet** —
+`pruefe-axo-bearbeiten.mjs` G6 misst, dass sich `az`/`el` waehrend eines
+Wand-Zuges nicht um einen Deut bewegen.
+
+**Was es weiterhin NICHT im Blatt gibt:** Wand ZEICHNEN (ein Punkt in leerer
+Luft hat keine bekannte Hoehe — der Satz aus W7 gilt hier woertlich weiter),
+Tuer/Fenster setzen (Anschlag und Aufschlagseite sind in diesem Bild
+unsichtbar), Ecke einzeln ziehen (im Blatt nicht von der Wand zu unterscheiden,
+auf die man zeigt).
 
 ## Der SCHUTZ (W10, 2026-07-28) — die drei schweren Punkte des Bedien-Audits
 
